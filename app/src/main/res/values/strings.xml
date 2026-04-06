@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Metro Gnome</string>
+    <string name="nav_metronome">Gnome</string>
+    <string name="nav_rhythm">Rhythm</string>
+    <string name="nav_settings">Settings</string>
+    <string name="tap_tempo">TAP</string>
+    <string name="label_bpm">BPM</string>
+    <string name="label_score">Score</string>
+    <string name="label_combo">Combo</string>
+    <string name="label_best">Best</string>
+    <string name="result_perfect">PERFECT!</string>
+    <string name="result_great">GREAT!</string>
+    <string name="result_good">GOOD</string>
+    <string name="result_miss">MISS</string>
+    <string name="btn_start">START</string>
+    <string name="btn_stop">STOP</string>
+    <string name="settings_tempo">Tempo (BPM)</string>
+    <string name="settings_time_sig">Time Signature</string>
+    <string name="settings_accent">Accent Beat 1</string>
+    <string name="settings_sound">Click Sound</string>
+    <string name="settings_volume">Click Volume</string>
+    <string name="settings_flash">Flash on Beat</string>
+    <string name="sound_click">Classic Click</string>
+    <string name="sound_hihat">Hi-Hat</string>
+    <string name="sound_woodblock">Wood Block</string>
+    <string name="permission_mic">Microphone permission needed for rhythm detection. Tap mode also available.</string>
+    <string name="ad_test_notice">Using test ad. Replace ad unit IDs before publishing.</string>
+</resources>
