@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -16,17 +15,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MetroGnome">
 
-        <!--
-            ╔══════════════════════════════════════════════════════════════╗
-            ║  ACTION REQUIRED — replace with your real AdMob App ID.     ║
-            ║  Using the test ID in a published app causes crashes.        ║
-            ║  Get your App ID from: https://admob.google.com             ║
-            ║  Format: ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX             ║
-            ╚══════════════════════════════════════════════════════════════╝
-        -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-8485854692249613~6579369331" />
 
         <activity
             android:name=".MainActivity"

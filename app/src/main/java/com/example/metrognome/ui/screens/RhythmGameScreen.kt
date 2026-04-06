@@ -5,9 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,11 +15,13 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -46,17 +46,20 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -70,6 +73,7 @@ import com.example.metrognome.viewmodel.GamePhase
 import com.example.metrognome.viewmodel.HitQuality
 import com.example.metrognome.viewmodel.RhythmGameViewModel
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 // ── Difficulty definitions ─────────────────────────────────────────────────────
@@ -83,6 +87,9 @@ private val difficulties = listOf(
     Difficulty("Hard",     130, 32, "130 BPM · 32 beats  —  quick reflexes needed"),
     Difficulty("Expert",   160, 48, "160 BPM · 48 beats  —  for seasoned rhythmists"),
 )
+
+// A single falling note in the highway
+private data class FallingNote(val id: Int, val spawnMs: Long)
 
 // ── Root screen ────────────────────────────────────────────────────────────────
 
@@ -114,8 +121,6 @@ fun RhythmGameScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0D0B1E))) {
-        // weight(1f) gives the phase panel all space above the ad — it cannot
-        // overflow and push the banner behind the navigation bar.
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when (phase) {
                 GamePhase.IDLE -> IdlePanel(
@@ -129,9 +134,14 @@ fun RhythmGameScreen(
                 )
                 GamePhase.COUNTDOWN -> CountdownPanel(countDown)
                 GamePhase.PLAYING   -> PlayingPanel(
-                    vm = vm, score = score, combo = combo,
-                    timeSig = timeSig, lastQuality = lastQuality,
-                    beatIntervalMs = beatIntervalMs, lastHitOffset = lastHitOffset,
+                    vm             = vm,
+                    score          = score,
+                    combo          = combo,
+                    currentBeat    = currentBeat,
+                    timeSig        = timeSig,
+                    lastQuality    = lastQuality,
+                    beatIntervalMs = beatIntervalMs,
+                    lastHitOffset  = lastHitOffset,
                     beatsRemaining = beatsRemaining
                 )
                 GamePhase.RESULT -> ResultPanel(result = result, onDismiss = { vm.dismissResult() })
@@ -155,9 +165,9 @@ private fun IdlePanel(
     onStopMetronome: () -> Unit,
     highScores: Map<String, Int> = emptyMap()
 ) {
-    var showStopDialog   by remember { mutableStateOf(false) }
-    var pendingStart     by remember { mutableStateOf<(() -> Unit)?>(null) }
-    var showTolerance    by remember { mutableStateOf(false) }
+    var showStopDialog by remember { mutableStateOf(false) }
+    var pendingStart   by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var showTolerance  by remember { mutableStateOf(false) }
 
     if (showStopDialog) {
         AlertDialog(
@@ -190,7 +200,7 @@ private fun IdlePanel(
             fontWeight = FontWeight.Black, letterSpacing = 3.sp)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Watch the ring fill up — tap when it's FULL!",
+            "Notes fall from the top — tap when they hit the line!",
             color = Color(0xFF7070AA), fontSize = 13.sp, textAlign = TextAlign.Center
         )
 
@@ -210,7 +220,7 @@ private fun IdlePanel(
 
         Spacer(Modifier.height(14.dp))
 
-        // ── Timing tolerance (developer/accessibility option) ─────────────────
+        // ── Timing tolerance ─────────────────────────────────────────────────
         Surface(
             onClick = { showTolerance = !showTolerance },
             color = Color(0x221A1A3A),
@@ -235,14 +245,11 @@ private fun IdlePanel(
             Spacer(Modifier.height(6.dp))
             Surface(color = Color(0x221A1A3A), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    val perfMs  = (150 * tolerance).toInt()
-                    val greatMs = (280 * tolerance).toInt()
-                    val goodMs  = (500 * tolerance).toInt()
-
-                    Text(
-                        "How forgiving the game is when judging your taps.",
-                        color = Color(0xFF7070AA), fontSize = 12.sp
-                    )
+                    val perfMs  = (120 * tolerance).toInt()
+                    val greatMs = (240 * tolerance).toInt()
+                    val goodMs  = (420 * tolerance).toInt()
+                    Text("How forgiving the game is when judging your taps.",
+                        color = Color(0xFF7070AA), fontSize = 12.sp)
                     Spacer(Modifier.height(10.dp))
                     Slider(
                         value = tolerance,
@@ -259,7 +266,6 @@ private fun IdlePanel(
                         Text("Very Easy", color = Color(0xFF5566AA), fontSize = 11.sp)
                     }
                     Spacer(Modifier.height(12.dp))
-                    // Window breakdown
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                         WindowBadge("PERFECT", "±${perfMs}ms",  Color(0xFFFFD700))
                         WindowBadge("GREAT",   "±${greatMs}ms", Color(0xFF7BE87B))
@@ -271,7 +277,7 @@ private fun IdlePanel(
 
         Spacer(Modifier.height(14.dp))
 
-        // Mic mode
+        // ── Mic mode ─────────────────────────────────────────────────────────
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
@@ -340,14 +346,20 @@ private fun toleranceLabelColor(t: Float): Color = when {
 
 @Composable
 private fun CountdownPanel(countDown: Int) {
-    Box(modifier = Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
-        AnimatedContent(
-            targetState = countDown,
-            transitionSpec = { scaleIn() + fadeIn() togetherWith scaleOut() + fadeOut() },
-            label = "countdown"
-        ) { count ->
-            Text(count.toString(), fontSize = 140.sp, fontWeight = FontWeight.Black,
-                color = Color(0xFFFFD700), textAlign = TextAlign.Center)
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Get ready!", color = Color(0xFF8080AA), fontSize = 18.sp)
+            Spacer(Modifier.height(12.dp))
+            AnimatedContent(
+                targetState = countDown,
+                transitionSpec = { scaleIn() + fadeIn() togetherWith scaleOut() + fadeOut() },
+                label = "countdown"
+            ) { count ->
+                Text(count.toString(), fontSize = 140.sp, fontWeight = FontWeight.Black,
+                    color = Color(0xFFFFD700), textAlign = TextAlign.Center)
+            }
+            Spacer(Modifier.height(12.dp))
+            Text("Tap when the note hits the line", color = Color(0xFF5B2D8A), fontSize = 14.sp)
         }
     }
 }
@@ -359,163 +371,391 @@ private fun PlayingPanel(
     vm: RhythmGameViewModel,
     score: Int,
     combo: Int,
+    currentBeat: Int,
     timeSig: Int,
     lastQuality: HitQuality,
     beatIntervalMs: Long,
     lastHitOffset: Long,
     beatsRemaining: Int
 ) {
-    val scope    = rememberCoroutineScope()
-    val tapScale = remember { Animatable(1f) }
+    val scope        = rememberCoroutineScope()
+    val tapScale     = remember { Animatable(1f) }
+    val useMic       by vm.useMic.collectAsStateWithLifecycle()
+    val micAmplitude by vm.micAmplitude.collectAsStateWithLifecycle()
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(Modifier.height(20.dp))
+    Box(modifier = Modifier.fillMaxSize()) {
 
-        // Score bar
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically) {
-            ScoreBadge("SCORE",     score.toString(),        Color(0xFFFFD700))
-            ScoreBadge("BEATS LEFT", beatsRemaining.toString(), Color(0xFF8080AA))
-            ScoreBadge("COMBO",     "×$combo",               Color(0xFFAB7DE0))
-        }
-
-        Spacer(Modifier.height(18.dp))
-
-        // ── Beat ring — the core visual cue ───────────────────────────────────
-        // The ring fills from 0% → 100% over each beat interval.
-        // Tap when the ring is full (gold) for the best score.
-        BeatRing(
-            beatPulse      = vm.beatPulse,
-            beatIntervalMs = beatIntervalMs,
-            lastQuality    = lastQuality,
-            modifier       = Modifier.size(210.dp)
-        )
-
-        Spacer(Modifier.height(10.dp))
-
-        // Quality feedback + early/late hint
-        QualityFeedback(lastQuality = lastQuality, lastHitOffset = lastHitOffset)
-
-        Spacer(Modifier.height(18.dp))
-
-        // TAP button
-        Button(
-            onClick = {
-                vm.onScreenTap()
-                scope.launch {
-                    tapScale.animateTo(0.86f, tween(55))
-                    tapScale.animateTo(1f,    tween(95))
-                }
-            },
-            modifier = Modifier.size(150.dp).scale(tapScale.value),
-            shape  = CircleShape,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B2D8A))
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("TAP",       fontSize = 30.sp, fontWeight = FontWeight.Black, color = Color.White)
-                Text("the beat",  fontSize = 11.sp, color = Color(0xFFCCAAFF))
-            }
-        }
+            Spacer(Modifier.height(14.dp))
 
-        Spacer(Modifier.height(10.dp))
-        Text("Tap when the ring is FULL", color = Color(0xFF444466), fontSize = 12.sp)
+            // ── Score bar with stop button on the right ───────────────────────
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                ScoreBadge("SCORE",      score.toString(),          Color(0xFFFFD700))
+                ScoreBadge("BEATS LEFT", beatsRemaining.toString(), Color(0xFF8080AA))
+                ScoreBadge("COMBO",      "×$combo",                 Color(0xFFAB7DE0))
+
+                // Stop button — anchored in score row, safe from status bar
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x44CC3333))
+                        .clickable { vm.stopGame() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("■", color = Color(0xFFDD5555), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // Beat position dots
+            BeatDotsRow(currentBeat = currentBeat, timeSig = timeSig)
+
+            // Mic equaliser — only visible when microphone mode is active
+            if (useMic) {
+                Spacer(Modifier.height(8.dp))
+                MicEqualizer(
+                    amplitude    = micAmplitude,
+                    lastQuality  = lastQuality,
+                    micDetected  = vm.micDetected,
+                    modifier     = Modifier.fillMaxWidth().height(36.dp)
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Note highway
+            NoteHighway(
+                beatPulse      = vm.beatPulse,
+                beatIntervalMs = beatIntervalMs,
+                lastQuality    = lastQuality,
+                modifier       = Modifier.weight(1f).fillMaxWidth()
+            )
+
+            // Quality feedback
+            QualityFeedback(lastQuality = lastQuality, lastHitOffset = lastHitOffset)
+
+            Spacer(Modifier.height(8.dp))
+
+            // TAP button
+            Button(
+                onClick = {
+                    vm.onScreenTap()
+                    scope.launch {
+                        tapScale.animateTo(0.84f, tween(50))
+                        tapScale.animateTo(1f,    tween(90))
+                    }
+                },
+                modifier = Modifier.size(140.dp).scale(tapScale.value),
+                shape  = CircleShape,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B2D8A))
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("TAP",      fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color.White)
+                    Text("the beat", fontSize = 11.sp, color = Color(0xFFCCAAFF))
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+            Text("Tap when the note hits the line", color = Color(0xFF333355), fontSize = 12.sp)
+            Spacer(Modifier.height(8.dp))
+        }
     }
 }
 
-// ── Beat ring ─────────────────────────────────────────────────────────────────
-//
-// Animates a progress arc that fills over each beat interval.
-// Color transitions  purple → amber → gold  as the beat approaches.
-// A glow flashes when the beat fires.
+// ── Beat position dots ────────────────────────────────────────────────────────
 
 @Composable
-private fun BeatRing(
-    beatPulse:      SharedFlow<Int>,
-    beatIntervalMs: Long,
-    lastQuality:    HitQuality,
-    modifier:       Modifier = Modifier
-) {
-    val progress  = remember { Animatable(0f) }
-    val glowAlpha = remember { Animatable(0f) }
-
-    // Keep a stable reference to the latest interval so the LaunchedEffect
-    // (keyed on beatPulse identity, not interval) always uses the current value.
-    val currentInterval by rememberUpdatedState(beatIntervalMs)
-
-    LaunchedEffect(beatPulse) {
-        var fillJob: kotlinx.coroutines.Job? = null
-        beatPulse.collect { _ ->
-            // Flash glow
-            launch { glowAlpha.snapTo(0.45f); glowAlpha.animateTo(0f, tween(350)) }
-            // Restart ring fill
-            fillJob?.cancel()
-            progress.snapTo(0f)
-            if (currentInterval > 0L) {
-                fillJob = launch {
-                    progress.animateTo(1f, tween(currentInterval.toInt(), easing = LinearEasing))
-                }
+private fun BeatDotsRow(currentBeat: Int, timeSig: Int) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        for (i in 0 until timeSig) {
+            val isActive  = i == currentBeat
+            val isAccent  = i == 0
+            val dotSize   = if (isAccent) 14.dp else 10.dp
+            val dotColor  = when {
+                isActive && isAccent -> Color(0xFFFFD700)
+                isActive             -> Color(0xFF9B5DE5)
+                isAccent             -> Color(0xFF5B3D00)
+                else                 -> Color(0xFF2A2845)
             }
+            Box(
+                modifier = Modifier
+                    .size(dotSize)
+                    .clip(CircleShape)
+                    .background(dotColor)
+                    .then(if (isActive) Modifier.border(1.5.dp, dotColor.copy(alpha = 0.5f), CircleShape) else Modifier)
+            )
         }
     }
+}
 
-    val p = progress.value
-    val ringColor = when {
-        p >= 0.82f -> Color(0xFFFFD700)   // gold  — tap NOW
-        p >= 0.58f -> Color(0xFFCC8800)   // amber — nearly there
-        else       -> Color(0xFF5B2D8A)   // purple — wait
+// ── Mic Equaliser ─────────────────────────────────────────────────────────────
+//
+// Scrolling bar graph driven by the live microphone RMS amplitude.
+// Acts like a mini audio spectrum analyser — bars shift left each frame.
+// When a hit is detected (lastQuality changes to non-NONE), the bars flash
+// briefly in the quality colour so the developer/player can see the trigger.
+
+private const val EQ_BARS = 30
+
+@Composable
+private fun MicEqualizer(
+    amplitude:   Float,
+    lastQuality: HitQuality,
+    micDetected: SharedFlow<Unit>,  // fires on every mic trigger, scored or not
+    modifier:    Modifier = Modifier
+) {
+    // Ring buffer of recent amplitude readings
+    val history = remember {
+        mutableStateListOf<Float>().also { list -> repeat(EQ_BARS) { list.add(0f) } }
     }
-    val qualityGlow = when (lastQuality) {
+
+    // Push the latest amplitude sample into the scrolling buffer
+    LaunchedEffect(amplitude) {
+        history.removeAt(0)
+        history.add(amplitude)
+    }
+
+    // Quality flash — fires when a detection was SCORED (gold/green/blue/red)
+    val qualityFlashColor = when (lastQuality) {
         HitQuality.PERFECT -> Color(0xFFFFD700)
         HitQuality.GREAT   -> Color(0xFF7BE87B)
         HitQuality.GOOD    -> Color(0xFF7BB8FF)
         HitQuality.MISS    -> Color(0xFFCC4444)
         HitQuality.NONE    -> Color.Transparent
     }
-    val centerSymbol = when (lastQuality) {
-        HitQuality.PERFECT -> "✓" to Color(0xFFFFD700)
-        HitQuality.GREAT   -> "✓" to Color(0xFF7BE87B)
-        HitQuality.GOOD    -> "✓" to Color(0xFF7BB8FF)
-        HitQuality.MISS    -> "✗" to Color(0xFFCC4444)
-        HitQuality.NONE    -> ""  to Color.Transparent
+    val qualityAlpha = remember { Animatable(0f) }
+    LaunchedEffect(lastQuality) {
+        if (lastQuality != HitQuality.NONE) {
+            qualityAlpha.snapTo(0.95f)
+            qualityAlpha.animateTo(0f, tween(500))
+        }
     }
 
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val sw = 15.dp.toPx()
-            val r  = (size.minDimension - sw) / 2f
-            val cx = size.width  / 2f
-            val cy = size.height / 2f
+    // Raw-detection flash — fires on every mic trigger (white), including out-of-time ones.
+    // Shows the user that the mic DID hear something even if timing was wrong.
+    val rawAlpha = remember { Animatable(0f) }
+    LaunchedEffect(micDetected) {
+        micDetected.collect {
+            rawAlpha.snapTo(0.6f)
+            rawAlpha.animateTo(0f, tween(250))
+        }
+    }
 
-            // Beat-fire glow
-            if (glowAlpha.value > 0f) {
-                drawCircle(Color(0xFFFFD700).copy(alpha = glowAlpha.value * 0.5f),
-                    radius = r + sw, center = Offset(cx, cy))
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Canvas(modifier = Modifier.weight(1f).fillMaxHeight()) {
+            val totalGap  = (EQ_BARS - 1) * 2.dp.toPx()
+            val barW      = (size.width - totalGap) / EQ_BARS
+            val maxH      = size.height
+
+            // Determine the active overlay colour:
+            // Quality flash wins over raw flash when both are active.
+            val qA = qualityAlpha.value
+            val rA = rawAlpha.value
+            val activeFlashColor = when {
+                qA > 0.01f -> qualityFlashColor
+                rA > 0.01f -> Color.White
+                else       -> Color.Transparent
             }
-            // Quality result glow inside ring
-            if (lastQuality != HitQuality.NONE && qualityGlow != Color.Transparent) {
-                drawCircle(qualityGlow.copy(alpha = 0.12f), radius = r - sw / 2, center = Offset(cx, cy))
-            }
-            // Track (background ring)
-            drawCircle(Color(0x22FFFFFF), radius = r, center = Offset(cx, cy), style = Stroke(sw))
-            // Progress arc
-            if (p > 0.01f) {
-                drawArc(
-                    color      = ringColor,
-                    startAngle = -90f,
-                    sweepAngle = p * 360f,
-                    useCenter  = false,
-                    topLeft    = Offset(cx - r, cy - r),
-                    size       = Size(r * 2, r * 2),
-                    style      = Stroke(sw, cap = StrokeCap.Round)
+            val activeFlashAlpha = if (qA > 0.01f) qA else rA
+
+            history.forEachIndexed { i, amp ->
+                // Amplify so quiet claps still show; clamp at max
+                val barH = (amp * maxH * 8f).coerceAtMost(maxH).coerceAtLeast(2.dp.toPx())
+                val x    = i * (barW + 2.dp.toPx())
+
+                // Base colour: dark purple (silence) → purple → gold (loud)
+                val baseColor = when {
+                    amp > 0.20f -> Color(0xFFFFD700)
+                    amp > 0.06f -> Color(0xFFAB7DE0)
+                    else        -> Color(0xFF2D1F50)
+                }
+
+                val barColor = if (activeFlashAlpha > 0.01f && activeFlashColor != Color.Transparent)
+                    Color(
+                        red   = baseColor.red   * (1f - activeFlashAlpha) + activeFlashColor.red   * activeFlashAlpha,
+                        green = baseColor.green * (1f - activeFlashAlpha) + activeFlashColor.green * activeFlashAlpha,
+                        blue  = baseColor.blue  * (1f - activeFlashAlpha) + activeFlashColor.blue  * activeFlashAlpha,
+                        alpha = 1f
+                    )
+                else baseColor
+
+                drawRect(
+                    color   = barColor,
+                    topLeft = Offset(x, maxH - barH),
+                    size    = Size(barW, barH)
                 )
             }
         }
-        // Centre symbol (result flash)
-        if (centerSymbol.first.isNotEmpty()) {
-            Text(centerSymbol.first, color = centerSymbol.second, fontSize = 52.sp, fontWeight = FontWeight.Black)
+
+        // Label
+        Text(
+            "MIC",
+            color = Color(0xFF3A2A60),
+            fontSize = 8.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp,
+            modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+        )
+    }
+}
+
+// ── Note Highway ──────────────────────────────────────────────────────────────
+//
+// Guitar Hero-style falling note lane.
+//
+// • Notes spawn at the top of the lane when a beat fires (via beatPulse).
+// • Each note falls to the HIT LINE at the bottom over exactly beatIntervalMs.
+// • The note turns gold when it enters the hit window (last 15% of travel).
+// • If the player hits it, a quality-colored flash appears at the hit line.
+// • If the player misses, the note turns red as it exits past the hit line.
+//
+// Timing contract:
+//   fraction = (nowMs - spawnMs) / beatIntervalMs
+//   fraction == 0.0  → just spawned, at top
+//   fraction == 1.0  → exactly at hit line  → tap now for PERFECT
+//   fraction >  1.0  → past hit line (missed)
+
+@Composable
+private fun NoteHighway(
+    beatPulse:      SharedFlow<Int>,
+    beatIntervalMs: Long,
+    lastQuality:    HitQuality,
+    modifier:       Modifier = Modifier
+) {
+    val notes         = remember { mutableStateListOf<FallingNote>() }
+    var noteIdCounter by remember { mutableStateOf(0) }
+    var nowMs         by remember { mutableStateOf(System.currentTimeMillis()) }
+
+    // Keep a stable reference to the current interval
+    val currentInterval by rememberUpdatedState(beatIntervalMs)
+
+    // Spawn a new note every beat
+    LaunchedEffect(beatPulse) {
+        beatPulse.collect {
+            notes.add(FallingNote(noteIdCounter++, System.currentTimeMillis()))
+        }
+    }
+
+    // Remove notes that have completely exited the lane (> 1.6× interval old)
+    // and consumed notes that have been hit (quality flash handled separately)
+    LaunchedEffect(lastQuality) {
+        // When a hit is registered, remove the note closest to the hit line
+        if (lastQuality != HitQuality.NONE && lastQuality != HitQuality.MISS) {
+            val now = System.currentTimeMillis()
+            val target = notes.minByOrNull {
+                kotlin.math.abs((now - it.spawnMs).toFloat() / currentInterval.coerceAtLeast(1) - 1f)
+            }
+            if (target != null) notes.remove(target)
+        }
+    }
+
+    // 60 fps frame loop — updates nowMs to drive smooth Canvas animation
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            withFrameMillis { nowMs = System.currentTimeMillis() }
+        }
+    }
+
+    // Prune stale notes every beat (when a new note spawns)
+    LaunchedEffect(noteIdCounter) {
+        val cutoff = nowMs - currentInterval * 2
+        notes.removeAll { it.spawnMs < cutoff }
+    }
+
+    // Quality glow color at hit line
+    val hitLineColor = when (lastQuality) {
+        HitQuality.PERFECT -> Color(0xFFFFD700)
+        HitQuality.GREAT   -> Color(0xFF7BE87B)
+        HitQuality.GOOD    -> Color(0xFF7BB8FF)
+        HitQuality.MISS    -> Color(0xFFCC4444)
+        HitQuality.NONE    -> Color(0xFF3A2A60)
+    }
+
+    Box(modifier = modifier) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val laneW  = size.width
+            val laneH  = size.height
+            val cx     = laneW / 2f
+            val hitY   = laneH * 0.84f   // hit line position
+            val noteR  = 26.dp.toPx()
+            val lineW  = 3.dp.toPx()
+            val iMs    = currentInterval.coerceAtLeast(1L)
+
+            // Lane guide lines (subtle vertical rails)
+            val railX1 = cx - noteR * 1.6f
+            val railX2 = cx + noteR * 1.6f
+            drawLine(Color(0xFF1A1838), Offset(railX1, 0f), Offset(railX1, laneH), lineW * 0.5f)
+            drawLine(Color(0xFF1A1838), Offset(railX2, 0f), Offset(railX2, laneH), lineW * 0.5f)
+
+            // Hit zone glow (background area behind hit line)
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, hitLineColor.copy(alpha = 0.08f)),
+                    startY = hitY - noteR * 2,
+                    endY   = hitY + noteR
+                ),
+                topLeft = Offset(railX1 - noteR, hitY - noteR * 2),
+                size    = Size(railX2 - railX1 + noteR * 2, noteR * 3)
+            )
+
+            // Hit line
+            drawLine(
+                color       = hitLineColor,
+                start       = Offset(railX1 - noteR * 0.5f, hitY),
+                end         = Offset(railX2 + noteR * 0.5f, hitY),
+                strokeWidth = lineW,
+                cap         = StrokeCap.Round
+            )
+            // Hit line end caps (Guitar Hero style)
+            drawCircle(hitLineColor, radius = lineW * 1.2f, center = Offset(railX1 - noteR * 0.5f, hitY))
+            drawCircle(hitLineColor, radius = lineW * 1.2f, center = Offset(railX2 + noteR * 0.5f, hitY))
+
+            // Draw falling notes
+            for (note in notes) {
+                val elapsed  = (nowMs - note.spawnMs).coerceAtLeast(0)
+                val fraction = elapsed.toFloat() / iMs
+                val y        = fraction * hitY
+
+                // Don't draw notes that have completely exited the visible area
+                if (y > laneH + noteR) continue
+
+                val inHitWindow = fraction in 0.87f..1.13f
+                val isPast      = fraction > 1.13f
+
+                val noteColor = when {
+                    isPast      -> Color(0xFFCC4444)           // missed — turns red
+                    inHitWindow -> Color(0xFFFFD700)           // in window — gold: TAP NOW
+                    fraction > 0.65f -> Color(0xFFCC8800)      // approaching — amber
+                    else        -> Color(0xFF7B4DB8)           // far away — purple
+                }
+                val glowAlpha = when {
+                    inHitWindow -> 0.35f
+                    isPast      -> 0.15f
+                    else        -> 0.15f
+                }
+
+                // Outer glow
+                drawCircle(noteColor.copy(alpha = glowAlpha), radius = noteR * 1.8f, center = Offset(cx, y))
+                // Note body
+                drawCircle(noteColor, radius = noteR, center = Offset(cx, y))
+                // Inner highlight
+                drawCircle(Color.White.copy(alpha = 0.18f), radius = noteR * 0.45f,
+                    center = Offset(cx - noteR * 0.2f, y - noteR * 0.25f))
+            }
         }
     }
 }
@@ -533,22 +773,23 @@ private fun QualityFeedback(lastQuality: HitQuality, lastHitOffset: Long) {
     }
     val hint = when {
         lastQuality == HitQuality.NONE || lastQuality == HitQuality.PERFECT -> ""
+        lastQuality == HitQuality.MISS -> "didn't tap in time"
         lastHitOffset >  80L  -> "a bit late"
         lastHitOffset < -80L  -> "a bit early"
         else                  -> ""
     }
 
     Column(
-        modifier = Modifier.height(52.dp),
+        modifier = Modifier.height(48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         AnimatedVisibility(visible = lastQuality != HitQuality.NONE,
-            enter = fadeIn(tween(80)), exit = fadeOut(tween(300))) {
-            Text(mainText, color = mainColor, fontSize = 26.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+            enter = fadeIn(tween(60)), exit = fadeOut(tween(300))) {
+            Text(mainText, color = mainColor, fontSize = 24.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
         }
         if (hint.isNotEmpty()) {
-            Text(hint, color = Color(0xFF6666AA), fontSize = 12.sp)
+            Text(hint, color = Color(0xFF5566AA), fontSize = 11.sp)
         }
     }
 }
@@ -557,7 +798,7 @@ private fun QualityFeedback(lastQuality: HitQuality, lastHitOffset: Long) {
 private fun ScoreBadge(label: String, value: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, color = Color(0xFF7070AA), fontSize = 10.sp, letterSpacing = 1.sp)
-        Text(value, color = color, fontSize = 26.sp, fontWeight = FontWeight.Black)
+        Text(value, color = color, fontSize = 24.sp, fontWeight = FontWeight.Black)
     }
 }
 
@@ -570,30 +811,23 @@ private fun ResultPanel(
 ) {
     if (result == null) return
     val stars = when {
-        result.perfects > result.greats + result.goods + result.misses -> 3
-        result.misses   < result.perfects + result.greats              -> 2
-        result.score    > 0                                            -> 1
-        else                                                           -> 0
+        result.misses == 0 && result.perfects > 0                          -> 3
+        result.perfects > result.greats + result.goods + result.misses     -> 3
+        result.misses < result.perfects + result.greats                    -> 2
+        result.score > 0                                                   -> 1
+        else                                                               -> 0
     }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(24.dp),
+    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.height(24.dp))
         Text("RESULT", color = Color(0xFFFFD700), fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
         if (result.isNewHighScore) {
             Spacer(Modifier.height(6.dp))
-            Surface(
-                color = Color(0xFFFFD700),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    "★  NEW BEST  ★",
-                    color = Color(0xFF0D0B1E),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
-                )
+            Surface(color = Color(0xFFFFD700), shape = RoundedCornerShape(8.dp)) {
+                Text("★  NEW BEST  ★", color = Color(0xFF0D0B1E), fontSize = 13.sp,
+                    fontWeight = FontWeight.Black, letterSpacing = 2.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp))
             }
         }
         Spacer(Modifier.height(10.dp))
@@ -610,11 +844,11 @@ private fun ResultPanel(
         Spacer(Modifier.height(18.dp))
         Surface(color = Color(0xFF1A1838), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(20.dp)) {
-                ResultRow("Perfect",   "${result.perfects}", Color(0xFFFFD700))
-                ResultRow("Great",     "${result.greats}",   Color(0xFF7BE87B))
-                ResultRow("Good",      "${result.goods}",    Color(0xFF7BB8FF))
-                ResultRow("Miss",      "${result.misses}",   Color(0xFFCC4444))
-                ResultRow("Max Combo", "×${result.maxCombo}", Color(0xFFAB7DE0))
+                ResultRow("Perfect",   "${result.perfects}",   Color(0xFFFFD700))
+                ResultRow("Great",     "${result.greats}",     Color(0xFF7BE87B))
+                ResultRow("Good",      "${result.goods}",      Color(0xFF7BB8FF))
+                ResultRow("Miss",      "${result.misses}",     Color(0xFFCC4444))
+                ResultRow("Max Combo", "×${result.maxCombo}",  Color(0xFFAB7DE0))
             }
         }
         Spacer(Modifier.height(22.dp))
@@ -624,6 +858,7 @@ private fun ResultPanel(
             shape  = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth().height(52.dp)
         ) { Text("PLAY AGAIN", fontWeight = FontWeight.Bold, letterSpacing = 2.sp) }
+        Spacer(Modifier.height(12.dp))
     }
 }
 
