@@ -17,9 +17,12 @@
         android:theme="@style/Theme.MetroGnome">
 
         <!--
-            TODO: Replace with your real AdMob App ID before publishing.
-            Get it from: https://admob.google.com
-            Current value is a Google test app ID safe for development.
+            ╔══════════════════════════════════════════════════════════════╗
+            ║  ACTION REQUIRED — replace with your real AdMob App ID.     ║
+            ║  Using the test ID in a published app causes crashes.        ║
+            ║  Get your App ID from: https://admob.google.com             ║
+            ║  Format: ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX             ║
+            ╚══════════════════════════════════════════════════════════════╝
         -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

@@ -1,31 +1,42 @@
-# Metro Gnome ProGuard rules
+# ── App classes ───────────────────────────────────────────────────────────────
+# Keep everything in the app package — safe catch-all for a small app.
+# Prevents R8 renaming the Application, ViewModels, or any other class
+# that the Android framework or Compose instantiates by name.
+-keep class com.example.metrognome.** { *; }
 
-# AdMob / Google Play Services
--keep class com.google.android.gms.ads.** { *; }
--keep class com.google.ads.** { *; }
+# ── Kotlin ────────────────────────────────────────────────────────────────────
+# Annotations are required by Compose, coroutines, and the Kotlin reflection
+# used internally by Jetpack libraries.
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes InnerClasses, EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations, RuntimeInvisibleAnnotations
+# Keep line numbers so crash reports are readable
+-keepattributes SourceFile, LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Kotlin coroutines
+# ── Kotlin Coroutines ─────────────────────────────────────────────────────────
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+# Atomics used by coroutines internals
+-keepclassmembernames class kotlinx.** { volatile <fields>; }
+-dontwarn kotlinx.coroutines.**
 
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ── Google Mobile Ads (AdMob) ─────────────────────────────────────────────────
+# The AAR ships its own consumer rules, but these ensure nothing slips through.
+-keep class com.google.android.gms.ads.** { *; }
+-keep class com.google.android.gms.internal.ads.** { *; }
+-keep class com.google.ads.** { *; }
+-keep class com.google.android.gms.common.** { *; }
+-dontwarn com.google.android.gms.**
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# ── Jetpack Compose ───────────────────────────────────────────────────────────
+# Compose libraries ship their own consumer-rules.pro, so nothing extra needed.
+# Suppress spurious warnings from the toolchain.
+-dontwarn androidx.compose.**
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ── Jetpack ViewModel ─────────────────────────────────────────────────────────
+# Keep ViewModel subclass constructors so the factory can instantiate them.
+-keep class * extends androidx.lifecycle.ViewModel {
+    <init>(...);
+}
