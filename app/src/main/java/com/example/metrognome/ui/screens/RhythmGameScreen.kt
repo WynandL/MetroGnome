@@ -113,25 +113,28 @@ fun RhythmGameScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0D0B1E))) {
-        when (phase) {
-            GamePhase.IDLE -> IdlePanel(
-                vm = vm, useMic = useMic, micGranted = micGranted,
-                onRequestMic = { micLauncher.launch(Manifest.permission.RECORD_AUDIO) },
-                tolerance = tolerance,
-                onToleranceChange = { vm.setTolerance(it) },
-                isMetronomePlaying = isMetronomePlaying,
-                onStopMetronome = onStopMetronome
-            )
-            GamePhase.COUNTDOWN -> CountdownPanel(countDown)
-            GamePhase.PLAYING   -> PlayingPanel(
-                vm = vm, score = score, combo = combo,
-                timeSig = timeSig, lastQuality = lastQuality,
-                beatIntervalMs = beatIntervalMs, lastHitOffset = lastHitOffset,
-                beatsRemaining = beatsRemaining
-            )
-            GamePhase.RESULT -> ResultPanel(result = result, onDismiss = { vm.dismissResult() })
+        // weight(1f) gives the phase panel all space above the ad — it cannot
+        // overflow and push the banner behind the navigation bar.
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            when (phase) {
+                GamePhase.IDLE -> IdlePanel(
+                    vm = vm, useMic = useMic, micGranted = micGranted,
+                    onRequestMic = { micLauncher.launch(Manifest.permission.RECORD_AUDIO) },
+                    tolerance = tolerance,
+                    onToleranceChange = { vm.setTolerance(it) },
+                    isMetronomePlaying = isMetronomePlaying,
+                    onStopMetronome = onStopMetronome
+                )
+                GamePhase.COUNTDOWN -> CountdownPanel(countDown)
+                GamePhase.PLAYING   -> PlayingPanel(
+                    vm = vm, score = score, combo = combo,
+                    timeSig = timeSig, lastQuality = lastQuality,
+                    beatIntervalMs = beatIntervalMs, lastHitOffset = lastHitOffset,
+                    beatsRemaining = beatsRemaining
+                )
+                GamePhase.RESULT -> ResultPanel(result = result, onDismiss = { vm.dismissResult() })
+            }
         }
-        Spacer(Modifier.weight(1f))
         AdBannerView(modifier = Modifier.fillMaxWidth())
     }
 }
