@@ -71,6 +71,22 @@ class MetronomeEngine {
                 val samplesPerBeat = (sampleRate * 60.0 / currentBpm).toInt()
                 val isAccent = accentFirst && beat == 0
                 val buffer = buildBeatBuffer(samplesPerBeat, isAccent)
+
+                // Notify the UI BEFORE writing audio data.
+                //
+                // AudioTrack.write() in STREAM mode is blocking — it returns only after
+                // the entire beat buffer (click + silence) has been accepted into the
+                // hardware ring buffer, which takes ~one full beat of wall-clock time.
+                // Calling onBeat() after write() would mean the visual update fires
+                // almost a full beat AFTER the click was heard.
+                //
+                // By notifying first, the UI update is queued at the same instant the
+                // audio data is handed to the driver. The hardware buffer latency (~23 ms)
+                // and the Compose frame latency (~16 ms) are close enough that audio and
+                // visuals land within one frame of each other.
+                onBeat?.invoke(beat)
+                beat = (beat + 1) % timeSignature
+
                 // Guard against the track being released between job cancellation and
                 // the next write() call — AudioTrack.write() throws IllegalStateException
                 // when the track is in STATE_UNINITIALIZED (i.e. after release()).
@@ -80,10 +96,6 @@ class MetronomeEngine {
                     break  // track was released, exit cleanly
                 }
                 if (!isActive) break
-                // Notify UI — fires just as write() returns, i.e. when hardware begins consuming
-                val capturedBeat = beat
-                onBeat?.invoke(capturedBeat)
-                beat = (beat + 1) % timeSignature
             }
         }
     }
