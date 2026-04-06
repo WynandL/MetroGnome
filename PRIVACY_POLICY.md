@@ -51,4 +51,4 @@ If this policy changes, the updated version will be posted at this URL with a ne
 
 If you have questions about this privacy policy, contact us at:
 
-**[your-email@example.com]**
+**[accesscommsa@gmail.com]**
