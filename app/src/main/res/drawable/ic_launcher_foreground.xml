@@ -1,30 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
+
+    <!-- ===================== HAT ===================== -->
+
+    <!-- Hat body: red cone with rakish tilt -->
+    <path
+        android:fillColor="#C62828"
+        android:pathData="M 55,14 L 27,53 L 81,51 Z"/>
+
+    <!-- Hat left-side shading for depth -->
+    <path
+        android:fillColor="#B71C1C"
+        android:pathData="M 55,14 L 27,53 L 41,52 Z"/>
+
+    <!-- Hat band (gold) -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M 25,53 Q 54,50 81,51 L 81,60 Q 54,59 25,62 Z"/>
+
+    <!-- Hat band highlight -->
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M 25,53 Q 54,50 81,51 L 81,55 Q 54,54 25,57 Z"/>
+
+    <!-- Gold star at hat tip -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M 55,8 L 56.76,11.57 L 60.7,12.1 L 57.85,14.93 L 58.5,18.9
+                          L 55,17 L 51.5,18.9 L 52.15,14.93 L 49.3,12.1 L 53.24,11.57 Z"/>
+
+    <!-- ===================== FACE ===================== -->
+
+    <!-- Face circle (warm skin) -->
+    <path
+        android:fillColor="#FFCC80"
+        android:pathData="M 54,70 m -19,0 a 19,19 0 1,0 38,0 a 19,19 0 1,0 -38,0"/>
+
+    <!-- Left cheek blush -->
+    <path
+        android:fillColor="#FFAB91"
+        android:fillAlpha="0.75"
+        android:pathData="M 39,75 m -5,0 a 5,5 0 1,0 10,0 a 5,5 0 1,0 -10,0"/>
+
+    <!-- Right cheek blush -->
+    <path
+        android:fillColor="#FFAB91"
+        android:fillAlpha="0.75"
+        android:pathData="M 69,74 m -5,0 a 5,5 0 1,0 10,0 a 5,5 0 1,0 -10,0"/>
+
+    <!-- Left eye -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M 46,66 m -2.5,0 a 2.5,2.5 0 1,0 5,0 a 2.5,2.5 0 1,0 -5,0"/>
+
+    <!-- Right eye -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M 62,65 m -2.5,0 a 2.5,2.5 0 1,0 5,0 a 2.5,2.5 0 1,0 -5,0"/>
+
+    <!-- Eye shine left -->
     <path
         android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+        android:pathData="M 45,64.5 m -1,0 a 1,1 0 1,0 2,0 a 1,1 0 1,0 -2,0"/>
+
+    <!-- Eye shine right -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 61,63.5 m -1,0 a 1,1 0 1,0 2,0 a 1,1 0 1,0 -2,0"/>
+
+    <!-- ===================== MUSTACHE ===================== -->
+
+    <!-- Left lobe (drooping outward) -->
+    <path
+        android:fillColor="#F5F5F5"
+        android:pathData="M 54,77 C 47,74 35,77 33,84 C 31,91 43,93 50,87 C 53,84 54,80 54,77"/>
+
+    <!-- Right lobe (drooping outward) -->
+    <path
+        android:fillColor="#F5F5F5"
+        android:pathData="M 54,77 C 61,74 73,77 75,84 C 77,91 65,93 58,87 C 55,84 54,80 54,77"/>
+
+    <!-- Centre groove shadow -->
+    <path
+        android:fillColor="#BDBDBD"
+        android:pathData="M 52,77 C 53,75 55,75 56,77 C 55,79 53,79 52,77"/>
+
+    <!-- ===================== BATON ===================== -->
+
+    <!-- Handle (dark wood) -->
+    <path
+        android:fillColor="#4E342E"
+        android:pathData="M 69,83 L 72,80 L 87,61 L 84,58 Z"/>
+
+    <!-- Ball tip (white) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 86,59 m -5,0 a 5,5 0 1,0 10,0 a 5,5 0 1,0 -10,0"/>
+
+    <!-- Ball tip shadow -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M 86,59 m -5,0 a 5,5 0 1,1 5,5"/>
+
 </vector>
