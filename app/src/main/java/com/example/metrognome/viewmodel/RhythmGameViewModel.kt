@@ -1,6 +1,7 @@
 package com.example.metrognome.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.MetronomeEngine
@@ -23,12 +24,17 @@ enum class HitQuality { PERFECT, GREAT, GOOD, MISS, NONE }
 
 data class GameResult(
     val score: Int, val maxCombo: Int,
-    val perfects: Int, val greats: Int, val goods: Int, val misses: Int
+    val perfects: Int, val greats: Int, val goods: Int, val misses: Int,
+    val isNewHighScore: Boolean = false
 )
+
+// Canonical difficulty names — used as SharedPreferences keys.
+val DIFFICULTY_NAMES = listOf("Beginner", "Easy", "Medium", "Hard", "Expert")
 
 class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val engine   = MetronomeEngine()
+    private val prefs  = app.getSharedPreferences("rhythm_highscores", Context.MODE_PRIVATE)
+    private val engine = MetronomeEngine()
     val detector = RhythmDetector()
 
     // ── State flows ────────────────────────────────────────────────────────────
@@ -46,6 +52,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private val _lastHitOffset  = MutableStateFlow(0L)     // signed: +late, −early
     private val _beatsRemaining = MutableStateFlow(0)
     private val _tolerance      = MutableStateFlow(1.5f)   // default: generous
+    private val _highScores     = MutableStateFlow(loadHighScores())
 
     val phase:          StateFlow<GamePhase>   = _phase.asStateFlow()
     val score:          StateFlow<Int>         = _score.asStateFlow()
@@ -61,6 +68,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     val lastHitOffset:  StateFlow<Long>        = _lastHitOffset.asStateFlow()
     val beatsRemaining: StateFlow<Int>         = _beatsRemaining.asStateFlow()
     val tolerance:      StateFlow<Float>       = _tolerance.asStateFlow()
+    val highScores:     StateFlow<Map<String, Int>> = _highScores.asStateFlow()
 
     private val _beatPulse = MutableSharedFlow<Int>(extraBufferCapacity = 8)
     val beatPulse: SharedFlow<Int> = _beatPulse.asSharedFlow()
@@ -85,6 +93,8 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private var countGood    = 0; private var countMiss  = 0
     private var pendingBeatMs = -1L
 
+    private var currentDifficultyName = ""
+
     private var countdownJob: Job? = null
     private var gameJob:      Job? = null
 
@@ -105,9 +115,10 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
     // ── Public API ─────────────────────────────────────────────────────────────
 
-    fun setDifficulty(levelBpm: Int, beats: Int = 32) {
+    fun setDifficulty(levelBpm: Int, beats: Int = 32, name: String = "") {
         _bpm.value = levelBpm
         totalBeats  = beats
+        currentDifficultyName = name
     }
 
     /** Timing tolerance multiplier. 0.5 = strict, 1.5 = default (generous), 2.5 = very easy. */
@@ -217,7 +228,15 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun endGame() {
         engine.stop(); detector.stop()
-        _result.value = GameResult(_score.value, maxCombo, countPerfect, countGreat, countGood, countMiss)
+        val finalScore = _score.value
+        val isNew = currentDifficultyName.isNotEmpty() &&
+                    finalScore > (_highScores.value[currentDifficultyName] ?: 0)
+        if (isNew) {
+            _highScores.value = _highScores.value.toMutableMap()
+                .also { it[currentDifficultyName] = finalScore }
+            prefs.edit().putInt("hs_$currentDifficultyName", finalScore).apply()
+        }
+        _result.value = GameResult(finalScore, maxCombo, countPerfect, countGreat, countGood, countMiss, isNew)
         _phase.value  = GamePhase.RESULT
     }
 
@@ -242,6 +261,9 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         combo >= 4  -> 1.5f
         else        -> 1.0f
     }
+
+    private fun loadHighScores(): Map<String, Int> =
+        DIFFICULTY_NAMES.associateWith { name -> prefs.getInt("hs_$name", 0) }
 
     override fun onCleared() { engine.stop(); detector.stop(); super.onCleared() }
 }

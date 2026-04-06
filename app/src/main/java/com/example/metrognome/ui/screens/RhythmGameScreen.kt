@@ -105,6 +105,7 @@ fun RhythmGameScreen(
     val lastHitOffset  by vm.lastHitOffset.collectAsStateWithLifecycle()
     val beatsRemaining by vm.beatsRemaining.collectAsStateWithLifecycle()
     val tolerance      by vm.tolerance.collectAsStateWithLifecycle()
+    val highScores     by vm.highScores.collectAsStateWithLifecycle()
 
     var micGranted by remember { mutableStateOf(false) }
     val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -123,7 +124,8 @@ fun RhythmGameScreen(
                     tolerance = tolerance,
                     onToleranceChange = { vm.setTolerance(it) },
                     isMetronomePlaying = isMetronomePlaying,
-                    onStopMetronome = onStopMetronome
+                    onStopMetronome = onStopMetronome,
+                    highScores = highScores
                 )
                 GamePhase.COUNTDOWN -> CountdownPanel(countDown)
                 GamePhase.PLAYING   -> PlayingPanel(
@@ -150,7 +152,8 @@ private fun IdlePanel(
     tolerance: Float,
     onToleranceChange: (Float) -> Unit,
     isMetronomePlaying: Boolean,
-    onStopMetronome: () -> Unit
+    onStopMetronome: () -> Unit,
+    highScores: Map<String, Int> = emptyMap()
 ) {
     var showStopDialog   by remember { mutableStateOf(false) }
     var pendingStart     by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -194,10 +197,14 @@ private fun IdlePanel(
         Spacer(Modifier.height(22.dp))
 
         difficulties.forEach { d ->
-            DifficultyCard(difficulty = d, onClick = {
-                val start = { vm.setDifficulty(d.bpm, d.beats); vm.startGame() }
-                if (isMetronomePlaying) { pendingStart = start; showStopDialog = true } else start()
-            })
+            DifficultyCard(
+                difficulty = d,
+                bestScore  = highScores[d.name] ?: 0,
+                onClick    = {
+                    val start = { vm.setDifficulty(d.bpm, d.beats, d.name); vm.startGame() }
+                    if (isMetronomePlaying) { pendingStart = start; showStopDialog = true } else start()
+                }
+            )
             Spacer(Modifier.height(10.dp))
         }
 
@@ -282,7 +289,7 @@ private fun IdlePanel(
 }
 
 @Composable
-private fun DifficultyCard(difficulty: Difficulty, onClick: () -> Unit) {
+private fun DifficultyCard(difficulty: Difficulty, bestScore: Int, onClick: () -> Unit) {
     Surface(onClick = onClick, shape = RoundedCornerShape(16.dp),
         color = Color(0xFF1A1838), modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
@@ -290,6 +297,17 @@ private fun DifficultyCard(difficulty: Difficulty, onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(difficulty.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(difficulty.desc, color = Color(0xFF7070AA), fontSize = 12.sp)
+            }
+            if (bestScore > 0) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    modifier = Modifier.padding(end = 12.dp)
+                ) {
+                    Text("BEST", color = Color(0xFF6060AA), fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Text("$bestScore", color = Color(0xFFFFD700), fontSize = 18.sp,
+                        fontWeight = FontWeight.Black)
+                }
             }
             Text("▶", color = Color(0xFFFFD700), fontSize = 18.sp)
         }
@@ -562,6 +580,22 @@ private fun ResultPanel(
         horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.height(24.dp))
         Text("RESULT", color = Color(0xFFFFD700), fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+        if (result.isNewHighScore) {
+            Spacer(Modifier.height(6.dp))
+            Surface(
+                color = Color(0xFFFFD700),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    "★  NEW BEST  ★",
+                    color = Color(0xFF0D0B1E),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
+                )
+            }
+        }
         Spacer(Modifier.height(10.dp))
         Row {
             repeat(3) { i ->
