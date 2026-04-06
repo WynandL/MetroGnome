@@ -1,6 +1,13 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+}
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) load(keystorePropertiesFile.inputStream())
 }
 
 android {
@@ -12,7 +19,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.metrognome"
+        applicationId = "com.wynandl.metrognome"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -21,9 +28,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile     = keystoreProperties["storeFile"]?.let { file(it as String) }
+            storePassword = keystoreProperties["storePassword"] as String?
+            keyAlias      = keystoreProperties["keyAlias"] as String?
+            keyPassword   = keystoreProperties["keyPassword"] as String?
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
