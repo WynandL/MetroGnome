@@ -35,7 +35,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -50,9 +49,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,7 +59,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -71,9 +67,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.viewmodel.GamePhase
 import com.example.metrognome.viewmodel.HitQuality
+import com.example.metrognome.viewmodel.NoteState
+import com.example.metrognome.viewmodel.RenderNote
 import com.example.metrognome.viewmodel.RhythmGameViewModel
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 // ── Difficulty definitions ─────────────────────────────────────────────────────
@@ -87,9 +84,6 @@ private val difficulties = listOf(
     Difficulty("Hard",     130, 32, "130 BPM · 32 beats  —  quick reflexes needed"),
     Difficulty("Expert",   160, 48, "160 BPM · 48 beats  —  for seasoned rhythmists"),
 )
-
-// A single falling note in the highway
-private data class FallingNote(val id: Int, val spawnMs: Long)
 
 // ── Root screen ────────────────────────────────────────────────────────────────
 
@@ -108,11 +102,11 @@ fun RhythmGameScreen(
     val lastQuality    by vm.lastQuality.collectAsStateWithLifecycle()
     val result         by vm.result.collectAsStateWithLifecycle()
     val useMic         by vm.useMic.collectAsStateWithLifecycle()
-    val beatIntervalMs by vm.beatIntervalMs.collectAsStateWithLifecycle()
     val lastHitOffset  by vm.lastHitOffset.collectAsStateWithLifecycle()
     val beatsRemaining by vm.beatsRemaining.collectAsStateWithLifecycle()
     val tolerance      by vm.tolerance.collectAsStateWithLifecycle()
     val highScores     by vm.highScores.collectAsStateWithLifecycle()
+    val visibleNotes   by vm.visibleNotes.collectAsStateWithLifecycle()
 
     var micGranted by remember { mutableStateOf(false) }
     val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -140,9 +134,9 @@ fun RhythmGameScreen(
                     currentBeat    = currentBeat,
                     timeSig        = timeSig,
                     lastQuality    = lastQuality,
-                    beatIntervalMs = beatIntervalMs,
                     lastHitOffset  = lastHitOffset,
-                    beatsRemaining = beatsRemaining
+                    beatsRemaining = beatsRemaining,
+                    visibleNotes   = visibleNotes
                 )
                 GamePhase.RESULT -> ResultPanel(result = result, onDismiss = { vm.dismissResult() })
             }
@@ -245,9 +239,9 @@ private fun IdlePanel(
             Spacer(Modifier.height(6.dp))
             Surface(color = Color(0x221A1A3A), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    val perfMs  = (120 * tolerance).toInt()
-                    val greatMs = (240 * tolerance).toInt()
-                    val goodMs  = (420 * tolerance).toInt()
+                    val perfMs = (50  * tolerance).toInt()
+                    val goodMs = (100 * tolerance).toInt()
+                    val badMs  = (150 * tolerance).toInt()
                     Text("How forgiving the game is when judging your taps.",
                         color = Color(0xFF7070AA), fontSize = 12.sp)
                     Spacer(Modifier.height(10.dp))
@@ -267,9 +261,9 @@ private fun IdlePanel(
                     }
                     Spacer(Modifier.height(12.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                        WindowBadge("PERFECT", "±${perfMs}ms",  Color(0xFFFFD700))
-                        WindowBadge("GREAT",   "±${greatMs}ms", Color(0xFF7BE87B))
-                        WindowBadge("GOOD",    "±${goodMs}ms",  Color(0xFF7BB8FF))
+                        WindowBadge("PERFECT", "±${perfMs}ms", Color(0xFFFFD700))
+                        WindowBadge("GOOD",    "±${goodMs}ms", Color(0xFF7BE87B))
+                        WindowBadge("BAD",     "±${badMs}ms",  Color(0xFF7BB8FF))
                     }
                 }
             }
@@ -374,9 +368,9 @@ private fun PlayingPanel(
     currentBeat: Int,
     timeSig: Int,
     lastQuality: HitQuality,
-    beatIntervalMs: Long,
     lastHitOffset: Long,
-    beatsRemaining: Int
+    beatsRemaining: Int,
+    visibleNotes: List<RenderNote>
 ) {
     val scope        = rememberCoroutineScope()
     val tapScale     = remember { Animatable(1f) }
@@ -432,12 +426,11 @@ private fun PlayingPanel(
 
             Spacer(Modifier.height(8.dp))
 
-            // Note highway
+            // Note highway — driven by ViewModel's pre-computed render list
             NoteHighway(
-                beatPulse      = vm.beatPulse,
-                beatIntervalMs = beatIntervalMs,
-                lastQuality    = lastQuality,
-                modifier       = Modifier.weight(1f).fillMaxWidth()
+                visibleNotes = visibleNotes,
+                lastQuality  = lastQuality,
+                modifier     = Modifier.weight(1f).fillMaxWidth()
             )
 
             // Quality feedback
@@ -528,8 +521,8 @@ private fun MicEqualizer(
     // Quality flash — fires when a detection was SCORED (gold/green/blue/red)
     val qualityFlashColor = when (lastQuality) {
         HitQuality.PERFECT -> Color(0xFFFFD700)
-        HitQuality.GREAT   -> Color(0xFF7BE87B)
-        HitQuality.GOOD    -> Color(0xFF7BB8FF)
+        HitQuality.GOOD    -> Color(0xFF7BE87B)
+        HitQuality.BAD     -> Color(0xFF7BB8FF)
         HitQuality.MISS    -> Color(0xFFCC4444)
         HitQuality.NONE    -> Color.Transparent
     }
@@ -617,91 +610,48 @@ private fun MicEqualizer(
 //
 // Guitar Hero-style falling note lane.
 //
-// • Notes spawn at the top of the lane when a beat fires (via beatPulse).
-// • Each note falls to the HIT LINE at the bottom over exactly beatIntervalMs.
-// • The note turns gold when it enters the hit window (last 15% of travel).
-// • If the player hits it, a quality-colored flash appears at the hit line.
-// • If the player misses, the note turns red as it exits past the hit line.
+// Notes are driven entirely by the ViewModel's [visibleNotes] list, which
+// contains pre-computed progress values derived from the global clock:
 //
-// Timing contract:
-//   fraction = (nowMs - spawnMs) / beatIntervalMs
-//   fraction == 0.0  → just spawned, at top
-//   fraction == 1.0  → exactly at hit line  → tap now for PERFECT
-//   fraction >  1.0  → past hit line (missed)
+//   progress = (songTimeMs - spawnTimeMs) / NOTE_TRAVEL_MS
+//   0.0 → just spawned (top of lane)
+//   1.0 → at hit line — tap for PERFECT
+//   >1.0 → past hit line (missed, shown red briefly)
+//
+// Position is render-only; hit detection is time-based in the ViewModel.
 
 @Composable
 private fun NoteHighway(
-    beatPulse:      SharedFlow<Int>,
-    beatIntervalMs: Long,
-    lastQuality:    HitQuality,
-    modifier:       Modifier = Modifier
+    visibleNotes: List<RenderNote>,
+    lastQuality:  HitQuality,
+    modifier:     Modifier = Modifier
 ) {
-    val notes         = remember { mutableStateListOf<FallingNote>() }
-    var noteIdCounter by remember { mutableStateOf(0) }
-    var nowMs         by remember { mutableStateOf(System.currentTimeMillis()) }
-
-    // Keep a stable reference to the current interval
-    val currentInterval by rememberUpdatedState(beatIntervalMs)
-
-    // Spawn a new note every beat
-    LaunchedEffect(beatPulse) {
-        beatPulse.collect {
-            notes.add(FallingNote(noteIdCounter++, System.currentTimeMillis()))
-        }
-    }
-
-    // Remove notes that have completely exited the lane (> 1.6× interval old)
-    // and consumed notes that have been hit (quality flash handled separately)
-    LaunchedEffect(lastQuality) {
-        // When a hit is registered, remove the note closest to the hit line
-        if (lastQuality != HitQuality.NONE && lastQuality != HitQuality.MISS) {
-            val now = System.currentTimeMillis()
-            val target = notes.minByOrNull {
-                kotlin.math.abs((now - it.spawnMs).toFloat() / currentInterval.coerceAtLeast(1) - 1f)
-            }
-            if (target != null) notes.remove(target)
-        }
-    }
-
-    // 60 fps frame loop — updates nowMs to drive smooth Canvas animation
-    LaunchedEffect(Unit) {
-        while (isActive) {
-            withFrameMillis { nowMs = System.currentTimeMillis() }
-        }
-    }
-
-    // Prune stale notes every beat (when a new note spawns)
-    LaunchedEffect(noteIdCounter) {
-        val cutoff = nowMs - currentInterval * 2
-        notes.removeAll { it.spawnMs < cutoff }
-    }
-
-    // Quality glow color at hit line
+    // Quality glow at the hit line
     val hitLineColor = when (lastQuality) {
         HitQuality.PERFECT -> Color(0xFFFFD700)
-        HitQuality.GREAT   -> Color(0xFF7BE87B)
-        HitQuality.GOOD    -> Color(0xFF7BB8FF)
+        HitQuality.GOOD    -> Color(0xFF7BE87B)
+        HitQuality.BAD     -> Color(0xFF7BB8FF)
         HitQuality.MISS    -> Color(0xFFCC4444)
         HitQuality.NONE    -> Color(0xFF3A2A60)
     }
 
     Box(modifier = modifier) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val laneW  = size.width
-            val laneH  = size.height
-            val cx     = laneW / 2f
-            val hitY   = laneH * 0.84f   // hit line position
-            val noteR  = 26.dp.toPx()
-            val lineW  = 3.dp.toPx()
-            val iMs    = currentInterval.coerceAtLeast(1L)
+            val laneW = size.width
+            val laneH = size.height
+            val cx    = laneW / 2f
+            val hitY  = laneH * 0.84f
+            val noteR = 26.dp.toPx()
+            val lineW = 3.dp.toPx()
 
-            // Lane guide lines (subtle vertical rails)
             val railX1 = cx - noteR * 1.6f
             val railX2 = cx + noteR * 1.6f
+
+            // Lane guide lines
             drawLine(Color(0xFF1A1838), Offset(railX1, 0f), Offset(railX1, laneH), lineW * 0.5f)
             drawLine(Color(0xFF1A1838), Offset(railX2, 0f), Offset(railX2, laneH), lineW * 0.5f)
 
-            // Hit zone glow (background area behind hit line)
+            // Hit zone glow
             drawRect(
                 brush = Brush.verticalGradient(
                     colors = listOf(Color.Transparent, hitLineColor.copy(alpha = 0.08f)),
@@ -720,39 +670,27 @@ private fun NoteHighway(
                 strokeWidth = lineW,
                 cap         = StrokeCap.Round
             )
-            // Hit line end caps (Guitar Hero style)
             drawCircle(hitLineColor, radius = lineW * 1.2f, center = Offset(railX1 - noteR * 0.5f, hitY))
             drawCircle(hitLineColor, radius = lineW * 1.2f, center = Offset(railX2 + noteR * 0.5f, hitY))
 
-            // Draw falling notes
-            for (note in notes) {
-                val elapsed  = (nowMs - note.spawnMs).coerceAtLeast(0)
-                val fraction = elapsed.toFloat() / iMs
-                val y        = fraction * hitY
+            // Draw notes — position derived from pre-computed progress
+            for (note in visibleNotes) {
+                val y = note.progress * hitY
+                if (y > laneH + noteR) continue   // fully exited lane
 
-                // Don't draw notes that have completely exited the visible area
-                if (y > laneH + noteR) continue
-
-                val inHitWindow = fraction in 0.87f..1.13f
-                val isPast      = fraction > 1.13f
+                val inHitWindow = note.progress in 0.87f..1.13f
+                val isPast      = note.state == NoteState.MISSED || note.progress > 1.13f
 
                 val noteColor = when {
-                    isPast      -> Color(0xFFCC4444)           // missed — turns red
-                    inHitWindow -> Color(0xFFFFD700)           // in window — gold: TAP NOW
-                    fraction > 0.65f -> Color(0xFFCC8800)      // approaching — amber
-                    else        -> Color(0xFF7B4DB8)           // far away — purple
+                    isPast           -> Color(0xFFCC4444)   // missed — red
+                    inHitWindow      -> Color(0xFFFFD700)   // in window — gold: TAP NOW
+                    note.progress > 0.65f -> Color(0xFFCC8800)  // approaching — amber
+                    else             -> Color(0xFF7B4DB8)   // far — purple
                 }
-                val glowAlpha = when {
-                    inHitWindow -> 0.35f
-                    isPast      -> 0.15f
-                    else        -> 0.15f
-                }
+                val glowAlpha = if (inHitWindow) 0.35f else 0.15f
 
-                // Outer glow
                 drawCircle(noteColor.copy(alpha = glowAlpha), radius = noteR * 1.8f, center = Offset(cx, y))
-                // Note body
                 drawCircle(noteColor, radius = noteR, center = Offset(cx, y))
-                // Inner highlight
                 drawCircle(Color.White.copy(alpha = 0.18f), radius = noteR * 0.45f,
                     center = Offset(cx - noteR * 0.2f, y - noteR * 0.25f))
             }
@@ -766,8 +704,8 @@ private fun NoteHighway(
 private fun QualityFeedback(lastQuality: HitQuality, lastHitOffset: Long) {
     val (mainText, mainColor) = when (lastQuality) {
         HitQuality.PERFECT -> "PERFECT!" to Color(0xFFFFD700)
-        HitQuality.GREAT   -> "GREAT!"   to Color(0xFF7BE87B)
-        HitQuality.GOOD    -> "GOOD"     to Color(0xFF7BB8FF)
+        HitQuality.GOOD    -> "GOOD"     to Color(0xFF7BE87B)
+        HitQuality.BAD     -> "BAD"      to Color(0xFF7BB8FF)
         HitQuality.MISS    -> "MISS"     to Color(0xFFCC4444)
         HitQuality.NONE    -> ""         to Color.Transparent
     }
@@ -811,11 +749,11 @@ private fun ResultPanel(
 ) {
     if (result == null) return
     val stars = when {
-        result.misses == 0 && result.perfects > 0                          -> 3
-        result.perfects > result.greats + result.goods + result.misses     -> 3
-        result.misses < result.perfects + result.greats                    -> 2
-        result.score > 0                                                   -> 1
-        else                                                               -> 0
+        result.misses == 0 && result.perfects > 0                        -> 3
+        result.perfects > result.goods + result.bads + result.misses     -> 3
+        result.misses < result.perfects + result.goods                   -> 2
+        result.score > 0                                                 -> 1
+        else                                                             -> 0
     }
 
     Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
@@ -845,8 +783,8 @@ private fun ResultPanel(
         Surface(color = Color(0xFF1A1838), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(20.dp)) {
                 ResultRow("Perfect",   "${result.perfects}",   Color(0xFFFFD700))
-                ResultRow("Great",     "${result.greats}",     Color(0xFF7BE87B))
-                ResultRow("Good",      "${result.goods}",      Color(0xFF7BB8FF))
+                ResultRow("Good",      "${result.goods}",      Color(0xFF7BE87B))
+                ResultRow("Bad",       "${result.bads}",       Color(0xFF7BB8FF))
                 ResultRow("Miss",      "${result.misses}",     Color(0xFFCC4444))
                 ResultRow("Max Combo", "×${result.maxCombo}",  Color(0xFFAB7DE0))
             }
