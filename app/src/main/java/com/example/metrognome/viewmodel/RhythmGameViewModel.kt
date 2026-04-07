@@ -156,14 +156,23 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private var countPerfect = 0; private var countGood = 0
     private var countBad     = 0; private var countMiss = 0
 
+    /**
+     * Tolerance-scaled timing windows, fixed for the duration of a game session.
+     * Computed once in beginPlay() so tick() and processTap() always agree.
+     */
+    private var winPerfect = PERFECT_WINDOW_MS
+    private var winGood    = GOOD_WINDOW_MS
+    private var winMiss    = MISS_WINDOW_MS
+
     /** The full note sequence for the current game. Mutated by the game loop on Main. */
     private val notes = mutableListOf<Note>()
 
     private var currentDifficultyName = ""
 
-    private var countdownJob: Job? = null
-    private var gameLoopJob:  Job? = null
-    private var micJob:       Job? = null
+    private var countdownJob:  Job? = null
+    private var engineStartJob: Job? = null
+    private var gameLoopJob:   Job? = null
+    private var micJob:        Job? = null
 
     init {
         engine.onBeat = { beat ->
@@ -226,14 +235,27 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         intervalMs = (60_000.0 / bpm).toLong()
         _beatsRemaining.value = totalBeats
 
-        // Pre-generate all notes. Invariant: hitTimeMs == targetBeat * beatIntervalMs.
+        // Compute tolerance-scaled windows once for this session (Fix 1).
+        // Both tick() and processTap() read these — they can never disagree.
+        val tol  = _tolerance.value
+        winPerfect = (PERFECT_WINDOW_MS * tol).toLong()
+        winGood    = (GOOD_WINDOW_MS    * tol).toLong()
+        winMiss    = (MISS_WINDOW_MS    * tol).toLong()
+
+        // Pre-generate all notes with a NOTE_TRAVEL_MS lead-in offset (Fix 2).
+        //
+        // Without offset: beat 0 hitTimeMs = 0  → already at hit line at game start.
+        // With    offset: beat 0 hitTimeMs = NOTE_TRAVEL_MS → note spawns at top of lane
+        //                 at songT=0 and travels the full lane before the click fires.
+        //
+        // Invariant preserved: delta between consecutive hitTimes == beatIntervalMs.
         notes.clear()
         repeat(totalBeats) { beat ->
-            val hitTime = beat.toLong() * intervalMs
+            val hitTime = NOTE_TRAVEL_MS + beat.toLong() * intervalMs
             notes.add(Note(
                 targetBeat  = beat,
                 hitTimeMs   = hitTime,
-                spawnTimeMs = hitTime - NOTE_TRAVEL_MS
+                spawnTimeMs = hitTime - NOTE_TRAVEL_MS   // == beat * intervalMs  (≥ 0 always)
             ))
         }
 
@@ -241,15 +263,14 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         engine.timeSignature = _timeSig.value
         engine.accentFirst   = true
         engine.soundType     = 0
-        engine.start()
 
+        // Mic starts immediately — gives it NOTE_TRAVEL_MS to calibrate noise floor.
         if (_useMic.value) {
             detector.start()
             micJob = viewModelScope.launch {
                 detector.detections.collect { wallTs ->
                     _micDetected.tryEmit(Unit)
                     if (_phase.value == GamePhase.PLAYING) {
-                        // Convert wall-clock detection timestamp to songTimeMs.
                         processTap(wallTs - gameStartWallMs)
                     }
                 }
@@ -260,6 +281,13 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         gameStartElapsedMs = SystemClock.elapsedRealtime()
         gameStartWallMs    = System.currentTimeMillis()
         _phase.value       = GamePhase.PLAYING
+
+        // Delay engine start by NOTE_TRAVEL_MS so the click fires exactly when
+        // each note reaches the hit line — metronome and visuals stay in sync.
+        engineStartJob = viewModelScope.launch {
+            delay(NOTE_TRAVEL_MS)
+            engine.start()
+        }
 
         // Main game loop: updates note states and produces render snapshots at ~60 fps.
         // All coroutines share viewModelScope (Main thread) so there is no shared-state race.
@@ -293,7 +321,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
                     if (songT >= note.spawnTimeMs) note.state = NoteState.ACTIVE
                 }
                 NoteState.ACTIVE -> {
-                    if (songT > note.hitTimeMs + MISS_WINDOW_MS) {
+                    if (songT > note.hitTimeMs + winMiss) {
                         note.state = NoteState.MISSED
                         recordMiss()
                     }
@@ -326,12 +354,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
      * One tap can hit at most one note (spec §13).
      */
     private fun processTap(tapSongTimeMs: Long) {
-        val tol      = _tolerance.value
-        val wPerfect = (PERFECT_WINDOW_MS * tol).toLong()
-        val wGood    = (GOOD_WINDOW_MS    * tol).toLong()
-        val wMiss    = (MISS_WINDOW_MS    * tol).toLong()
-
-        // Closest ACTIVE note (spec §8)
+        // Use session windows — same values that tick() uses for auto-miss (Fix 1).
         val candidate = notes
             .filter { it.state == NoteState.ACTIVE }
             .minByOrNull { abs(tapSongTimeMs - it.hitTimeMs) }
@@ -343,10 +366,10 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
         // Spec §9: hit judgement
         val quality = when {
-            absDelta <= wPerfect -> HitQuality.PERFECT
-            absDelta <= wGood    -> HitQuality.GOOD
-            absDelta <= wMiss    -> HitQuality.BAD
-            else                 -> HitQuality.NONE  // NOT A HIT — do not assign note
+            absDelta <= winPerfect -> HitQuality.PERFECT
+            absDelta <= winGood    -> HitQuality.GOOD
+            absDelta <= winMiss    -> HitQuality.BAD
+            else                   -> HitQuality.NONE  // NOT A HIT — do not assign note
         }
 
         if (quality == HitQuality.NONE) return   // too far from any note
@@ -421,7 +444,8 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun cancelJobs() {
-        countdownJob?.cancel(); gameLoopJob?.cancel(); micJob?.cancel()
+        countdownJob?.cancel(); engineStartJob?.cancel()
+        gameLoopJob?.cancel();  micJob?.cancel()
     }
 
     private fun loadHighScores(): Map<String, Int> =
