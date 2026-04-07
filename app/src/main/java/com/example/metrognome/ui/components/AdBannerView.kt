@@ -8,14 +8,8 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 
-/**
- * Adaptive banner ad anchored to screen width.
- *
- * TODO: Replace AD_UNIT_ID with your real AdMob banner unit ID before publishing.
- *       Production AdMob App ID goes in AndroidManifest.xml.
- *       Test IDs are safe to use in development only.
- */
 private const val AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"  // Google test banner ID
+//private const val AD_UNIT_ID = "ca-app-pub-8485854692249613/1225603325"  // Adaptive banner Bottom of Screen
 
 @Composable
 fun AdBannerView(modifier: Modifier = Modifier) {
@@ -36,5 +30,5 @@ private fun adaptiveBannerSize(context: Context): AdSize {
     val adWidthPx = displayMetrics.widthPixels.toFloat()
     val density = displayMetrics.density
     val adWidthDp = (adWidthPx / density).toInt()
-    return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, adWidthDp)
+    return AdSize.getLargeAnchoredAdaptiveBannerAdSize(context, adWidthDp)
 }

@@ -22,7 +22,7 @@ object GnomeColors {
     val skinHighlight   = Color(0xFFFAD09A)
     val skinDark        = Color(0xFFD8A060)
 
-    // Santa beard & moustache — off-white/cream with grey shadow
+    // Santa beard & moustache — off-white/cream with gray shadow
     val beard           = Color(0xFFF2EEEA)
     val beardMid        = Color(0xFFE4DED8)
     val beardShade      = Color(0xFFB8B0A8)  // grey shadow + eyebrow color
@@ -58,7 +58,7 @@ object GnomeColors {
     val shoeGloss       = Color(0x44FF8888)
     val shoeAccent      = Color(0xFFFFD700)
 
-    // Side-parted grey hair
+    // Side-parted gray hair
     val hairGrey        = Color(0xFFB5B0AB)
     val hairDark        = Color(0xFF888280)
 

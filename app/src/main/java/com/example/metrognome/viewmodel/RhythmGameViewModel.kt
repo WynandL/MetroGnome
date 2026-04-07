@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import androidx.core.content.edit
 
 enum class GamePhase { IDLE, COUNTDOWN, PLAYING, RESULT }
 
@@ -284,7 +285,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         if (isNew) {
             _highScores.value = _highScores.value.toMutableMap()
                 .also { it[currentDifficultyName] = finalScore }
-            prefs.edit().putInt("hs_$currentDifficultyName", finalScore).apply()
+            prefs.edit { putInt("hs_$currentDifficultyName", finalScore) }
         }
         _result.value = GameResult(finalScore, maxCombo, countPerfect, countGreat, countGood, countMiss, isNew)
         _phase.value  = GamePhase.RESULT

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import androidx.core.content.edit
 
 data class BeatEvent(val beat: Int)
 
@@ -73,7 +74,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         val clamped = newBpm.coerceIn(20, 300)
         _bpm.value = clamped
         engine.bpm = clamped
-        prefs.edit().putInt("bpm", clamped).apply()
+        prefs.edit { putInt("bpm", clamped) }
     }
 
     fun tapTempo() {
@@ -101,30 +102,30 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     fun setTimeSig(sig: Int) {
         _timeSig.value = sig
         engine.timeSignature = sig
-        prefs.edit().putInt("time_sig", sig).apply()
+        prefs.edit { putInt("time_sig", sig) }
     }
 
     fun setAccentFirst(on: Boolean) {
         _accentFirst.value = on
         engine.accentFirst = on
-        prefs.edit().putBoolean("accent", on).apply()
+        prefs.edit { putBoolean("accent", on) }
     }
 
     fun setSoundType(type: Int) {
         _soundType.value = type
         engine.soundType = type
-        prefs.edit().putInt("sound_type", type).apply()
+        prefs.edit { putInt("sound_type", type) }
     }
 
     fun setVolume(v: Float) {
         _volume.value = v
         engine.volume = v
-        prefs.edit().putFloat("volume", v).apply()
+        prefs.edit { putFloat("volume", v) }
     }
 
     fun setFlashOnBeat(on: Boolean) {
         _flashOnBeat.value = on
-        prefs.edit().putBoolean("flash", on).apply()
+        prefs.edit { putBoolean("flash", on) }
     }
 
     private fun syncEngineSettings() {

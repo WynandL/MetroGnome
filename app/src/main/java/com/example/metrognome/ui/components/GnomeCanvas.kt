@@ -23,8 +23,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import com.example.metrognome.ui.theme.GnomeColors
 import com.example.metrognome.viewmodel.BeatEvent
@@ -481,7 +479,7 @@ private fun DrawScope.drawHair(u: Float) {
         },
         color = GnomeColors.hairGrey
     )
-    // Forelock — swept from left-centre to right (classic side part)
+    // Forelock — swept from left-center to right (classic side part)
     // Visible just below the front edge of the tilted hat brim
     drawPath(
         Path().apply {

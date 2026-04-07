@@ -24,6 +24,7 @@ import com.example.metrognome.ui.screens.SettingsScreen
 import com.example.metrognome.ui.theme.MetroGnomeTheme
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.viewmodel.RhythmGameViewModel
+import androidx.compose.runtime.collectAsState
 
 enum class AppTab(val label: String, val icon: ImageVector) {
     GNOME("Gnome", Icons.Filled.MusicNote),
@@ -66,7 +67,7 @@ fun MetroGnomeApp() {
             AppTab.GNOME    -> MetronomeScreen(vm = metronomeVm)
             AppTab.RHYTHM   -> RhythmGameScreen(
                 vm = rhythmVm,
-                isMetronomePlaying = metronomeVm.isPlaying.value,
+                isMetronomePlaying = metronomeVm.isPlaying.collectAsState().value,
                 onStopMetronome = { metronomeVm.stopPlayback() }
             )
             AppTab.SETTINGS -> SettingsScreen(vm = metronomeVm)

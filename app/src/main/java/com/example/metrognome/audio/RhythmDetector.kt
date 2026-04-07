@@ -1,9 +1,11 @@
 package com.example.metrognome.audio
 
+import android.Manifest
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.media.audiofx.AcousticEchoCanceler
+import androidx.annotation.RequiresPermission
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -50,7 +52,7 @@ class RhythmDetector {
 
     /**
      * Normalised RMS amplitude 0..1, updated on every audio buffer read.
-     * Emitted regardless of suppression or calibration — used by the visualiser.
+     * Emitted regardless of suppression or calibration — used by the visualizer.
      */
     private val _amplitude = MutableStateFlow(0f)
     val amplitude: StateFlow<Float> = _amplitude.asStateFlow()
@@ -61,6 +63,7 @@ class RhythmDetector {
     private val scope = CoroutineScope(Dispatchers.Default)
 
     /** Start microphone listening. Caller must hold RECORD_AUDIO permission. */
+    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun start() {
         if (job?.isActive == true) return
 
@@ -96,7 +99,7 @@ class RhythmDetector {
                 val rms   = rms(buf, read)
                 val nowMs = System.currentTimeMillis()
 
-                // Always emit amplitude for the visualiser
+                // Always emit amplitude for the visualizer
                 _amplitude.value = (rms / 32768.0).toFloat().coerceIn(0f, 1f)
 
                 // Calibrate noise floor from the first ~0.5 s
