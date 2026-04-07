@@ -45,7 +45,8 @@ class RhythmDetector {
     var minIntervalMs: Long = 100L
 
     /** Drop detections until this wall-clock ms. Set per-beat to block click pickup. */
-    @Volatile var suppressUntilMs: Long = 0L
+    @Volatile
+    var suppressUntilMs: Long = 0L
 
     private val _detections = MutableSharedFlow<Long>(extraBufferCapacity = 16)
     val detections: SharedFlow<Long> = _detections
@@ -86,17 +87,17 @@ class RhythmDetector {
 
         job = scope.launch {
             val buf = ShortArray(bufferSize / 2)
-            var noiseFloor  = 300.0
+            var noiseFloor = 300.0
             var calibFrames = 0
             val calibTarget = 20         // ~0.5 s of ambient calibration
             var lastDetectMs = 0L
-            var prevRms     = 0.0        // previous frame RMS — used for onset detection
+            var prevRms = 0.0        // previous frame RMS — used for onset detection
 
             while (isActive) {
                 val read = record?.read(buf, 0, buf.size) ?: break
                 if (read <= 0) continue
 
-                val rms   = rms(buf, read)
+                val rms = rms(buf, read)
                 val nowMs = System.currentTimeMillis()
 
                 // Always emit amplitude for the visualizer
@@ -105,13 +106,15 @@ class RhythmDetector {
                 // Calibrate noise floor from the first ~0.5 s
                 if (calibFrames < calibTarget) {
                     noiseFloor = (noiseFloor * calibFrames + rms) / (calibFrames + 1)
-                    prevRms    = rms
+                    prevRms = rms
                     calibFrames++
                     continue
                 }
 
                 // Suppression window (metronome click guard)
-                if (nowMs < suppressUntilMs) { prevRms = rms; continue }
+                if (nowMs < suppressUntilMs) {
+                    prevRms = rms; continue
+                }
 
                 val threshold = (noiseFloor * 3.5).coerceAtLeast(500.0)
 
@@ -149,7 +152,9 @@ class RhythmDetector {
     private fun rms(buf: ShortArray, len: Int): Double {
         if (len == 0) return 0.0
         var sum = 0.0
-        for (i in 0 until len) { val s = buf[i].toDouble(); sum += s * s }
+        for (i in 0 until len) {
+            val s = buf[i].toDouble(); sum += s * s
+        }
         return sqrt(sum / len)
     }
 }

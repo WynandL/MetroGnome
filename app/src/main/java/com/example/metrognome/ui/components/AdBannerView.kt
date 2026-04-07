@@ -8,8 +8,8 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 
-private const val AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"  // Google test banner ID
-//private const val AD_UNIT_ID = "ca-app-pub-8485854692249613/1225603325"  // Adaptive banner Bottom of Screen
+//private const val AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"  // Google test banner ID
+private const val AD_UNIT_ID = "ca-app-pub-8485854692249613/1225603325"  // Adaptive banner Bottom of Screen
 
 @Composable
 fun AdBannerView(modifier: Modifier = Modifier) {

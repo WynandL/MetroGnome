@@ -43,10 +43,10 @@ import com.example.metrognome.viewmodel.MetronomeViewModel
 
 @Composable
 fun MetronomeScreen(vm: MetronomeViewModel) {
-    val bpm        by vm.bpm.collectAsStateWithLifecycle()
-    val isPlaying  by vm.isPlaying.collectAsStateWithLifecycle()
+    val bpm by vm.bpm.collectAsStateWithLifecycle()
+    val isPlaying by vm.isPlaying.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
-    val timeSig    by vm.timeSig.collectAsStateWithLifecycle()
+    val timeSig by vm.timeSig.collectAsStateWithLifecycle()
     val currentBeat by vm.currentBeat.collectAsStateWithLifecycle()
 
     Column(
@@ -123,9 +123,9 @@ private fun BeatIndicatorRow(
             val dotColor by animateColorAsState(
                 targetValue = when {
                     isActive && isAccent -> Color(0xFFFFD700)
-                    isActive            -> Color(0xFFAB7DE0)
-                    isAccent            -> Color(0x66FFD700)
-                    else                -> Color(0x33FFFFFF)
+                    isActive -> Color(0xFFAB7DE0)
+                    isAccent -> Color(0x66FFD700)
+                    else -> Color(0x33FFFFFF)
                 },
                 animationSpec = tween(80),
                 label = "dotColor"

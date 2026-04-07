@@ -70,8 +70,8 @@ fun GnomeCanvas(
         label = "breathAnim"
     )
 
-    val bounce  = remember { Animatable(0f) }
-    val flash   = remember { Animatable(0f) }
+    val bounce = remember { Animatable(0f) }
+    val flash = remember { Animatable(0f) }
     val twinkle = remember { Animatable(0f) }
 
     LaunchedEffect(beatEvents) {
@@ -95,7 +95,7 @@ fun GnomeCanvas(
     }
 
     val effectivePendulum = if (isPlaying) pendulumAngle else 0f
-    val effectiveBreath   = if (!isPlaying) breathAnim   else 0f
+    val effectiveBreath = if (!isPlaying) breathAnim else 0f
 
     Canvas(modifier = modifier.fillMaxSize()) {
         drawBackground(twinkle.value)
@@ -106,9 +106,9 @@ fun GnomeCanvas(
 
         drawGnome(
             pendulumAngle = effectivePendulum,
-            beatBounce    = bounce.value,
-            breathOffset  = effectiveBreath,
-            isPlaying     = isPlaying
+            beatBounce = bounce.value,
+            breathOffset = effectiveBreath,
+            isPlaying = isPlaying
         )
     }
 }
@@ -128,7 +128,11 @@ private fun DrawScope.drawBackground(twinkle: Float) {
         val y = fy * size.height * 0.72f
         val r = 1.2f + fx * 1.8f
         val alpha = 0.35f + fy * 0.55f + twinkle * 0.3f * abs(fx - 0.5f)
-        drawCircle(color = Color.White.copy(alpha = alpha.coerceIn(0.1f, 1f)), radius = r, center = Offset(x, y))
+        drawCircle(
+            color = Color.White.copy(alpha = alpha.coerceIn(0.1f, 1f)),
+            radius = r,
+            center = Offset(x, y)
+        )
     }
     drawRect(
         brush = Brush.verticalGradient(
@@ -153,8 +157,8 @@ private fun DrawScope.drawGnome(
     breathOffset: Float,
     isPlaying: Boolean
 ) {
-    val u     = size.height / 18f
-    val cx    = size.width / 2f
+    val u = size.height / 18f
+    val cx = size.width / 2f
     val baseY = size.height * 0.88f
 
     val breathTranslate = breathOffset * u * 0.1f
@@ -207,9 +211,9 @@ private fun DrawScope.drawShoes(u: Float) {
         val hx = side * 0.82f * u
         val path = Path().apply {
             moveTo(hx - side * 0.55f * u, -0.05f * u)   // inner heel
-            lineTo(hx + side * 1.2f * u,  -0.05f * u)   // sole base toward toe
+            lineTo(hx + side * 1.2f * u, -0.05f * u)   // sole base toward toe
             cubicTo(
-                hx + side * 1.5f * u,  -0.05f * u,
+                hx + side * 1.5f * u, -0.05f * u,
                 hx + side * 1.58f * u, -0.38f * u,
                 hx + side * 1.32f * u, -0.60f * u        // toe tip
             )
@@ -232,7 +236,7 @@ private fun DrawScope.drawShoes(u: Float) {
         drawLine(
             color = GnomeColors.shoeSole,
             start = Offset(hx - side * 0.55f * u, -0.04f * u),
-            end   = Offset(hx + side * 1.2f * u,  -0.04f * u),
+            end = Offset(hx + side * 1.2f * u, -0.04f * u),
             strokeWidth = 0.07f * u
         )
     }
@@ -245,7 +249,7 @@ private fun DrawScope.drawShoes(u: Float) {
 private fun DrawScope.drawLegs(u: Float) {
     val topY = -3.6f * u
     val botY = -0.6f * u
-    val h    = botY - topY
+    val h = botY - topY
     fun leg(xCenter: Float) {
         drawRoundRect(
             color = GnomeColors.pants,
@@ -256,7 +260,7 @@ private fun DrawScope.drawLegs(u: Float) {
         drawLine(
             color = GnomeColors.pantsHighlight,
             start = Offset(xCenter, topY + 0.3f * u),
-            end   = Offset(xCenter, botY - 0.2f * u),
+            end = Offset(xCenter, botY - 0.2f * u),
             strokeWidth = 0.05f * u
         )
     }
@@ -267,38 +271,68 @@ private fun DrawScope.drawLegs(u: Float) {
 // ── Left arm ─────────────────────────────────────────────────────────────────
 
 private fun DrawScope.drawLeftArm(u: Float) {
-    val shoulderX = -1.75f * u; val shoulderY = -6.4f * u
-    val elbowX    = -2.5f * u;  val elbowY    = -5.0f * u
-    val handX     = -2.7f * u;  val handY     = -3.8f * u
+    val shoulderX = -1.75f * u;
+    val shoulderY = -6.4f * u
+    val elbowX = -2.5f * u;
+    val elbowY = -5.0f * u
+    val handX = -2.7f * u;
+    val handY = -3.8f * u
     drawPath(
         Path().apply {
             moveTo(shoulderX, shoulderY)
-            cubicTo(shoulderX - 0.3f * u, shoulderY + 0.4f * u, elbowX, elbowY - 0.2f * u, elbowX, elbowY)
+            cubicTo(
+                shoulderX - 0.3f * u,
+                shoulderY + 0.4f * u,
+                elbowX,
+                elbowY - 0.2f * u,
+                elbowX,
+                elbowY
+            )
             cubicTo(elbowX, elbowY + 0.4f * u, handX - 0.15f * u, handY - 0.3f * u, handX, handY)
         },
         color = GnomeColors.jacketDark, style = Stroke(width = 0.82f * u, cap = StrokeCap.Round)
     )
-    drawLine(color = GnomeColors.shirt, start = Offset(handX - 0.28f * u, handY - 0.22f * u),
-        end = Offset(handX + 0.28f * u, handY - 0.22f * u), strokeWidth = 0.12f * u, cap = StrokeCap.Round)
+    drawLine(
+        color = GnomeColors.shirt,
+        start = Offset(handX - 0.28f * u, handY - 0.22f * u),
+        end = Offset(handX + 0.28f * u, handY - 0.22f * u),
+        strokeWidth = 0.12f * u,
+        cap = StrokeCap.Round
+    )
     drawCircle(GnomeColors.skin, radius = 0.34f * u, center = Offset(handX, handY))
 }
 
 // ── Right arm (holds baton) ───────────────────────────────────────────────────
 
 private fun DrawScope.drawRightArm(u: Float, pendulumAngle: Float) {
-    val shoulderX = 1.75f * u; val shoulderY = -6.4f * u
-    val elbowX    = 2.2f * u;  val elbowY    = -5.2f * u
-    val handX     = 2.0f * u;  val handY     = -4.5f * u
+    val shoulderX = 1.75f * u;
+    val shoulderY = -6.4f * u
+    val elbowX = 2.2f * u;
+    val elbowY = -5.2f * u
+    val handX = 2.0f * u;
+    val handY = -4.5f * u
     drawPath(
         Path().apply {
             moveTo(shoulderX, shoulderY)
-            cubicTo(shoulderX + 0.3f * u, shoulderY + 0.3f * u, elbowX, elbowY - 0.2f * u, elbowX, elbowY)
+            cubicTo(
+                shoulderX + 0.3f * u,
+                shoulderY + 0.3f * u,
+                elbowX,
+                elbowY - 0.2f * u,
+                elbowX,
+                elbowY
+            )
             cubicTo(elbowX, elbowY + 0.4f * u, handX + 0.2f * u, handY - 0.3f * u, handX, handY)
         },
         color = GnomeColors.jacketDark, style = Stroke(width = 0.82f * u, cap = StrokeCap.Round)
     )
-    drawLine(color = GnomeColors.shirt, start = Offset(handX - 0.28f * u, handY - 0.22f * u),
-        end = Offset(handX + 0.28f * u, handY - 0.22f * u), strokeWidth = 0.12f * u, cap = StrokeCap.Round)
+    drawLine(
+        color = GnomeColors.shirt,
+        start = Offset(handX - 0.28f * u, handY - 0.22f * u),
+        end = Offset(handX + 0.28f * u, handY - 0.22f * u),
+        strokeWidth = 0.12f * u,
+        cap = StrokeCap.Round
+    )
     drawCircle(GnomeColors.skin, radius = 0.34f * u, center = Offset(handX, handY))
 }
 
@@ -310,17 +344,23 @@ private fun DrawScope.drawBaton(u: Float, pendulumAngle: Float) {
         rotate(pendulumAngle * 40f, Offset.Zero)
     }) {
         val batonLen = 4.2f * u
-        drawLine(color = GnomeColors.batonGold, start = Offset(0f, 0f), end = Offset(0f, batonLen),
-            strokeWidth = 0.18f * u, cap = StrokeCap.Round)
+        drawLine(
+            color = GnomeColors.batonGold, start = Offset(0f, 0f), end = Offset(0f, batonLen),
+            strokeWidth = 0.18f * u, cap = StrokeCap.Round
+        )
         drawCircle(
-            brush = Brush.radialGradient(listOf(Color(0xFFFFE566), GnomeColors.batonGold),
-                center = Offset(-0.08f * u, batonLen - 0.1f * u), radius = 0.42f * u),
+            brush = Brush.radialGradient(
+                listOf(Color(0xFFFFE566), GnomeColors.batonGold),
+                center = Offset(-0.08f * u, batonLen - 0.1f * u), radius = 0.42f * u
+            ),
             radius = 0.38f * u, center = Offset(0f, batonLen)
         )
         for (i in 0 until 4) {
-            drawLine(color = GnomeColors.batonDark,
+            drawLine(
+                color = GnomeColors.batonDark,
                 start = Offset(-0.11f * u, 0.55f * u + i * 0.22f * u),
-                end   = Offset(0.11f * u,  0.55f * u + i * 0.22f * u), strokeWidth = 0.06f * u)
+                end = Offset(0.11f * u, 0.55f * u + i * 0.22f * u), strokeWidth = 0.06f * u
+            )
         }
     }
 }
@@ -333,7 +373,7 @@ private fun DrawScope.drawBody(u: Float) {
         brush = Brush.linearGradient(
             colors = listOf(GnomeColors.jacketLight, GnomeColors.jacket, GnomeColors.jacketDark),
             start = Offset(-1.8f * u, -7.6f * u),
-            end   = Offset(1.8f * u,  -3.6f * u)
+            end = Offset(1.8f * u, -3.6f * u)
         ),
         topLeft = Offset(-1.8f * u, -7.6f * u),
         size = Size(3.6f * u, 4.0f * u)
@@ -344,7 +384,7 @@ private fun DrawScope.drawBody(u: Float) {
         drawLine(
             color = GnomeColors.pinstripe,
             start = Offset(x, -7.5f * u),
-            end   = Offset(x, -3.7f * u),
+            end = Offset(x, -3.7f * u),
             strokeWidth = 0.03f * u
         )
     }
@@ -363,9 +403,9 @@ private fun DrawScope.drawBody(u: Float) {
         lineTo(1.45f * u, -7.6f * u)
         close()
     }
-    drawPath(leftLapel,  color = GnomeColors.jacketLight)
+    drawPath(leftLapel, color = GnomeColors.jacketLight)
     drawPath(rightLapel, color = GnomeColors.jacketLight)
-    drawPath(leftLapel,  color = GnomeColors.jacketDark, style = Stroke(width = 0.05f * u))
+    drawPath(leftLapel, color = GnomeColors.jacketDark, style = Stroke(width = 0.05f * u))
     drawPath(rightLapel, color = GnomeColors.jacketDark, style = Stroke(width = 0.05f * u))
     // Pocket square — white, dapper
     drawPath(
@@ -386,23 +426,45 @@ private fun DrawScope.drawShirtCollar(u: Float) {
     drawPath(
         Path().apply {
             moveTo(-0.52f * u, -7.52f * u); lineTo(0f, -6.95f * u); lineTo(0.52f * u, -7.52f * u)
-            lineTo(0.32f * u, -8.08f * u);  lineTo(0f, -7.88f * u); lineTo(-0.32f * u, -8.08f * u)
+            lineTo(0.32f * u, -8.08f * u); lineTo(0f, -7.88f * u); lineTo(-0.32f * u, -8.08f * u)
             close()
         },
         color = GnomeColors.shirt
     )
     // Bow tie
-    drawPath(Path().apply { moveTo(-0.05f * u, -7.82f * u); lineTo(-0.5f * u, -7.62f * u); lineTo(-0.5f * u, -8.02f * u); close() }, color = GnomeColors.tie)
-    drawPath(Path().apply { moveTo(0.05f * u, -7.82f * u);  lineTo(0.5f * u,  -7.62f * u); lineTo(0.5f * u,  -8.02f * u); close() }, color = GnomeColors.tie)
+    drawPath(Path().apply {
+        moveTo(-0.05f * u, -7.82f * u); lineTo(
+        -0.5f * u,
+        -7.62f * u
+    ); lineTo(-0.5f * u, -8.02f * u); close()
+    }, color = GnomeColors.tie)
+    drawPath(Path().apply {
+        moveTo(0.05f * u, -7.82f * u); lineTo(
+        0.5f * u,
+        -7.62f * u
+    ); lineTo(0.5f * u, -8.02f * u); close()
+    }, color = GnomeColors.tie)
     drawCircle(GnomeColors.tie, radius = 0.12f * u, center = Offset(0f, -7.82f * u))
 }
 
 // ── Belt ──────────────────────────────────────────────────────────────────────
 
 private fun DrawScope.drawBelt(u: Float) {
-    drawRect(GnomeColors.belt, topLeft = Offset(-1.75f * u, -4.05f * u), size = Size(3.5f * u, 0.55f * u))
-    drawRect(GnomeColors.beltBuckle, topLeft = Offset(-0.35f * u, -4.05f * u), size = Size(0.7f * u, 0.55f * u))
-    drawRect(GnomeColors.belt, topLeft = Offset(-0.18f * u, -3.99f * u), size = Size(0.36f * u, 0.43f * u))
+    drawRect(
+        GnomeColors.belt,
+        topLeft = Offset(-1.75f * u, -4.05f * u),
+        size = Size(3.5f * u, 0.55f * u)
+    )
+    drawRect(
+        GnomeColors.beltBuckle,
+        topLeft = Offset(-0.35f * u, -4.05f * u),
+        size = Size(0.7f * u, 0.55f * u)
+    )
+    drawRect(
+        GnomeColors.belt,
+        topLeft = Offset(-0.18f * u, -3.99f * u),
+        size = Size(0.36f * u, 0.43f * u)
+    )
 }
 
 // ── Gold jacket buttons ───────────────────────────────────────────────────────
@@ -428,9 +490,15 @@ private fun DrawScope.drawNeck(u: Float) {
 // ── Head ──────────────────────────────────────────────────────────────────────
 
 private fun DrawScope.drawHead(u: Float) {
-    val cx = 0f; val cy = -10.0f * u; val r = 1.85f * u
+    val cx = 0f;
+    val cy = -10.0f * u;
+    val r = 1.85f * u
     // Aura
-    drawCircle(color = GnomeColors.hatRed.copy(alpha = 0.08f), radius = r * 1.3f, center = Offset(cx, cy))
+    drawCircle(
+        color = GnomeColors.hatRed.copy(alpha = 0.08f),
+        radius = r * 1.3f,
+        center = Offset(cx, cy)
+    )
     // Head sphere
     drawCircle(
         brush = Brush.radialGradient(
@@ -442,12 +510,24 @@ private fun DrawScope.drawHead(u: Float) {
     // Ears
     for (side in listOf(-1f, 1f)) {
         val ex = cx + side * r * 0.97f
-        drawCircle(GnomeColors.skin,     radius = 0.36f * u, center = Offset(ex, cy + 0.15f * u))
-        drawCircle(GnomeColors.skinDark, radius = 0.20f * u, center = Offset(ex + side * 0.05f * u, cy + 0.15f * u))
+        drawCircle(GnomeColors.skin, radius = 0.36f * u, center = Offset(ex, cy + 0.15f * u))
+        drawCircle(
+            GnomeColors.skinDark,
+            radius = 0.20f * u,
+            center = Offset(ex + side * 0.05f * u, cy + 0.15f * u)
+        )
     }
     // Cheek blush
-    drawCircle(GnomeColors.cheek, radius = 0.48f * u, center = Offset(cx - 1.05f * u, cy + 0.45f * u))
-    drawCircle(GnomeColors.cheek, radius = 0.48f * u, center = Offset(cx + 1.05f * u, cy + 0.45f * u))
+    drawCircle(
+        GnomeColors.cheek,
+        radius = 0.48f * u,
+        center = Offset(cx - 1.05f * u, cy + 0.45f * u)
+    )
+    drawCircle(
+        GnomeColors.cheek,
+        radius = 0.48f * u,
+        center = Offset(cx + 1.05f * u, cy + 0.45f * u)
+    )
 }
 
 // ── Grey side-parted hair ─────────────────────────────────────────────────────
@@ -462,7 +542,7 @@ private fun DrawScope.drawHair(u: Float) {
         Path().apply {
             moveTo(-1.42f * u, -11.52f * u)
             cubicTo(-1.68f * u, -11.15f * u, -2.08f * u, -10.72f * u, -2.12f * u, -10.1f * u)
-            cubicTo(-1.96f * u, -10.0f * u,  -1.65f * u, -10.08f * u, -1.52f * u, -10.38f * u)
+            cubicTo(-1.96f * u, -10.0f * u, -1.65f * u, -10.08f * u, -1.52f * u, -10.38f * u)
             cubicTo(-1.46f * u, -10.88f * u, -1.28f * u, -11.28f * u, -1.18f * u, -11.48f * u)
             close()
         },
@@ -473,7 +553,7 @@ private fun DrawScope.drawHair(u: Float) {
         Path().apply {
             moveTo(1.42f * u, -11.52f * u)
             cubicTo(1.68f * u, -11.15f * u, 2.08f * u, -10.72f * u, 2.12f * u, -10.1f * u)
-            cubicTo(1.96f * u, -10.0f * u,  1.65f * u, -10.08f * u, 1.52f * u, -10.38f * u)
+            cubicTo(1.96f * u, -10.0f * u, 1.65f * u, -10.08f * u, 1.52f * u, -10.38f * u)
             cubicTo(1.46f * u, -10.88f * u, 1.28f * u, -11.28f * u, 1.18f * u, -11.48f * u)
             close()
         },
@@ -520,8 +600,16 @@ private fun DrawScope.drawNose(u: Float) {
         topLeft = Offset(-0.44f * u, -9.72f * u),
         size = Size(0.88f * u, 0.72f * u)
     )
-    drawOval(color = GnomeColors.skinDark.copy(alpha = 0.35f), topLeft = Offset(-0.3f * u, -9.38f * u), size = Size(0.2f * u, 0.18f * u))
-    drawOval(color = GnomeColors.skinDark.copy(alpha = 0.35f), topLeft = Offset(0.1f * u,  -9.38f * u), size = Size(0.2f * u, 0.18f * u))
+    drawOval(
+        color = GnomeColors.skinDark.copy(alpha = 0.35f),
+        topLeft = Offset(-0.3f * u, -9.38f * u),
+        size = Size(0.2f * u, 0.18f * u)
+    )
+    drawOval(
+        color = GnomeColors.skinDark.copy(alpha = 0.35f),
+        topLeft = Offset(0.1f * u, -9.38f * u),
+        size = Size(0.2f * u, 0.18f * u)
+    )
 }
 
 // ── Full Santa moustache ──────────────────────────────────────────────────────
@@ -534,8 +622,22 @@ private fun DrawScope.drawMustache(u: Float) {
     drawPath(
         Path().apply {
             moveTo(-0.08f * u, baseY)
-            cubicTo(-0.45f * u, baseY - 0.12f * u, -1.35f * u, baseY - 0.08f * u, -1.58f * u, baseY + 0.42f * u)
-            cubicTo(-1.45f * u, baseY + 0.62f * u, -0.78f * u, baseY + 0.55f * u, -0.35f * u, baseY + 0.44f * u)
+            cubicTo(
+                -0.45f * u,
+                baseY - 0.12f * u,
+                -1.35f * u,
+                baseY - 0.08f * u,
+                -1.58f * u,
+                baseY + 0.42f * u
+            )
+            cubicTo(
+                -1.45f * u,
+                baseY + 0.62f * u,
+                -0.78f * u,
+                baseY + 0.55f * u,
+                -0.35f * u,
+                baseY + 0.44f * u
+            )
             cubicTo(-0.12f * u, baseY + 0.36f * u, 0f, baseY + 0.25f * u, -0.08f * u, baseY)
             close()
         },
@@ -545,8 +647,22 @@ private fun DrawScope.drawMustache(u: Float) {
     drawPath(
         Path().apply {
             moveTo(0.08f * u, baseY)
-            cubicTo(0.45f * u, baseY - 0.12f * u, 1.35f * u, baseY - 0.08f * u, 1.58f * u, baseY + 0.42f * u)
-            cubicTo(1.45f * u, baseY + 0.62f * u, 0.78f * u, baseY + 0.55f * u, 0.35f * u, baseY + 0.44f * u)
+            cubicTo(
+                0.45f * u,
+                baseY - 0.12f * u,
+                1.35f * u,
+                baseY - 0.08f * u,
+                1.58f * u,
+                baseY + 0.42f * u
+            )
+            cubicTo(
+                1.45f * u,
+                baseY + 0.62f * u,
+                0.78f * u,
+                baseY + 0.55f * u,
+                0.35f * u,
+                baseY + 0.44f * u
+            )
             cubicTo(0.12f * u, baseY + 0.36f * u, 0f, baseY + 0.25f * u, 0.08f * u, baseY)
             close()
         },
@@ -556,7 +672,7 @@ private fun DrawScope.drawMustache(u: Float) {
     drawLine(
         color = GnomeColors.beardShade.copy(alpha = 0.4f),
         start = Offset(-1.2f * u, baseY + 0.52f * u),
-        end   = Offset(1.2f * u,  baseY + 0.52f * u),
+        end = Offset(1.2f * u, baseY + 0.52f * u),
         strokeWidth = 0.08f * u, cap = StrokeCap.Round
     )
 }
@@ -564,23 +680,46 @@ private fun DrawScope.drawMustache(u: Float) {
 // ── Gold-frame sunglasses ─────────────────────────────────────────────────────
 
 private fun DrawScope.drawSunglasses(u: Float) {
-    val lensY = -10.3f * u; val lensH = 0.62f * u; val lensW = 1.1f * u
+    val lensY = -10.3f * u;
+    val lensH = 0.62f * u;
+    val lensW = 1.1f * u
     fun lens(lx: Float) {
-        drawRoundRect(color = GnomeColors.glassLens,
+        drawRoundRect(
+            color = GnomeColors.glassLens,
             topLeft = Offset(lx - lensW / 2, lensY - lensH / 2), size = Size(lensW, lensH),
-            cornerRadius = CornerRadius(0.2f * u))
-        drawRoundRect(color = GnomeColors.glassFrame,
+            cornerRadius = CornerRadius(0.2f * u)
+        )
+        drawRoundRect(
+            color = GnomeColors.glassFrame,
             topLeft = Offset(lx - lensW / 2, lensY - lensH / 2), size = Size(lensW, lensH),
-            cornerRadius = CornerRadius(0.2f * u), style = Stroke(width = 0.1f * u))
-        drawLine(color = GnomeColors.glassReflect,
+            cornerRadius = CornerRadius(0.2f * u), style = Stroke(width = 0.1f * u)
+        )
+        drawLine(
+            color = GnomeColors.glassReflect,
             start = Offset(lx - lensW * 0.3f, lensY - lensH * 0.25f),
-            end   = Offset(lx - lensW * 0.05f, lensY + lensH * 0.15f),
-            strokeWidth = 0.11f * u, cap = StrokeCap.Round)
+            end = Offset(lx - lensW * 0.05f, lensY + lensH * 0.15f),
+            strokeWidth = 0.11f * u, cap = StrokeCap.Round
+        )
     }
     lens(-0.7f * u); lens(0.7f * u)
-    drawLine(GnomeColors.glassFrame, Offset(-0.15f * u, lensY), Offset(0.15f * u, lensY), strokeWidth = 0.08f * u)
-    drawLine(GnomeColors.glassFrame, Offset(-0.7f * u - lensW / 2, lensY), Offset(-1.82f * u, lensY + 0.1f * u), strokeWidth = 0.08f * u)
-    drawLine(GnomeColors.glassFrame, Offset(0.7f * u + lensW / 2, lensY),  Offset(1.82f * u,  lensY + 0.1f * u), strokeWidth = 0.08f * u)
+    drawLine(
+        GnomeColors.glassFrame,
+        Offset(-0.15f * u, lensY),
+        Offset(0.15f * u, lensY),
+        strokeWidth = 0.08f * u
+    )
+    drawLine(
+        GnomeColors.glassFrame,
+        Offset(-0.7f * u - lensW / 2, lensY),
+        Offset(-1.82f * u, lensY + 0.1f * u),
+        strokeWidth = 0.08f * u
+    )
+    drawLine(
+        GnomeColors.glassFrame,
+        Offset(0.7f * u + lensW / 2, lensY),
+        Offset(1.82f * u, lensY + 0.1f * u),
+        strokeWidth = 0.08f * u
+    )
 }
 
 // ── Eyebrows — dark, confident ────────────────────────────────────────────────
@@ -589,11 +728,25 @@ private fun DrawScope.drawEyebrows(u: Float) {
     val browY = -10.85f * u
     drawPath(Path().apply {
         moveTo(-1.58f * u, browY + 0.05f * u)
-        cubicTo(-1.08f * u, browY - 0.2f * u, -0.58f * u, browY - 0.15f * u, -0.2f * u, browY + 0.08f * u)
+        cubicTo(
+            -1.08f * u,
+            browY - 0.2f * u,
+            -0.58f * u,
+            browY - 0.15f * u,
+            -0.2f * u,
+            browY + 0.08f * u
+        )
     }, color = GnomeColors.beardShade, style = Stroke(width = 0.21f * u, cap = StrokeCap.Round))
     drawPath(Path().apply {
         moveTo(1.58f * u, browY + 0.05f * u)
-        cubicTo(1.08f * u, browY - 0.2f * u, 0.58f * u, browY - 0.15f * u, 0.2f * u, browY + 0.08f * u)
+        cubicTo(
+            1.08f * u,
+            browY - 0.2f * u,
+            0.58f * u,
+            browY - 0.15f * u,
+            0.2f * u,
+            browY + 0.08f * u
+        )
     }, color = GnomeColors.beardShade, style = Stroke(width = 0.21f * u, cap = StrokeCap.Round))
 }
 
@@ -603,7 +756,7 @@ private fun DrawScope.drawEyebrows(u: Float) {
 // Drawn last so it covers the top of the hair naturally.
 
 private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
-    val hatBaseY     = -11.85f * u
+    val hatBaseY = -11.85f * u
     val hatBobOffset = beatBounce * (-0.15f * u)  // extra micro-bounce upward
 
     withTransform({
@@ -626,14 +779,32 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
         // Cone — tall, sleek, classic red
         val conePath = Path().apply {
             moveTo(-1.75f * u, hatBaseY)
-            cubicTo(-1.45f * u, hatBaseY - 2.0f * u, -0.22f * u, hatBaseY - 4.9f * u, 0f, hatBaseY - 5.1f * u)
-            cubicTo(0.22f * u,  hatBaseY - 4.9f * u,  1.45f * u, hatBaseY - 2.0f * u, 1.75f * u, hatBaseY)
+            cubicTo(
+                -1.45f * u,
+                hatBaseY - 2.0f * u,
+                -0.22f * u,
+                hatBaseY - 4.9f * u,
+                0f,
+                hatBaseY - 5.1f * u
+            )
+            cubicTo(
+                0.22f * u,
+                hatBaseY - 4.9f * u,
+                1.45f * u,
+                hatBaseY - 2.0f * u,
+                1.75f * u,
+                hatBaseY
+            )
             close()
         }
         drawPath(
             conePath,
             brush = Brush.verticalGradient(
-                colors = listOf(GnomeColors.hatRedLight, GnomeColors.hatRed, GnomeColors.hatRedDark),
+                colors = listOf(
+                    GnomeColors.hatRedLight,
+                    GnomeColors.hatRed,
+                    GnomeColors.hatRedDark
+                ),
                 startY = hatBaseY - 5.1f * u, endY = hatBaseY
             )
         )
@@ -641,10 +812,10 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
         // Dark red band near brim
         drawPath(
             Path().apply {
-                moveTo(-1.7f * u,  hatBaseY - 0.05f * u)
-                lineTo(-1.3f * u,  hatBaseY - 0.68f * u)
-                lineTo(1.3f * u,   hatBaseY - 0.68f * u)
-                lineTo(1.7f * u,   hatBaseY - 0.05f * u)
+                moveTo(-1.7f * u, hatBaseY - 0.05f * u)
+                lineTo(-1.3f * u, hatBaseY - 0.68f * u)
+                lineTo(1.3f * u, hatBaseY - 0.68f * u)
+                lineTo(1.7f * u, hatBaseY - 0.05f * u)
                 close()
             },
             color = GnomeColors.hatBrim
@@ -657,8 +828,8 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
         for (xFrac in listOf(-0.45f, 0.45f)) {
             drawLine(
                 color = GnomeColors.hatRedLight.copy(alpha = 0.3f),
-                start = Offset(xFrac * u,         hatBaseY - 0.62f * u),
-                end   = Offset(xFrac * 0.18f * u, hatBaseY - 4.7f * u),
+                start = Offset(xFrac * u, hatBaseY - 0.62f * u),
+                end = Offset(xFrac * 0.18f * u, hatBaseY - 4.7f * u),
                 strokeWidth = 0.06f * u
             )
         }
@@ -674,7 +845,7 @@ private fun DrawScope.drawStar(cx: Float, cy: Float, outerR: Float, u: Float) {
         val angle = (PI / 5.0 * i - PI / 2.0).toFloat()
         val r = if (i % 2 == 0) outerR else innerR
         if (i == 0) path.moveTo(cx + cos(angle) * r, cy + sin(angle) * r)
-        else        path.lineTo(cx + cos(angle) * r, cy + sin(angle) * r)
+        else path.lineTo(cx + cos(angle) * r, cy + sin(angle) * r)
     }
     path.close()
     drawPath(path, color = GnomeColors.hatGold)

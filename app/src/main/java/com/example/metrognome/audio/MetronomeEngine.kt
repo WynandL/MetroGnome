@@ -22,19 +22,24 @@ class MetronomeEngine {
     private val sampleRate = 44100
 
     // Pre-generated click buffers (populated once at init)
-    private val normalClick  = generateClick(frequency = 1100.0, durationMs = 38, volume = 0.72f)
-    private val accentClick  = generateClick(frequency = 1800.0, durationMs = 50, volume = 0.92f)
-    private val hihatClick   = generateClick(frequency = 9000.0, durationMs = 20, volume = 0.65f)
-    private val woodClick    = generateClick(frequency = 600.0,  durationMs = 45, volume = 0.80f)
-    private val hihatAccent  = generateClick(frequency = 9000.0, durationMs = 30, volume = 0.90f)
-    private val woodAccent   = generateClick(frequency = 800.0,  durationMs = 55, volume = 0.95f)
+    private val normalClick = generateClick(frequency = 1100.0, durationMs = 38, volume = 0.72f)
+    private val accentClick = generateClick(frequency = 1800.0, durationMs = 50, volume = 0.92f)
+    private val hihatClick = generateClick(frequency = 9000.0, durationMs = 20, volume = 0.65f)
+    private val woodClick = generateClick(frequency = 600.0, durationMs = 45, volume = 0.80f)
+    private val hihatAccent = generateClick(frequency = 9000.0, durationMs = 30, volume = 0.90f)
+    private val woodAccent = generateClick(frequency = 800.0, durationMs = 55, volume = 0.95f)
 
     // Mutable settings — read from audio thread, written from main thread (volatile)
-    @Volatile var bpm: Int = 120
-    @Volatile var timeSignature: Int = 4
-    @Volatile var accentFirst: Boolean = true
-    @Volatile var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock
-    @Volatile var volume: Float = 1.0f
+    @Volatile
+    var bpm: Int = 120
+    @Volatile
+    var timeSignature: Int = 4
+    @Volatile
+    var accentFirst: Boolean = true
+    @Volatile
+    var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock
+    @Volatile
+    var volume: Float = 1.0f
 
     var onBeat: ((beat: Int) -> Unit)? = null
 
@@ -44,7 +49,11 @@ class MetronomeEngine {
 
     fun start() {
         if (job?.isActive == true) return
-        val minBuf = AudioTrack.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
+        val minBuf = AudioTrack.getMinBufferSize(
+            sampleRate,
+            AudioFormat.CHANNEL_OUT_MONO,
+            AudioFormat.ENCODING_PCM_16BIT
+        )
         audioTrack = AudioTrack.Builder()
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -115,8 +124,8 @@ class MetronomeEngine {
     /** Fill buffer: click samples at index 0, silence for the rest */
     private fun buildBeatBuffer(samplesPerBeat: Int, isAccent: Boolean): ShortArray {
         val click = when (soundType) {
-            1    -> if (isAccent) hihatAccent else hihatClick
-            2    -> if (isAccent) woodAccent  else woodClick
+            1 -> if (isAccent) hihatAccent else hihatClick
+            2 -> if (isAccent) woodAccent else woodClick
             else -> if (isAccent) accentClick else normalClick
         }
         val buf = ShortArray(samplesPerBeat)
@@ -139,7 +148,8 @@ class MetronomeEngine {
             val t = i.toDouble() / sampleRate
             val envelope = (1.0 - i.toDouble() / numSamples).pow(1.5)
             val sample = envelope * sin(2.0 * PI * frequency * t) * Short.MAX_VALUE * volume
-            buf[i] = sample.toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+            buf[i] =
+                sample.toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
         }
         return buf
     }

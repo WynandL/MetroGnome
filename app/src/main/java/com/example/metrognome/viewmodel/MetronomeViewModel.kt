@@ -22,22 +22,22 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val engine = MetronomeEngine()
 
     // ── Observable state ───────────────────────────────────────────────────────
-    private val _bpm          = MutableStateFlow(prefs.getInt("bpm", 120))
-    private val _isPlaying    = MutableStateFlow(false)
-    private val _currentBeat  = MutableStateFlow(0)
-    private val _timeSig      = MutableStateFlow(prefs.getInt("time_sig", 4))
-    private val _accentFirst  = MutableStateFlow(prefs.getBoolean("accent", true))
-    private val _soundType    = MutableStateFlow(prefs.getInt("sound_type", 0))
-    private val _volume       = MutableStateFlow(prefs.getFloat("volume", 0.85f))
-    private val _flashOnBeat  = MutableStateFlow(prefs.getBoolean("flash", true))
+    private val _bpm = MutableStateFlow(prefs.getInt("bpm", 120))
+    private val _isPlaying = MutableStateFlow(false)
+    private val _currentBeat = MutableStateFlow(0)
+    private val _timeSig = MutableStateFlow(prefs.getInt("time_sig", 4))
+    private val _accentFirst = MutableStateFlow(prefs.getBoolean("accent", true))
+    private val _soundType = MutableStateFlow(prefs.getInt("sound_type", 0))
+    private val _volume = MutableStateFlow(prefs.getFloat("volume", 0.85f))
+    private val _flashOnBeat = MutableStateFlow(prefs.getBoolean("flash", true))
 
-    val bpm:         StateFlow<Int>     = _bpm.asStateFlow()
-    val isPlaying:   StateFlow<Boolean> = _isPlaying.asStateFlow()
-    val currentBeat: StateFlow<Int>     = _currentBeat.asStateFlow()
-    val timeSig:     StateFlow<Int>     = _timeSig.asStateFlow()
+    val bpm: StateFlow<Int> = _bpm.asStateFlow()
+    val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
+    val currentBeat: StateFlow<Int> = _currentBeat.asStateFlow()
+    val timeSig: StateFlow<Int> = _timeSig.asStateFlow()
     val accentFirst: StateFlow<Boolean> = _accentFirst.asStateFlow()
-    val soundType:   StateFlow<Int>     = _soundType.asStateFlow()
-    val volume:      StateFlow<Float>   = _volume.asStateFlow()
+    val soundType: StateFlow<Int> = _soundType.asStateFlow()
+    val volume: StateFlow<Float> = _volume.asStateFlow()
     val flashOnBeat: StateFlow<Boolean> = _flashOnBeat.asStateFlow()
 
     private val _beatEvents = MutableSharedFlow<BeatEvent>(extraBufferCapacity = 4)
@@ -129,11 +129,11 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun syncEngineSettings() {
-        engine.bpm           = _bpm.value
+        engine.bpm = _bpm.value
         engine.timeSignature = _timeSig.value
-        engine.accentFirst   = _accentFirst.value
-        engine.soundType     = _soundType.value
-        engine.volume        = _volume.value
+        engine.accentFirst = _accentFirst.value
+        engine.soundType = _soundType.value
+        engine.volume = _volume.value
     }
 
     override fun onCleared() {

@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -34,17 +35,18 @@ import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(vm: MetronomeViewModel) {
-    val bpm        by vm.bpm.collectAsStateWithLifecycle()
-    val timeSig    by vm.timeSig.collectAsStateWithLifecycle()
+    val bpm by vm.bpm.collectAsStateWithLifecycle()
+    val timeSig by vm.timeSig.collectAsStateWithLifecycle()
     val accentFirst by vm.accentFirst.collectAsStateWithLifecycle()
-    val soundType  by vm.soundType.collectAsStateWithLifecycle()
-    val volume     by vm.volume.collectAsStateWithLifecycle()
+    val soundType by vm.soundType.collectAsStateWithLifecycle()
+    val volume by vm.volume.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0D0B1E))
+            .statusBarsPadding()
     ) {
         Column(
             modifier = Modifier
@@ -72,10 +74,10 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                     listOf(2, 3, 4, 6, 7).forEach { sig ->
                         FilterChip(
                             selected = sig == timeSig,
-                            onClick  = { vm.setTimeSig(sig) },
-                            label    = { Text("$sig/4") },
+                            onClick = { vm.setTimeSig(sig) },
+                            label = { Text("$sig/4") },
                             modifier = Modifier.padding(end = 6.dp),
-                            colors   = FilterChipDefaults.filterChipColors(
+                            colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color(0xFF5B2D8A),
                                 selectedLabelColor = Color.White,
                                 containerColor = Color(0xFF1E1B3A),
@@ -98,10 +100,10 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                     listOf("Classic", "Hi-Hat", "Wood").forEachIndexed { index, name ->
                         FilterChip(
                             selected = index == soundType,
-                            onClick  = { vm.setSoundType(index) },
-                            label    = { Text(name) },
+                            onClick = { vm.setSoundType(index) },
+                            label = { Text(name) },
                             modifier = Modifier.padding(end = 6.dp),
-                            colors   = FilterChipDefaults.filterChipColors(
+                            colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color(0xFF5B2D8A),
                                 selectedLabelColor = Color.White,
                                 containerColor = Color(0xFF1E1B3A),
@@ -128,17 +130,17 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             SettingsSectionTitle("Visual")
 
             SettingsSwitchRow(
-                label       = "Accent Beat 1",
+                label = "Accent Beat 1",
                 description = "Louder click on the first beat",
-                checked     = accentFirst,
-                onChecked   = { vm.setAccentFirst(it) }
+                checked = accentFirst,
+                onChecked = { vm.setAccentFirst(it) }
             )
 
             SettingsSwitchRow(
-                label       = "Flash on Beat",
+                label = "Flash on Beat",
                 description = "Golden screen flash on each beat",
-                checked     = flashOnBeat,
-                onChecked   = { vm.setFlashOnBeat(it) }
+                checked = flashOnBeat,
+                onChecked = { vm.setFlashOnBeat(it) }
             )
 
             Spacer(Modifier.height(16.dp))
@@ -152,7 +154,7 @@ fun SettingsScreen(vm: MetronomeViewModel) {
 @Composable
 private fun SettingsSectionTitle(title: String) {
     Text(
-        text  = title,
+        text = title,
         style = MaterialTheme.typography.labelLarge,
         color = Color(0xFFFFD700),
         fontWeight = FontWeight.Bold,
@@ -221,7 +223,7 @@ private fun SettingsSwitchRow(
             Text(description, color = Color(0xFF8080AA), fontSize = 12.sp)
         }
         Switch(
-            checked  = checked,
+            checked = checked,
             onCheckedChange = onChecked,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color(0xFFFFD700),

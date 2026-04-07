@@ -1,8 +1,11 @@
 package com.example.metrognome.viewmodel
 
+import android.Manifest
 import android.app.Application
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.SystemClock
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.MetronomeEngine
@@ -28,7 +31,7 @@ enum class GamePhase { IDLE, COUNTDOWN, PLAYING, RESULT }
 enum class NoteState { UPCOMING, ACTIVE, HIT, MISSED }
 
 /** Judgement given for a tap. */
-enum class HitQuality { PERFECT, GOOD, BAD, MISS, NONE }
+enum class HitQuality { PERFECT, GOOD, ALMOST, MISS, NONE }
 
 // ── Data classes ───────────────────────────────────────────────────────────────
 
@@ -41,10 +44,10 @@ enum class HitQuality { PERFECT, GOOD, BAD, MISS, NONE }
  *   state transitions: UPCOMING → ACTIVE → HIT | MISSED (terminal)
  */
 data class Note(
-    val targetBeat:  Int,
-    val hitTimeMs:   Long,   // targetBeat * beatIntervalMs
+    val targetBeat: Int,
+    val hitTimeMs: Long,   // targetBeat * beatIntervalMs
     val spawnTimeMs: Long,   // hitTimeMs  - NOTE_TRAVEL_MS
-    var state:       NoteState = NoteState.UPCOMING
+    var state: NoteState = NoteState.UPCOMING
 )
 
 /**
@@ -58,18 +61,18 @@ data class Note(
  * Position is ONLY for rendering — hit detection uses time, not position.
  */
 data class RenderNote(
-    val id:       Int,
+    val id: Int,
     val progress: Float,
-    val state:    NoteState
+    val state: NoteState
 )
 
 data class GameResult(
-    val score:    Int,
+    val score: Int,
     val maxCombo: Int,
     val perfects: Int,
-    val goods:    Int,
-    val bads:     Int,
-    val misses:   Int,
+    val goods: Int,
+    val almosts: Int,
+    val misses: Int,
     val isNewHighScore: Boolean = false
 )
 
@@ -80,8 +83,8 @@ val DIFFICULTY_NAMES = listOf("Beginner", "Easy", "Medium", "Hard", "Expert")
 
 /** Base timing windows in ms. Multiplied by the user's tolerance setting. */
 const val PERFECT_WINDOW_MS = 50L
-const val GOOD_WINDOW_MS    = 100L
-const val MISS_WINDOW_MS    = 150L
+const val GOOD_WINDOW_MS = 100L
+const val MISS_WINDOW_MS = 150L
 
 /** How long a note travels from spawn to the hit line. */
 const val NOTE_TRAVEL_MS = 2000L
@@ -90,49 +93,50 @@ const val NOTE_TRAVEL_MS = 2000L
 
 class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val prefs  = app.getSharedPreferences("rhythm_highscores", Context.MODE_PRIVATE)
+    private val prefs = app.getSharedPreferences("rhythm_highscores", Context.MODE_PRIVATE)
     private val engine = MetronomeEngine()
-    val detector       = RhythmDetector()
+    val detector = RhythmDetector()
 
     // ── Public state flows ────────────────────────────────────────────────────
 
-    private val _phase          = MutableStateFlow(GamePhase.IDLE)
-    private val _score          = MutableStateFlow(0)
-    private val _combo          = MutableStateFlow(0)
-    private val _countDown      = MutableStateFlow(3)
-    private val _currentBeat    = MutableStateFlow(0)
-    private val _bpm            = MutableStateFlow(80)
-    private val _timeSig        = MutableStateFlow(4)
-    private val _lastQuality    = MutableStateFlow(HitQuality.NONE)
-    private val _result         = MutableStateFlow<GameResult?>(null)
-    private val _useMic         = MutableStateFlow(false)
-    private val _lastHitOffset  = MutableStateFlow(0L)
+    private val _phase = MutableStateFlow(GamePhase.IDLE)
+    private val _score = MutableStateFlow(0)
+    private val _combo = MutableStateFlow(0)
+    private val _countDown = MutableStateFlow(3)
+    private val _currentBeat = MutableStateFlow(0)
+    private val _bpm = MutableStateFlow(80)
+    private val _timeSig = MutableStateFlow(4)
+    private val _lastQuality = MutableStateFlow(HitQuality.NONE)
+    private val _result = MutableStateFlow<GameResult?>(null)
+    private val _useMic = MutableStateFlow(false)
+    private val _lastHitOffset = MutableStateFlow(0L)
     private val _beatsRemaining = MutableStateFlow(0)
-    private val _tolerance      = MutableStateFlow(1.5f)
-    private val _highScores     = MutableStateFlow(loadHighScores())
-    /** Render-ready note list updated at ~60 fps by the game loop. */
-    private val _visibleNotes   = MutableStateFlow<List<RenderNote>>(emptyList())
+    private val _tolerance = MutableStateFlow(1.5f)
+    private val _highScores = MutableStateFlow(loadHighScores())
 
-    val phase:          StateFlow<GamePhase>        = _phase.asStateFlow()
-    val score:          StateFlow<Int>              = _score.asStateFlow()
-    val combo:          StateFlow<Int>              = _combo.asStateFlow()
-    val countDown:      StateFlow<Int>              = _countDown.asStateFlow()
-    val currentBeat:    StateFlow<Int>              = _currentBeat.asStateFlow()
-    val bpm:            StateFlow<Int>              = _bpm.asStateFlow()
-    val timeSig:        StateFlow<Int>              = _timeSig.asStateFlow()
-    val lastQuality:    StateFlow<HitQuality>       = _lastQuality.asStateFlow()
-    val result:         StateFlow<GameResult?>      = _result.asStateFlow()
-    val useMic:         StateFlow<Boolean>          = _useMic.asStateFlow()
-    val lastHitOffset:  StateFlow<Long>             = _lastHitOffset.asStateFlow()
-    val beatsRemaining: StateFlow<Int>              = _beatsRemaining.asStateFlow()
-    val tolerance:      StateFlow<Float>            = _tolerance.asStateFlow()
-    val highScores:     StateFlow<Map<String, Int>> = _highScores.asStateFlow()
-    val visibleNotes:   StateFlow<List<RenderNote>> = _visibleNotes.asStateFlow()
+    /** Render-ready note list updated at ~60 fps by the game loop. */
+    private val _visibleNotes = MutableStateFlow<List<RenderNote>>(emptyList())
+
+    val phase: StateFlow<GamePhase> = _phase.asStateFlow()
+    val score: StateFlow<Int> = _score.asStateFlow()
+    val combo: StateFlow<Int> = _combo.asStateFlow()
+    val countDown: StateFlow<Int> = _countDown.asStateFlow()
+    val currentBeat: StateFlow<Int> = _currentBeat.asStateFlow()
+    val bpm: StateFlow<Int> = _bpm.asStateFlow()
+    val timeSig: StateFlow<Int> = _timeSig.asStateFlow()
+    val lastQuality: StateFlow<HitQuality> = _lastQuality.asStateFlow()
+    val result: StateFlow<GameResult?> = _result.asStateFlow()
+    val useMic: StateFlow<Boolean> = _useMic.asStateFlow()
+    val lastHitOffset: StateFlow<Long> = _lastHitOffset.asStateFlow()
+    val beatsRemaining: StateFlow<Int> = _beatsRemaining.asStateFlow()
+    val tolerance: StateFlow<Float> = _tolerance.asStateFlow()
+    val highScores: StateFlow<Map<String, Int>> = _highScores.asStateFlow()
+    val visibleNotes: StateFlow<List<RenderNote>> = _visibleNotes.asStateFlow()
 
     /** Live mic amplitude 0..1. Non-zero only while mic mode is active. */
     val micAmplitude: StateFlow<Float> = detector.amplitude
 
-    private val _beatPulse   = MutableSharedFlow<Int>(extraBufferCapacity = 8)
+    private val _beatPulse = MutableSharedFlow<Int>(extraBufferCapacity = 8)
     val beatPulse: SharedFlow<Int> = _beatPulse.asSharedFlow()
 
     /**
@@ -147,32 +151,35 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Monotonic clock value at game start (SystemClock.elapsedRealtime). */
     private var gameStartElapsedMs = 0L
+
     /** Wall-clock value at game start (System.currentTimeMillis). Used for mic ts conversion. */
-    private var gameStartWallMs    = 0L
+    private var gameStartWallMs = 0L
 
     private var intervalMs = 750L
     private var totalBeats = 32
-    private var maxCombo   = 0
-    private var countPerfect = 0; private var countGood = 0
-    private var countBad     = 0; private var countMiss = 0
+    private var maxCombo = 0
+    private var countPerfect = 0;
+    private var countGood = 0
+    private var countBad = 0;
+    private var countMiss = 0
 
     /**
      * Tolerance-scaled timing windows, fixed for the duration of a game session.
      * Computed once in beginPlay() so tick() and processTap() always agree.
      */
     private var winPerfect = PERFECT_WINDOW_MS
-    private var winGood    = GOOD_WINDOW_MS
-    private var winMiss    = MISS_WINDOW_MS
+    private var winGood = GOOD_WINDOW_MS
+    private var winMiss = MISS_WINDOW_MS
 
     /** The full note sequence for the current game. Mutated by the game loop on Main. */
     private val notes = mutableListOf<Note>()
 
     private var currentDifficultyName = ""
 
-    private var countdownJob:  Job? = null
+    private var countdownJob: Job? = null
     private var engineStartJob: Job? = null
-    private var gameLoopJob:   Job? = null
-    private var micJob:        Job? = null
+    private var gameLoopJob: Job? = null
+    private var micJob: Job? = null
 
     init {
         engine.onBeat = { beat ->
@@ -196,15 +203,21 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Timing tolerance multiplier. 0.5 = strict, 1.5 = default, 2.5 = very easy. */
-    fun setTolerance(v: Float) { _tolerance.value = v.coerceIn(0.5f, 2.5f) }
+    fun setTolerance(v: Float) {
+        _tolerance.value = v.coerceIn(0.5f, 2.5f)
+    }
 
-    fun toggleMic(on: Boolean) { _useMic.value = on }
+    fun toggleMic(on: Boolean) {
+        _useMic.value = on
+    }
 
     fun startGame() {
         reset()
         _phase.value = GamePhase.COUNTDOWN
         countdownJob = viewModelScope.launch {
-            for (i in 3 downTo 1) { _countDown.value = i; delay(1000) }
+            for (i in 3 downTo 1) {
+                _countDown.value = i; delay(1000)
+            }
             beginPlay()
         }
     }
@@ -237,10 +250,10 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
         // Compute tolerance-scaled windows once for this session (Fix 1).
         // Both tick() and processTap() read these — they can never disagree.
-        val tol  = _tolerance.value
+        val tol = _tolerance.value
         winPerfect = (PERFECT_WINDOW_MS * tol).toLong()
-        winGood    = (GOOD_WINDOW_MS    * tol).toLong()
-        winMiss    = (MISS_WINDOW_MS    * tol).toLong()
+        winGood = (GOOD_WINDOW_MS * tol).toLong()
+        winMiss = (MISS_WINDOW_MS * tol).toLong()
 
         // Pre-generate all notes with a NOTE_TRAVEL_MS lead-in offset (Fix 2).
         //
@@ -252,20 +265,28 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         notes.clear()
         repeat(totalBeats) { beat ->
             val hitTime = NOTE_TRAVEL_MS + beat.toLong() * intervalMs
-            notes.add(Note(
-                targetBeat  = beat,
-                hitTimeMs   = hitTime,
-                spawnTimeMs = hitTime - NOTE_TRAVEL_MS   // == beat * intervalMs  (≥ 0 always)
-            ))
+            notes.add(
+                Note(
+                    targetBeat = beat,
+                    hitTimeMs = hitTime,
+                    spawnTimeMs = hitTime - NOTE_TRAVEL_MS   // == beat * intervalMs  (≥ 0 always)
+                )
+            )
         }
 
-        engine.bpm           = bpm
+        engine.bpm = bpm
         engine.timeSignature = _timeSig.value
-        engine.accentFirst   = true
-        engine.soundType     = 0
+        engine.accentFirst = true
+        engine.soundType = 0
 
         // Mic starts immediately — gives it NOTE_TRAVEL_MS to calibrate noise floor.
-        if (_useMic.value) {
+        // Only start if RECORD_AUDIO permission is actually held; the UI may have set
+        // useMic=true before the user fully granted the permission.
+        val micReady = _useMic.value && ContextCompat.checkSelfPermission(
+            getApplication(), Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (micReady) {
             detector.start()
             micJob = viewModelScope.launch {
                 detector.detections.collect { wallTs ->
@@ -279,8 +300,8 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
         // Record game start on the monotonic clock and wall clock simultaneously.
         gameStartElapsedMs = SystemClock.elapsedRealtime()
-        gameStartWallMs    = System.currentTimeMillis()
-        _phase.value       = GamePhase.PLAYING
+        gameStartWallMs = System.currentTimeMillis()
+        _phase.value = GamePhase.PLAYING
 
         // Delay engine start by NOTE_TRAVEL_MS so the click fires exactly when
         // each note reaches the hit line — metronome and visuals stay in sync.
@@ -320,12 +341,14 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
                 NoteState.UPCOMING -> {
                     if (songT >= note.spawnTimeMs) note.state = NoteState.ACTIVE
                 }
+
                 NoteState.ACTIVE -> {
                     if (songT > note.hitTimeMs + winMiss) {
                         note.state = NoteState.MISSED
                         recordMiss()
                     }
                 }
+
                 NoteState.HIT, NoteState.MISSED -> Unit   // terminal — no transition
             }
 
@@ -342,7 +365,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         _beatsRemaining.value = remaining
-        _visibleNotes.value   = renderList
+        _visibleNotes.value = renderList
     }
 
     /**
@@ -360,16 +383,16 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
             .minByOrNull { abs(tapSongTimeMs - it.hitTimeMs) }
             ?: return   // no active note → empty tap, no effect
 
-        val delta    = tapSongTimeMs - candidate.hitTimeMs   // +late, −early
+        val delta = tapSongTimeMs - candidate.hitTimeMs   // +late, −early
         val absDelta = abs(delta)
         _lastHitOffset.value = delta
 
         // Spec §9: hit judgement
         val quality = when {
             absDelta <= winPerfect -> HitQuality.PERFECT
-            absDelta <= winGood    -> HitQuality.GOOD
-            absDelta <= winMiss    -> HitQuality.BAD
-            else                   -> HitQuality.NONE  // NOT A HIT — do not assign note
+            absDelta <= winGood -> HitQuality.GOOD
+            absDelta <= winMiss -> HitQuality.ALMOST
+            else -> HitQuality.NONE  // NOT A HIT — do not assign note
         }
 
         if (quality == HitQuality.NONE) return   // too far from any note
@@ -382,17 +405,17 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
         _score.value += when (quality) {
             HitQuality.PERFECT -> 100
-            HitQuality.GOOD    -> 70
-            HitQuality.BAD     -> 30
-            else               -> 0
+            HitQuality.GOOD -> 70
+            HitQuality.ALMOST -> 30
+            else -> 0
         }
 
         _lastQuality.value = quality
         when (quality) {
             HitQuality.PERFECT -> countPerfect++
-            HitQuality.GOOD    -> countGood++
-            HitQuality.BAD     -> countBad++
-            else               -> Unit
+            HitQuality.GOOD -> countGood++
+            HitQuality.ALMOST -> countBad++
+            else -> Unit
         }
 
         viewModelScope.launch {
@@ -417,39 +440,42 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         engine.stop(); detector.stop()
         val finalScore = _score.value
         val isNew = currentDifficultyName.isNotEmpty() &&
-                    finalScore > (_highScores.value[currentDifficultyName] ?: 0)
+                finalScore > (_highScores.value[currentDifficultyName] ?: 0)
         if (isNew) {
             _highScores.value = _highScores.value.toMutableMap()
                 .also { it[currentDifficultyName] = finalScore }
             prefs.edit { putInt("hs_$currentDifficultyName", finalScore) }
         }
-        _result.value = GameResult(finalScore, maxCombo, countPerfect, countGood, countBad, countMiss, isNew)
-        _phase.value  = GamePhase.RESULT
+        _result.value =
+            GameResult(finalScore, maxCombo, countPerfect, countGood, countBad, countMiss, isNew)
+        _phase.value = GamePhase.RESULT
     }
 
     private fun reset() {
         cancelJobs()
         engine.stop(); detector.stop()
-        _score.value          = 0
-        _combo.value          = 0
-        _currentBeat.value    = 0
-        _lastQuality.value    = HitQuality.NONE
-        _lastHitOffset.value  = 0L
-        _result.value         = null
-        _visibleNotes.value   = emptyList()
+        _score.value = 0
+        _combo.value = 0
+        _currentBeat.value = 0
+        _lastQuality.value = HitQuality.NONE
+        _lastHitOffset.value = 0L
+        _result.value = null
+        _visibleNotes.value = emptyList()
         _beatsRemaining.value = 0
         notes.clear()
-        maxCombo     = 0
+        maxCombo = 0
         countPerfect = 0; countGood = 0; countBad = 0; countMiss = 0
     }
 
     private fun cancelJobs() {
         countdownJob?.cancel(); engineStartJob?.cancel()
-        gameLoopJob?.cancel();  micJob?.cancel()
+        gameLoopJob?.cancel(); micJob?.cancel()
     }
 
     private fun loadHighScores(): Map<String, Int> =
         DIFFICULTY_NAMES.associateWith { name -> prefs.getInt("hs_$name", 0) }
 
-    override fun onCleared() { engine.stop(); detector.stop(); super.onCleared() }
+    override fun onCleared() {
+        engine.stop(); detector.stop(); super.onCleared()
+    }
 }

@@ -48,28 +48,29 @@ class MainActivity : ComponentActivity() {
 fun MetroGnomeApp() {
     var currentTab by rememberSaveable { mutableStateOf(AppTab.GNOME) }
 
-    val metronomeVm: MetronomeViewModel    = viewModel()
-    val rhythmVm:    RhythmGameViewModel   = viewModel()
+    val metronomeVm: MetronomeViewModel = viewModel()
+    val rhythmVm: RhythmGameViewModel = viewModel()
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
             AppTab.entries.forEach { tab ->
                 item(
-                    icon  = { Icon(tab.icon, contentDescription = tab.label) },
+                    icon = { Icon(tab.icon, contentDescription = tab.label) },
                     label = { Text(tab.label) },
                     selected = tab == currentTab,
-                    onClick  = { currentTab = tab }
+                    onClick = { currentTab = tab }
                 )
             }
         }
     ) {
         when (currentTab) {
-            AppTab.GNOME    -> MetronomeScreen(vm = metronomeVm)
-            AppTab.RHYTHM   -> RhythmGameScreen(
+            AppTab.GNOME -> MetronomeScreen(vm = metronomeVm)
+            AppTab.RHYTHM -> RhythmGameScreen(
                 vm = rhythmVm,
                 isMetronomePlaying = metronomeVm.isPlaying.collectAsState().value,
                 onStopMetronome = { metronomeVm.stopPlayback() }
             )
+
             AppTab.SETTINGS -> SettingsScreen(vm = metronomeVm)
         }
     }

@@ -30,10 +30,10 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile     = keystoreProperties["storeFile"]?.let { file(it as String) }
+            storeFile = keystoreProperties["storeFile"]?.let { file(it as String) }
             storePassword = keystoreProperties["storePassword"] as String?
-            keyAlias      = keystoreProperties["keyAlias"] as String?
-            keyPassword   = keystoreProperties["keyPassword"] as String?
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = keystoreProperties["keyPassword"] as String?
         }
     }
 
