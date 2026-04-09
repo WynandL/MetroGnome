@@ -271,11 +271,11 @@ private fun DrawScope.drawLegs(u: Float) {
 // ── Left arm ─────────────────────────────────────────────────────────────────
 
 private fun DrawScope.drawLeftArm(u: Float) {
-    val shoulderX = -1.75f * u;
+    val shoulderX = -1.75f * u
     val shoulderY = -6.4f * u
-    val elbowX = -2.5f * u;
+    val elbowX = -2.5f * u
     val elbowY = -5.0f * u
-    val handX = -2.7f * u;
+    val handX = -2.7f * u
     val handY = -3.8f * u
     drawPath(
         Path().apply {
@@ -305,11 +305,11 @@ private fun DrawScope.drawLeftArm(u: Float) {
 // ── Right arm (holds baton) ───────────────────────────────────────────────────
 
 private fun DrawScope.drawRightArm(u: Float, pendulumAngle: Float) {
-    val shoulderX = 1.75f * u;
+    val shoulderX = 1.75f * u
     val shoulderY = -6.4f * u
-    val elbowX = 2.2f * u;
+    val elbowX = 2.2f * u
     val elbowY = -5.2f * u
-    val handX = 2.0f * u;
+    val handX = 2.0f * u
     val handY = -4.5f * u
     drawPath(
         Path().apply {
@@ -490,8 +490,8 @@ private fun DrawScope.drawNeck(u: Float) {
 // ── Head ──────────────────────────────────────────────────────────────────────
 
 private fun DrawScope.drawHead(u: Float) {
-    val cx = 0f;
-    val cy = -10.0f * u;
+    val cx = 0f
+    val cy = -10.0f * u
     val r = 1.85f * u
     // Aura
     drawCircle(
@@ -680,8 +680,8 @@ private fun DrawScope.drawMustache(u: Float) {
 // ── Gold-frame sunglasses ─────────────────────────────────────────────────────
 
 private fun DrawScope.drawSunglasses(u: Float) {
-    val lensY = -10.3f * u;
-    val lensH = 0.62f * u;
+    val lensY = -10.3f * u
+    val lensH = 0.62f * u
     val lensW = 1.1f * u
     fun lens(lx: Float) {
         drawRoundRect(

@@ -158,9 +158,9 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private var intervalMs = 750L
     private var totalBeats = 32
     private var maxCombo = 0
-    private var countPerfect = 0;
+    private var countPerfect = 0
     private var countGood = 0
-    private var countBad = 0;
+    private var countBad = 0
     private var countMiss = 0
 
     /**

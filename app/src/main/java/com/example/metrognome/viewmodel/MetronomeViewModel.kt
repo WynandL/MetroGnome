@@ -5,15 +5,11 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.MetronomeEngine
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
 
@@ -25,28 +21,54 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val engine = MetronomeEngine()
 
     private val audioManager = app.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-        .setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
-        )
-        .setOnAudioFocusChangeListener { focusChange ->
-            when (focusChange) {
-                AudioManager.AUDIOFOCUS_LOSS,
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                    if (_isPlaying.value) {
-                        engine.stop()
-                        _isPlaying.value = false
-                        _currentBeat.value = 0
-                    }
-                }
-            }
+
+    // ── Audio Focus (cleanly encapsulated) ─────────────────────────────────────
+
+    private val focusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> stopInternal()
         }
-        .build()
+    }
+
+    private val focusRequest: AudioFocusRequest? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+                .setOnAudioFocusChangeListener(focusChangeListener)
+                .build()
+        } else null
+
+    private fun requestAudioFocus(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioManager.requestAudioFocus(focusRequest!!) ==
+                    AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        } else {
+            @Suppress("DEPRECATION")
+            audioManager.requestAudioFocus(
+                focusChangeListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN
+            ) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        }
+    }
+
+    private fun abandonAudioFocus() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioManager.abandonAudioFocusRequest(focusRequest!!)
+        } else {
+            @Suppress("DEPRECATION")
+            audioManager.abandonAudioFocus(focusChangeListener)
+        }
+    }
 
     // ── Observable state ───────────────────────────────────────────────────────
+
     private val _bpm = MutableStateFlow(prefs.getInt("bpm", 120))
     private val _isPlaying = MutableStateFlow(false)
     private val _currentBeat = MutableStateFlow(0)
@@ -85,17 +107,26 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun togglePlay() {
         if (_isPlaying.value) {
-            engine.stop()
-            audioManager.abandonAudioFocusRequest(focusRequest)
-            _isPlaying.value = false
-            _currentBeat.value = 0
+            stopPlayback()
         } else {
-            val result = audioManager.requestAudioFocus(focusRequest)
-            if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) return
+            if (!requestAudioFocus()) return
             syncEngineSettings()
             engine.start()
             _isPlaying.value = true
         }
+    }
+
+    fun stopPlayback() {
+        if (_isPlaying.value) {
+            stopInternal()
+            abandonAudioFocus()
+        }
+    }
+
+    private fun stopInternal() {
+        engine.stop()
+        _isPlaying.value = false
+        _currentBeat.value = 0
     }
 
     fun setBpm(newBpm: Int) {
@@ -107,24 +138,16 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun tapTempo() {
         val now = System.currentTimeMillis()
-        // If more than 2.5 s since the last tap, the user started a new tapping session
         if (tapTimes.isNotEmpty() && now - tapTimes.last() > 2500) tapTimes.clear()
+
         tapTimes.addLast(now)
         if (tapTimes.size > 6) tapTimes.removeFirst()
+
         if (tapTimes.size >= 2) {
             val intervals = (1 until tapTimes.size).map { tapTimes[it] - tapTimes[it - 1] }
             val avgInterval = intervals.average()
             val tappedBpm = (60000.0 / avgInterval).toInt().coerceIn(20, 300)
             setBpm(tappedBpm)
-        }
-    }
-
-    fun stopPlayback() {
-        if (_isPlaying.value) {
-            engine.stop()
-            audioManager.abandonAudioFocusRequest(focusRequest)
-            _isPlaying.value = false
-            _currentBeat.value = 0
         }
     }
 
@@ -166,8 +189,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
-        engine.stop()
-        audioManager.abandonAudioFocusRequest(focusRequest)
+        stopInternal()
+        abandonAudioFocus()
         super.onCleared()
     }
 }
