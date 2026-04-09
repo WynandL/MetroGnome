@@ -203,7 +203,7 @@ private fun ControlsBar(
                 .height(44.dp),
             shape = RoundedCornerShape(22.dp)
         ) {
-            Text("TAP TO SET SPEED", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text("TAP HERE TO SET SPEED", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
     }
 }

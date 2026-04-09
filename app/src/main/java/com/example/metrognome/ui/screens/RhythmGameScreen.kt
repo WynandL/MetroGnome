@@ -316,7 +316,7 @@ private fun IdlePanel(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text("Microphone Mode", color = Color(0xFFEEEEFF), fontWeight = FontWeight.Medium)
+                Text("Microphone Mode (Beta)", color = Color(0xFFEEEEFF), fontWeight = FontWeight.Medium)
                 Text("Detect claps/hits via mic", color = Color(0xFF8080AA), fontSize = 12.sp)
             }
             Switch(
