@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -198,10 +199,9 @@ private fun ControlsBar(
         // Tap tempo button
         FilledTonalButton(
             onClick = onTapTempo,
-            modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .height(44.dp),
-            shape = RoundedCornerShape(22.dp)
+            modifier = Modifier.fillMaxWidth(0.6f),
+            shape = RoundedCornerShape(22.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Text("TAP HERE TO SET SPEED", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }

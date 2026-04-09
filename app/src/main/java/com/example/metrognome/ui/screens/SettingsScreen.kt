@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.metrognome.BuildConfig
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import kotlin.math.roundToInt
@@ -141,6 +142,24 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                 description = "Golden screen flash on each beat",
                 checked = flashOnBeat,
                 onChecked = { vm.setFlashOnBeat(it) }
+            )
+
+            Spacer(Modifier.height(8.dp))
+            HorizontalDivider(color = Color(0xFF2A2550))
+            Spacer(Modifier.height(8.dp))
+
+            SettingsSectionTitle("About")
+
+            Text(
+                "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                color = Color(0xFF8080AA),
+                fontSize = 13.sp,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            Text(
+                "Build: ${if (BuildConfig.DEBUG) "Debug" else "Release"}",
+                color = if (BuildConfig.DEBUG) Color(0xFFFFD700) else Color(0xFF8080AA),
+                fontSize = 12.sp
             )
 
             Spacer(Modifier.height(16.dp))
