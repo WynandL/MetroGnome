@@ -71,6 +71,11 @@ class MetronomeEngine {
             .setBufferSizeInBytes(minBuf * 2)
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
+        if (audioTrack?.state != AudioTrack.STATE_INITIALIZED) {
+            audioTrack?.release()
+            audioTrack = null
+            return
+        }
         audioTrack?.play()
 
         job = scope.launch {
@@ -100,7 +105,8 @@ class MetronomeEngine {
                 // the next write() call — AudioTrack.write() throws IllegalStateException
                 // when the track is in STATE_UNINITIALIZED (i.e. after release()).
                 try {
-                    audioTrack?.write(buffer, 0, buffer.size)
+                    val written = audioTrack?.write(buffer, 0, buffer.size) ?: break
+                    if (written < 0) break  // AudioTrack.ERROR_* — exit cleanly
                 } catch (e: IllegalStateException) {
                     break  // track was released, exit cleanly
                 }
