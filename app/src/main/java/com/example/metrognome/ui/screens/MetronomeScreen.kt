@@ -1,8 +1,11 @@
 package com.example.metrognome.ui.screens
 
+import android.view.WindowManager
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -18,19 +21,27 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.ModeNight
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -47,6 +58,21 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
     val currentBeat by vm.currentBeat.collectAsStateWithLifecycle()
+    val accentBeat by vm.accentBeat.collectAsStateWithLifecycle()
+    val isMuted by vm.isMuted.collectAsStateWithLifecycle()
+    val keepScreenOn by vm.keepScreenOn.collectAsStateWithLifecycle()
+
+    val activity = LocalActivity.current
+    DisposableEffect(keepScreenOn) {
+        if (keepScreenOn) {
+            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -58,6 +84,7 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             timeSig = timeSig,
             currentBeat = currentBeat,
             isPlaying = isPlaying,
+            accentBeat = accentBeat,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 48.dp, bottom = 4.dp)
@@ -74,6 +101,7 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
                 isPlaying = isPlaying,
                 beatEvents = vm.beatEvents,
                 flashOnBeat = flashOnBeat,
+                accentBeat = accentBeat,
                 modifier = Modifier.fillMaxSize()
             )
 
@@ -99,6 +127,18 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         )
 
+        // Utility toggles
+        UtilityTogglesRow(
+            isMuted = isMuted,
+            keepScreenOn = keepScreenOn,
+            onToggleMute = { vm.toggleMute() },
+            onToggleKeepScreenOn = { vm.setKeepScreenOn(!keepScreenOn) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF0D0B1E))
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+        )
+
         // AdMob banner
         AdBannerView(modifier = Modifier.fillMaxWidth())
     }
@@ -109,6 +149,7 @@ private fun BeatIndicatorRow(
     timeSig: Int,
     currentBeat: Int,
     isPlaying: Boolean,
+    accentBeat: Int,   // 1-based; 0 = no accent
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -118,7 +159,7 @@ private fun BeatIndicatorRow(
     ) {
         for (i in 0 until timeSig) {
             val isActive = isPlaying && i == currentBeat
-            val isAccent = i == 0
+            val isAccent = accentBeat > 0 && i == accentBeat - 1
             val dotColor by animateColorAsState(
                 targetValue = when {
                     isActive && isAccent -> Color(0xFFFFD700)
@@ -140,6 +181,20 @@ private fun BeatIndicatorRow(
     }
 }
 
+internal fun tempoLabel(bpm: Int): String = when {
+    bpm < 40  -> "Grave"
+    bpm < 60  -> "Largo"
+    bpm < 66  -> "Larghetto"
+    bpm < 76  -> "Adagio"
+    bpm < 108 -> "Andante"
+    bpm < 120 -> "Moderato"
+    bpm < 156 -> "Allegretto"
+    bpm < 176 -> "Allegro"
+    bpm < 200 -> "Vivace"
+    bpm < 240 -> "Presto"
+    else      -> "Prestissimo"
+}
+
 @Composable
 private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
     Surface(
@@ -147,17 +202,30 @@ private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
         color = Color(0x99000000),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Text(
-            text = bpm.toString(),
-            style = MaterialTheme.typography.displayLarge.copy(
-                fontSize = 72.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = (-2).sp
-            ),
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-            textAlign = TextAlign.Center
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = bpm.toString(),
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontSize = 52.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-1).sp
+                ),
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = tempoLabel(bpm),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFFFFD700),
+                letterSpacing = 1.5.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.offset(y = (-6).dp).padding(bottom = 2.dp)
+            )
+        }
     }
 }
 
@@ -176,8 +244,8 @@ private fun ControlsBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            // Fast decrease (−10)
-            BpmButton("-10") { onBpmChange(bpm - 10) }
+            // Fast decrease (−5)
+            BpmButton("-5") { onBpmChange(bpm - 5) }
             Spacer(Modifier.width(6.dp))
             // Fine decrease (−1)
             BpmButton("−") { onBpmChange(bpm - 1) }
@@ -188,8 +256,8 @@ private fun ControlsBar(
             // Fine increase (+1)
             BpmButton("+") { onBpmChange(bpm + 1) }
             Spacer(Modifier.width(6.dp))
-            // Fast increase (+10)
-            BpmButton("+10") { onBpmChange(bpm + 10) }
+            // Fast increase (+5)
+            BpmButton("+5") { onBpmChange(bpm + 5) }
         }
 
         Spacer(Modifier.height(10.dp))
@@ -201,7 +269,7 @@ private fun ControlsBar(
             shape = RoundedCornerShape(22.dp),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Text("TAP HERE TO SET SPEED", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text("TAP TO SET", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
     }
 }
@@ -238,6 +306,77 @@ private fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
                 contentDescription = if (isPlaying) "Pause" else "Play",
                 tint = Color.White,
                 modifier = Modifier.size(36.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun UtilityTogglesRow(
+    isMuted: Boolean,
+    keepScreenOn: Boolean,
+    onToggleMute: () -> Unit,
+    onToggleKeepScreenOn: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        UtilityToggle(
+            icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+            label = if (isMuted) "Unmute" else "Mute",
+            active = isMuted,
+            onClick = onToggleMute
+        )
+        UtilityToggle(
+            icon = if (keepScreenOn) Icons.Filled.LightMode else Icons.Filled.ModeNight,
+            label = "Screen On",
+            active = keepScreenOn,
+            onClick = onToggleKeepScreenOn
+        )
+    }
+}
+
+@Composable
+private fun UtilityToggle(
+    icon: ImageVector,
+    label: String,
+    active: Boolean,
+    onClick: () -> Unit
+) {
+    val shape = RoundedCornerShape(20.dp)
+    val borderColor = if (active) Color(0xFFFFD700) else Color(0x33FFFFFF)
+    val bgColor = if (active) Color(0xFF2A1F55) else Color(0xFF1E1B3A)
+    val contentColor = if (active) Color(0xFFFFD700) else Color(0x80FFFFFF)
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .height(34.dp)
+            .clip(shape)
+            .background(bgColor)
+            .border(1.dp, borderColor, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = contentColor,
+                modifier = Modifier.size(15.dp)
+            )
+            Text(
+                text = label,
+                color = contentColor,
+                fontSize = 12.sp,
+                fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+                letterSpacing = 0.3.sp
             )
         }
     }

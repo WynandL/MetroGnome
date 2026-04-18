@@ -73,19 +73,23 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _isPlaying = MutableStateFlow(false)
     private val _currentBeat = MutableStateFlow(0)
     private val _timeSig = MutableStateFlow(prefs.getInt("time_sig", 4))
-    private val _accentFirst = MutableStateFlow(prefs.getBoolean("accent", true))
+    private val _accentBeat = MutableStateFlow(prefs.getInt("accent_beat", 1))
     private val _soundType = MutableStateFlow(prefs.getInt("sound_type", 0))
     private val _volume = MutableStateFlow(prefs.getFloat("volume", 0.85f))
     private val _flashOnBeat = MutableStateFlow(prefs.getBoolean("flash", true))
+    private val _isMuted = MutableStateFlow(prefs.getBoolean("muted", false))
+    private val _keepScreenOn = MutableStateFlow(prefs.getBoolean("keep_screen_on", false))
 
     val bpm: StateFlow<Int> = _bpm.asStateFlow()
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
     val currentBeat: StateFlow<Int> = _currentBeat.asStateFlow()
     val timeSig: StateFlow<Int> = _timeSig.asStateFlow()
-    val accentFirst: StateFlow<Boolean> = _accentFirst.asStateFlow()
+    val accentBeat: StateFlow<Int> = _accentBeat.asStateFlow()
     val soundType: StateFlow<Int> = _soundType.asStateFlow()
     val volume: StateFlow<Float> = _volume.asStateFlow()
     val flashOnBeat: StateFlow<Boolean> = _flashOnBeat.asStateFlow()
+    val isMuted: StateFlow<Boolean> = _isMuted.asStateFlow()
+    val keepScreenOn: StateFlow<Boolean> = _keepScreenOn.asStateFlow()
 
     private val _beatEvents = MutableSharedFlow<BeatEvent>(extraBufferCapacity = 4)
     val beatEvents: SharedFlow<BeatEvent> = _beatEvents.asSharedFlow()
@@ -154,13 +158,15 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     fun setTimeSig(sig: Int) {
         _timeSig.value = sig
         engine.timeSignature = sig
+        if (_accentBeat.value > sig) setAccentBeat(1)
         prefs.edit { putInt("time_sig", sig) }
     }
 
-    fun setAccentFirst(on: Boolean) {
-        _accentFirst.value = on
-        engine.accentFirst = on
-        prefs.edit { putBoolean("accent", on) }
+    // beat is 1-based (1..timeSig); 0 means no accent
+    fun setAccentBeat(beat: Int) {
+        _accentBeat.value = beat
+        engine.accentBeat = beat - 1   // 0 (None) → -1 (disabled); 1..N → 0..N-1
+        prefs.edit { putInt("accent_beat", beat) }
     }
 
     fun setSoundType(type: Int) {
@@ -180,12 +186,25 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         prefs.edit { putBoolean("flash", on) }
     }
 
+    fun toggleMute() {
+        val next = !_isMuted.value
+        _isMuted.value = next
+        engine.muted = next
+        prefs.edit { putBoolean("muted", next) }
+    }
+
+    fun setKeepScreenOn(on: Boolean) {
+        _keepScreenOn.value = on
+        prefs.edit { putBoolean("keep_screen_on", on) }
+    }
+
     private fun syncEngineSettings() {
         engine.bpm = _bpm.value
         engine.timeSignature = _timeSig.value
-        engine.accentFirst = _accentFirst.value
+        engine.accentBeat = _accentBeat.value - 1
         engine.soundType = _soundType.value
         engine.volume = _volume.value
+        engine.muted = _isMuted.value
     }
 
     override fun onCleared() {

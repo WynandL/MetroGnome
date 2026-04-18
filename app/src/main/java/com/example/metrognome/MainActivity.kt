@@ -58,7 +58,12 @@ fun MetroGnomeApp() {
                     icon = { Icon(tab.icon, contentDescription = tab.label) },
                     label = { Text(tab.label) },
                     selected = tab == currentTab,
-                    onClick = { currentTab = tab }
+                    onClick = {
+                        if (currentTab == AppTab.RHYTHM && tab != AppTab.RHYTHM) {
+                            rhythmVm.stopGame()
+                        }
+                        currentTab = tab
+                    }
                 )
             }
         }

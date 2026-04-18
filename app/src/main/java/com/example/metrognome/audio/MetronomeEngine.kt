@@ -9,6 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sin
 
@@ -28,6 +29,8 @@ class MetronomeEngine {
     private val woodClick = generateClick(frequency = 600.0, durationMs = 45, volume = 0.80f)
     private val hihatAccent = generateClick(frequency = 9000.0, durationMs = 30, volume = 0.90f)
     private val woodAccent = generateClick(frequency = 800.0, durationMs = 55, volume = 0.95f)
+    private val deepClick = generateDeepClick(frequency = 350.0, durationMs = 130, volume = 1.0f)
+    private val deepAccent = generateDeepClick(frequency = 440.0, durationMs = 150, volume = 1.0f)
 
     // Mutable settings — read from audio thread, written from main thread (volatile)
     @Volatile
@@ -35,11 +38,13 @@ class MetronomeEngine {
     @Volatile
     var timeSignature: Int = 4
     @Volatile
-    var accentFirst: Boolean = true
+    var accentBeat: Int = 0   // 0-based beat index; -1 = no accent
     @Volatile
-    var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock
+    var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock, 3=warm
     @Volatile
     var volume: Float = 1.0f
+    @Volatile
+    var muted: Boolean = false
 
     var onBeat: ((beat: Int) -> Unit)? = null
 
@@ -83,7 +88,7 @@ class MetronomeEngine {
             while (isActive) {
                 val currentBpm = bpm.coerceIn(20, 300)
                 val samplesPerBeat = (sampleRate * 60.0 / currentBpm).toInt()
-                val isAccent = accentFirst && beat == 0
+                val isAccent = accentBeat >= 0 && beat == accentBeat
                 val buffer = buildBeatBuffer(samplesPerBeat, isAccent)
 
                 // Notify the UI BEFORE writing audio data.
@@ -129,9 +134,11 @@ class MetronomeEngine {
 
     /** Fill buffer: click samples at index 0, silence for the rest */
     private fun buildBeatBuffer(samplesPerBeat: Int, isAccent: Boolean): ShortArray {
+        if (muted) return ShortArray(samplesPerBeat)
         val click = when (soundType) {
             1 -> if (isAccent) hihatAccent else hihatClick
             2 -> if (isAccent) woodAccent else woodClick
+            3 -> if (isAccent) deepAccent else deepClick
             else -> if (isAccent) accentClick else normalClick
         }
         val buf = ShortArray(samplesPerBeat)
@@ -141,6 +148,35 @@ class MetronomeEngine {
             buf[i] = (click[i] * vol).toInt().toShort()
         }
         return buf
+    }
+
+    /**
+     * Low-frequency click with simulated room reverb via early reflections.
+     * Three delayed copies at decreasing amplitudes give warmth without a
+     * dedicated reverb unit — inaudible as distinct echoes at typical BPM.
+     */
+    private fun generateDeepClick(frequency: Double, durationMs: Int, volume: Float): ShortArray {
+        val numSamples = sampleRate * durationMs / 1000
+        val dry = FloatArray(numSamples) { i ->
+            val t = i.toDouble() / sampleRate
+            val envelope = (1.0 - i.toDouble() / numSamples).pow(2.0)
+            (envelope * sin(2.0 * PI * frequency * t) * volume).toFloat()
+        }
+        val r1 = (0.028 * sampleRate).toInt()
+        val r2 = (0.052 * sampleRate).toInt()
+        val r3 = (0.080 * sampleRate).toInt()
+        val wet = FloatArray(numSamples) { i ->
+            dry[i] +
+            (if (i >= r1) dry[i - r1] * 0.28f else 0f) +
+            (if (i >= r2) dry[i - r2] * 0.14f else 0f) +
+            (if (i >= r3) dry[i - r3] * 0.06f else 0f)
+        }
+        val peak = wet.maxOf { abs(it) }
+        val scale = if (peak > 0.99f) 0.99f / peak else 1f
+        return ShortArray(numSamples) { i ->
+            (wet[i] * scale * Short.MAX_VALUE).toInt()
+                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
     }
 
     /**

@@ -216,7 +216,8 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         _phase.value = GamePhase.COUNTDOWN
         countdownJob = viewModelScope.launch {
             for (i in 3 downTo 1) {
-                _countDown.value = i; delay(1000)
+                _countDown.value = i
+                delay(1000L)
             }
             beginPlay()
         }
@@ -276,7 +277,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
         engine.bpm = bpm
         engine.timeSignature = _timeSig.value
-        engine.accentFirst = true
+        engine.accentBeat = 0
         engine.soundType = 0
 
         // Mic starts immediately — gives it NOTE_TRAVEL_MS to calibrate noise floor.
@@ -476,6 +477,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         DIFFICULTY_NAMES.associateWith { name -> prefs.getInt("hs_$name", 0) }
 
     override fun onCleared() {
-        engine.stop(); detector.stop(); super.onCleared()
+        engine.stop(); detector.stop()
+        super.onCleared()
     }
 }

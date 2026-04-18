@@ -9,7 +9,9 @@
       "Bash(python -c \"from PIL import Image; print\\('PIL ok'\\)\")",
       "Bash(python:*)",
       "Bash(./gradlew compileDebugKotlin)",
-      "Bash(./gradlew tasks:*)"
+      "Bash(./gradlew tasks:*)",
+      "Bash(./gradlew assembleDebug)",
+      "Bash(./gradlew assembleDebug --info)"
     ]
   }
 }

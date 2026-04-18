@@ -17,7 +17,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,9 +34,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -82,11 +86,11 @@ import kotlinx.coroutines.launch
 private data class Difficulty(val name: String, val bpm: Int, val beats: Int, val desc: String)
 
 private val difficulties = listOf(
-    Difficulty("Beginner", 60, 16, "60 BPM · 16 beats  —  slow & steady"),
-    Difficulty("Easy", 80, 24, "80 BPM · 24 beats  —  getting into the groove"),
-    Difficulty("Medium", 100, 32, "100 BPM · 32 beats  —  the classic challenge"),
-    Difficulty("Hard", 130, 32, "130 BPM · 32 beats  —  quick reflexes needed"),
-    Difficulty("Expert", 160, 48, "160 BPM · 48 beats  —  for seasoned rhythmists"),
+    Difficulty("Beginner", 60, 16, "60 BPM · 16 beats - slow & steady"),
+    Difficulty("Easy", 80, 24, "80 BPM · 24 beats - getting into the groove"),
+    Difficulty("Medium", 100, 32, "100 BPM · 32 beats - the classic challenge"),
+    Difficulty("Hard", 130, 32, "130 BPM · 32 beats - quick reflexes needed"),
+    Difficulty("Expert", 160, 48, "160 BPM · 48 beats - for seasoned rhythmists"),
 )
 
 // ── Root screen ────────────────────────────────────────────────────────────────
@@ -177,26 +181,28 @@ private fun IdlePanel(
     onStopMetronome: () -> Unit,
     highScores: Map<String, Int> = emptyMap()
 ) {
-    var showStopDialog by remember { mutableStateOf(false) }
+    @Suppress("UNUSED_VALUE")
     var pendingStart by remember { mutableStateOf<(() -> Unit)?>(null) }
     var showTolerance by remember { mutableStateOf(false) }
 
-    if (showStopDialog) {
+    if (pendingStart != null) {
         AlertDialog(
-            onDismissRequest = { showStopDialog = false; pendingStart = null },
+            onDismissRequest = { pendingStart = null },
             title = { Text("Metronome is running") },
             text = { Text("Stop it before starting the game, or let it keep playing in the background?") },
             confirmButton = {
                 TextButton(onClick = {
-                    onStopMetronome(); pendingStart?.invoke(); showStopDialog =
-                    false; pendingStart = null
+                    onStopMetronome()
+                    pendingStart?.invoke()
+                    pendingStart = null
                 }) {
                     Text("Stop & Play")
                 }
             },
             dismissButton = {
                 TextButton(onClick = {
-                    pendingStart?.invoke(); showStopDialog = false; pendingStart = null
+                    pendingStart?.invoke()
+                    pendingStart = null
                 }) {
                     Text("Keep Playing")
                 }
@@ -219,7 +225,7 @@ private fun IdlePanel(
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            "Notes fall from the top — tap when they hit the line!",
+            "Notes fall from the top - tap when they hit the line!",
             color = Color(0xFF7070AA), fontSize = 13.sp, textAlign = TextAlign.Center
         )
 
@@ -232,7 +238,7 @@ private fun IdlePanel(
                 onClick = {
                     val start = { vm.setDifficulty(d.bpm, d.beats, d.name); vm.startGame() }
                     if (isMetronomePlaying) {
-                        pendingStart = start; showStopDialog = true
+                        pendingStart = start
                     } else start()
                 }
             )
@@ -255,7 +261,7 @@ private fun IdlePanel(
             ) {
                 Column {
                     Text(
-                        "Timing Tolerance", color = Color(0xFFCCCCEE),
+                        "Difficulty", color = Color(0xFFCCCCEE),
                         fontWeight = FontWeight.Medium, fontSize = 14.sp
                     )
                     Text(
@@ -311,25 +317,63 @@ private fun IdlePanel(
         Spacer(Modifier.height(14.dp))
 
         // ── Mic mode ─────────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text("Microphone Mode (Beta)", color = Color(0xFFEEEEFF), fontWeight = FontWeight.Medium)
-                Text("Detect claps/hits via mic", color = Color(0xFF8080AA), fontSize = 12.sp)
-            }
-            Switch(
-                checked = useMic,
-                onCheckedChange = { on ->
-                    vm.toggleMic(on)                       // always update intent so switch visually toggles
-                    if (on && !micGranted) onRequestMic() // also request permission if not yet granted
-                },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color(0xFFFFD700),
-                    checkedTrackColor = Color(0xFF5B2D8A)
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = if (useMic) Color(0xFF1A1F3A) else Color(0xFF1A1838),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.5.dp,
+                    color = if (useMic) Color(0xFFFFD700) else Color(0xFF2A2860),
+                    shape = RoundedCornerShape(16.dp)
                 )
-            )
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Mic,
+                        contentDescription = null,
+                        tint = if (useMic) Color(0xFFFFD700) else Color(0xFF6060AA),
+                        modifier = Modifier
+                            .size(36.dp)
+                            .padding(end = 14.dp)
+                    )
+                    Column {
+                        Text(
+                            "Play With Sound",
+                            color = if (useMic) Color(0xFFFFD700) else Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            "Clap, tap a surface, or play your instrument - the mic detects the beat so you don't need to touch the screen.",
+                            color = Color(0xFF8080AA),
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp
+                        )
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                Switch(
+                    checked = useMic,
+                    onCheckedChange = { on ->
+                        vm.toggleMic(on)
+                        if (on && !micGranted) onRequestMic()
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color(0xFFFFD700),
+                        checkedTrackColor = Color(0xFF5B2D8A)
+                    )
+                )
+            }
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -498,7 +542,7 @@ private fun PlayingPanel(
             // Quality feedback
             QualityFeedback(lastQuality = lastQuality, lastHitOffset = lastHitOffset)
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
 
             // TAP button
             Button(
@@ -510,40 +554,47 @@ private fun PlayingPanel(
                     }
                 },
                 modifier = Modifier
-                    .size(140.dp)
+                    .size(110.dp)
                     .scale(tapScale.value),
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B2D8A))
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        "TAP",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                    Text("the beat", fontSize = 11.sp, color = Color(0xFFCCAAFF))
-                }
+                Text(
+                    "TAP",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = { vm.stopGame() },
+                modifier = Modifier
+                    .fillMaxWidth(0.68f)
+                    .height(46.dp),
+                shape = RoundedCornerShape(23.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFFFF6666)
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF882222))
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.StopCircle,
+                    contentDescription = "Stop game",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "STOP GAME",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    letterSpacing = 1.5.sp
+                )
             }
 
             Spacer(Modifier.height(10.dp))
-            Text("Tap when the note hits the line", color = Color(0xFF333355), fontSize = 12.sp)
-            Spacer(Modifier.height(8.dp))
-        }
-
-        // Stop button — floating overlay, top-right corner.
-        // Kept outside the score Row so its touch target is fully independent.
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 80.dp, end = 16.dp)
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(Color(0x44CC3333))
-                .clickable { vm.stopGame() },
-            contentAlignment = Alignment.Center
-        ) {
-            Text("■", color = Color(0xFFDD5555), fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -735,7 +786,7 @@ private fun NoteHighway(
             val laneW = size.width
             val laneH = size.height
             val cx = laneW / 2f
-            val hitY = laneH * 0.84f
+            val hitY = laneH * 0.88f
             val noteR = 26.dp.toPx()
             val lineW = 3.dp.toPx()
 

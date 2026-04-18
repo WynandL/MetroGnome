@@ -13,9 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -28,9 +30,7 @@ import com.example.metrognome.ui.theme.GnomeColors
 import com.example.metrognome.viewmodel.BeatEvent
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
-import kotlin.math.PI
 import kotlin.math.abs
-import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -46,20 +46,12 @@ fun GnomeCanvas(
     isPlaying: Boolean,
     beatEvents: SharedFlow<BeatEvent>,
     flashOnBeat: Boolean,
+    accentBeat: Int,   // 1-based; 0 = no accent
     modifier: Modifier = Modifier
 ) {
-    val halfBeatMs = (60_000f / bpm).toInt().coerceAtLeast(100)
-    val infiniteTransition = rememberInfiniteTransition(label = "pendulum")
-    val pendulumAngle by infiniteTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = halfBeatMs, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pendulumAngle"
-    )
+    val currentBpm by rememberUpdatedState(bpm)
 
+    val infiniteTransition = rememberInfiniteTransition(label = "breath")
     val breathAnim by infiniteTransition.animateFloat(
         initialValue = -1f,
         targetValue = 1f,
@@ -70,19 +62,34 @@ fun GnomeCanvas(
         label = "breathAnim"
     )
 
+    val pendulumAngle = remember { Animatable(0f) }
     val bounce = remember { Animatable(0f) }
     val flash = remember { Animatable(0f) }
     val twinkle = remember { Animatable(0f) }
 
+    // Return baton to upright when metronome stops
+    LaunchedEffect(isPlaying) {
+        if (!isPlaying) pendulumAngle.animateTo(0f, tween(300, easing = LinearEasing))
+    }
+
     LaunchedEffect(beatEvents) {
+        var goingRight = true
         beatEvents.collect { event ->
+            // Pendulum: alternate direction on every beat, driven by actual beat timing.
+            // Each animateTo takes exactly one beat duration so the baton arrives at
+            // the opposite extreme precisely when the next beat fires.
+            val beatMs = (60_000f / currentBpm).toInt().coerceAtLeast(100)
+            val target = if (goingRight) 1f else -1f
+            goingRight = !goingRight
+            launch { pendulumAngle.animateTo(target, tween(beatMs, easing = LinearEasing)) }
+
             launch {
                 bounce.snapTo(1f)
                 bounce.animateTo(0f, tween(250))
             }
             if (flashOnBeat) {
                 launch {
-                    val maxFlash = if (event.beat == 0) 0.7f else 0.35f
+                    val maxFlash = if (accentBeat > 0 && event.beat == accentBeat - 1) 0.7f else 0.35f
                     flash.snapTo(maxFlash)
                     flash.animateTo(0f, tween(350))
                 }
@@ -94,7 +101,7 @@ fun GnomeCanvas(
         }
     }
 
-    val effectivePendulum = if (isPlaying) pendulumAngle else 0f
+    val effectivePendulum = pendulumAngle.value
     val effectiveBreath = if (!isPlaying) breathAnim else 0f
 
     Canvas(modifier = modifier.fillMaxSize()) {
@@ -157,9 +164,9 @@ private fun DrawScope.drawGnome(
     breathOffset: Float,
     isPlaying: Boolean
 ) {
-    val u = size.height / 18f
+    val u = size.height / 17f
     val cx = size.width / 2f
-    val baseY = size.height * 0.88f
+    val baseY = size.height * 0.97f
 
     val breathTranslate = breathOffset * u * 0.1f
 
@@ -378,7 +385,12 @@ private fun DrawScope.drawBody(u: Float) {
         topLeft = Offset(-1.8f * u, -7.6f * u),
         size = Size(3.6f * u, 4.0f * u)
     )
-    // Pinstripes — subtle vertical grey lines at 0.28u intervals
+    // Pinstripes clipped to the jacket oval so they follow the body contour
+    val jacketClip = Path().apply {
+        addOval(Rect(Offset(-1.8f * u, -7.6f * u), Size(3.6f * u, 4.0f * u)))
+    }
+    drawContext.canvas.save()
+    drawContext.canvas.clipPath(jacketClip)
     for (i in -6..6) {
         val x = i * 0.28f * u
         drawLine(
@@ -388,6 +400,7 @@ private fun DrawScope.drawBody(u: Float) {
             strokeWidth = 0.03f * u
         )
     }
+    drawContext.canvas.restore()
     // Left lapel
     val leftLapel = Path().apply {
         moveTo(-0.15f * u, -7.55f * u)
@@ -493,12 +506,6 @@ private fun DrawScope.drawHead(u: Float) {
     val cx = 0f
     val cy = -10.0f * u
     val r = 1.85f * u
-    // Aura
-    drawCircle(
-        color = GnomeColors.hatRed.copy(alpha = 0.08f),
-        radius = r * 1.3f,
-        center = Offset(cx, cy)
-    )
     // Head sphere
     drawCircle(
         brush = Brush.radialGradient(
@@ -569,23 +576,6 @@ private fun DrawScope.drawHair(u: Float) {
             close()
         },
         color = GnomeColors.hairDark
-    )
-    // Hair texture lines on left side
-    drawLine(
-        color = GnomeColors.hairDark.copy(alpha = 0.5f),
-        start = Offset(-1.58f * u, -11.38f * u), end = Offset(-2.0f * u, -10.35f * u),
-        strokeWidth = 0.06f * u, cap = StrokeCap.Round
-    )
-    drawLine(
-        color = GnomeColors.hairDark.copy(alpha = 0.35f),
-        start = Offset(-1.38f * u, -11.42f * u), end = Offset(-1.78f * u, -10.48f * u),
-        strokeWidth = 0.05f * u, cap = StrokeCap.Round
-    )
-    // Hair texture lines on right side
-    drawLine(
-        color = GnomeColors.hairDark.copy(alpha = 0.5f),
-        start = Offset(1.58f * u, -11.38f * u), end = Offset(2.0f * u, -10.35f * u),
-        strokeWidth = 0.06f * u, cap = StrokeCap.Round
     )
 }
 
@@ -756,98 +746,42 @@ private fun DrawScope.drawEyebrows(u: Float) {
 // Drawn last so it covers the top of the hair naturally.
 
 private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
-    val hatBaseY = -11.85f * u
-    val hatBobOffset = beatBounce * (-0.15f * u)  // extra micro-bounce upward
+    val hatBaseY = -11.4f * u
+    val hatBobOffset = beatBounce * (-0.15f * u)
 
     withTransform({
         translate(0f, hatBobOffset)
         rotate(11f, Offset(0f, hatBaseY))
     }) {
-        // Brim shadow (dark red oval beneath)
-        drawOval(
-            color = GnomeColors.hatBrim.copy(alpha = 0.75f),
-            topLeft = Offset(-2.55f * u, hatBaseY - 0.28f * u),
-            size = Size(5.1f * u, 0.65f * u)
-        )
-        // Brim top
-        drawOval(
-            color = GnomeColors.hatRedDark,
-            topLeft = Offset(-2.38f * u, hatBaseY - 0.50f * u),
-            size = Size(4.76f * u, 0.65f * u)
-        )
-
-        // Cone — tall, sleek, classic red
+        // Cone
         val conePath = Path().apply {
             moveTo(-1.75f * u, hatBaseY)
             cubicTo(
-                -1.45f * u,
-                hatBaseY - 2.0f * u,
-                -0.22f * u,
-                hatBaseY - 4.9f * u,
-                0f,
-                hatBaseY - 5.1f * u
+                -1.45f * u, hatBaseY - 2.0f * u,
+                -0.22f * u, hatBaseY - 4.9f * u,
+                0f, hatBaseY - 5.1f * u
             )
             cubicTo(
-                0.22f * u,
-                hatBaseY - 4.9f * u,
-                1.45f * u,
-                hatBaseY - 2.0f * u,
-                1.75f * u,
-                hatBaseY
+                0.22f * u, hatBaseY - 4.9f * u,
+                1.45f * u, hatBaseY - 2.0f * u,
+                1.75f * u, hatBaseY
             )
             close()
         }
         drawPath(
             conePath,
             brush = Brush.verticalGradient(
-                colors = listOf(
-                    GnomeColors.hatRedLight,
-                    GnomeColors.hatRed,
-                    GnomeColors.hatRedDark
-                ),
+                colors = listOf(GnomeColors.hatRedLight, GnomeColors.hatRed, GnomeColors.hatRedDark),
                 startY = hatBaseY - 5.1f * u, endY = hatBaseY
             )
         )
 
-        // Dark red band near brim
-        drawPath(
-            Path().apply {
-                moveTo(-1.7f * u, hatBaseY - 0.05f * u)
-                lineTo(-1.3f * u, hatBaseY - 0.68f * u)
-                lineTo(1.3f * u, hatBaseY - 0.68f * u)
-                lineTo(1.7f * u, hatBaseY - 0.05f * u)
-                close()
-            },
-            color = GnomeColors.hatBrim
+        // Single flat brim on top of the cone base
+        drawOval(
+            color = GnomeColors.hatRedDark,
+            topLeft = Offset(-2.1f * u, hatBaseY - 0.45f * u),
+            size = Size(4.2f * u, 0.58f * u)
         )
-
-        // Gold star on cone
-        drawStar(cx = -0.18f * u, cy = hatBaseY - 3.7f * u, outerR = 0.36f * u, u = u)
-
-        // Subtle seam highlight lines on cone (light edge)
-        for (xFrac in listOf(-0.45f, 0.45f)) {
-            drawLine(
-                color = GnomeColors.hatRedLight.copy(alpha = 0.3f),
-                start = Offset(xFrac * u, hatBaseY - 0.62f * u),
-                end = Offset(xFrac * 0.18f * u, hatBaseY - 4.7f * u),
-                strokeWidth = 0.06f * u
-            )
-        }
     }
 }
 
-// ── Star helper ───────────────────────────────────────────────────────────────
-
-private fun DrawScope.drawStar(cx: Float, cy: Float, outerR: Float, u: Float) {
-    val innerR = outerR * 0.42f
-    val path = Path()
-    for (i in 0 until 10) {
-        val angle = (PI / 5.0 * i - PI / 2.0).toFloat()
-        val r = if (i % 2 == 0) outerR else innerR
-        if (i == 0) path.moveTo(cx + cos(angle) * r, cy + sin(angle) * r)
-        else path.lineTo(cx + cos(angle) * r, cy + sin(angle) * r)
-    }
-    path.close()
-    drawPath(path, color = GnomeColors.hatGold)
-    drawPath(path, color = Color(0x88FFFFFF), style = Stroke(width = 0.04f * u))
-}

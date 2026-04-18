@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
@@ -38,7 +39,7 @@ import kotlin.math.roundToInt
 fun SettingsScreen(vm: MetronomeViewModel) {
     val bpm by vm.bpm.collectAsStateWithLifecycle()
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
-    val accentFirst by vm.accentFirst.collectAsStateWithLifecycle()
+    val accentBeat by vm.accentBeat.collectAsStateWithLifecycle()
     val soundType by vm.soundType.collectAsStateWithLifecycle()
     val volume by vm.volume.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
@@ -64,14 +65,14 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             SettingsSliderRow(
                 label = "Tempo",
                 value = bpm.toFloat(),
-                valueText = "$bpm BPM",
+                valueText = "$bpm BPM · ${tempoLabel(bpm)}",
                 range = 20f..300f,
                 onValueChange = { vm.setBpm(it.roundToInt()) }
             )
 
             // Time signature chips
             SettingsRow(label = "Time Signature") {
-                Row {
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                     listOf(2, 3, 4, 6, 7).forEach { sig ->
                         FilterChip(
                             selected = sig == timeSig,
@@ -97,8 +98,8 @@ fun SettingsScreen(vm: MetronomeViewModel) {
 
             // Sound type chips
             SettingsRow(label = "Click Sound") {
-                Row {
-                    listOf("Classic", "Hi-Hat", "Wood").forEachIndexed { index, name ->
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                    listOf("Classic", "Hi-Hat", "Wood", "Warm").forEachIndexed { index, name ->
                         FilterChip(
                             selected = index == soundType,
                             onClick = { vm.setSoundType(index) },
@@ -130,12 +131,36 @@ fun SettingsScreen(vm: MetronomeViewModel) {
 
             SettingsSectionTitle("Visual")
 
-            SettingsSwitchRow(
-                label = "Accent Beat 1",
-                description = "Louder click on the first beat",
-                checked = accentFirst,
-                onChecked = { vm.setAccentFirst(it) }
-            )
+            SettingsRow(label = "Accent Beat") {
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                    FilterChip(
+                        selected = accentBeat == 0,
+                        onClick = { vm.setAccentBeat(0) },
+                        label = { Text("None") },
+                        modifier = Modifier.padding(end = 6.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFF5B2D8A),
+                            selectedLabelColor = Color.White,
+                            containerColor = Color(0xFF1E1B3A),
+                            labelColor = Color(0xFFCCCCEE)
+                        )
+                    )
+                    for (beat in 1..timeSig) {
+                        FilterChip(
+                            selected = beat == accentBeat,
+                            onClick = { vm.setAccentBeat(beat) },
+                            label = { Text("$beat") },
+                            modifier = Modifier.padding(end = 6.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFF5B2D8A),
+                                selectedLabelColor = Color.White,
+                                containerColor = Color(0xFF1E1B3A),
+                                labelColor = Color(0xFFCCCCEE)
+                            )
+                        )
+                    }
+                }
+            }
 
             SettingsSwitchRow(
                 label = "Flash on Beat",
