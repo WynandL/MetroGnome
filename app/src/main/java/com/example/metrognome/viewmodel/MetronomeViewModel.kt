@@ -9,6 +9,10 @@ import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.MetronomeEngine
+import com.example.metrognome.ui.components.metro_items.MetroItemTracker
+import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
@@ -19,6 +23,21 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val prefs = app.getSharedPreferences("metrognome_prefs", Context.MODE_PRIVATE)
     private val engine = MetronomeEngine()
+    val itemTracker = MetroItemTracker(app)
+
+    private val _activeItemIds = MutableStateFlow(itemTracker.unlockedIds(METRO_ITEM_REGISTRY))
+    val activeItemIds: StateFlow<Set<String>> = _activeItemIds.asStateFlow()
+
+    private val _cheatModeEnabled = MutableStateFlow(itemTracker.isCheatModeEnabled())
+    val cheatModeEnabled: StateFlow<Boolean> = _cheatModeEnabled.asStateFlow()
+
+    fun toggleCheatMode() {
+        itemTracker.toggleCheatMode()
+        _cheatModeEnabled.value = itemTracker.isCheatModeEnabled()
+        _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+    }
+
+    private var playTimerJob: Job? = null
 
     private val audioManager = app.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -117,6 +136,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             syncEngineSettings()
             engine.start()
             _isPlaying.value = true
+            startPlayTimer()
         }
     }
 
@@ -128,9 +148,26 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun stopInternal() {
+        stopPlayTimer()
         engine.stop()
         _isPlaying.value = false
         _currentBeat.value = 0
+    }
+
+    private fun startPlayTimer() {
+        playTimerJob?.cancel()
+        playTimerJob = viewModelScope.launch {
+            while (true) {
+                delay(10_000L)   // tick every 10 seconds
+                itemTracker.addMetronomeSeconds(10)
+                _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+            }
+        }
+    }
+
+    private fun stopPlayTimer() {
+        playTimerJob?.cancel()
+        playTimerJob = null
     }
 
     fun setBpm(newBpm: Int) {

@@ -9,6 +9,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.MetronomeEngine
+import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.audio.RhythmDetector
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -95,6 +96,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
     private val prefs = app.getSharedPreferences("rhythm_highscores", Context.MODE_PRIVATE)
     private val engine = MetronomeEngine()
+    private val itemTracker = MetroItemTracker(app)
     val detector = RhythmDetector()
 
     // ── Public state flows ────────────────────────────────────────────────────
@@ -447,6 +449,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
                 .also { it[currentDifficultyName] = finalScore }
             prefs.edit { putInt("hs_$currentDifficultyName", finalScore) }
         }
+        itemTracker.recordGameCompleted()
         _result.value =
             GameResult(finalScore, maxCombo, countPerfect, countGood, countBad, countMiss, isNew)
         _phase.value = GamePhase.RESULT

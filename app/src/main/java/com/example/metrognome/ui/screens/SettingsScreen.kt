@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -43,6 +45,7 @@ fun SettingsScreen(vm: MetronomeViewModel) {
     val soundType by vm.soundType.collectAsStateWithLifecycle()
     val volume by vm.volume.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
+    val cheatModeEnabled by vm.cheatModeEnabled.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -188,6 +191,28 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             )
 
             Spacer(Modifier.height(16.dp))
+
+            // ── DEV CHEAT: comment out the block below before a production release ──
+            OutlinedButton(
+                onClick = { vm.toggleCheatMode() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (cheatModeEnabled) Color(0xFFFFD700) else Color(0xFF555577)
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (cheatModeEnabled) Color(0xFFFFD700) else Color(0xFF333355)
+                )
+            ) {
+                Text(
+                    if (cheatModeEnabled) "DEV: All Items ON" else "DEV: All Items OFF",
+                    fontSize = 12.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+            }
+            // ── END DEV CHEAT ─────────────────────────────────────────────────────
+
+            Spacer(Modifier.height(8.dp))
         }
 
         // AdMob banner

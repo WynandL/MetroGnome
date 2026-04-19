@@ -27,15 +27,21 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.example.metrognome.ui.components.metro_items.MetroItem
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.offset
@@ -49,6 +55,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.components.GnomeCanvas
+import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.viewmodel.MetronomeViewModel
 
 @Composable
@@ -59,8 +66,13 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
     val currentBeat by vm.currentBeat.collectAsStateWithLifecycle()
     val accentBeat by vm.accentBeat.collectAsStateWithLifecycle()
+    val activeItemIds by vm.activeItemIds.collectAsStateWithLifecycle()
+    val activeItems = androidx.compose.runtime.remember(activeItemIds) {
+        METRO_ITEM_REGISTRY.filter { it.item.id in activeItemIds }.map { it.item }
+    }
     val isMuted by vm.isMuted.collectAsStateWithLifecycle()
     val keepScreenOn by vm.keepScreenOn.collectAsStateWithLifecycle()
+    var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
 
     val activity = LocalActivity.current
     DisposableEffect(keepScreenOn) {
@@ -102,6 +114,8 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
                 beatEvents = vm.beatEvents,
                 flashOnBeat = flashOnBeat,
                 accentBeat = accentBeat,
+                activeItems = activeItems,
+                onItemTapped = { tappedItem = it },
                 modifier = Modifier.fillMaxSize()
             )
 
@@ -141,6 +155,29 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
 
         // AdMob banner
         AdBannerView(modifier = Modifier.fillMaxWidth())
+    }
+
+    tappedItem?.let { item ->
+        AlertDialog(
+            onDismissRequest = { tappedItem = null },
+            title = {
+                Text(
+                    item.displayName,
+                    color = Color(0xFFFFD700),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(item.earnedMessage, color = Color(0xFFEEEEFF))
+            },
+            confirmButton = {
+                TextButton(onClick = { tappedItem = null }) {
+                    Text("Nice!", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
+                }
+            },
+            containerColor = Color(0xFF1E1B3A),
+            tonalElevation = 0.dp
+        )
     }
 }
 
