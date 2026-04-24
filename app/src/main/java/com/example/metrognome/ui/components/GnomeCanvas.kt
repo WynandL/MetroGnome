@@ -25,13 +25,13 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
 import com.example.metrognome.ui.theme.GnomeColors
 import com.example.metrognome.viewmodel.BeatEvent
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.math.sin
 import kotlin.random.Random
 
 // Pre-calculated star positions (seed fixed for determinism)
@@ -178,24 +178,26 @@ private fun DrawScope.drawGnome(
         drawLegs(u)
         drawLeftArm(u)
         drawBody(u)
-        drawShirtCollar(u)
         drawBelt(u)
         drawButtons(u)
         drawBaton(u, pendulumAngle)
         drawRightArm(u, pendulumAngle)
 
         // ── Head group — bobs on every beat ───────────────────────────────
-        val headBob = beatBounce * u * 0.5f
+        val headBob = beatBounce * u * 0.2f
         withTransform({ translate(0f, headBob) }) {
             drawNeck(u)
             drawHead(u)
             drawHair(u)
+            drawEars(u)
             drawNose(u)
             drawMustache(u)
             drawSunglasses(u)
             drawEyebrows(u)
             drawHat(u, beatBounce)
         }
+        // Drawn after the head group so the collar sits in front of the neck
+        drawShirtCollar(u)
     }
 }
 
@@ -465,8 +467,8 @@ private fun DrawScope.drawShirtCollar(u: Float) {
 private fun DrawScope.drawBelt(u: Float) {
     drawRect(
         GnomeColors.belt,
-        topLeft = Offset(-1.75f * u, -4.05f * u),
-        size = Size(3.5f * u, 0.55f * u)
+        topLeft = Offset(-1.25f * u, -4.05f * u),
+        size = Size(2.5f * u, 0.55f * u)
     )
     drawRect(
         GnomeColors.beltBuckle,
@@ -495,7 +497,7 @@ private fun DrawScope.drawNeck(u: Float) {
     drawRoundRect(
         color = GnomeColors.skin,
         topLeft = Offset(-0.38f * u, -8.5f * u),
-        size = Size(0.76f * u, 0.55f * u),
+        size = Size(0.76f * u, 0.78f * u),
         cornerRadius = CornerRadius(0.15f * u)
     )
 }
@@ -514,16 +516,6 @@ private fun DrawScope.drawHead(u: Float) {
         ),
         radius = r, center = Offset(cx, cy)
     )
-    // Ears
-    for (side in listOf(-1f, 1f)) {
-        val ex = cx + side * r * 0.97f
-        drawCircle(GnomeColors.skin, radius = 0.36f * u, center = Offset(ex, cy + 0.15f * u))
-        drawCircle(
-            GnomeColors.skinDark,
-            radius = 0.20f * u,
-            center = Offset(ex + side * 0.05f * u, cy + 0.15f * u)
-        )
-    }
     // Cheek blush
     drawCircle(
         GnomeColors.cheek,
@@ -535,6 +527,56 @@ private fun DrawScope.drawHead(u: Float) {
         radius = 0.48f * u,
         center = Offset(cx + 1.05f * u, cy + 0.45f * u)
     )
+}
+
+// ── Ears ──────────────────────────────────────────────────────────────────────
+
+private fun DrawScope.drawEars(u: Float) {
+    val cx = 0f
+    val cy = -10.0f * u
+    val r = 1.85f * u
+    for (side in listOf(-1f, 1f)) {
+        val ecy = cy + 0.1f * u
+        val earPath = Path().apply {
+            moveTo(cx + side * 1.56f * u, ecy - 0.48f * u)
+            cubicTo(
+                cx + side * 1.85f * u, ecy - 0.55f * u,
+                cx + side * 2.40f * u, ecy - 0.70f * u,
+                cx + side * 2.54f * u, ecy - 0.56f * u
+            )
+            cubicTo(
+                cx + side * 2.40f * u, ecy - 0.38f * u,
+                cx + side * 1.95f * u, ecy + 0.38f * u,
+                cx + side * 1.56f * u, ecy + 0.48f * u
+            )
+            close()
+        }
+        drawPath(
+            earPath,
+            brush = Brush.radialGradient(
+                colors = listOf(GnomeColors.skin, GnomeColors.skinDark),
+                center = Offset(cx - r * 0.25f, cy - r * 0.25f),
+                radius = r * 2.5f
+            )
+        )
+        drawPath(
+            Path().apply {
+                moveTo(cx + side * 1.70f * u, ecy - 0.18f * u)
+                cubicTo(
+                    cx + side * 1.90f * u, ecy - 0.20f * u,
+                    cx + side * 2.28f * u, ecy - 0.44f * u,
+                    cx + side * 2.38f * u, ecy - 0.38f * u
+                )
+                cubicTo(
+                    cx + side * 2.26f * u, ecy - 0.22f * u,
+                    cx + side * 1.92f * u, ecy + 0.20f * u,
+                    cx + side * 1.70f * u, ecy + 0.18f * u
+                )
+                close()
+            },
+            color = GnomeColors.skinDark.copy(alpha = 0.9f)
+        )
+    }
 }
 
 // ── Grey side-parted hair ─────────────────────────────────────────────────────
@@ -658,13 +700,6 @@ private fun DrawScope.drawMustache(u: Float) {
         },
         color = GnomeColors.beard
     )
-    // Subtle shadow under moustache for depth
-    drawLine(
-        color = GnomeColors.beardShade.copy(alpha = 0.4f),
-        start = Offset(-1.2f * u, baseY + 0.52f * u),
-        end = Offset(1.2f * u, baseY + 0.52f * u),
-        strokeWidth = 0.08f * u, cap = StrokeCap.Round
-    )
 }
 
 // ── Gold-frame sunglasses ─────────────────────────────────────────────────────
@@ -746,14 +781,29 @@ private fun DrawScope.drawEyebrows(u: Float) {
 // Drawn last so it covers the top of the hair naturally.
 
 private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
-    val hatBaseY = -11.4f * u
+    val hatBaseY = -11.1f * u
     val hatBobOffset = beatBounce * (-0.15f * u)
 
     withTransform({
         translate(0f, hatBobOffset)
         rotate(11f, Offset(0f, hatBaseY))
     }) {
-        // Cone
+
+        // === BACK HALF OF BRIM (behind cone) ===
+        clipRect(
+            left = -2.1f * u,
+            top = hatBaseY - 0.45f * u,
+            right = 2.1f * u,
+            bottom = hatBaseY
+        ) {
+            drawOval(
+                color = GnomeColors.hatRedDark,
+                topLeft = Offset(-2.1f * u, hatBaseY - 0.45f * u),
+                size = Size(4.2f * u, 0.58f * u)
+            )
+        }
+
+        // === CONE ===
         val conePath = Path().apply {
             moveTo(-1.75f * u, hatBaseY)
             cubicTo(
@@ -768,20 +818,33 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
             )
             close()
         }
+
         drawPath(
             conePath,
             brush = Brush.verticalGradient(
-                colors = listOf(GnomeColors.hatRedLight, GnomeColors.hatRed, GnomeColors.hatRedDark),
-                startY = hatBaseY - 5.1f * u, endY = hatBaseY
+                colors = listOf(
+                    GnomeColors.hatRedLight,
+                    GnomeColors.hatRed,
+                    GnomeColors.hatRedDark
+                ),
+                startY = hatBaseY - 5.1f * u,
+                endY = hatBaseY
             )
         )
 
-        // Single flat brim on top of the cone base
-        drawOval(
-            color = GnomeColors.hatRedDark,
-            topLeft = Offset(-2.1f * u, hatBaseY - 0.45f * u),
-            size = Size(4.2f * u, 0.58f * u)
-        )
+        // === FRONT HALF OF BRIM (in front of cone) ===
+        clipRect(
+            left = -2.1f * u,
+            top = hatBaseY,
+            right = 2.1f * u,
+            bottom = hatBaseY + 0.3f * u
+        ) {
+            drawOval(
+                color = GnomeColors.hatRedDark,
+                topLeft = Offset(-2.1f * u, hatBaseY - 0.45f * u),
+                size = Size(4.2f * u, 0.58f * u)
+            )
+        }
     }
 }
 
