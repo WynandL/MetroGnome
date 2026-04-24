@@ -37,7 +37,11 @@ Audio Engine + Game Logic (Coroutines on Dispatchers.Default)
 
 **`viewmodel/RhythmGameViewModel.kt`** — State machine: IDLE → COUNTDOWN → PLAYING → RESULT. Notes have 2000ms travel time from spawn to hit line. Hit windows: PERFECT ±50ms, GOOD ±100ms, ALMOST ±150ms (scaled by user tolerance setting). Scoring: PERFECT=100, GOOD=70, ALMOST=30. High scores persisted per difficulty in `rhythm_highscores` SharedPreferences.
 
-**`ui/components/GnomeCanvas.kt`** — Custom Compose Canvas drawing the gnome. Animations (pendulum, bounce, flash, twinkle) are synchronized to `BeatEvent` emissions from MetronomeViewModel.
+**`ui/components/GnomeCanvas.kt`** — Custom Compose Canvas drawing the gnome. Animations (pendulum, bounce, flash, twinkle) are synchronized to `BeatEvent` emissions from MetronomeViewModel. The `feature/metro-cosmetics` branch extends this with a `MetroItem` system: `activeItems`/`onItemTapped` params, tap-hit detection, and separate draw passes for background items, body-attached items, and head-attached items (which bob with the head group).
+
+**`ui/components/metro_items/`** — Cosmetic item system (feature branch only). Each `MetroItem` implements `draw(u, cx, baseY)`, `hitCenter(u)`, `hitRadius(u)`, `isBodyAttached`, and `isHeadAttached`. Items are unlocked via time/play-count rules and persisted in SharedPreferences.
+
+**`drawable/ic_launcher_foreground.xml`** — Vector launcher icon foreground derived from GnomeCanvas.kt (u=9, cx=54, baseY=164 → 108×108 viewport). All colours match `GnomeColors`. Hat rotated 11° via `<group android:rotation="11">` matching `drawHat`. Do **not** simplify to circles/rects — the paths are intentionally accurate.
 
 ### Navigation
 

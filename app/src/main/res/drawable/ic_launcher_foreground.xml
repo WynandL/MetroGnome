@@ -1,145 +1,182 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Metro the Gnome — launcher icon foreground vector, face-crop composition.
-  Viewport 108×108. Scale: 1 canvas-unit = 9 viewport-units.
-  cx=54, baseY=160 — feet are off-screen; only hat + face + bow-tie are visible.
+  Metro the Gnome – launcher icon foreground, face-crop.
+  Derived from GnomeCanvas.kt: u=9, cx=54, baseY=164.
+  Screen coords: screen_x = 54 + gx*9, screen_y = 164 + gy*9.
+  Viewport 108×108. Hat rotated 11° around (54, 64.1) matching drawHat.
+  translateY="-7" shifts Metro up so the collar is visible within the adaptive mask.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- ── Hat cone (red) ── -->
-    <path
-        android:fillColor="#CC1818"
-        android:pathData="M38.3,57.4 C40.5,50 50.5,22 54,11.5 C57.5,22 67.5,50 69.8,57.4z"/>
+    <group android:translateY="-7">
 
-    <!-- ── Hat cone left-side highlight ── -->
-    <path
-        android:fillColor="#DD3535"
-        android:fillAlpha="0.4"
-        android:pathData="M38.3,57.4 C40.5,50 51,38 54,11.5 L52.5,16 C50,24 41.5,50 38.3,57.4z"/>
+        <!-- ── NECK ── -->
+        <path
+            android:fillColor="#F0BC80"
+            android:pathData="M 51.93,87.5 H 56.07 Q 57.42,87.5 57.42,88.85 V 93.17 Q 57.42,94.52 56.07,94.52 H 51.93 Q 50.58,94.52 50.58,93.17 V 88.85 Q 50.58,87.5 51.93,87.5 Z"/>
 
-    <!-- ── Hat brim (dark red flat oval) ── -->
-    <path
-        android:fillColor="#881010"
-        android:pathData="M35.1,56.0 a18.9,2.6 0 1,0 37.8,0 a18.9,2.6 0 1,0 -37.8,0"/>
+        <!-- ── EARS (before head so head overlaps inner ear edges) ── -->
+        <path
+            android:fillColor="#F0BC80"
+            android:pathData="M 39.96,70.58 C 37.35,69.95 32.4,68.6 31.14,69.86 C 32.4,71.48 36.45,78.32 39.96,79.22 Z"/>
+        <path
+            android:fillColor="#D8A060"
+            android:fillAlpha="0.9"
+            android:pathData="M 38.7,73.28 C 36.9,73.1 33.48,70.94 32.58,71.48 C 33.66,72.92 36.72,76.7 38.7,76.52 Z"/>
+        <path
+            android:fillColor="#F0BC80"
+            android:pathData="M 68.04,70.58 C 70.65,69.95 75.6,68.6 76.86,69.86 C 75.6,71.48 71.55,78.32 68.04,79.22 Z"/>
+        <path
+            android:fillColor="#D8A060"
+            android:fillAlpha="0.9"
+            android:pathData="M 69.3,73.28 C 71.1,73.1 74.52,70.94 75.42,71.48 C 74.34,72.92 71.28,76.7 69.3,76.52 Z"/>
 
-    <!-- ── Side hair fills (grey, peek from under brim) ── -->
-    <path
-        android:fillColor="#B5B0AB"
-        android:pathData="M41.2,56.3 C38.9,58.5 38.4,62 38.6,67.0 L41.0,66.5 C40.9,62.5 42.0,59.0 43.4,57.1z"/>
-    <path
-        android:fillColor="#B5B0AB"
-        android:pathData="M66.8,56.3 C69.1,58.5 69.6,62 69.4,67.0 L67.0,66.5 C67.1,62.5 66.0,59.0 64.6,57.1z"/>
+        <!-- ── HEAD ── -->
+        <path android:pathData="M 70.65,74 A 16.65,16.65,0,1,1,37.35,74 A 16.65,16.65,0,1,1,70.65,74 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="radial"
+                    android:centerX="49.84" android:centerY="69.84"
+                    android:gradientRadius="21.65">
+                    <item android:color="#FAD09A" android:offset="0"/>
+                    <item android:color="#F0BC80" android:offset="0.5"/>
+                    <item android:color="#D8A060" android:offset="1"/>
+                </gradient>
+            </aapt:attr>
+        </path>
 
-    <!-- ── Head (skin circle) ── -->
-    <path
-        android:fillColor="#F0BC80"
-        android:pathData="M37.4,70 a16.6,16.6 0 1,0 33.2,0 a16.6,16.6 0 1,0 -33.2,0"/>
+        <!-- ── CHEEK BLUSH ── -->
+        <path
+            android:fillColor="#EBA080"
+            android:fillAlpha="0.16"
+            android:pathData="M 48.87,78.05 A 4.32,4.32,0,1,1,40.23,78.05 A 4.32,4.32,0,1,1,48.87,78.05 Z"/>
+        <path
+            android:fillColor="#EBA080"
+            android:fillAlpha="0.16"
+            android:pathData="M 67.77,78.05 A 4.32,4.32,0,1,1,59.13,78.05 A 4.32,4.32,0,1,1,67.77,78.05 Z"/>
 
-    <!-- ── Ears ── -->
-    <path
-        android:fillColor="#F0BC80"
-        android:pathData="M34.6,71.4 a3.2,3.2 0 1,0 6.4,0 a3.2,3.2 0 1,0 -6.4,0"/>
-    <path
-        android:fillColor="#F0BC80"
-        android:pathData="M67.0,71.4 a3.2,3.2 0 1,0 6.4,0 a3.2,3.2 0 1,0 -6.4,0"/>
+        <!-- ── HAIR ── -->
+        <path
+            android:fillColor="#B5B0AB"
+            android:pathData="M 41.22,60.32 C 38.88,63.65 35.28,67.52 34.92,73.1 C 36.36,74 39.15,73.28 40.32,70.58 C 40.86,66.08 42.48,62.48 43.38,60.68 Z"/>
+        <path
+            android:fillColor="#B5B0AB"
+            android:pathData="M 66.78,60.32 C 69.12,63.65 72.72,67.52 73.08,73.1 C 71.64,74 68.85,73.28 67.68,70.58 C 67.14,66.08 65.52,62.48 64.62,60.68 Z"/>
+        <path
+            android:fillColor="#888280"
+            android:pathData="M 48.6,58.88 C 54,57.62 60.48,59.15 63.45,60.95 C 61.38,61.4 55.08,59.96 49.95,59.78 Z"/>
 
-    <!-- ── Cheek blush ── -->
-    <path
-        android:fillColor="#EBA080"
-        android:fillAlpha="0.20"
-        android:pathData="M40.5,74.0 a4.3,4.3 0 1,0 8.6,0 a4.3,4.3 0 1,0 -8.6,0"/>
-    <path
-        android:fillColor="#EBA080"
-        android:fillAlpha="0.20"
-        android:pathData="M58.9,74.0 a4.3,4.3 0 1,0 8.6,0 a4.3,4.3 0 1,0 -8.6,0"/>
+        <!-- ── NOSE ── -->
+        <path android:pathData="M 57.96,79.76 A 3.96,3.24,0,1,1,50.04,79.76 A 3.96,3.24,0,1,1,57.96,79.76 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="radial"
+                    android:centerX="53.28" android:centerY="79.22"
+                    android:gradientRadius="5">
+                    <item android:color="#FAD09A" android:offset="0"/>
+                    <item android:color="#CC8868" android:offset="1"/>
+                </gradient>
+            </aapt:attr>
+        </path>
+        <path
+            android:fillColor="#D8A060"
+            android:fillAlpha="0.35"
+            android:pathData="M 53.1,80.39 A 0.9,0.81,0,1,1,51.3,80.39 A 0.9,0.81,0,1,1,53.1,80.39 Z
+                          M 56.7,80.39 A 0.9,0.81,0,1,1,54.9,80.39 A 0.9,0.81,0,1,1,56.7,80.39 Z"/>
 
-    <!-- ── Eyebrows (dark, confident arcs) ── -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#888280"
-        android:strokeWidth="1.9"
-        android:strokeLineCap="round"
-        android:pathData="M39.8,62.8 C44.3,60.6 48.8,61.0 52.2,63.1"/>
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#888280"
-        android:strokeWidth="1.9"
-        android:strokeLineCap="round"
-        android:pathData="M68.2,62.8 C63.7,60.6 59.2,61.0 55.8,63.1"/>
+        <!-- ── MUSTACHE ── -->
+        <path
+            android:fillColor="#F2EEEA"
+            android:pathData="M 53.28,81.92 C 49.95,80.84 41.85,81.2 39.78,85.7 C 40.95,87.5 46.98,86.87 50.85,85.88 C 52.92,85.16 54,84.17 53.28,81.92 Z"/>
+        <path
+            android:fillColor="#F2EEEA"
+            android:pathData="M 54.72,81.92 C 58.05,80.84 66.15,81.2 68.22,85.7 C 67.05,87.5 61.02,86.87 57.15,85.88 C 55.08,85.16 54,84.17 54.72,81.92 Z"/>
 
-    <!-- ── Nose ── -->
-    <path
-        android:fillColor="#CC8868"
-        android:pathData="M50.0,75.8 a4.0,3.2 0 1,0 8.0,0 a4.0,3.2 0 1,0 -8.0,0"/>
+        <!-- ── SUNGLASSES ── -->
+        <path
+            android:fillColor="#080818"
+            android:pathData="M 44.55,68.51 H 50.85 Q 52.65,68.51 52.65,70.31 V 72.29 Q 52.65,74.09 50.85,74.09 H 44.55 Q 42.75,74.09 42.75,72.29 V 70.31 Q 42.75,68.51 44.55,68.51 Z
+                          M 57.15,68.51 H 63.45 Q 65.25,68.51 65.25,70.31 V 72.29 Q 65.25,74.09 63.45,74.09 H 57.15 Q 55.35,74.09 55.35,72.29 V 70.31 Q 55.35,68.51 57.15,68.51 Z"/>
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFD700"
+            android:strokeWidth="0.9"
+            android:pathData="M 44.55,68.51 H 50.85 Q 52.65,68.51 52.65,70.31 V 72.29 Q 52.65,74.09 50.85,74.09 H 44.55 Q 42.75,74.09 42.75,72.29 V 70.31 Q 42.75,68.51 44.55,68.51 Z
+                          M 57.15,68.51 H 63.45 Q 65.25,68.51 65.25,70.31 V 72.29 Q 65.25,74.09 63.45,74.09 H 57.15 Q 55.35,74.09 55.35,72.29 V 70.31 Q 55.35,68.51 57.15,68.51 Z"/>
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFD700"
+            android:strokeWidth="0.72"
+            android:strokeLineCap="round"
+            android:pathData="M 52.65,71.3 L 55.35,71.3
+                          M 42.75,71.3 L 37.62,72.2
+                          M 65.25,71.3 L 70.38,72.2"/>
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#664466AA"
+            android:strokeWidth="0.99"
+            android:strokeLineCap="round"
+            android:pathData="M 44.73,69.91 L 47.21,72.14
+                          M 57.33,69.91 L 59.81,72.14"/>
 
-    <!-- ── Sunglasses lenses (dark) ── -->
-    <path
-        android:fillColor="#080818"
-        android:pathData="M42.8,64.5 h9.9 v5.6 h-9.9z
-                          M55.4,64.5 h9.9 v5.6 h-9.9z"/>
+        <!-- ── EYEBROWS ── -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#B8B0A8"
+            android:strokeWidth="1.89"
+            android:strokeLineCap="round"
+            android:pathData="M 39.78,66.8 C 44.28,64.55 48.78,65 52.2,67.07"/>
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#B8B0A8"
+            android:strokeWidth="1.89"
+            android:strokeLineCap="round"
+            android:pathData="M 68.22,66.8 C 63.72,64.55 59.22,65 55.8,67.07"/>
 
-    <!-- ── Sunglasses gold frame ── -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFD700"
-        android:strokeWidth="0.9"
-        android:pathData="M42.8,64.5 h9.9 v5.6 h-9.9z
-                          M55.4,64.5 h9.9 v5.6 h-9.9z"/>
+        <!-- ── HAT (rotated 11° around hat base, matching drawHat rotate pivot) ── -->
+        <group
+            android:rotation="11"
+            android:pivotX="54"
+            android:pivotY="64.1">
+            <group>
+                <clip-path android:pathData="M 0,0 L 108,0 L 108,64.1 L 0,64.1 Z"/>
+                <path
+                    android:fillColor="#881010"
+                    android:pathData="M 72.9,62.66 A 18.9,2.61,0,1,1,35.1,62.66 A 18.9,2.61,0,1,1,72.9,62.66 Z"/>
+            </group>
+            <path android:pathData="M 38.25,64.1 C 40.95,46.1 52.02,20 54,18.2 C 55.98,20 67.05,46.1 69.75,64.1 Z">
+                <aapt:attr name="android:fillColor">
+                    <gradient android:type="linear"
+                        android:startX="54" android:startY="18.2"
+                        android:endX="54" android:endY="64.1">
+                        <item android:color="#DD3535" android:offset="0"/>
+                        <item android:color="#CC1818" android:offset="0.5"/>
+                        <item android:color="#881010" android:offset="1"/>
+                    </gradient>
+                </aapt:attr>
+            </path>
+            <group>
+                <clip-path android:pathData="M 0,64.1 L 108,64.1 L 108,108 L 0,108 Z"/>
+                <path
+                    android:fillColor="#881010"
+                    android:pathData="M 72.9,62.66 A 18.9,2.61,0,1,1,35.1,62.66 A 18.9,2.61,0,1,1,72.9,62.66 Z"/>
+            </group>
+        </group>
 
-    <!-- ── Glasses bridge and temples ── -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFD700"
-        android:strokeWidth="0.7"
-        android:strokeLineCap="round"
-        android:pathData="M52.7,67.3 L55.4,67.3
-                          M42.8,67.3 L38.9,68.0
-                          M65.3,67.3 L69.2,68.0"/>
+        <!-- ── SHIRT COLLAR (drawn after hat group, same as drawShirtCollar) ── -->
+        <path
+            android:fillColor="#F8F4EE"
+            android:pathData="M 49.32,96.32 L 54,101.45 L 58.68,96.32 L 56.88,91.28 L 54,93.08 L 51.12,91.28 Z"/>
+        <path
+            android:fillColor="#AA1E2E"
+            android:pathData="M 53.55,93.62 L 49.5,91.82 L 49.5,95.42 Z
+                          M 54.45,93.62 L 58.5,91.82 L 58.5,95.42 Z"/>
+        <path
+            android:fillColor="#AA1E2E"
+            android:pathData="M 55.08,93.62 A 1.08,1.08,0,1,1,52.92,93.62 A 1.08,1.08,0,1,1,55.08,93.62 Z"/>
 
-    <!-- ── Moustache ── -->
-    <path
-        android:fillColor="#F2EEEA"
-        android:pathData="M53.3,77.9 C49.9,77.4 42.0,79.1 39.8,81.7 C41.1,83.5 47.0,83.0 50.9,81.9 C52.9,81.2 53.3,77.9 53.3,77.9z"/>
-    <path
-        android:fillColor="#F2EEEA"
-        android:pathData="M54.7,77.9 C58.1,77.4 66.0,79.1 68.2,81.7 C66.9,83.5 61.0,83.0 57.1,81.9 C55.1,81.2 54.7,77.9 54.7,77.9z"/>
-
-    <!-- ── Neck ── -->
-    <path
-        android:fillColor="#F0BC80"
-        android:pathData="M50.6,83.5 h6.8 v4.9 h-6.8z"/>
-
-    <!-- ── Bow tie ── -->
-    <path
-        android:fillColor="#AA1E2E"
-        android:pathData="M53.6,89.6 L49.5,87.8 L49.5,91.4z"/>
-    <path
-        android:fillColor="#AA1E2E"
-        android:pathData="M54.4,89.6 L58.5,87.8 L58.5,91.4z"/>
-    <path
-        android:fillColor="#AA1E2E"
-        android:pathData="M52.9,89.6 a1.1,1.1 0 1,0 2.2,0 a1.1,1.1 0 1,0 -2.2,0"/>
-
-    <!-- ── Top of shirt collar (white V) ── -->
-    <path
-        android:fillColor="#F8F4EE"
-        android:pathData="M49.3,92.3 L54,97.5 L58.7,92.3 L57.6,90.3 L54,91.5 L50.4,90.3z"/>
-
-    <!-- ── Top of suit body (dark, just the very top edge at bottom of icon) ── -->
-    <path
-        android:fillColor="#111115"
-        android:pathData="M37.8,108 a16.2,18 0 0,1 32.4,0z"/>
-
-    <!-- ── Lapel hints at bottom edge ── -->
-    <path
-        android:fillColor="#1C1C22"
-        android:pathData="M52.7,92.1 L48.2,99.5 L41.9,97.7 L40.9,91.6z"/>
-    <path
-        android:fillColor="#1C1C22"
-        android:pathData="M55.3,92.1 L59.8,99.5 L66.1,97.7 L67.1,91.6z"/>
-
+    </group>
 </vector>
