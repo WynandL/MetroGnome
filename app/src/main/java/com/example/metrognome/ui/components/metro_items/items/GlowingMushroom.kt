@@ -35,10 +35,9 @@ object GlowingMushroom : MetroItem {
     override val earnedMessage   = "Well done for completing 5 rhythm games! Metro found this rare bioluminescent mushroom on his metro travels. The musician insisted it stays."
     override val isBodyAttached  = false
 
-    // Background items are drawn at (cx + 2.8u, baseY - 0.1u) in raw canvas coords.
-    // Hit-testing subtracts cx/baseY, so express the centre in the same body-relative space.
-    override fun hitCenter(u: Float) = Offset(2.8f * u, -0.1f * u)
-    override fun hitRadius(u: Float) = u * 0.75f
+    // Position is screen-width anchored (size.width * 0.88f) — hitCenter is an approximation only.
+    override fun hitCenter(u: Float) = Offset(3.8f * u, -0.1f * u)
+    override fun hitRadius(u: Float) = u * 1.1f
 
     // Palette
     private val capDeep    = Color(0xFF2D0A5C)
@@ -53,14 +52,14 @@ object GlowingMushroom : MetroItem {
     override fun DrawScope.draw(u: Float, cx: Float, baseY: Float) {
         // Position: to Metro's right, at ground level
         // Metro's right shoe tip extends to about cx + 2.0u, so place at cx + 2.8u
-        val mx = cx + 2.8f * u
-        val my = baseY - 0.1f * u   // just at ground level
+        // Width-anchored so the cluster sits at the right edge of the screen on any device
+        val mx = size.width * 0.88f
+        val my = baseY - 0.1f * u
 
-        drawMushroom(u, mx, my, scale = 1.0f)
+        drawMushroom(u, mx, my, scale = 1.5f)
 
-        // Two smaller mushrooms for depth
-        drawMushroom(u, mx + 1.05f * u, my + 0.05f * u, scale = 0.55f)
-        drawMushroom(u, mx - 0.70f * u, my + 0.08f * u, scale = 0.38f)
+        drawMushroom(u, mx + 0.80f * u, my + 0.05f * u, scale = 0.55f)
+        drawMushroom(u, mx - 1.05f * u, my + 0.08f * u, scale = 0.38f)
     }
 
     private fun DrawScope.drawMushroom(u: Float, mx: Float, my: Float, scale: Float) {
