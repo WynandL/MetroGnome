@@ -347,7 +347,7 @@ private fun IdlePanel(
                     )
                     Column {
                         Text(
-                            "Play With Sound",
+                            "Play With Sound (Beta)",
                             color = if (useMic) Color(0xFFFFD700) else Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
