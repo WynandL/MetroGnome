@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import kotlin.math.cos
 import kotlin.math.sin
 import com.example.metrognome.ui.components.metro_items.MetroItem
+import com.example.metrognome.ui.theme.ItemPalette
 
 /**
  * A luxury wristwatch on Metro's left wrist, aligned to his geometry.
@@ -39,16 +40,12 @@ object LuxuryWatch : MetroItem {
     override fun hitCenter(u: Float) = Offset(-2.70f * u, -4.02f * u)
     override fun hitRadius(u: Float) = u * 0.40f
 
-    private val goldCase    = Color(0xFFD4A800)
-    private val goldLight   = Color(0xFFFFE566)
-    private val goldDark    = Color(0xFF8B6800)
     private val dialWhite   = Color(0xFFF5F0E8)
     private val dialShadow  = Color(0xFFCCC5B0)
     private val strapDark   = Color(0xFF2C1A0A)
     private val strapMid    = Color(0xFF4A2E14)
     private val strapStitch = Color(0xFFAA8855)
     private val lumeGreen   = Color(0xAAB8FF88)
-    private val indexGold   = Color(0xFFFFE566)
 
     override fun DrawScope.draw(u: Float, cx: Float, baseY: Float) {
         // Anchor exactly on the cuff line
@@ -84,7 +81,7 @@ object LuxuryWatch : MetroItem {
         // ── Gold case bezel ───────────────────────────────────────────────────
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(goldLight, goldCase, goldDark),
+                colors = listOf(ItemPalette.goldLight, ItemPalette.goldMid, ItemPalette.goldDark),
                 center = Offset(wx - caseR * 0.3f, wy - caseR * 0.3f),
                 radius = caseR * 1.8f
             ),
@@ -105,7 +102,7 @@ object LuxuryWatch : MetroItem {
 
         // ── Minute track ring ─────────────────────────────────────────────────
         drawCircle(
-            color = goldCase.copy(alpha = 0.45f),
+            color = ItemPalette.goldMid.copy(alpha = 0.45f),
             radius = dialR * 0.91f,
             center = Offset(wx, wy),
             style = Stroke(width = u * 0.011f)
@@ -121,7 +118,7 @@ object LuxuryWatch : MetroItem {
             val icy  = wy + (sin(a) * dist).toFloat()
             val ddx  = (cos(a) * len / 2f).toFloat()
             val ddy  = (sin(a) * len / 2f).toFloat()
-            drawLine(indexGold, Offset(icx - ddx, icy - ddy), Offset(icx + ddx, icy + ddy),
+            drawLine(ItemPalette.goldLight, Offset(icx - ddx, icy - ddy), Offset(icx + ddx, icy + ddy),
                 strokeWidth = w, cap = StrokeCap.Round)
         }
 
@@ -131,20 +128,20 @@ object LuxuryWatch : MetroItem {
         drawHand(u, wx, wy, Math.toRadians(60.0),  dialR * 0.70f, u * 0.036f)
 
         // ── Centre pivot ──────────────────────────────────────────────────────
-        drawCircle(goldDark,  radius = u * 0.026f, center = Offset(wx, wy))
-        drawCircle(goldLight, radius = u * 0.012f, center = Offset(wx, wy))
+        drawCircle(ItemPalette.goldDark,  radius = u * 0.026f, center = Offset(wx, wy))
+        drawCircle(ItemPalette.goldLight, radius = u * 0.012f, center = Offset(wx, wy))
 
         // ── Crown (right of case — becomes top after -90° rotation) ──────────
         val crownW = u * 0.056f
         val crownH = u * 0.095f
         drawRoundRect(
-            color = goldCase,
+            color = ItemPalette.goldMid,
             topLeft = Offset(wx + caseR, wy - crownH / 2f),
             size = Size(crownW, crownH),
             cornerRadius = CornerRadius(crownW * 0.4f)
         )
         drawRoundRect(
-            color = goldLight.copy(alpha = 0.55f),
+            color = ItemPalette.goldLight.copy(alpha = 0.55f),
             topLeft = Offset(wx + caseR + crownW * 0.15f, wy - crownH * 0.35f),
             size = Size(crownW * 0.3f, crownH * 0.70f),
             cornerRadius = CornerRadius(crownW * 0.15f)
@@ -184,7 +181,7 @@ object LuxuryWatch : MetroItem {
         val tipY  = (cy + sin(angle) * length).toFloat()
         val tailX = (cx - cos(angle) * length * 0.18f).toFloat()
         val tailY = (cy - sin(angle) * length * 0.18f).toFloat()
-        drawLine(goldCase, Offset(tailX, tailY), Offset(tipX, tipY),
+        drawLine(ItemPalette.goldMid, Offset(tailX, tailY), Offset(tipX, tipY),
             strokeWidth = width, cap = StrokeCap.Round)
         val lumeLen = length * 0.24f
         val lsX = (cx + cos(angle) * (length - lumeLen)).toFloat()

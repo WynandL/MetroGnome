@@ -47,6 +47,7 @@ import com.example.metrognome.ui.components.UnlockCelebrationOverlay
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
 import com.example.metrognome.ui.components.metro_items.UnlockCondition
+import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import kotlin.math.roundToInt
 
@@ -69,7 +70,7 @@ fun SettingsScreen(vm: MetronomeViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0D0B1E))
+            .background(AppColors.background)
             .statusBarsPadding()
     ) {
         Column(
@@ -102,10 +103,10 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                             label = { Text("$sig/4") },
                             modifier = Modifier.padding(end = 6.dp),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF5B2D8A),
+                                selectedContainerColor = AppColors.primaryPurple,
                                 selectedLabelColor = Color.White,
-                                containerColor = Color(0xFF1E1B3A),
-                                labelColor = Color(0xFFCCCCEE)
+                                containerColor = AppColors.surface,
+                                labelColor = AppColors.textSecondary
                             )
                         )
                     }
@@ -113,7 +114,7 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             }
 
             Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = Color(0xFF2A2550))
+            HorizontalDivider(color = AppColors.surfaceVariant)
             Spacer(Modifier.height(8.dp))
 
             SettingsSectionTitle("Sound")
@@ -128,10 +129,10 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                             label = { Text(name) },
                             modifier = Modifier.padding(end = 6.dp),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF5B2D8A),
+                                selectedContainerColor = AppColors.primaryPurple,
                                 selectedLabelColor = Color.White,
-                                containerColor = Color(0xFF1E1B3A),
-                                labelColor = Color(0xFFCCCCEE)
+                                containerColor = AppColors.surface,
+                                labelColor = AppColors.textSecondary
                             )
                         )
                     }
@@ -148,7 +149,7 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             )
 
             Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = Color(0xFF2A2550))
+            HorizontalDivider(color = AppColors.surfaceVariant)
             Spacer(Modifier.height(8.dp))
 
             SettingsSectionTitle("Visual")
@@ -161,10 +162,10 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                         label = { Text("None") },
                         modifier = Modifier.padding(end = 6.dp),
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFF5B2D8A),
+                            selectedContainerColor = AppColors.primaryPurple,
                             selectedLabelColor = Color.White,
-                            containerColor = Color(0xFF1E1B3A),
-                            labelColor = Color(0xFFCCCCEE)
+                            containerColor = AppColors.surface,
+                            labelColor = AppColors.textSecondary
                         )
                     )
                     for (beat in 1..timeSig) {
@@ -174,10 +175,10 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                             label = { Text("$beat") },
                             modifier = Modifier.padding(end = 6.dp),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF5B2D8A),
+                                selectedContainerColor = AppColors.primaryPurple,
                                 selectedLabelColor = Color.White,
-                                containerColor = Color(0xFF1E1B3A),
-                                labelColor = Color(0xFFCCCCEE)
+                                containerColor = AppColors.surface,
+                                labelColor = AppColors.textSecondary
                             )
                         )
                     }
@@ -192,20 +193,20 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             )
 
             Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = Color(0xFF2A2550))
+            HorizontalDivider(color = AppColors.surfaceVariant)
             Spacer(Modifier.height(8.dp))
 
             SettingsSectionTitle("About")
 
             Text(
                 "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-                color = Color(0xFF8080AA),
+                color = AppColors.textMuted,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
             Text(
                 "Build: ${if (BuildConfig.DEBUG) "Debug" else "Release"}",
-                color = if (BuildConfig.DEBUG) Color(0xFFFFD700) else Color(0xFF8080AA),
+                color = if (BuildConfig.DEBUG) AppColors.gold else AppColors.textMuted,
                 fontSize = 12.sp
             )
 
@@ -217,11 +218,11 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                 onClick = { vm.toggleCheatMode() },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (cheatModeEnabled) Color(0xFFFFD700) else Color(0xFF555577)
+                    contentColor = if (cheatModeEnabled) AppColors.gold else AppColors.devGrey
                 ),
                 border = androidx.compose.foundation.BorderStroke(
                     1.dp,
-                    if (cheatModeEnabled) Color(0xFFFFD700) else Color(0xFF333355)
+                    if (cheatModeEnabled) AppColors.gold else AppColors.devDarkBorder
                 )
             ) {
                 Text(
@@ -237,16 +238,16 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                 OutlinedButton(
                     onClick = { vm.previewUnlockCelebration(previewIndex) },
                     modifier = Modifier.weight(1f).padding(end = 4.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF7B4DB0)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3A2560))
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.mediumPurple),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.deepPurple)
                 ) {
                     Text("DEV: Preview Popup", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 OutlinedButton(
                     onClick = { previewIndex = (previewIndex + 1) % METRO_ITEM_REGISTRY.size },
                     modifier = Modifier.padding(start = 4.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF555577)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2A2550))
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.surfaceVariant)
                 ) {
                     Text(
                         "#${previewIndex + 1}/${METRO_ITEM_REGISTRY.size}",
@@ -260,8 +261,8 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             OutlinedButton(
                 onClick = { showUnlockRules = true },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF66BBFF)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF223355))
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
             ) {
                 Text("DEV: Show Unlock Rules", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
@@ -271,8 +272,8 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             OutlinedButton(
                 onClick = { vm.resetAllProgress() },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B6B)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF552233))
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
             ) {
                 Text("DEV: Reset All Progress", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
@@ -288,9 +289,9 @@ fun SettingsScreen(vm: MetronomeViewModel) {
     if (showUnlockRules) {
         AlertDialog(
             onDismissRequest = { showUnlockRules = false },
-            containerColor = Color(0xFF13102A),
-            titleContentColor = Color(0xFFFFD700),
-            textContentColor = Color(0xFFCCCCEE),
+            containerColor = AppColors.surfaceDeep,
+            titleContentColor = AppColors.gold,
+            textContentColor = AppColors.textSecondary,
             title = { Text("Unlock Rules", fontWeight = FontWeight.Bold) },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
@@ -304,14 +305,14 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                     }.forEach { entry ->
                         Text(
                             text = entry.item.displayName,
-                            color = Color(0xFFAB7DE0),
+                            color = AppColors.textAccent,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                         )
                         Text(
                             text = entry.item.unlockCondition,
                             fontSize = 12.sp,
-                            color = Color(0xFFCCCCEE),
+                            color = AppColors.textSecondary,
                         )
                         Spacer(Modifier.height(10.dp))
                     }
@@ -319,7 +320,7 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             },
             confirmButton = {
                 TextButton(onClick = { showUnlockRules = false }) {
-                    Text("OK", color = Color(0xFFAB7DE0), fontWeight = FontWeight.Bold)
+                    Text("OK", color = AppColors.textAccent, fontWeight = FontWeight.Bold)
                 }
             }
         )
@@ -339,7 +340,7 @@ private fun SettingsSectionTitle(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.labelLarge,
-        color = Color(0xFFFFD700),
+        color = AppColors.gold,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.sp,
         modifier = Modifier.padding(bottom = 12.dp)
@@ -359,10 +360,10 @@ private fun SettingsSliderRow(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label, color = Color(0xFFEEEEFF), modifier = Modifier.weight(1f))
+            Text(label, color = AppColors.textPrimary, modifier = Modifier.weight(1f))
             Text(
                 valueText,
-                color = Color(0xFFAB7DE0),
+                color = AppColors.textAccent,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp
             )
@@ -372,9 +373,9 @@ private fun SettingsSliderRow(
             onValueChange = onValueChange,
             valueRange = range,
             colors = SliderDefaults.colors(
-                thumbColor = Color(0xFFFFD700),
-                activeTrackColor = Color(0xFF7B4DB0),
-                inactiveTrackColor = Color(0xFF2A2550)
+                thumbColor = AppColors.gold,
+                activeTrackColor = AppColors.mediumPurple,
+                inactiveTrackColor = AppColors.surfaceVariant
             )
         )
     }
@@ -383,7 +384,7 @@ private fun SettingsSliderRow(
 @Composable
 private fun SettingsRow(label: String, content: @Composable () -> Unit) {
     Column(modifier = Modifier.padding(bottom = 14.dp)) {
-        Text(label, color = Color(0xFFEEEEFF), modifier = Modifier.padding(bottom = 8.dp))
+        Text(label, color = AppColors.textPrimary, modifier = Modifier.padding(bottom = 8.dp))
         content()
     }
 }
@@ -402,17 +403,17 @@ private fun SettingsSwitchRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, color = Color(0xFFEEEEFF), fontWeight = FontWeight.Medium)
-            Text(description, color = Color(0xFF8080AA), fontSize = 12.sp)
+            Text(label, color = AppColors.textPrimary, fontWeight = FontWeight.Medium)
+            Text(description, color = AppColors.textMuted, fontSize = 12.sp)
         }
         Switch(
             checked = checked,
             onCheckedChange = onChecked,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color(0xFFFFD700),
-                checkedTrackColor = Color(0xFF5B2D8A),
-                uncheckedThumbColor = Color(0xFF666688),
-                uncheckedTrackColor = Color(0xFF2A2550)
+                checkedThumbColor = AppColors.gold,
+                checkedTrackColor = AppColors.primaryPurple,
+                uncheckedThumbColor = AppColors.controlInactive,
+                uncheckedTrackColor = AppColors.surfaceVariant
             )
         )
     }

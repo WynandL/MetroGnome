@@ -74,6 +74,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.components.UnlockCelebrationOverlay
+import com.example.metrognome.ui.theme.AppColors
+import com.example.metrognome.ui.theme.GameColors
 import com.example.metrognome.viewmodel.GamePhase
 import com.example.metrognome.viewmodel.HitQuality
 import com.example.metrognome.viewmodel.NoteState
@@ -138,7 +140,7 @@ fun RhythmGameScreen(
     Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier
         .fillMaxSize()
-        .background(Color(0xFF0D0B1E))
+        .background(AppColors.background)
         .statusBarsPadding()) {
         Box(modifier = Modifier
             .weight(1f)
@@ -235,13 +237,13 @@ private fun IdlePanel(
         Spacer(Modifier.height(28.dp))
 
         Text(
-            "RHYTHM GAME", color = Color(0xFFFFD700), fontSize = 22.sp,
+            "RHYTHM GAME", color = AppColors.gold, fontSize = 22.sp,
             fontWeight = FontWeight.Black, letterSpacing = 3.sp
         )
         Spacer(Modifier.height(4.dp))
         Text(
             "Notes fall from the top · tap when they hit the line!",
-            color = Color(0xFF7070AA), fontSize = 13.sp, textAlign = TextAlign.Center
+            color = AppColors.textSubtle, fontSize = 13.sp, textAlign = TextAlign.Center
         )
 
         Spacer(Modifier.height(22.dp))
@@ -276,7 +278,7 @@ private fun IdlePanel(
             ) {
                 Column {
                     Text(
-                        "Difficulty", color = Color(0xFFCCCCEE),
+                        "Difficulty", color = AppColors.textSecondary,
                         fontWeight = FontWeight.Medium, fontSize = 14.sp
                     )
                     Text(
@@ -285,7 +287,7 @@ private fun IdlePanel(
                         fontSize = 12.sp
                     )
                 }
-                Text(if (showTolerance) "▲" else "▼", color = Color(0xFF8080AA), fontSize = 12.sp)
+                Text(if (showTolerance) "▲" else "▼", color = AppColors.textMuted, fontSize = 12.sp)
             }
         }
 
@@ -302,7 +304,7 @@ private fun IdlePanel(
                     val almostMs = (150 * tolerance).toInt()
                     Text(
                         "How forgiving the game is when judging your taps.",
-                        color = Color(0xFF7070AA), fontSize = 12.sp
+                        color = AppColors.textSubtle, fontSize = 12.sp
                     )
                     Spacer(Modifier.height(10.dp))
                     Slider(
@@ -310,20 +312,20 @@ private fun IdlePanel(
                         onValueChange = onToleranceChange,
                         valueRange = 0.5f..2.5f,
                         colors = SliderDefaults.colors(
-                            thumbColor = Color(0xFFFFD700),
-                            activeTrackColor = Color(0xFF5B2D8A),
+                            thumbColor = AppColors.gold,
+                            activeTrackColor = AppColors.primaryPurple,
                             inactiveTrackColor = Color(0x44FFFFFF)
                         )
                     )
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Strict", color = Color(0xFF5566AA), fontSize = 11.sp)
-                        Text("Very Easy", color = Color(0xFF5566AA), fontSize = 11.sp)
+                        Text("Strict", color = GameColors.rangeBlue, fontSize = 11.sp)
+                        Text("Very Easy", color = GameColors.rangeBlue, fontSize = 11.sp)
                     }
                     Spacer(Modifier.height(12.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                        WindowBadge("PERFECT", "±${perfMs}ms", Color(0xFFFFD700))
-                        WindowBadge("GOOD", "±${goodMs}ms", Color(0xFF7BE87B))
-                        WindowBadge("ALMOST", "±${almostMs}ms", Color(0xFF7BB8FF))
+                        WindowBadge("PERFECT", "±${perfMs}ms", AppColors.gold)
+                        WindowBadge("GOOD", "±${goodMs}ms", GameColors.good)
+                        WindowBadge("ALMOST", "±${almostMs}ms", GameColors.almost)
                     }
                 }
             }
@@ -334,12 +336,12 @@ private fun IdlePanel(
         // ── Mic mode ─────────────────────────────────────────────────────────
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = if (useMic) Color(0xFF1A1F3A) else Color(0xFF1A1838),
+            color = if (useMic) AppColors.surfaceActive else AppColors.surfaceDim,
             modifier = Modifier
                 .fillMaxWidth()
                 .border(
                     width = 1.5.dp,
-                    color = if (useMic) Color(0xFFFFD700) else Color(0xFF2A2860),
+                    color = if (useMic) AppColors.gold else AppColors.borderMuted,
                     shape = RoundedCornerShape(16.dp)
                 )
         ) {
@@ -355,7 +357,7 @@ private fun IdlePanel(
                     Icon(
                         imageVector = Icons.Filled.Mic,
                         contentDescription = null,
-                        tint = if (useMic) Color(0xFFFFD700) else Color(0xFF6060AA),
+                        tint = if (useMic) AppColors.gold else AppColors.textDim,
                         modifier = Modifier
                             .size(36.dp)
                             .padding(end = 14.dp)
@@ -363,14 +365,14 @@ private fun IdlePanel(
                     Column {
                         Text(
                             "Play With Sound",
-                            color = if (useMic) Color(0xFFFFD700) else Color.White,
+                            color = if (useMic) AppColors.gold else Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
                         )
                         Spacer(Modifier.height(3.dp))
                         Text(
                             "Clap, tap a surface, or play your instrument. The mic detects the beat so you don't need to touch the screen.",
-                            color = Color(0xFF8080AA),
+                            color = AppColors.textMuted,
                             fontSize = 12.sp,
                             lineHeight = 17.sp
                         )
@@ -384,8 +386,8 @@ private fun IdlePanel(
                         if (on && !micGranted) onRequestMic()
                     },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color(0xFFFFD700),
-                        checkedTrackColor = Color(0xFF5B2D8A)
+                        checkedThumbColor = AppColors.gold,
+                        checkedTrackColor = AppColors.primaryPurple
                     )
                 )
             }
@@ -398,7 +400,7 @@ private fun IdlePanel(
 private fun DifficultyCard(difficulty: Difficulty, bestScore: Int, onClick: () -> Unit) {
     Surface(
         onClick = onClick, shape = RoundedCornerShape(16.dp),
-        color = Color(0xFF1A1838), modifier = Modifier.fillMaxWidth()
+        color = AppColors.surfaceDim, modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
@@ -411,7 +413,7 @@ private fun DifficultyCard(difficulty: Difficulty, bestScore: Int, onClick: () -
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
-                Text(difficulty.desc, color = Color(0xFF7070AA), fontSize = 12.sp)
+                Text(difficulty.desc, color = AppColors.textSubtle, fontSize = 12.sp)
             }
             if (bestScore > 0) {
                 Column(
@@ -419,16 +421,16 @@ private fun DifficultyCard(difficulty: Difficulty, bestScore: Int, onClick: () -
                     modifier = Modifier.padding(end = 12.dp)
                 ) {
                     Text(
-                        "BEST", color = Color(0xFF6060AA), fontSize = 10.sp,
+                        "BEST", color = AppColors.textDim, fontSize = 10.sp,
                         fontWeight = FontWeight.Bold, letterSpacing = 1.sp
                     )
                     Text(
-                        "$bestScore", color = Color(0xFFFFD700), fontSize = 18.sp,
+                        "$bestScore", color = AppColors.gold, fontSize = 18.sp,
                         fontWeight = FontWeight.Black
                     )
                 }
             }
-            Text("▶", color = Color(0xFFFFD700), fontSize = 18.sp)
+            Text("▶", color = AppColors.gold, fontSize = 18.sp)
         }
     }
 }
@@ -443,7 +445,7 @@ private fun WindowBadge(label: String, value: String, color: Color) {
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.5.sp
         )
-        Text(value, color = Color(0xFFCCCCEE), fontSize = 12.sp)
+        Text(value, color = AppColors.textSecondary, fontSize = 12.sp)
     }
 }
 
@@ -455,10 +457,10 @@ private fun toleranceLabel(t: Float) = when {
 }
 
 private fun toleranceLabelColor(t: Float): Color = when {
-    t < 0.8f -> Color(0xFFCC4444)
-    t < 1.2f -> Color(0xFF7BB8FF)
-    t < 1.8f -> Color(0xFF7BE87B)
-    else -> Color(0xFFFFD700)
+    t < 0.8f -> GameColors.miss
+    t < 1.2f -> GameColors.almost
+    t < 1.8f -> GameColors.good
+    else -> AppColors.gold
 }
 
 // ── Countdown ─────────────────────────────────────────────────────────────────
@@ -467,7 +469,7 @@ private fun toleranceLabelColor(t: Float): Color = when {
 private fun CountdownPanel(countDown: Int) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Get ready!", color = Color(0xFF8080AA), fontSize = 18.sp)
+            Text("Get ready!", color = AppColors.textMuted, fontSize = 18.sp)
             Spacer(Modifier.height(12.dp))
             AnimatedContent(
                 targetState = countDown,
@@ -476,11 +478,11 @@ private fun CountdownPanel(countDown: Int) {
             ) { count ->
                 Text(
                     count.toString(), fontSize = 140.sp, fontWeight = FontWeight.Black,
-                    color = Color(0xFFFFD700), textAlign = TextAlign.Center
+                    color = AppColors.gold, textAlign = TextAlign.Center
                 )
             }
             Spacer(Modifier.height(12.dp))
-            Text("Tap when the note hits the line", color = Color(0xFF5B2D8A), fontSize = 14.sp)
+            Text("Tap when the note hits the line", color = AppColors.primaryPurple, fontSize = 14.sp)
         }
     }
 }
@@ -520,9 +522,9 @@ private fun PlayingPanel(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ScoreBadge("SCORE", score.toString(), Color(0xFFFFD700))
-                ScoreBadge("BEATS LEFT", beatsRemaining.toString(), Color(0xFF8080AA))
-                ScoreBadge("COMBO", "×$combo", Color(0xFFAB7DE0))
+                ScoreBadge("SCORE", score.toString(), AppColors.gold)
+                ScoreBadge("BEATS LEFT", beatsRemaining.toString(), AppColors.textMuted)
+                ScoreBadge("COMBO", "×$combo", AppColors.textAccent)
             }
 
             Spacer(Modifier.height(10.dp))
@@ -572,7 +574,7 @@ private fun PlayingPanel(
                     .size(110.dp)
                     .scale(tapScale.value),
                 shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B2D8A))
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple)
             ) {
                 Text(
                     "TAP",
@@ -591,9 +593,9 @@ private fun PlayingPanel(
                     .height(46.dp),
                 shape = RoundedCornerShape(23.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color(0xFFFF6666)
+                    contentColor = AppColors.stopRed
                 ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF882222))
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.stopRedBorder)
             ) {
                 Icon(
                     imageVector = Icons.Filled.StopCircle,
@@ -627,10 +629,10 @@ private fun BeatDotsRow(currentBeat: Int, timeSig: Int) {
             val isAccent = i == 0
             val dotSize = if (isAccent) 14.dp else 10.dp
             val dotColor = when {
-                isActive && isAccent -> Color(0xFFFFD700)
-                isActive -> Color(0xFF9B5DE5)
-                isAccent -> Color(0xFF5B3D00)
-                else -> Color(0xFF2A2845)
+                isActive && isAccent -> AppColors.gold
+                isActive -> GameColors.beatDotAccent
+                isAccent -> GameColors.beatDotDim
+                else -> GameColors.beatDotInactive
             }
             Box(
                 modifier = Modifier
@@ -678,10 +680,10 @@ private fun MicEqualizer(
 
     // Quality flash — fires when a detection was SCORED (gold/green/blue/red)
     val qualityFlashColor = when (lastQuality) {
-        HitQuality.PERFECT -> Color(0xFFFFD700)
-        HitQuality.GOOD -> Color(0xFF7BE87B)
-        HitQuality.ALMOST -> Color(0xFF7BB8FF)
-        HitQuality.MISS -> Color(0xFFCC4444)
+        HitQuality.PERFECT -> AppColors.gold
+        HitQuality.GOOD -> GameColors.good
+        HitQuality.ALMOST -> GameColors.almost
+        HitQuality.MISS -> GameColors.miss
         HitQuality.NONE -> Color.Transparent
     }
     val qualityAlpha = remember { Animatable(0f) }
@@ -732,9 +734,9 @@ private fun MicEqualizer(
 
                 // Base colour: dark purple (silence) → purple → gold (loud)
                 val baseColor = when {
-                    amp > 0.20f -> Color(0xFFFFD700)
-                    amp > 0.06f -> Color(0xFFAB7DE0)
-                    else -> Color(0xFF2D1F50)
+                    amp > 0.20f -> AppColors.gold
+                    amp > 0.06f -> AppColors.textAccent
+                    else -> GameColors.eqQuiet
                 }
 
                 val barColor =
@@ -758,7 +760,7 @@ private fun MicEqualizer(
         // Label
         Text(
             "MIC",
-            color = Color(0xFF3A2A60),
+            color = GameColors.hitLineIdle,
             fontSize = 8.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
@@ -789,11 +791,11 @@ private fun NoteHighway(
 ) {
     // Quality glow at the hit line
     val hitLineColor = when (lastQuality) {
-        HitQuality.PERFECT -> Color(0xFFFFD700)
-        HitQuality.GOOD -> Color(0xFF7BE87B)
-        HitQuality.ALMOST -> Color(0xFF7BB8FF)
-        HitQuality.MISS -> Color(0xFFCC4444)
-        HitQuality.NONE -> Color(0xFF3A2A60)
+        HitQuality.PERFECT -> AppColors.gold
+        HitQuality.GOOD -> GameColors.good
+        HitQuality.ALMOST -> GameColors.almost
+        HitQuality.MISS -> GameColors.miss
+        HitQuality.NONE -> GameColors.hitLineIdle
     }
 
     Box(modifier = modifier) {
@@ -809,8 +811,8 @@ private fun NoteHighway(
             val railX2 = cx + noteR * 1.6f
 
             // Lane guide lines
-            drawLine(Color(0xFF1A1838), Offset(railX1, 0f), Offset(railX1, laneH), lineW * 0.5f)
-            drawLine(Color(0xFF1A1838), Offset(railX2, 0f), Offset(railX2, laneH), lineW * 0.5f)
+            drawLine(AppColors.surfaceDim, Offset(railX1, 0f), Offset(railX1, laneH), lineW * 0.5f)
+            drawLine(AppColors.surfaceDim, Offset(railX2, 0f), Offset(railX2, laneH), lineW * 0.5f)
 
             // Hit zone glow
             drawRect(
@@ -851,10 +853,10 @@ private fun NoteHighway(
                 val isPast = note.state == NoteState.MISSED || note.progress > 1.13f
 
                 val noteColor = when {
-                    isPast -> Color(0xFFCC4444)   // missed — red
-                    inHitWindow -> Color(0xFFFFD700)   // in window — gold: TAP NOW
-                    note.progress > 0.65f -> Color(0xFFCC8800)  // approaching — amber
-                    else -> Color(0xFF7B4DB8)   // far — purple
+                    isPast -> GameColors.miss   // missed — red
+                    inHitWindow -> AppColors.gold   // in window — gold: TAP NOW
+                    note.progress > 0.65f -> GameColors.noteAmber  // approaching — amber
+                    else -> GameColors.notePurple   // far — purple
                 }
                 val glowAlpha = if (inHitWindow) 0.35f else 0.15f
 
@@ -878,10 +880,10 @@ private fun NoteHighway(
 @Composable
 private fun QualityFeedback(lastQuality: HitQuality, lastHitOffset: Long) {
     val (mainText, mainColor) = when (lastQuality) {
-        HitQuality.PERFECT -> "PERFECT!" to Color(0xFFFFD700)
-        HitQuality.GOOD -> "GOOD" to Color(0xFF7BE87B)
-        HitQuality.ALMOST -> "ALMOST" to Color(0xFF7BB8FF)
-        HitQuality.MISS -> "MISS" to Color(0xFFCC4444)
+        HitQuality.PERFECT -> "PERFECT!" to AppColors.gold
+        HitQuality.GOOD -> "GOOD" to GameColors.good
+        HitQuality.ALMOST -> "ALMOST" to GameColors.almost
+        HitQuality.MISS -> "MISS" to GameColors.miss
         HitQuality.NONE -> "" to Color.Transparent
     }
     val hint = when {
@@ -910,7 +912,7 @@ private fun QualityFeedback(lastQuality: HitQuality, lastHitOffset: Long) {
             )
         }
         if (hint.isNotEmpty()) {
-            Text(hint, color = Color(0xFF5566AA), fontSize = 11.sp)
+            Text(hint, color = GameColors.rangeBlue, fontSize = 11.sp)
         }
     }
 }
@@ -918,7 +920,7 @@ private fun QualityFeedback(lastQuality: HitQuality, lastHitOffset: Long) {
 @Composable
 private fun ScoreBadge(label: String, value: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, color = Color(0xFF7070AA), fontSize = 10.sp, letterSpacing = 1.sp)
+        Text(label, color = AppColors.textSubtle, fontSize = 10.sp, letterSpacing = 1.sp)
         Text(value, color = color, fontSize = 24.sp, fontWeight = FontWeight.Black)
     }
 }
@@ -949,16 +951,16 @@ private fun ResultPanel(
         Spacer(Modifier.height(24.dp))
         Text(
             "RESULT",
-            color = Color(0xFFFFD700),
+            color = AppColors.gold,
             fontSize = 20.sp,
             fontWeight = FontWeight.Black,
             letterSpacing = 3.sp
         )
         if (result.isNewHighScore) {
             Spacer(Modifier.height(6.dp))
-            Surface(color = Color(0xFFFFD700), shape = RoundedCornerShape(8.dp)) {
+            Surface(color = AppColors.gold, shape = RoundedCornerShape(8.dp)) {
                 Text(
-                    "★  NEW BEST  ★", color = Color(0xFF0D0B1E), fontSize = 13.sp,
+                    "★  NEW BEST  ★", color = AppColors.background, fontSize = 13.sp,
                     fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
                 )
@@ -969,7 +971,7 @@ private fun ResultPanel(
             repeat(3) { i ->
                 Text(
                     if (i < stars) "★" else "☆", fontSize = 44.sp,
-                    color = if (i < stars) Color(0xFFFFD700) else Color(0x33FFFFFF)
+                    color = if (i < stars) AppColors.gold else Color(0x33FFFFFF)
                 )
                 Spacer(Modifier.width(6.dp))
             }
@@ -981,25 +983,25 @@ private fun ResultPanel(
             fontSize = 60.sp,
             fontWeight = FontWeight.Black
         )
-        Text("points", color = Color(0xFF8080AA), fontSize = 14.sp)
+        Text("points", color = AppColors.textMuted, fontSize = 14.sp)
         Spacer(Modifier.height(18.dp))
         Surface(
-            color = Color(0xFF1A1838),
+            color = AppColors.surfaceDim,
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                ResultRow("Perfect", "${result.perfects}", Color(0xFFFFD700))
-                ResultRow("Good", "${result.goods}", Color(0xFF7BE87B))
-                ResultRow("Almost", "${result.almosts}", Color(0xFF7BB8FF))
-                ResultRow("Miss", "${result.misses}", Color(0xFFCC4444))
-                ResultRow("Max Combo", "×${result.maxCombo}", Color(0xFFAB7DE0))
+                ResultRow("Perfect", "${result.perfects}", AppColors.gold)
+                ResultRow("Good", "${result.goods}", GameColors.good)
+                ResultRow("Almost", "${result.almosts}", GameColors.almost)
+                ResultRow("Miss", "${result.misses}", GameColors.miss)
+                ResultRow("Max Combo", "×${result.maxCombo}", AppColors.textAccent)
             }
         }
         Spacer(Modifier.height(22.dp))
         Button(
             onClick = onDismiss,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B2D8A)),
+            colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
@@ -1017,7 +1019,7 @@ private fun ResultRow(label: String, value: String, color: Color) {
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, color = Color(0xFFCCCCEE))
+        Text(label, color = AppColors.textSecondary)
         Text(value, color = color, fontWeight = FontWeight.Bold)
     }
 }

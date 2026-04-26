@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import com.example.metrognome.ui.components.metro_items.MetroItem
+import com.example.metrognome.ui.theme.ItemPalette
 
 /**
  * Metro's forest guardian — a grand old oak.
@@ -37,8 +38,6 @@ object ForestTree : MetroItem {
         Offset(canvasW * 0.10f, baseY - 3.8f * u)
     override fun previewRadius(u: Float) = u * 4.2f
 
-    private val trunkBrown = Color(0xFF5C3317)
-    private val trunkLight = Color(0xFF7A4A28)
     private val mossTint   = Color(0xFF5A6E3A)
     private val leafDark   = Color(0xFF255C1C)
     private val leafMid    = Color(0xFF3D7A33)
@@ -63,7 +62,7 @@ object ForestTree : MetroItem {
         drawPath(
             rootPath,
             brush = Brush.verticalGradient(
-                colors = listOf(trunkLight, trunkBrown),
+                colors = listOf(ItemPalette.woodLight, ItemPalette.woodBrown),
                 startY = groundY - 1.5f * u,
                 endY   = groundY
             )
@@ -72,7 +71,7 @@ object ForestTree : MetroItem {
         // Trunk
         drawRoundRect(
             brush = Brush.horizontalGradient(
-                colors = listOf(trunkBrown, trunkLight, trunkBrown),
+                colors = listOf(ItemPalette.woodBrown, ItemPalette.woodLight, ItemPalette.woodBrown),
                 startX = tx - trunkW / 2f,
                 endX   = tx + trunkW / 2f
             ),
@@ -90,9 +89,9 @@ object ForestTree : MetroItem {
         )
 
         // Main branches — longer to match larger size
-        drawLine(trunkBrown, Offset(tx, trunkTopY + 1.1f * u), Offset(tx - 1.5f * u, trunkTopY + 0.1f * u), strokeWidth = 0.25f * u, cap = StrokeCap.Round)
-        drawLine(trunkBrown, Offset(tx, trunkTopY + 1.7f * u), Offset(tx + 1.25f * u, trunkTopY + 0.8f * u), strokeWidth = 0.21f * u, cap = StrokeCap.Round)
-        drawLine(trunkBrown, Offset(tx, trunkTopY + 0.7f * u), Offset(tx - 0.8f * u, trunkTopY - 0.6f * u), strokeWidth = 0.16f * u, cap = StrokeCap.Round)
+        drawLine(ItemPalette.woodBrown, Offset(tx, trunkTopY + 1.1f * u), Offset(tx - 1.5f * u, trunkTopY + 0.1f * u), strokeWidth = 0.25f * u, cap = StrokeCap.Round)
+        drawLine(ItemPalette.woodBrown, Offset(tx, trunkTopY + 1.7f * u), Offset(tx + 1.25f * u, trunkTopY + 0.8f * u), strokeWidth = 0.21f * u, cap = StrokeCap.Round)
+        drawLine(ItemPalette.woodBrown, Offset(tx, trunkTopY + 0.7f * u), Offset(tx - 0.8f * u, trunkTopY - 0.6f * u), strokeWidth = 0.16f * u, cap = StrokeCap.Round)
 
         // Full leafy canopy — all radii ~15% larger than before
         val cy = trunkTopY - 0.45f * u

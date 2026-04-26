@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import com.example.metrognome.ui.components.metro_items.MetroItem
+import com.example.metrognome.ui.theme.ItemPalette
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -37,8 +38,6 @@ object TorchPost : MetroItem {
         Offset(maxOf(canvasW * 0.76f, canvasW * 0.5f + 3f * u), baseY - 3.0f * u)
     override fun previewRadius(u: Float) = u * 3.5f
 
-    private val postBrown  = Color(0xFF5C3317)
-    private val postLight  = Color(0xFF7A4A28)
     private val wrapColor  = Color(0xFF8B6914)
     private val wrapDark   = Color(0xFF5A4210)
     private val flameDeep  = Color(0xFFFF4400)
@@ -87,7 +86,7 @@ object TorchPost : MetroItem {
         // Post shaft
         drawRoundRect(
             brush = Brush.horizontalGradient(
-                colors = listOf(postBrown, postLight, postBrown),
+                colors = listOf(ItemPalette.woodBrown, ItemPalette.woodLight, ItemPalette.woodBrown),
                 startX = px - postW / 2f,
                 endX   = px + postW / 2f
             ),

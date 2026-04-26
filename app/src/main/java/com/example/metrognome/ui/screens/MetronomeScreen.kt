@@ -59,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.components.GnomeCanvas
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
+import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 
 @Composable
@@ -98,7 +99,7 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0D0B1E))
+            .background(AppColors.background)
     ) {
         // Beat indicator dots (top)
         BeatIndicatorRow(
@@ -146,7 +147,7 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             onTapTempo = { vm.tapTempo() },
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF0D0B1E))
+                .background(AppColors.background)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         )
 
@@ -158,7 +159,7 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             onToggleKeepScreenOn = { vm.setKeepScreenOn(!keepScreenOn) },
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF0D0B1E))
+                .background(AppColors.background)
                 .padding(horizontal = 16.dp, vertical = 6.dp)
         )
 
@@ -172,19 +173,19 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             title = {
                 Text(
                     item.displayName,
-                    color = Color(0xFFFFD700),
+                    color = AppColors.gold,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                Text(item.earnedMessage, color = Color(0xFFEEEEFF))
+                Text(item.earnedMessage, color = AppColors.textPrimary)
             },
             confirmButton = {
                 TextButton(onClick = { tappedItem = null }) {
-                    Text("Nice!", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
+                    Text("Nice!", color = AppColors.gold, fontWeight = FontWeight.Bold)
                 }
             },
-            containerColor = Color(0xFF1E1B3A),
+            containerColor = AppColors.surface,
             tonalElevation = 0.dp
         )
     }
@@ -216,8 +217,8 @@ private fun BeatIndicatorRow(
             val isAccent = accentBeat > 0 && i == accentBeat - 1
             val dotColor by animateColorAsState(
                 targetValue = when {
-                    isActive && isAccent -> Color(0xFFFFD700)
-                    isActive -> Color(0xFFAB7DE0)
+                    isActive && isAccent -> AppColors.gold
+                    isActive -> AppColors.textAccent
                     isAccent -> Color(0x66FFD700)
                     else -> Color(0x33FFFFFF)
                 },
@@ -274,7 +275,7 @@ private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
                 text = tempoLabel(bpm),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFFFFD700),
+                color = AppColors.gold,
                 letterSpacing = 1.5.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.offset(y = (-6).dp).padding(bottom = 2.dp)
@@ -345,7 +346,7 @@ private fun BpmButton(label: String, onClick: () -> Unit) {
 @Composable
 private fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
     val bgColor by animateColorAsState(
-        targetValue = if (isPlaying) Color(0xFFCC2233) else Color(0xFF5B2D8A),
+        targetValue = if (isPlaying) AppColors.danger else AppColors.primaryPurple,
         label = "playButtonColor"
     )
     Surface(
@@ -401,9 +402,9 @@ private fun UtilityToggle(
     onClick: () -> Unit
 ) {
     val shape = RoundedCornerShape(20.dp)
-    val borderColor = if (active) Color(0xFFFFD700) else Color(0x33FFFFFF)
-    val bgColor = if (active) Color(0xFF2A1F55) else Color(0xFF1E1B3A)
-    val contentColor = if (active) Color(0xFFFFD700) else Color(0x80FFFFFF)
+    val borderColor = if (active) AppColors.gold else Color(0x33FFFFFF)
+    val bgColor = if (active) AppColors.darkPurple else AppColors.surface
+    val contentColor = if (active) AppColors.gold else Color(0x80FFFFFF)
 
     Box(
         contentAlignment = Alignment.Center,

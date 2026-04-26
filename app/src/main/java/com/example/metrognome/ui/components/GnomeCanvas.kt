@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
 import com.example.metrognome.ui.components.metro_items.MetroItem
+import com.example.metrognome.ui.theme.ItemPalette
 import com.example.metrognome.ui.theme.GnomeColors
 import com.example.metrognome.viewmodel.BeatEvent
 import kotlinx.coroutines.flow.SharedFlow
@@ -408,7 +409,7 @@ private fun DrawScope.drawBaton(u: Float, pendulumAngle: Float) {
         )
         drawCircle(
             brush = Brush.radialGradient(
-                listOf(Color(0xFFFFE566), GnomeColors.batonGold),
+                listOf(ItemPalette.goldLight, GnomeColors.batonGold),
                 center = Offset(-0.08f * u, batonLen - 0.1f * u), radius = 0.42f * u
             ),
             radius = 0.38f * u, center = Offset(0f, batonLen)

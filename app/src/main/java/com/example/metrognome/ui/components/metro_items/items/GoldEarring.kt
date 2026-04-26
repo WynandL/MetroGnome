@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import com.example.metrognome.ui.components.metro_items.MetroItem
+import com.example.metrognome.ui.theme.ItemPalette
 
 /**
  * A small, detailed gold hoop earring on Metro's left ear.
@@ -36,9 +37,6 @@ object GoldEarring : MetroItem {
     override fun hitRadius(u: Float) = u * 0.45f
 
     // Palette
-    private val goldLight  = Color(0xFFFFE566)
-    private val goldMid    = Color(0xFFD4A800)
-    private val goldDark   = Color(0xFF8B6800)
     private val gemRed     = Color(0xFFCC2222)
     private val gemHighlight = Color(0xFFFF8888)
     private val ringShade  = Color(0x44000000)
@@ -64,7 +62,7 @@ object GoldEarring : MetroItem {
         // ── Main hoop — radial gold gradient simulated with two concentric arcs ─
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(goldLight, goldMid, goldDark),
+                colors = listOf(ItemPalette.goldLight, ItemPalette.goldMid, ItemPalette.goldDark),
                 center = Offset(hoopCx - hoopR * 0.3f, hoopCy - hoopR * 0.3f),
                 radius = hoopR * 1.6f
             ),
@@ -75,7 +73,7 @@ object GoldEarring : MetroItem {
 
         // ── Inner specular highlight (thin bright arc on upper-left) ──────────
         drawArc(
-            color = goldLight.copy(alpha = 0.85f),
+            color = ItemPalette.goldLight.copy(alpha = 0.85f),
             startAngle = 200f,
             sweepAngle = 110f,
             useCenter = false,
@@ -110,7 +108,7 @@ object GoldEarring : MetroItem {
         )
         // Gem rim
         drawCircle(
-            color = goldDark,
+            color = ItemPalette.goldDark,
             radius = gemR,
             center = Offset(gemCx, gemCy),
             style = Stroke(width = wireW * 0.4f)

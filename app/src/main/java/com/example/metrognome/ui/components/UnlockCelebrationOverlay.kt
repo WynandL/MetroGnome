@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
+import com.example.metrognome.ui.theme.AppColors
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.sin
@@ -53,12 +54,7 @@ import kotlin.random.Random
 
 // ── Confetti definitions ──────────────────────────────────────────────────────
 
-private val confettiColors = listOf(
-    Color(0xFFFFD700), Color(0xFFAB7DE0), Color(0xFF4CAF50),
-    Color(0xFFFF6B6B), Color(0xFF00BCD4), Color(0xFFFF9800),
-    Color(0xFFF48FB1), Color(0xFFE8F5E9), Color(0xFF80DEEA),
-    Color(0xFFCE93D8),
-)
+private val confettiColors = AppColors.confetti
 
 private data class ConfettiDef(
     val baseX: Float,
@@ -175,7 +171,7 @@ fun UnlockCelebrationOverlay(
                     alpha = (cardScale.value - 0.15f) / 0.85f
                 },
             shape = RoundedCornerShape(28.dp),
-            color = Color(0xFF13102A),
+            color = AppColors.surfaceDeep,
             shadowElevation = 28.dp,
         ) {
             Column(
@@ -186,7 +182,7 @@ fun UnlockCelebrationOverlay(
             ) {
                 Text(
                     text = "✦  NEW ITEM UNLOCKED  ✦",
-                    color = Color(0xFFFFD700),
+                    color = AppColors.gold,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = 2.sp,
@@ -210,7 +206,7 @@ fun UnlockCelebrationOverlay(
 
                 Text(
                     text = entry.item.unlockCondition,
-                    color = Color(0xFF8888BB),
+                    color = AppColors.textMutedBlue,
                     fontSize = 12.sp,
                     fontStyle = FontStyle.Italic,
                     textAlign = TextAlign.Center,
@@ -220,7 +216,7 @@ fun UnlockCelebrationOverlay(
 
                 Text(
                     text = entry.item.earnedMessage,
-                    color = Color(0xFFCCCCEE),
+                    color = AppColors.textSecondary,
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center,
                     lineHeight = 21.sp,
@@ -230,7 +226,7 @@ fun UnlockCelebrationOverlay(
 
                 Button(
                     onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B2D8A)),
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
                     shape = RoundedCornerShape(22.dp),
                     modifier = Modifier.fillMaxWidth(0.6f),
                 ) {
@@ -258,7 +254,7 @@ private fun ItemPreviewCanvas(entry: MetroItemEntry) {
             .size(width = 220.dp, height = 170.dp)
             .clip(RoundedCornerShape(18.dp))
             .background(
-                Brush.verticalGradient(listOf(Color(0xFF080518), Color(0xFF1A1040)))
+                Brush.verticalGradient(listOf(AppColors.previewBgTop, AppColors.previewBgBottom))
             ),
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {

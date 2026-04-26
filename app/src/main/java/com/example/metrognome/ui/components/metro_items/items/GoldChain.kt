@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import kotlin.math.cos
 import kotlin.math.sin
 import com.example.metrognome.ui.components.metro_items.MetroItem
+import com.example.metrognome.ui.theme.ItemPalette
 
 /**
  * Cuban-link gold chain draped across Metro's chest with a gold medallion pendant.
@@ -40,9 +41,6 @@ object GoldChain : MetroItem {
     override fun hitCenter(u: Float) = Offset(0f, -5.48f * u)
     override fun hitRadius(u: Float) = u * 0.35f
 
-    private val goldLight  = Color(0xFFFFE566)
-    private val goldMid    = Color(0xFFD4A800)
-    private val goldDark   = Color(0xFF8B6800)
     private val goldDeep   = Color(0xFF5A4000)
 
     override fun DrawScope.draw(u: Float, cx: Float, baseY: Float) {
@@ -92,7 +90,7 @@ object GoldChain : MetroItem {
 
             drawOval(
                 brush = Brush.radialGradient(
-                    colors = listOf(goldLight, goldMid, goldDark),
+                    colors = listOf(ItemPalette.goldLight, ItemPalette.goldMid, ItemPalette.goldDark),
                     center = Offset(p.x - lw * 0.18f, p.y - lh * 0.18f),
                     radius = lw * 1.1f
                 ),
@@ -100,14 +98,14 @@ object GoldChain : MetroItem {
                 size = Size(lw, lh)
             )
             drawOval(
-                color = goldDark.copy(alpha = 0.55f),
+                color = ItemPalette.goldDark.copy(alpha = 0.55f),
                 topLeft = Offset(p.x - lw / 2f, p.y - lh / 2f),
                 size = Size(lw, lh),
                 style = Stroke(width = u * 0.016f)
             )
             // Specular
             drawOval(
-                color = goldLight.copy(alpha = 0.50f),
+                color = ItemPalette.goldLight.copy(alpha = 0.50f),
                 topLeft = Offset(p.x - lw * 0.30f, p.y - lh * 0.38f),
                 size = Size(lw * 0.36f, lh * 0.26f)
             )
@@ -124,7 +122,7 @@ object GoldChain : MetroItem {
 
         // ── Bail (small loop connecting chain to medallion) ───────────────────
         drawOval(
-            color = goldDark,
+            color = ItemPalette.goldDark,
             topLeft = Offset(mx - bailW / 2f, my - discR - bailH),
             size = Size(bailW, bailH),
             style = Stroke(width = u * 0.030f)
@@ -140,7 +138,7 @@ object GoldChain : MetroItem {
         // ── Disc body ─────────────────────────────────────────────────────────
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(goldLight, goldMid, goldDark, goldDeep),
+                colors = listOf(ItemPalette.goldLight, ItemPalette.goldMid, ItemPalette.goldDark, goldDeep),
                 center = Offset(mx - discR * 0.25f, my - discR * 0.25f),
                 radius = discR * 1.6f
             ),
@@ -156,7 +154,7 @@ object GoldChain : MetroItem {
             style = Stroke(width = u * 0.028f)
         )
         drawCircle(
-            color = goldLight.copy(alpha = 0.45f),
+            color = ItemPalette.goldLight.copy(alpha = 0.45f),
             radius = discR - u * 0.020f,
             center = Offset(mx, my),
             style = Stroke(width = u * 0.012f)
