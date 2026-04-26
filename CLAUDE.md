@@ -53,6 +53,17 @@ Audio Engine + Game Logic (Coroutines on Dispatchers.Default)
 - Show unlock rules — scrollable dialog sorted easiest → hardest, built from registry at runtime
 - Reset all progress — wipes `metronome_seconds`, `games_completed`, `first_launch_ms`, `celebrated_item_ids`
 
+### Color System
+
+All colors are centralized in `ui/theme/Color.kt`. Do **not** add raw `Color(0xFF…)` hex literals to screen or component files — always define in the appropriate object first.
+
+- **`GnomeColors`** — gnome character art palette (skin, hat, suit, shoes, hair, baton, FX). Used exclusively inside `GnomeCanvas.kt` draw functions.
+- **`AppColors`** — UI chrome colors shared across screens and components: backgrounds (`background`, `surface`, `surfaceVariant`, `surfaceDeep`, `surfaceDim`, `surfaceActive`), text (`textPrimary`, `textSecondary`, `textMuted`, `textSubtle`, `textDim`, `textAccent`, `textMutedBlue`), brand (`gold`, `primaryPurple`, `mediumPurple`, `deepPurple`, `darkPurple`, `danger`), controls, stop-action colors, overlay preview gradient, confetti list, and dev-tool colors.
+- **`GameColors`** — rhythm game semantics: hit quality (`good`, `almost`, `miss` — gold = `AppColors.gold` for PERFECT), note tints (`noteAmber`, `notePurple`), beat dots, mic equalizer (`eqQuiet`), hit line idle (`hitLineIdle`), range label blue (`rangeBlue`).
+- **`ItemPalette`** — shared cosmetic-item drawing colors: gold trio (`goldLight`, `goldMid`, `goldDark`) used by GoldChain/GoldEarring/LuxuryWatch; wood duo (`woodBrown`, `woodLight`) used by ForestTree/TorchPost.
+
+Item-specific colors that are unique to one file (mushroom teal, firefly glow, flower petals, moon, gem, watch strap, torch flame/grass) remain as `private val` constants inside each item's object — do not extract these unless they become shared.
+
 **`drawable/ic_launcher_foreground.xml`** — Vector launcher icon foreground derived from GnomeCanvas.kt (u=9, cx=54, baseY=164 → 108×108 viewport). All colours match `GnomeColors`. Hat rotated 11° via `<group android:rotation="11">` matching `drawHat`. Do **not** simplify to circles/rects — the paths are intentionally accurate.
 
 ### Navigation
