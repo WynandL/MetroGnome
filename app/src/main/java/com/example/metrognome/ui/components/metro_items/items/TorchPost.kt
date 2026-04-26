@@ -25,12 +25,17 @@ object TorchPost : MetroItem {
     override val displayName    = "Forest Torch"
     override val description    = "A torch Metro planted to light his way home after late rehearsals."
     override val unlockCondition = "Complete 15 rhythm games"
-    override val earnedMessage  = "15 rhythm games — Metro planted this torch so the forest path home is never dark again. It flickers with every beat."
+    override val earnedMessage  = "15 rhythm games! Metro planted this torch so the forest path home is never dark again. It flickers with every beat."
     override val isBodyAttached  = false
 
     // size.width * 0.70f — approximation for tap detection
     override fun hitCenter(u: Float) = Offset(1.8f * u, -2.5f * u)
     override fun hitRadius(u: Float) = u * 0.9f
+
+    // px = maxOf(canvasW*0.76, canvasW/2+3u); post spans baseY-1u to flame tip ~baseY-6u → centre at baseY-3u
+    override fun previewCenter(canvasW: Float, canvasH: Float, u: Float, baseY: Float) =
+        Offset(maxOf(canvasW * 0.76f, canvasW * 0.5f + 3f * u), baseY - 3.0f * u)
+    override fun previewRadius(u: Float) = u * 3.5f
 
     private val postBrown  = Color(0xFF5C3317)
     private val postLight  = Color(0xFF7A4A28)

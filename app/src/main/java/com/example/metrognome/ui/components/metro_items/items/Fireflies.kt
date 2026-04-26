@@ -22,11 +22,16 @@ object Fireflies : MetroItem {
     override val displayName    = "Fireflies"
     override val description    = "Tiny bioluminescent visitors drawn to Metro's music on long practice nights."
     override val unlockCondition = "Play the metronome for 3 hours total"
-    override val earnedMessage  = "Three whole hours of music! These fireflies were drawn to Metro's rhythmic light — they drift around him at dusk, enchanted by the beat."
+    override val earnedMessage  = "Three whole hours of music! These fireflies were drawn to Metro's rhythmic light. They drift around him at dusk, enchanted by the beat."
     override val isBodyAttached  = false
 
     // Not individually tappable — too spread out
     override fun hitCenter(u: Float): Offset? = null
+
+    // Show all fireflies: they spread from ~8% to 88% width and 12% to 55% height
+    override fun previewCenter(canvasW: Float, canvasH: Float, u: Float, baseY: Float) =
+        Offset(canvasW * 0.5f, canvasH * 0.38f)
+    override fun previewRadius(u: Float) = u * 6f
 
     // Home positions as (widthFraction, heightFraction) — computed against size at draw time.
     // Spread across the full canvas: some in sky corners, some in mid-scene.

@@ -82,4 +82,27 @@ class MetroItemTracker(context: Context) {
     /** Returns the set of item IDs that are currently unlocked. */
     fun unlockedIds(registry: List<MetroItemEntry>): Set<String> =
         registry.filter { isUnlocked(it.condition) }.map { it.item.id }.toSet()
+
+    // ── Celebration tracking ──────────────────────────────────────────────────
+
+    private val KEY_CELEBRATED_IDS = "celebrated_item_ids"
+
+    /** Mark an item's unlock popup as already shown so it never appears again. */
+    fun markCelebrated(id: String) {
+        val current = celebratedIds()
+        prefs.edit { putStringSet(KEY_CELEBRATED_IDS, current + id) }
+    }
+
+    fun celebratedIds(): Set<String> =
+        prefs.getStringSet(KEY_CELEBRATED_IDS, emptySet()) ?: emptySet()
+
+    /** DEV: wipe all progress counters and celebrations — simulates a clean install. */
+    fun resetAllProgress() {
+        prefs.edit {
+            remove(KEY_METRONOME_SECONDS)
+            remove(KEY_GAMES_COMPLETED)
+            remove(KEY_FIRST_LAUNCH_MS)
+            remove(KEY_CELEBRATED_IDS)
+        }
+    }
 }

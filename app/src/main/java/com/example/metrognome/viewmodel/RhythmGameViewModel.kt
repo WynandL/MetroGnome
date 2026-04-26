@@ -13,6 +13,8 @@ import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.audio.RhythmDetector
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
+import com.example.metrognome.ui.components.metro_items.MetroItemEntry
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -124,7 +126,6 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     val combo: StateFlow<Int> = _combo.asStateFlow()
     val countDown: StateFlow<Int> = _countDown.asStateFlow()
     val currentBeat: StateFlow<Int> = _currentBeat.asStateFlow()
-    val bpm: StateFlow<Int> = _bpm.asStateFlow()
     val timeSig: StateFlow<Int> = _timeSig.asStateFlow()
     val lastQuality: StateFlow<HitQuality> = _lastQuality.asStateFlow()
     val result: StateFlow<GameResult?> = _result.asStateFlow()
@@ -138,8 +139,8 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     /** Live mic amplitude 0..1. Non-zero only while mic mode is active. */
     val micAmplitude: StateFlow<Float> = detector.amplitude
 
-    private val _beatPulse = MutableSharedFlow<Int>(extraBufferCapacity = 8)
-    val beatPulse: SharedFlow<Int> = _beatPulse.asSharedFlow()
+    private val _newlyUnlocked = MutableSharedFlow<MetroItemEntry>(extraBufferCapacity = 8)
+    val newlyUnlocked: SharedFlow<MetroItemEntry> = _newlyUnlocked.asSharedFlow()
 
     /**
      * Fires on every microphone onset detection — regardless of timing.
@@ -187,7 +188,6 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         engine.onBeat = { beat ->
             viewModelScope.launch {
                 _currentBeat.value = beat
-                _beatPulse.emit(beat)
                 // Suppress mic 60 ms after each click to block click-pickup.
                 if (_phase.value == GamePhase.PLAYING && _useMic.value) {
                     detector.suppressUntilMs = System.currentTimeMillis() + 60L
@@ -450,10 +450,23 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
             prefs.edit { putInt("hs_$currentDifficultyName", finalScore) }
         }
         itemTracker.recordGameCompleted()
+        checkForNewUnlocks()
         _result.value =
             GameResult(finalScore, maxCombo, countPerfect, countGood, countBad, countMiss, isNew)
         _phase.value = GamePhase.RESULT
     }
+
+    private fun checkForNewUnlocks() {
+        val unlocked = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+        val celebrated = itemTracker.celebratedIds()
+        val newEntries = METRO_ITEM_REGISTRY.filter { it.item.id in unlocked && it.item.id !in celebrated }
+        if (newEntries.isEmpty()) return
+        viewModelScope.launch {
+            newEntries.forEach { entry -> _newlyUnlocked.emit(entry) }
+        }
+    }
+
+    fun markCelebrated(id: String) { itemTracker.markCelebrated(id) }
 
     private fun reset() {
         cancelJobs()

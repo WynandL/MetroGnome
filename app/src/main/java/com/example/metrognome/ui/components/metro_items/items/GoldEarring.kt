@@ -27,8 +27,8 @@ object GoldEarring : MetroItem {
     override val id            = "gold_earring"
     override val displayName   = "Gold Hoop Earring"
     override val description   = "A classic 18-karat gold hoop. Metro's first step toward full bling."
-    override val unlockCondition = "10 minutes of metronome use"
-    override val earnedMessage   = "Well done for keeping the beat going for 10 minutes! Metro rewarded himself with a little bling — a classic gold hoop, because even gnomes deserve nice things."
+    override val unlockCondition = "5 minutes of metronome use"
+    override val earnedMessage   = "Well done for keeping the beat going for 5 minutes! Metro rewarded himself with a little bling. A classic gold hoop, because even gnomes deserve nice things."
     override val isBodyAttached  = true
     override val isHeadAttached  = true
 

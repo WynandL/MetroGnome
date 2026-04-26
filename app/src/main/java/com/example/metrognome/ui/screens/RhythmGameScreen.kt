@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.ui.components.AdBannerView
+import com.example.metrognome.ui.components.UnlockCelebrationOverlay
 import com.example.metrognome.viewmodel.GamePhase
 import com.example.metrognome.viewmodel.HitQuality
 import com.example.metrognome.viewmodel.NoteState
@@ -86,11 +87,11 @@ import kotlinx.coroutines.launch
 private data class Difficulty(val name: String, val bpm: Int, val beats: Int, val desc: String)
 
 private val difficulties = listOf(
-    Difficulty("Beginner", 60, 16, "60 BPM · 16 beats - slow & steady"),
-    Difficulty("Easy", 80, 24, "80 BPM · 24 beats - getting into the groove"),
-    Difficulty("Medium", 100, 32, "100 BPM · 32 beats - the classic challenge"),
-    Difficulty("Hard", 130, 32, "130 BPM · 32 beats - quick reflexes needed"),
-    Difficulty("Expert", 160, 48, "160 BPM · 48 beats - for seasoned rhythmists"),
+    Difficulty("Beginner", 60, 16, "60 BPM · 16 beats · slow & steady"),
+    Difficulty("Easy", 80, 24, "80 BPM · 24 beats · getting into the groove"),
+    Difficulty("Medium", 100, 32, "100 BPM · 32 beats · the classic challenge"),
+    Difficulty("Hard", 130, 32, "130 BPM · 32 beats · quick reflexes needed"),
+    Difficulty("Expert", 160, 48, "160 BPM · 48 beats · for seasoned rhythmists"),
 )
 
 // ── Root screen ────────────────────────────────────────────────────────────────
@@ -116,6 +117,11 @@ fun RhythmGameScreen(
     val highScores by vm.highScores.collectAsStateWithLifecycle()
     val visibleNotes by vm.visibleNotes.collectAsStateWithLifecycle()
 
+    val unlockQueue = remember { mutableStateListOf<com.example.metrognome.ui.components.metro_items.MetroItemEntry>() }
+    LaunchedEffect(vm) {
+        vm.newlyUnlocked.collect { entry -> unlockQueue.add(entry) }
+    }
+
     val context = LocalContext.current
     var micGranted by remember {
         mutableStateOf(
@@ -129,6 +135,7 @@ fun RhythmGameScreen(
             if (granted) vm.toggleMic(true)
         }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier
         .fillMaxSize()
         .background(Color(0xFF0D0B1E))
@@ -165,6 +172,14 @@ fun RhythmGameScreen(
         }
         AdBannerView(modifier = Modifier.fillMaxWidth())
     }
+
+    unlockQueue.firstOrNull()?.let { entry ->
+        UnlockCelebrationOverlay(
+            entry = entry,
+            onDismiss = { vm.markCelebrated(entry.item.id); unlockQueue.removeAt(0) },
+        )
+    }
+    } // close outer Box
 }
 
 // ── Idle — difficulty picker + tolerance settings ─────────────────────────────
@@ -225,7 +240,7 @@ private fun IdlePanel(
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            "Notes fall from the top - tap when they hit the line!",
+            "Notes fall from the top · tap when they hit the line!",
             color = Color(0xFF7070AA), fontSize = 13.sp, textAlign = TextAlign.Center
         )
 
@@ -354,7 +369,7 @@ private fun IdlePanel(
                         )
                         Spacer(Modifier.height(3.dp))
                         Text(
-                            "Clap, tap a surface, or play your instrument - the mic detects the beat so you don't need to touch the screen.",
+                            "Clap, tap a surface, or play your instrument. The mic detects the beat so you don't need to touch the screen.",
                             color = Color(0xFF8080AA),
                             fontSize = 12.sp,
                             lineHeight = 17.sp

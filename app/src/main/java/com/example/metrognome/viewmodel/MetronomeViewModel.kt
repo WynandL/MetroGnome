@@ -28,6 +28,9 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _activeItemIds = MutableStateFlow(itemTracker.unlockedIds(METRO_ITEM_REGISTRY))
     val activeItemIds: StateFlow<Set<String>> = _activeItemIds.asStateFlow()
 
+    private val _newlyUnlocked = MutableSharedFlow<com.example.metrognome.ui.components.metro_items.MetroItemEntry>(extraBufferCapacity = 8)
+    val newlyUnlocked: SharedFlow<com.example.metrognome.ui.components.metro_items.MetroItemEntry> = _newlyUnlocked.asSharedFlow()
+
     private val _cheatModeEnabled = MutableStateFlow(itemTracker.isCheatModeEnabled())
     val cheatModeEnabled: StateFlow<Boolean> = _cheatModeEnabled.asStateFlow()
 
@@ -124,7 +127,33 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         syncEngineSettings()
+        checkForNewUnlocks()
     }
+
+    /** DEV: wipe all progress counters — simulates a clean install. */
+    fun resetAllProgress() {
+        itemTracker.resetAllProgress()
+        _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+    }
+
+    /** DEV: fire the celebration overlay for a specific registry item (no side-effects on celebrated set). */
+    fun previewUnlockCelebration(index: Int) {
+        val entry = METRO_ITEM_REGISTRY.getOrNull(index.coerceIn(0, METRO_ITEM_REGISTRY.lastIndex))
+            ?: return
+        viewModelScope.launch { _newlyUnlocked.emit(entry) }
+    }
+
+    fun checkForNewUnlocks() {
+        val unlocked = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+        val celebrated = itemTracker.celebratedIds()
+        val newEntries = METRO_ITEM_REGISTRY.filter { it.item.id in unlocked && it.item.id !in celebrated }
+        if (newEntries.isEmpty()) return
+        viewModelScope.launch {
+            newEntries.forEach { entry -> _newlyUnlocked.emit(entry) }
+        }
+    }
+
+    fun markCelebrated(id: String) { itemTracker.markCelebrated(id) }
 
     // ── Public actions ─────────────────────────────────────────────────────────
 
@@ -161,6 +190,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
                 delay(10_000L)   // tick every 10 seconds
                 itemTracker.addMetronomeSeconds(10)
                 _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+                checkForNewUnlocks()
             }
         }
     }

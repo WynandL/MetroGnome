@@ -26,7 +26,7 @@ import com.example.metrognome.ui.components.metro_items.items.MoonAndStars
 val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
 
     // ── Wearables ─────────────────────────────────────────────────────────────
-    MetroItemEntry(GoldEarring,      UnlockCondition.MetronomeSeconds(600)),        // 10 min
+    MetroItemEntry(GoldEarring,      UnlockCondition.MetronomeSeconds(300)),        // 5 min
     MetroItemEntry(LuxuryWatch,      UnlockCondition.MetronomeSeconds(1_800)),      // 30 min
     MetroItemEntry(GoldChain,        UnlockCondition.MetronomeSeconds(3_600)),      // 1 h
 

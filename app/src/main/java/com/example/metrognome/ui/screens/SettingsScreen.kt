@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,7 +24,15 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
@@ -34,6 +43,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.BuildConfig
 import com.example.metrognome.ui.components.AdBannerView
+import com.example.metrognome.ui.components.UnlockCelebrationOverlay
+import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
+import com.example.metrognome.ui.components.metro_items.MetroItemEntry
+import com.example.metrognome.ui.components.metro_items.UnlockCondition
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import kotlin.math.roundToInt
 
@@ -47,6 +60,12 @@ fun SettingsScreen(vm: MetronomeViewModel) {
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
     val cheatModeEnabled by vm.cheatModeEnabled.collectAsStateWithLifecycle()
 
+    val unlockQueue = remember { mutableStateListOf<MetroItemEntry>() }
+    var previewIndex by remember { mutableIntStateOf(0) }
+    var showUnlockRules by remember { mutableStateOf(false) }
+    LaunchedEffect(vm) { vm.newlyUnlocked.collect { entry -> unlockQueue.add(entry) } }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -192,7 +211,8 @@ fun SettingsScreen(vm: MetronomeViewModel) {
 
             Spacer(Modifier.height(16.dp))
 
-            // ── DEV CHEAT: comment out the block below before a production release ──
+            if (BuildConfig.DEBUG) {
+            // ── DEV ONLY — hidden automatically in release builds ─────────────────
             OutlinedButton(
                 onClick = { vm.toggleCheatMode() },
                 modifier = Modifier.fillMaxWidth(),
@@ -207,10 +227,56 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                 Text(
                     if (cheatModeEnabled) "DEV: All Items ON" else "DEV: All Items OFF",
                     fontSize = 12.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    fontWeight = FontWeight.Bold
                 )
             }
-            // ── END DEV CHEAT ─────────────────────────────────────────────────────
+
+            Spacer(Modifier.height(6.dp))
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { vm.previewUnlockCelebration(previewIndex) },
+                    modifier = Modifier.weight(1f).padding(end = 4.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF7B4DB0)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3A2560))
+                ) {
+                    Text("DEV: Preview Popup", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+                OutlinedButton(
+                    onClick = { previewIndex = (previewIndex + 1) % METRO_ITEM_REGISTRY.size },
+                    modifier = Modifier.padding(start = 4.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF555577)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2A2550))
+                ) {
+                    Text(
+                        "#${previewIndex + 1}/${METRO_ITEM_REGISTRY.size}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
+                onClick = { showUnlockRules = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF66BBFF)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF223355))
+            ) {
+                Text("DEV: Show Unlock Rules", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
+                onClick = { vm.resetAllProgress() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B6B)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF552233))
+            ) {
+                Text("DEV: Reset All Progress", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+            } // end DEBUG block
 
             Spacer(Modifier.height(8.dp))
         }
@@ -218,6 +284,54 @@ fun SettingsScreen(vm: MetronomeViewModel) {
         // AdMob banner
         AdBannerView(modifier = Modifier.fillMaxWidth())
     }
+
+    if (showUnlockRules) {
+        AlertDialog(
+            onDismissRequest = { showUnlockRules = false },
+            containerColor = Color(0xFF13102A),
+            titleContentColor = Color(0xFFFFD700),
+            textContentColor = Color(0xFFCCCCEE),
+            title = { Text("Unlock Rules", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    METRO_ITEM_REGISTRY.sortedBy { entry ->
+                        when (val c = entry.condition) {
+                            is UnlockCondition.MetronomeSeconds     -> c.required.toDouble()
+                            is UnlockCondition.RhythmGamesCompleted -> c.required * 300.0
+                            is UnlockCondition.DaysSinceFirstLaunch -> c.required * 86_400.0
+                            UnlockCondition.Always                  -> -1.0
+                        }
+                    }.forEach { entry ->
+                        Text(
+                            text = entry.item.displayName,
+                            color = Color(0xFFAB7DE0),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                        )
+                        Text(
+                            text = entry.item.unlockCondition,
+                            fontSize = 12.sp,
+                            color = Color(0xFFCCCCEE),
+                        )
+                        Spacer(Modifier.height(10.dp))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showUnlockRules = false }) {
+                    Text("OK", color = Color(0xFFAB7DE0), fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
+    unlockQueue.firstOrNull()?.let { entry ->
+        UnlockCelebrationOverlay(
+            entry = entry,
+            onDismiss = { vm.markCelebrated(entry.item.id); unlockQueue.removeAt(0) },
+        )
+    }
+    } // close outer Box
 }
 
 @Composable

@@ -34,7 +34,7 @@ object GoldChain : MetroItem {
     override val displayName     = "Cuban-Link Gold Chain"
     override val description     = "Heavy 24-karat Cuban links with an engraved gold medallion. Unmistakably metro."
     override val unlockCondition = "1 hour of metronome use"
-    override val earnedMessage   = "Well done for a full hour of keeping the beat! Metro's Cuban-link gold chain is your reward — heavy 24-karat links and an engraved medallion. Unmistakably metro."
+    override val earnedMessage   = "Well done for a full hour of keeping the beat! Metro's Cuban-link gold chain is your reward, heavy 24-karat links and an engraved medallion. Unmistakably metro."
     override val isBodyAttached  = true
 
     override fun hitCenter(u: Float) = Offset(0f, -5.48f * u)

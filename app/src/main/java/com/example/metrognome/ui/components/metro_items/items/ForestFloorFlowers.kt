@@ -17,12 +17,17 @@ object ForestFloorFlowers : MetroItem {
     override val displayName    = "Wildflowers"
     override val description    = "A cheerful patch of wildflowers that sprouted beside Metro."
     override val unlockCondition = "Use the app for 3 days"
-    override val earnedMessage  = "You've been with Metro for 3 days — the forest floor is starting to bloom! These little wildflowers sprouted up beside his shoes to welcome you back."
+    override val earnedMessage  = "You've been with Metro for 3 days! The forest floor is starting to bloom! These little wildflowers sprouted up beside his shoes to welcome you back."
     override val isBodyAttached  = false
 
     // Flowers span 8-44% of screen width — approximation for tap detection
     override fun hitCenter(u: Float) = Offset(-2.0f * u, -0.5f * u)
     override fun hitRadius(u: Float) = u * 2.0f
+
+    // Show 3-4 flowers close-up: centre on the left half of the patch, mid-stem height
+    override fun previewCenter(canvasW: Float, canvasH: Float, u: Float, baseY: Float) =
+        Offset(canvasW * 0.26f, baseY - 0.65f * u)
+    override fun previewRadius(u: Float) = u * 2.2f
 
     private val stemGreen  = Color(0xFF4A7C3F)
     private val yellow     = Color(0xFFFFE066)

@@ -39,7 +39,19 @@ Audio Engine + Game Logic (Coroutines on Dispatchers.Default)
 
 **`ui/components/GnomeCanvas.kt`** — Custom Compose Canvas drawing the gnome. Animations (pendulum, bounce, flash, twinkle) are synchronized to `BeatEvent` emissions from MetronomeViewModel. The `feature/metro-cosmetics` branch extends this with a `MetroItem` system: `activeItems`/`onItemTapped` params, tap-hit detection, and separate draw passes for background items, body-attached items, and head-attached items (which bob with the head group).
 
-**`ui/components/metro_items/`** — Cosmetic item system (feature branch only). Each `MetroItem` implements `draw(u, cx, baseY)`, `hitCenter(u)`, `hitRadius(u)`, `isBodyAttached`, and `isHeadAttached`. Items are unlocked via time/play-count rules and persisted in SharedPreferences.
+**`ui/components/metro_items/`** — Cosmetic item system (feature branch only).
+
+- `MetroItem` interface: `draw(u, cx, baseY)`, `hitCenter(u)`, `hitRadius(u)`, `isBodyAttached`, `isHeadAttached`, `previewCenter(canvasW, canvasH, u, baseY)`, `previewRadius(u)`. Background items override `previewCenter`/`previewRadius` to define a tight zoom window for the unlock popup preview; body-attached wearables use `hitCenter`/`hitRadius` for the same purpose.
+- `METRO_ITEM_REGISTRY` — single source of truth pairing each `MetroItem` with an `UnlockCondition`. Registry order controls background draw layering (back → front); do not reorder without checking visual correctness.
+- `MetroItemTracker` — reads/writes SharedPreferences `"metro_cosmetics"`. Counters: `metronome_seconds` (incremented every 10s while playing), `games_completed` (incremented on game end), `first_launch_ms` (set once on first init). Celebration tracking: `celebrated_item_ids` — written only when the user dismisses the popup ("Sweet!" button), not when the unlock is detected. This ensures a popup bug never permanently silences an earned reward.
+- `UnlockCelebrationOverlay` — full-screen animated popup (confetti + spring card). Collected via `vm.newlyUnlocked: SharedFlow` into a `mutableStateListOf` queue in each screen; shown one at a time. `markCelebrated` is called in `onDismiss`, not during emit.
+- `ItemPreviewCanvas` — 220×170dp canvas inside the overlay. Background items: translate+scale transform using `previewCenter`/`previewRadius`. Body-attached items: translate+scale using `hitCenter`/`hitRadius` with a boosted u (`size.height/5f`).
+
+**Dev tools in `SettingsScreen`** (visible in debug builds only, gated by `BuildConfig.DEBUG`):
+- Toggle cheat mode — all items unlocked while active
+- Preview popup for any registry item (cycles with index button)
+- Show unlock rules — scrollable dialog sorted easiest → hardest, built from registry at runtime
+- Reset all progress — wipes `metronome_seconds`, `games_completed`, `first_launch_ms`, `celebrated_item_ids`
 
 **`drawable/ic_launcher_foreground.xml`** — Vector launcher icon foreground derived from GnomeCanvas.kt (u=9, cx=54, baseY=164 → 108×108 viewport). All colours match `GnomeColors`. Hat rotated 11° via `<group android:rotation="11">` matching `drawHat`. Do **not** simplify to circles/rects — the paths are intentionally accurate.
 

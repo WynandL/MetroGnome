@@ -37,10 +37,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import com.example.metrognome.ui.components.UnlockCelebrationOverlay
 import com.example.metrognome.ui.components.metro_items.MetroItem
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,6 +76,11 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     val isMuted by vm.isMuted.collectAsStateWithLifecycle()
     val keepScreenOn by vm.keepScreenOn.collectAsStateWithLifecycle()
     var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
+    val unlockQueue = remember { mutableStateListOf<com.example.metrognome.ui.components.metro_items.MetroItemEntry>() }
+
+    LaunchedEffect(vm) {
+        vm.newlyUnlocked.collect { entry -> unlockQueue.add(entry) }
+    }
 
     val activity = LocalActivity.current
     DisposableEffect(keepScreenOn) {
@@ -86,6 +94,7 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -179,6 +188,14 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             tonalElevation = 0.dp
         )
     }
+
+    unlockQueue.firstOrNull()?.let { entry ->
+        UnlockCelebrationOverlay(
+            entry = entry,
+            onDismiss = { vm.markCelebrated(entry.item.id); unlockQueue.removeAt(0) },
+        )
+    }
+    } // close outer Box
 }
 
 @Composable

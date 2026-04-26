@@ -39,6 +39,12 @@ object GlowingMushroom : MetroItem {
     override fun hitCenter(u: Float) = Offset(3.8f * u, -0.1f * u)
     override fun hitRadius(u: Float) = u * 1.1f
 
+    // Raise center.y (lower in canvas) so stem base lands at ~2/3 preview height.
+    // Radius 2.0u → zoom ≈ 3.4x, giving a moderate close-up that shows all 3 mushrooms.
+    override fun previewCenter(canvasW: Float, canvasH: Float, u: Float, baseY: Float) =
+        Offset(canvasW * 0.88f, baseY - 0.9f * u)
+    override fun previewRadius(u: Float) = u * 2.0f
+
     // Palette
     private val capDeep    = Color(0xFF2D0A5C)
     private val capMid     = Color(0xFF6B1FA8)

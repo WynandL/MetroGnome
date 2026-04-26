@@ -33,7 +33,7 @@ object LuxuryWatch : MetroItem {
     override val displayName     = "Luxury Wristwatch"
     override val description     = "An 18-karat gold case, sapphire crystal, Swiss movement. Very metro."
     override val unlockCondition = "30 minutes of metronome use"
-    override val earnedMessage   = "Well done for 30 minutes of solid practice! Metro keeps time with a Swiss-movement 18-karat gold watch. He earned it — and so did you."
+    override val earnedMessage   = "Well done for 30 minutes of solid practice! Metro keeps time with a Swiss-movement 18-karat gold watch. He earned it, and so did you."
     override val isBodyAttached  = true
 
     override fun hitCenter(u: Float) = Offset(-2.70f * u, -4.02f * u)

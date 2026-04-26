@@ -23,14 +23,19 @@ object ForestTree : MetroItem {
 
     override val id             = "forest_tree"
     override val displayName    = "Old Oak Tree"
-    override val description    = "Metro's forest guardian — a grand old oak that was always there."
+    override val description    = "Metro's forest guardian...a grand old oak that was always there."
     override val unlockCondition = "Use the app for 30 days"
-    override val earnedMessage  = "One whole month! The forest recognises a true musician — Metro's oak has always been there, waiting patiently while he practised. It stands proud beside him now."
+    override val earnedMessage  = "One whole month! The forest recognises a true musician. Metro's oak has always been there, waiting patiently while he practised. It stands proud beside him now."
     override val isBodyAttached  = false
 
     // Rough approximation: tree is near left edge, ~3.1u left of centre on most phones
     override fun hitCenter(u: Float) = Offset(-3.1f * u, -4.5f * u)
     override fun hitRadius(u: Float) = u * 1.8f
+
+    // tx = canvasW*0.10; tree spans baseY (roots) to baseY-7.6u (canopy top) → centre at baseY-3.8u
+    override fun previewCenter(canvasW: Float, canvasH: Float, u: Float, baseY: Float) =
+        Offset(canvasW * 0.10f, baseY - 3.8f * u)
+    override fun previewRadius(u: Float) = u * 4.2f
 
     private val trunkBrown = Color(0xFF5C3317)
     private val trunkLight = Color(0xFF7A4A28)

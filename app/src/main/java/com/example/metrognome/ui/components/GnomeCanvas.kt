@@ -36,7 +36,6 @@ import com.example.metrognome.viewmodel.BeatEvent
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.math.sin
 import kotlin.random.Random
 
 // Pre-calculated star positions (seed fixed for determinism)
@@ -52,9 +51,9 @@ fun GnomeCanvas(
     beatEvents: SharedFlow<BeatEvent>,
     flashOnBeat: Boolean,
     accentBeat: Int,          // 1-based; 0 = no accent
+    modifier: Modifier = Modifier,
     activeItems: List<MetroItem> = emptyList(),
     onItemTapped: (MetroItem) -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     val currentBpm by rememberUpdatedState(bpm)
 
@@ -154,7 +153,6 @@ fun GnomeCanvas(
             pendulumAngle = effectivePendulum,
             beatBounce = bounce.value,
             breathOffset = effectiveBreath,
-            isPlaying = isPlaying,
             bodyItems = activeItems.filter { it.isBodyAttached },
             u = u,
             cx = canvasCx,
@@ -205,7 +203,6 @@ private fun DrawScope.drawGnome(
     pendulumAngle: Float,
     beatBounce: Float,
     breathOffset: Float,
-    isPlaying: Boolean,
     bodyItems: List<MetroItem> = emptyList(),
     u: Float = size.height / 17f,
     cx: Float = size.width / 2f,
@@ -224,7 +221,7 @@ private fun DrawScope.drawGnome(
         drawBelt(u)
         drawButtons(u)
         drawBaton(u, pendulumAngle)
-        drawRightArm(u, pendulumAngle)
+        drawRightArm(u)
 
         // ── Head group — bobs on every beat ───────────────────────────────
         val headBob = beatBounce * u * 0.2f
@@ -365,7 +362,7 @@ private fun DrawScope.drawLeftArm(u: Float) {
 
 // ── Right arm (holds baton) ───────────────────────────────────────────────────
 
-private fun DrawScope.drawRightArm(u: Float, pendulumAngle: Float) {
+private fun DrawScope.drawRightArm(u: Float) {
     val shoulderX = 1.75f * u
     val shoulderY = -6.4f * u
     val elbowX = 2.2f * u
