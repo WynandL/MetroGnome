@@ -138,8 +138,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     /** DEV: fire the celebration overlay for a specific registry item (no side-effects on celebrated set). */
     fun previewUnlockCelebration(index: Int) {
-        val entry = METRO_ITEM_REGISTRY.getOrNull(index.coerceIn(0, METRO_ITEM_REGISTRY.lastIndex))
-            ?: return
+        if (METRO_ITEM_REGISTRY.isEmpty()) return
+        val entry = METRO_ITEM_REGISTRY[index.coerceIn(0, METRO_ITEM_REGISTRY.lastIndex)]
         viewModelScope.launch { _newlyUnlocked.emit(entry) }
     }
 

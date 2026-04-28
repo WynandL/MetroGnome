@@ -244,7 +244,7 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                     Text("DEV: Preview Popup", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 OutlinedButton(
-                    onClick = { previewIndex = (previewIndex + 1) % METRO_ITEM_REGISTRY.size },
+                    onClick = { if (METRO_ITEM_REGISTRY.isNotEmpty()) previewIndex = (previewIndex + 1) % METRO_ITEM_REGISTRY.size },
                     modifier = Modifier.padding(start = 4.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
                     border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.surfaceVariant)
