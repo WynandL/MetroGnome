@@ -8,17 +8,20 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -27,6 +30,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
+import com.example.metrognome.ui.components.metro_items.MetroItem
+import com.example.metrognome.ui.theme.ItemPalette
 import com.example.metrognome.ui.theme.GnomeColors
 import com.example.metrognome.viewmodel.BeatEvent
 import kotlinx.coroutines.flow.SharedFlow
@@ -46,8 +51,10 @@ fun GnomeCanvas(
     isPlaying: Boolean,
     beatEvents: SharedFlow<BeatEvent>,
     flashOnBeat: Boolean,
-    accentBeat: Int,   // 1-based; 0 = no accent
-    modifier: Modifier = Modifier
+    accentBeat: Int,          // 1-based; 0 = no accent
+    modifier: Modifier = Modifier,
+    activeItems: List<MetroItem> = emptyList(),
+    onItemTapped: (MetroItem) -> Unit = {},
 ) {
     val currentBpm by rememberUpdatedState(bpm)
 
@@ -104,8 +111,40 @@ fun GnomeCanvas(
     val effectivePendulum = pendulumAngle.value
     val effectiveBreath = if (!isPlaying) breathAnim else 0f
 
-    Canvas(modifier = modifier.fillMaxSize()) {
+    val canvasSize = remember { mutableStateOf(Size.Zero) }
+
+    Canvas(modifier = modifier
+        .fillMaxSize()
+        .pointerInput(activeItems) {
+            detectTapGestures { tapOffset ->
+                val s = canvasSize.value
+                if (s == Size.Zero) return@detectTapGestures
+                val u     = s.height / 17f
+                val cx    = s.width / 2f
+                val baseY = s.height * 0.97f
+                val bodyX = tapOffset.x - cx
+                val bodyY = tapOffset.y - baseY
+                activeItems.firstOrNull { item ->
+                    val center = item.hitCenter(u) ?: return@firstOrNull false
+                    val dx = bodyX - center.x
+                    val dy = bodyY - center.y
+                    val r  = item.hitRadius(u)
+                    dx * dx + dy * dy <= r * r
+                }?.let(onItemTapped)
+            }
+        }
+    ) {
+        canvasSize.value = size
+        val canvasCx    = size.width / 2f
+        val canvasBaseY = size.height * 0.97f
+        val u           = size.height / 17f
+
         drawBackground(twinkle.value)
+
+        // Background items (scene decoration — not body-attached)
+        activeItems.filter { !it.isBodyAttached }.forEach { item ->
+            with(item) { draw(u, canvasCx, canvasBaseY) }
+        }
 
         if (flash.value > 0f) {
             drawRect(color = GnomeColors.beatGlowAccent.copy(alpha = flash.value * 0.4f))
@@ -115,7 +154,10 @@ fun GnomeCanvas(
             pendulumAngle = effectivePendulum,
             beatBounce = bounce.value,
             breathOffset = effectiveBreath,
-            isPlaying = isPlaying
+            bodyItems = activeItems.filter { it.isBodyAttached },
+            u = u,
+            cx = canvasCx,
+            baseY = canvasBaseY
         )
     }
 }
@@ -162,12 +204,11 @@ private fun DrawScope.drawGnome(
     pendulumAngle: Float,
     beatBounce: Float,
     breathOffset: Float,
-    isPlaying: Boolean
+    bodyItems: List<MetroItem> = emptyList(),
+    u: Float = size.height / 17f,
+    cx: Float = size.width / 2f,
+    baseY: Float = size.height * 0.97f
 ) {
-    val u = size.height / 17f
-    val cx = size.width / 2f
-    val baseY = size.height * 0.97f
-
     val breathTranslate = breathOffset * u * 0.1f
 
     withTransform({
@@ -181,7 +222,7 @@ private fun DrawScope.drawGnome(
         drawBelt(u)
         drawButtons(u)
         drawBaton(u, pendulumAngle)
-        drawRightArm(u, pendulumAngle)
+        drawRightArm(u)
 
         // ── Head group — bobs on every beat ───────────────────────────────
         val headBob = beatBounce * u * 0.2f
@@ -195,6 +236,15 @@ private fun DrawScope.drawGnome(
             drawSunglasses(u)
             drawEyebrows(u)
             drawHat(u, beatBounce)
+            // Head-attached items (earrings etc.) bob with the head
+            bodyItems.filter { it.isHeadAttached }.forEach { item ->
+                with(item) { draw(u, cx, baseY) }
+            }
+        }
+
+        // Body-attached (non-head) cosmetic items drawn last on top of the gnome
+        bodyItems.filter { !it.isHeadAttached }.forEach { item ->
+            with(item) { draw(u, cx, baseY) }
         }
         // Drawn after the head group so the collar sits in front of the neck
         drawShirtCollar(u)
@@ -313,7 +363,7 @@ private fun DrawScope.drawLeftArm(u: Float) {
 
 // ── Right arm (holds baton) ───────────────────────────────────────────────────
 
-private fun DrawScope.drawRightArm(u: Float, pendulumAngle: Float) {
+private fun DrawScope.drawRightArm(u: Float) {
     val shoulderX = 1.75f * u
     val shoulderY = -6.4f * u
     val elbowX = 2.2f * u
@@ -359,7 +409,7 @@ private fun DrawScope.drawBaton(u: Float, pendulumAngle: Float) {
         )
         drawCircle(
             brush = Brush.radialGradient(
-                listOf(Color(0xFFFFE566), GnomeColors.batonGold),
+                listOf(ItemPalette.goldLight, GnomeColors.batonGold),
                 center = Offset(-0.08f * u, batonLen - 0.1f * u), radius = 0.42f * u
             ),
             radius = 0.38f * u, center = Offset(0f, batonLen)
@@ -818,7 +868,6 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
             )
             close()
         }
-
         drawPath(
             conePath,
             brush = Brush.verticalGradient(

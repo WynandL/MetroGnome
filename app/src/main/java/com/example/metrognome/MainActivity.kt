@@ -25,6 +25,7 @@ import com.example.metrognome.ui.theme.MetroGnomeTheme
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.viewmodel.RhythmGameViewModel
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 enum class AppTab(val label: String, val icon: ImageVector) {
     GNOME("Gnome", Icons.Filled.MusicNote),
@@ -50,6 +51,7 @@ fun MetroGnomeApp() {
 
     val metronomeVm: MetronomeViewModel = viewModel()
     val rhythmVm: RhythmGameViewModel = viewModel()
+    val isAdFree by metronomeVm.isAdFree.collectAsStateWithLifecycle()
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -73,7 +75,8 @@ fun MetroGnomeApp() {
             AppTab.RHYTHM -> RhythmGameScreen(
                 vm = rhythmVm,
                 isMetronomePlaying = metronomeVm.isPlaying.collectAsState().value,
-                onStopMetronome = { metronomeVm.stopPlayback() }
+                onStopMetronome = { metronomeVm.stopPlayback() },
+                isAdFree = isAdFree,
             )
 
             AppTab.SETTINGS -> SettingsScreen(vm = metronomeVm)

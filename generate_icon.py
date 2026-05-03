@@ -1,352 +1,517 @@
 #!/usr/bin/env python3
 """
-Generate MetroGnome launcher icons.
+Generate MetroGnome launcher icons and Play Store assets.
 
-Produces two sets of images per density:
-  ic_launcher.webp            — full icon: gnome on dark starfield background
-  ic_launcher_foreground.webp — adaptive icon foreground: gnome on transparent
-                                 background, padded so the gnome fills the
-                                 inner 66.7% safe zone (72 dp / 108 dp)
+Renders from ic_launcher_foreground.xml + ic_launcher_background.xml using
+pycairo. Every path, gradient, alpha, clip and rotation matches the XML
+exactly. Text for the feature graphic uses Pillow + Segoe UI.
 
-After running this script:
-  - Legacy devices (pre-API 26) use ic_launcher.webp directly.
-  - API 26+ adaptive icon uses ic_launcher_foreground.webp (this file) as the
-    foreground and ic_launcher_background.xml for the background.
-    The foreground is what you actually see on the home screen.
+Outputs
+-------
+  app/store_icon_512.png
+  app/feature_graphic_1024x500.png
+  res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher.webp
+  res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher_round.webp
+
+Requirements:  pip install pycairo Pillow
 """
 
-from PIL import Image, ImageDraw
-import math, random, os
+import cairo
+import math
+import os
+import random
+import re
+from PIL import Image, ImageDraw, ImageFont
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Colour helpers ─────────────────────────────────────────────────────────────
 
-def cubic_bezier(p0, p1, p2, p3, n=60):
-    pts = []
-    for i in range(n + 1):
-        t = i / n
-        mt = 1 - t
-        pts.append((
-            mt**3*p0[0] + 3*mt**2*t*p1[0] + 3*mt*t**2*p2[0] + t**3*p3[0],
-            mt**3*p0[1] + 3*mt**2*t*p1[1] + 3*mt*t**2*p2[1] + t**3*p3[1],
-        ))
-    return pts
-
-def rot(px, py, ox, oy, deg):
-    r = math.radians(deg)
-    dx, dy = px - ox, py - oy
-    return (ox + dx*math.cos(r) - dy*math.sin(r),
-            oy + dx*math.sin(r) + dy*math.cos(r))
-
-def rot_list(pts, ox, oy, deg):
-    return [rot(px, py, ox, oy, deg) for px, py in pts]
-
-def star_polygon(cx, cy, outer_r, inner_r):
-    pts = []
-    for i in range(10):
-        angle = math.pi/5 * i - math.pi/2
-        r = outer_r if i % 2 == 0 else inner_r
-        pts.append((cx + r*math.cos(angle), cy + r*math.sin(angle)))
-    return pts
-
-# ── Core gnome drawing — RGBA, transparent background ────────────────────────
-
-def draw_gnome_rgba(ds=2048):
+def hc(h, fa=1.0):
     """
-    Draw Metro the gnome on a fully transparent RGBA canvas.
-    All coordinates match GnomeCanvas.kt exactly.
-    Returns an RGBA Image.
+    Android colour hex (#RRGGBB or #AARRGGBB) → (r, g, b, a) in 0-1 range.
+    fa (fillAlpha) is multiplied into the parsed alpha.
     """
-    u     = ds / 11.0
-    cx    = ds / 2.0
-    baseY = ds * 0.65 + 10.0 * u
+    h = h.lstrip('#')
+    if len(h) == 8:
+        a = int(h[0:2], 16) / 255.0
+        r = int(h[2:4], 16) / 255.0
+        g = int(h[4:6], 16) / 255.0
+        b = int(h[6:8], 16) / 255.0
+    elif len(h) == 6:
+        r = int(h[0:2], 16) / 255.0
+        g = int(h[2:4], 16) / 255.0
+        b = int(h[4:6], 16) / 255.0
+        a = 1.0
+    else:
+        raise ValueError(f"Unknown colour: #{h}")
+    return (r, g, b, a * fa)
 
-    def gx(xu): return cx + xu * u
-    def gy(yu): return baseY + yu * u
 
-    SKIN     = (0xF0, 0xBC, 0x80, 255)
-    SKIN_DK  = (0xD8, 0xA0, 0x60, 255)
-    BEARD    = (0xF2, 0xEE, 0xEA, 255)
-    BSHADE   = (0xB8, 0xB0, 0xA8, 255)
-    HAT_R    = (0xCC, 0x18, 0x18, 255)
-    HAT_LT   = (0xDD, 0x35, 0x35, 255)
-    HAT_DK   = (0x88, 0x10, 0x10, 255)
-    HAT_BRIM = (0x6A, 0x0A, 0x0A, 255)
-    HAT_BAND = (0x44, 0x06, 0x06, 255)
-    HAT_GOLD = (0xFF, 0xD7, 0x00, 255)
-    JACKET   = (0x11, 0x11, 0x15, 255)
-    JACKET_L = (0x1C, 0x1C, 0x22, 255)
-    SHIRT    = (0xF8, 0xF4, 0xEE, 255)
-    TIE      = (0xAA, 0x1E, 0x2E, 255)
-    HAIR     = (0xB5, 0xB0, 0xAB, 255)
-    NOSE_C   = (0xCC, 0x88, 0x68, 255)
-    G_FRAME  = (0xFF, 0xD7, 0x00, 255)
-    G_LENS   = (0x08, 0x08, 0x18, 255)
-    G_REFL   = (0x22, 0x44, 0x88, 255)
+# ── SVG arc → cairo arc (standard SVG spec conversion) ────────────────────────
 
-    img  = Image.new('RGBA', (ds, ds), (0, 0, 0, 0))
+def _arc(ctx, x1, y1, rx, ry, x_rot, large_arc, sweep, x2, y2):
+    """Append a single SVG elliptic-arc segment to the current cairo path."""
+    if x1 == x2 and y1 == y2:
+        return
+    if rx == 0 or ry == 0:
+        ctx.line_to(x2, y2)
+        return
+    phi = math.radians(x_rot)
+    cp, sp = math.cos(phi), math.sin(phi)
+    dx, dy = (x1 - x2) / 2.0, (y1 - y2) / 2.0
+    x1p =  cp * dx + sp * dy
+    y1p = -sp * dx + cp * dy
+    rx, ry = abs(rx), abs(ry)
+    lam = (x1p / rx) ** 2 + (y1p / ry) ** 2
+    if lam > 1:
+        s = math.sqrt(lam); rx *= s; ry *= s
+    num = max(0.0, (rx * ry) ** 2 - (rx * y1p) ** 2 - (ry * x1p) ** 2)
+    den = (rx * y1p) ** 2 + (ry * x1p) ** 2
+    sq  = (math.sqrt(num / den) if den else 0.0)
+    if large_arc == sweep:
+        sq = -sq
+    cxp =  sq * rx * y1p / ry
+    cyp = -sq * ry * x1p / rx
+    ccx = cp * cxp - sp * cyp + (x1 + x2) / 2.0
+    ccy = sp * cxp + cp * cyp + (y1 + y2) / 2.0
+
+    def ang(ux, uy, vx, vy):
+        n = math.sqrt(ux * ux + uy * uy) * math.sqrt(vx * vx + vy * vy)
+        if n == 0:
+            return 0.0
+        c = max(-1.0, min(1.0, (ux * vx + uy * vy) / n))
+        a = math.acos(c)
+        return -a if (ux * vy - uy * vx) < 0 else a
+
+    th1 = ang(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry)
+    dth = ang((x1p - cxp) / rx, (y1p - cyp) / ry,
+              (-x1p - cxp) / rx, (-y1p - cyp) / ry)
+    if sweep == 0 and dth > 0:
+        dth -= 2 * math.pi
+    if sweep == 1 and dth < 0:
+        dth += 2 * math.pi
+
+    ctx.save()
+    ctx.translate(ccx, ccy)
+    ctx.rotate(phi)
+    ctx.scale(rx, ry)
+    if dth >= 0:
+        ctx.arc(0, 0, 1, th1, th1 + dth)
+    else:
+        ctx.arc_negative(0, 0, 1, th1, th1 + dth)
+    ctx.restore()
+
+
+# ── SVG path parser ────────────────────────────────────────────────────────────
+
+_TOK = re.compile(
+    r'[MmLlHhVvCcQqAaZz]'
+    r'|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?'
+)
+
+def P(ctx, d):
+    """Parse SVG path data string and append it to the cairo context."""
+    tokens = _TOK.findall(d)
+    i = 0
+    cx = cy = sx = sy = 0.0
+
+    def n(j): return float(tokens[j])
+
+    while i < len(tokens):
+        cmd = tokens[i]; i += 1
+
+        if cmd in ('M', 'm'):
+            x, y = n(i), n(i + 1); i += 2
+            if cmd == 'm': x += cx; y += cy
+            ctx.move_to(x, y)
+            cx, cy = x, y; sx, sy = x, y
+            while i < len(tokens) and tokens[i] not in 'MmLlHhVvCcQqAaZz':
+                x, y = n(i), n(i + 1); i += 2
+                if cmd == 'm': x += cx; y += cy
+                ctx.line_to(x, y)
+                cx, cy = x, y
+
+        elif cmd in ('L', 'l'):
+            while i < len(tokens) and tokens[i] not in 'MmLlHhVvCcQqAaZz':
+                x, y = n(i), n(i + 1); i += 2
+                if cmd == 'l': x += cx; y += cy
+                ctx.line_to(x, y); cx, cy = x, y
+
+        elif cmd in ('H', 'h'):
+            while i < len(tokens) and tokens[i] not in 'MmLlHhVvCcQqAaZz':
+                x = n(i); i += 1
+                if cmd == 'h': x += cx
+                ctx.line_to(x, cy); cx = x
+
+        elif cmd in ('V', 'v'):
+            while i < len(tokens) and tokens[i] not in 'MmLlHhVvCcQqAaZz':
+                y = n(i); i += 1
+                if cmd == 'v': y += cy
+                ctx.line_to(cx, y); cy = y
+
+        elif cmd in ('C', 'c'):
+            while i < len(tokens) and tokens[i] not in 'MmLlHhVvCcQqAaZz':
+                x1, y1 = n(i), n(i+1)
+                x2, y2 = n(i+2), n(i+3)
+                x,  y  = n(i+4), n(i+5); i += 6
+                if cmd == 'c':
+                    x1+=cx; y1+=cy; x2+=cx; y2+=cy; x+=cx; y+=cy
+                ctx.curve_to(x1, y1, x2, y2, x, y); cx, cy = x, y
+
+        elif cmd in ('Q', 'q'):
+            while i < len(tokens) and tokens[i] not in 'MmLlHhVvCcQqAaZz':
+                qx, qy = n(i), n(i+1); x, y = n(i+2), n(i+3); i += 4
+                if cmd == 'q': qx+=cx; qy+=cy; x+=cx; y+=cy
+                ctx.curve_to(
+                    cx + 2/3*(qx-cx), cy + 2/3*(qy-cy),
+                    x  + 2/3*(qx-x),  y  + 2/3*(qy-y), x, y)
+                cx, cy = x, y
+
+        elif cmd in ('A', 'a'):
+            while i < len(tokens) and tokens[i] not in 'MmLlHhVvCcQqAaZz':
+                rx, ry, xr = n(i), n(i+1), n(i+2)
+                la, sw      = int(n(i+3)), int(n(i+4))
+                x,  y       = n(i+5), n(i+6); i += 7
+                if cmd == 'a': x += cx; y += cy
+                _arc(ctx, cx, cy, rx, ry, xr, la, sw, x, y)
+                cx, cy = x, y
+
+        elif cmd in ('Z', 'z'):
+            ctx.close_path(); cx, cy = sx, sy
+
+
+# ── Fill / stroke shortcuts ───────────────────────────────────────────────────
+
+def F(ctx, colour, fa=1.0):
+    ctx.set_source_rgba(*hc(colour, fa)); ctx.fill()
+
+def FR(ctx, cx, cy, r, stops):
+    pat = cairo.RadialGradient(cx, cy, 0, cx, cy, r)
+    for off, col in stops:
+        pat.add_color_stop_rgba(off, *hc(col))
+    ctx.set_source(pat); ctx.fill()
+
+def FL(ctx, x1, y1, x2, y2, stops):
+    pat = cairo.LinearGradient(x1, y1, x2, y2)
+    for off, col in stops:
+        pat.add_color_stop_rgba(off, *hc(col))
+    ctx.set_source(pat); ctx.fill()
+
+def S(ctx, pd, colour, w, cap=cairo.LINE_CAP_BUTT):
+    P(ctx, pd)
+    ctx.set_source_rgba(*hc(colour))
+    ctx.set_line_width(w); ctx.set_line_cap(cap); ctx.stroke()
+
+
+# ── Shared path constants ─────────────────────────────────────────────────────
+
+_BRIM = ("M 72.9,62.66 A 18.9,2.61,0,1,1,35.1,62.66"
+         " A 18.9,2.61,0,1,1,72.9,62.66 Z")
+
+_LENSES = (
+    "M 44.55,68.51 H 50.85 Q 52.65,68.51 52.65,70.31"
+    " V 72.29 Q 52.65,74.09 50.85,74.09"
+    " H 44.55 Q 42.75,74.09 42.75,72.29"
+    " V 70.31 Q 42.75,68.51 44.55,68.51 Z"
+    " M 57.15,68.51 H 63.45 Q 65.25,68.51 65.25,70.31"
+    " V 72.29 Q 65.25,74.09 63.45,74.09"
+    " H 57.15 Q 55.35,74.09 55.35,72.29"
+    " V 70.31 Q 55.35,68.51 57.15,68.51 Z"
+)
+
+
+# ── Foreground renderer (shared by icon and feature graphic) ──────────────────
+
+def _draw_foreground(ctx):
+    """
+    Draw Metro's face into ctx.
+    ctx must already be scaled so 108 units = the desired output size.
+    Mirrors ic_launcher_foreground.xml exactly.
+    """
+    ctx.save()
+    ctx.translate(0, -7)   # <group android:translateY="-7">
+
+    # NECK
+    P(ctx, "M 51.93,87.5 H 56.07"
+           " Q 57.42,87.5 57.42,88.85 V 93.17"
+           " Q 57.42,94.52 56.07,94.52 H 51.93"
+           " Q 50.58,94.52 50.58,93.17 V 88.85"
+           " Q 50.58,87.5 51.93,87.5 Z")
+    F(ctx, "#F0BC80")
+
+    # EARS
+    P(ctx, "M 39.96,70.58 C 37.35,69.95 32.4,68.6 31.14,69.86"
+           " C 32.4,71.48 36.45,78.32 39.96,79.22 Z")
+    F(ctx, "#F0BC80")
+    P(ctx, "M 38.7,73.28 C 36.9,73.1 33.48,70.94 32.58,71.48"
+           " C 33.66,72.92 36.72,76.7 38.7,76.52 Z")
+    F(ctx, "#D8A060", 0.9)
+
+    P(ctx, "M 68.04,70.58 C 70.65,69.95 75.6,68.6 76.86,69.86"
+           " C 75.6,71.48 71.55,78.32 68.04,79.22 Z")
+    F(ctx, "#F0BC80")
+    P(ctx, "M 69.3,73.28 C 71.1,73.1 74.52,70.94 75.42,71.48"
+           " C 74.34,72.92 71.28,76.7 69.3,76.52 Z")
+    F(ctx, "#D8A060", 0.9)
+
+    # HEAD
+    P(ctx, "M 70.65,74 A 16.65,16.65,0,1,1,37.35,74"
+           " A 16.65,16.65,0,1,1,70.65,74 Z")
+    FR(ctx, 49.84, 69.84, 21.65,
+        [(0.0, "#FAD09A"), (0.5, "#F0BC80"), (1.0, "#D8A060")])
+
+    # CHEEK BLUSH
+    P(ctx, "M 48.87,78.05 A 4.32,4.32,0,1,1,40.23,78.05"
+           " A 4.32,4.32,0,1,1,48.87,78.05 Z")
+    F(ctx, "#EBA080", 0.16)
+    P(ctx, "M 67.77,78.05 A 4.32,4.32,0,1,1,59.13,78.05"
+           " A 4.32,4.32,0,1,1,67.77,78.05 Z")
+    F(ctx, "#EBA080", 0.16)
+
+    # HAIR
+    P(ctx, "M 41.22,60.32 C 38.88,63.65 35.28,67.52 34.92,73.1"
+           " C 36.36,74 39.15,73.28 40.32,70.58"
+           " C 40.86,66.08 42.48,62.48 43.38,60.68 Z")
+    F(ctx, "#B5B0AB")
+    P(ctx, "M 66.78,60.32 C 69.12,63.65 72.72,67.52 73.08,73.1"
+           " C 71.64,74 68.85,73.28 67.68,70.58"
+           " C 67.14,66.08 65.52,62.48 64.62,60.68 Z")
+    F(ctx, "#B5B0AB")
+    P(ctx, "M 48.6,58.88 C 54,57.62 60.48,59.15 63.45,60.95"
+           " C 61.38,61.4 55.08,59.96 49.95,59.78 Z")
+    F(ctx, "#888280")
+
+    # NOSE
+    P(ctx, "M 57.96,79.76 A 3.96,3.24,0,1,1,50.04,79.76"
+           " A 3.96,3.24,0,1,1,57.96,79.76 Z")
+    FR(ctx, 53.28, 79.22, 5.0, [(0.0, "#FAD09A"), (1.0, "#CC8868")])
+
+    # NOSTRILS
+    P(ctx, "M 53.1,80.39 A 0.9,0.81,0,1,1,51.3,80.39"
+           " A 0.9,0.81,0,1,1,53.1,80.39 Z"
+           " M 56.7,80.39 A 0.9,0.81,0,1,1,54.9,80.39"
+           " A 0.9,0.81,0,1,1,56.7,80.39 Z")
+    F(ctx, "#D8A060", 0.35)
+
+    # MUSTACHE
+    P(ctx, "M 53.28,81.92 C 49.95,80.84 41.85,81.2 39.78,85.7"
+           " C 40.95,87.5 46.98,86.87 50.85,85.88"
+           " C 52.92,85.16 54,84.17 53.28,81.92 Z")
+    F(ctx, "#F2EEEA")
+    P(ctx, "M 54.72,81.92 C 58.05,80.84 66.15,81.2 68.22,85.7"
+           " C 67.05,87.5 61.02,86.87 57.15,85.88"
+           " C 55.08,85.16 54,84.17 54.72,81.92 Z")
+    F(ctx, "#F2EEEA")
+
+    # SUNGLASSES – dark lenses
+    P(ctx, _LENSES); F(ctx, "#080818")
+    # SUNGLASSES – gold frame
+    P(ctx, _LENSES)
+    ctx.set_source_rgba(*hc("#FFD700"))
+    ctx.set_line_width(0.9); ctx.set_line_cap(cairo.LINE_CAP_BUTT); ctx.stroke()
+    # Bridge and arms
+    S(ctx,
+      "M 52.65,71.3 L 55.35,71.3"
+      " M 42.75,71.3 L 37.62,72.2"
+      " M 65.25,71.3 L 70.38,72.2",
+      "#FFD700", 0.72, cairo.LINE_CAP_ROUND)
+    # Lens reflections (#664466AA = AARRGGBB, alpha≈0.4)
+    S(ctx,
+      "M 44.73,69.91 L 47.21,72.14"
+      " M 57.33,69.91 L 59.81,72.14",
+      "#664466AA", 0.99, cairo.LINE_CAP_ROUND)
+
+    # EYEBROWS
+    S(ctx, "M 39.78,66.8 C 44.28,64.55 48.78,65 52.2,67.07",
+      "#B8B0A8", 1.89, cairo.LINE_CAP_ROUND)
+    S(ctx, "M 68.22,66.8 C 63.72,64.55 59.22,65 55.8,67.07",
+      "#B8B0A8", 1.89, cairo.LINE_CAP_ROUND)
+
+    # HAT GROUP (rotation=11° around pivot 54, 64.1)
+    ctx.save()
+    ctx.translate(54, 64.1)
+    ctx.rotate(math.radians(11))
+    ctx.translate(-54, -64.1)
+
+    # Brim upper half — behind hat body
+    ctx.save()
+    ctx.rectangle(0, 0, 108, 64.1); ctx.clip()
+    P(ctx, _BRIM); F(ctx, "#881010")
+    ctx.restore()
+
+    # Hat body
+    P(ctx, "M 38.25,64.1 C 40.95,46.1 52.02,20 54,18.2"
+           " C 55.98,20 67.05,46.1 69.75,64.1 Z")
+    FL(ctx, 54, 18.2, 54, 64.1, [
+        (0.0, "#DD3535"), (0.5, "#CC1818"), (1.0, "#881010")])
+
+    # Brim lower half — in front of hat body
+    ctx.save()
+    ctx.rectangle(0, 64.1, 108, 43.9); ctx.clip()
+    P(ctx, _BRIM); F(ctx, "#881010")
+    ctx.restore()
+
+    ctx.restore()  # end hat group
+
+    # SHIRT COLLAR
+    P(ctx, "M 49.32,96.32 L 54,101.45 L 58.68,96.32"
+           " L 56.88,91.28 L 54,93.08 L 51.12,91.28 Z")
+    F(ctx, "#F8F4EE")
+    # Tie triangles
+    P(ctx, "M 53.55,93.62 L 49.5,91.82 L 49.5,95.42 Z"
+           " M 54.45,93.62 L 58.5,91.82 L 58.5,95.42 Z")
+    F(ctx, "#AA1E2E")
+    # Tie knot
+    P(ctx, "M 55.08,93.62 A 1.08,1.08,0,1,1,52.92,93.62"
+           " A 1.08,1.08,0,1,1,55.08,93.62 Z")
+    F(ctx, "#AA1E2E")
+
+    ctx.restore()  # end outer group translateY=-7
+
+
+# ── Icon renderer ─────────────────────────────────────────────────────────────
+
+def draw_icon(size: int) -> cairo.ImageSurface:
+    """Render the full launcher icon (background + foreground) at size×size px."""
+    scale = size / 108.0
+    surf  = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
+    ctx   = cairo.Context(surf)
+    ctx.scale(scale, scale)
+    ctx.set_antialias(cairo.ANTIALIAS_BEST)
+    ctx.rectangle(0, 0, 108, 108)
+    FL(ctx, 54, 0, 54, 108, [(0, "#0A0818"), (1, "#16133A")])
+    _draw_foreground(ctx)
+    return surf
+
+
+# ── Feature graphic renderer ──────────────────────────────────────────────────
+
+def _load_font(filename, size):
+    for path in [f"C:/Windows/Fonts/{filename}", f"C:/Windows/Fonts/arialbd.ttf"]:
+        try:
+            return ImageFont.truetype(path, size)
+        except Exception:
+            pass
+    return ImageFont.load_default()
+
+
+def draw_feature_graphic() -> Image.Image:
+    """Render the 1024×500 Play Store feature graphic."""
+    W, H = 1024, 500
+
+    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, W, H)
+    ctx  = cairo.Context(surf)
+    ctx.set_antialias(cairo.ANTIALIAS_BEST)
+
+    # Background — same gradient direction as the app
+    ctx.rectangle(0, 0, W, H)
+    pat = cairo.LinearGradient(0, 0, W, H)
+    pat.add_color_stop_rgba(0.0, *hc("#0A0818"))
+    pat.add_color_stop_rgba(1.0, *hc("#16133A"))
+    ctx.set_source(pat); ctx.fill()
+
+    # Stars — same seed as the launcher icon background for consistency
+    rng = random.Random(1337)
+    for _ in range(80):
+        fx, fy = rng.random(), rng.random()
+        sx = fx * W
+        sy = fy * H * 0.78          # keep stars in upper 78% of height
+        sr = max(0.8, (1.0 + fx * 1.5) * (W / 512.0))
+        b  = 0.2 + fy * 0.45
+        ctx.arc(sx, sy, sr, 0, 2 * math.pi)
+        ctx.set_source_rgba(b, b, b + 0.05, 1.0)
+        ctx.fill()
+
+    # Gnome face — right side, viewport 390×390 px starting at (574, 48)
+    # Face centre lands at x≈774, y≈295; hat tip at y≈89; collar at y≈398
+    GNOME_PX = 390
+    GX, GY   = 574, 48
+    ctx.save()
+    ctx.translate(GX, GY)
+    ctx.scale(GNOME_PX / 108.0, GNOME_PX / 108.0)
+    _draw_foreground(ctx)
+    ctx.restore()
+
+    # Hand off to Pillow for text (better font rendering on Windows)
+    img  = Image.frombuffer(
+        'RGBA', (W, H), bytes(surf.get_data()), 'raw', 'BGRA', 0, 1).copy()
     draw = ImageDraw.Draw(img)
 
-    # Collar / suit top
-    draw.ellipse([gx(-1.8), gy(-7.6), gx(1.8), gy(-3.6)], fill=JACKET)
-    draw.polygon([(gx(-0.15), gy(-7.55)), (gx(-0.65), gy(-6.85)),
-                  (gx(-1.35), gy(-7.05)), (gx(-1.45), gy(-7.60))], fill=JACKET_L)
-    draw.polygon([(gx(0.15), gy(-7.55)), (gx(0.65), gy(-6.85)),
-                  (gx(1.35), gy(-7.05)), (gx(1.45), gy(-7.60))], fill=JACKET_L)
+    font_title = _load_font("segoeuib.ttf", 88)
+    font_tag   = _load_font("segoeui.ttf",  26)
 
-    # Shirt collar
-    draw.polygon([
-        (gx(-0.52), gy(-7.52)), (gx(0),     gy(-6.95)),
-        (gx(0.52),  gy(-7.52)), (gx(0.32),  gy(-8.08)),
-        (gx(0),     gy(-7.88)), (gx(-0.32), gy(-8.08)),
-    ], fill=SHIRT)
+    TX = 68   # left text margin
 
-    # Bow tie
-    draw.polygon([(gx(-0.05), gy(-7.82)), (gx(-0.5), gy(-7.62)), (gx(-0.5), gy(-8.02))], fill=TIE)
-    draw.polygon([(gx(0.05),  gy(-7.82)), (gx(0.5),  gy(-7.62)), (gx(0.5),  gy(-8.02))], fill=TIE)
-    kr = int(0.12 * u)
-    draw.ellipse([gx(0)-kr, gy(-7.82)-kr, gx(0)+kr, gy(-7.82)+kr], fill=TIE)
+    def shadowed(x, y, text, fill):
+        draw.text((x + 2, y + 2), text, fill=(0, 0, 0, 130), font=font_title)
+        draw.text((x,     y    ), text, fill=fill,             font=font_title)
 
-    # Neck
-    nw, nh = int(0.76 * u), int(0.55 * u)
-    nx, ny = int(gx(-0.38)), int(gy(-8.5))
-    draw.rounded_rectangle([nx, ny, nx+nw, ny+nh], radius=int(0.15*u), fill=SKIN)
+    # "Metro" white, "Gnome" gold — stacked, vertically centred on canvas
+    shadowed(TX, 148, "Metro", (255, 255, 255, 255))
+    shadowed(TX, 255, "Gnome", (255, 215,   0, 255))
 
-    # Head
-    hcx, hcy = gx(0), gy(-10.0)
-    r_head   = int(1.85 * u)
+    # Gold accent line
+    draw.line([(TX, 368), (TX + 330, 368)], fill=(255, 215, 0, 180), width=2)
 
-    # Ears
-    for side in [-1, 1]:
-        ex = int(hcx + side * r_head * 0.97)
-        ey = int(hcy + 0.15 * u)
-        er = int(0.36 * u)
-        draw.ellipse([ex-er, ey-er, ex+er, ey+er], fill=SKIN)
-        er2 = int(0.20 * u)
-        draw.ellipse([ex-er2, ey-er2, ex+er2, ey+er2], fill=SKIN_DK)
+    # Tagline
+    draw.text((TX + 2, 381), "Beat Detection · Rhythm Game · Metronome",
+              fill=(0,   0,   0,   110), font=font_tag)
+    draw.text((TX,     379), "Beat Detection · Rhythm Game · Metronome",
+              fill=(165, 160, 200, 255), font=font_tag)
 
-    draw.ellipse([hcx-r_head, hcy-r_head, hcx+r_head, hcy+r_head], fill=SKIN)
+    # Four beat dots — a nod to the metronome's 4/4 pulse
+    DOT_Y, DOT_R = 455, 7
+    for i in range(4):
+        bx = TX + i * 30
+        draw.ellipse([bx-DOT_R, DOT_Y-DOT_R, bx+DOT_R, DOT_Y+DOT_R],
+                     fill=(255, 215, 0, 200))
 
-    # Grey side hair
-    for sign in [-1, 1]:
-        hair_pts = (
-            cubic_bezier(
-                (gx(sign*1.42), gy(-11.52)), (gx(sign*1.68), gy(-11.15)),
-                (gx(sign*2.08), gy(-10.72)), (gx(sign*2.12), gy(-10.1)),
-            ) +
-            cubic_bezier(
-                (gx(sign*2.12), gy(-10.1)),  (gx(sign*1.96), gy(-10.0)),
-                (gx(sign*1.65), gy(-10.08)), (gx(sign*1.52), gy(-10.38)),
-            ) +
-            [(gx(sign*1.42), gy(-11.52))]
-        )
-        draw.polygon(hair_pts, fill=HAIR)
-
-    # Eyebrows
-    brow_y = gy(-10.85)
-    brow_w = max(2, int(0.21 * u))
-    for sign in [-1, 1]:
-        brow_pts = cubic_bezier(
-            (gx(sign*1.58), brow_y + 0.05*u), (gx(sign*1.08), brow_y - 0.20*u),
-            (gx(sign*0.58), brow_y - 0.15*u), (gx(sign*0.20), brow_y + 0.08*u),
-        )
-        for i in range(len(brow_pts)-1):
-            draw.line([brow_pts[i], brow_pts[i+1]], fill=BSHADE, width=brow_w)
-
-    # Gold-frame sunglasses
-    lens_y = gy(-10.3)
-    lw_gl  = 1.1 * u
-    lh_gl  = 0.62 * u
-    ftk    = max(3, int(0.1 * u))
-    crn    = int(0.2 * u)
-
-    for lx in [gx(-0.7), gx(0.7)]:
-        x1, y1 = lx - lw_gl/2, lens_y - lh_gl/2
-        x2, y2 = lx + lw_gl/2, lens_y + lh_gl/2
-        draw.rounded_rectangle([x1, y1, x2, y2], radius=crn, fill=G_LENS)
-        draw.rounded_rectangle([x1, y1, x2, y2], radius=crn, outline=G_FRAME, width=ftk)
-        rw = max(2, int(0.08 * u))
-        draw.line([(lx - lw_gl*0.30, lens_y - lh_gl*0.25),
-                   (lx - lw_gl*0.05, lens_y + lh_gl*0.15)], fill=G_REFL, width=rw)
-
-    bw_gl = max(2, int(0.08 * u))
-    draw.line([(gx(-0.15), lens_y), (gx(0.15), lens_y)], fill=G_FRAME, width=bw_gl)
-    draw.line([(gx(-0.7) - lw_gl/2, lens_y), (gx(-1.82), lens_y + 0.1*u)], fill=G_FRAME, width=bw_gl)
-    draw.line([(gx(0.7)  + lw_gl/2, lens_y), (gx(1.82),  lens_y + 0.1*u)], fill=G_FRAME, width=bw_gl)
-
-    # Nose
-    draw.ellipse([gx(0) - 0.44*u, gy(-9.72),
-                  gx(0) + 0.44*u, gy(-9.72) + 0.72*u], fill=NOSE_C)
-
-    # Mustache
-    mb_y = gy(-9.12)
-    def wing(sign):
-        return (
-            cubic_bezier(
-                (gx(sign*0.08), mb_y),          (gx(sign*0.45), mb_y - 0.12*u),
-                (gx(sign*1.35), mb_y - 0.08*u), (gx(sign*1.58), mb_y + 0.42*u),
-            ) +
-            cubic_bezier(
-                (gx(sign*1.58), mb_y + 0.42*u), (gx(sign*1.45), mb_y + 0.62*u),
-                (gx(sign*0.78), mb_y + 0.55*u), (gx(sign*0.35), mb_y + 0.44*u),
-            ) +
-            cubic_bezier(
-                (gx(sign*0.35), mb_y + 0.44*u), (gx(sign*0.12), mb_y + 0.36*u),
-                (gx(0),         mb_y + 0.25*u), (gx(sign*0.08), mb_y),
-            )
-        )
-    draw.polygon(wing(-1), fill=BEARD)
-    draw.polygon(wing(1),  fill=BEARD)
-    draw.line([(gx(-1.2), mb_y + 0.52*u), (gx(1.2), mb_y + 0.52*u)],
-              fill=BSHADE, width=max(2, int(0.06*u)))
-
-    # Hat — separate RGBA layer, rotated 11° CW
-    hat_img = Image.new('RGBA', (ds, ds), (0, 0, 0, 0))
-    h_draw  = ImageDraw.Draw(hat_img)
-    hby     = gy(-11.85)
-    pivot   = (cx, hby)
-
-    h_draw.ellipse([gx(-2.55), hby - 0.28*u, gx(2.55), hby - 0.28*u + 0.65*u], fill=HAT_BRIM)
-    h_draw.ellipse([gx(-2.38), hby - 0.50*u, gx(2.38), hby - 0.50*u + 0.65*u], fill=HAT_DK)
-
-    cone_pts = (
-        cubic_bezier(
-            (gx(-1.75), hby), (gx(-1.45), hby - 2.0*u),
-            (gx(-0.22), hby - 4.9*u), (gx(0), hby - 5.1*u),
-        ) +
-        cubic_bezier(
-            (gx(0), hby - 5.1*u), (gx(0.22), hby - 4.9*u),
-            (gx(1.45), hby - 2.0*u), (gx(1.75), hby),
-        )
-    )
-    h_draw.polygon(cone_pts, fill=HAT_R)
-
-    shade_pts = (
-        cubic_bezier(
-            (gx(-1.75), hby), (gx(-1.45), hby - 2.0*u),
-            (gx(-0.22), hby - 4.9*u), (gx(0), hby - 5.1*u),
-        ) +
-        cubic_bezier(
-            (gx(0), hby - 5.1*u), (gx(-0.18), hby - 4.6*u),
-            (gx(-0.95), hby - 2.3*u), (gx(-1.25), hby),
-        )
-    )
-    h_draw.polygon(shade_pts, fill=HAT_DK)
-
-    hi_pts = (
-        cubic_bezier(
-            (gx(1.75), hby), (gx(1.45), hby - 2.0*u),
-            (gx(0.22), hby - 4.9*u), (gx(0), hby - 5.1*u),
-        ) +
-        cubic_bezier(
-            (gx(0), hby - 5.1*u), (gx(0.1), hby - 4.8*u),
-            (gx(0.8), hby - 2.5*u), (gx(1.1), hby),
-        )
-    )
-    h_draw.polygon(hi_pts, fill=HAT_LT)
-
-    h_draw.polygon([
-        (gx(-1.7), hby - 0.05*u), (gx(-1.3), hby - 0.68*u),
-        (gx(1.3),  hby - 0.68*u), (gx(1.7),  hby - 0.05*u),
-    ], fill=HAT_BAND)
-
-    star_cx = gx(-0.18)
-    star_cy = hby - 3.7 * u
-    h_draw.polygon(star_polygon(star_cx, star_cy, 0.36*u, 0.36*0.42*u), fill=HAT_GOLD)
-
-    hat_rot = hat_img.rotate(-11, resample=Image.BICUBIC,
-                              center=(int(pivot[0]), int(pivot[1])), expand=False)
-    img = Image.alpha_composite(img, hat_rot)
-    return img   # RGBA, transparent background
+    return img.convert('RGB')
 
 
-def draw_gnome_full(ds=2048):
-    """
-    Draw Metro on a dark starfield background.
-    Returns RGB Image (for legacy launcher icons).
-    """
-    bg = Image.new('RGB', (ds, ds), (0x0A, 0x08, 0x18))
-    bg_draw = ImageDraw.Draw(bg)
+# ── cairo → PIL helper ────────────────────────────────────────────────────────
 
-    # Background gradient
-    for y in range(ds):
-        t = y / ds
-        bg_draw.line([(0, y), (ds, y)], fill=(
-            int(0x0A + (0x16 - 0x0A) * t),
-            int(0x08 + (0x13 - 0x08) * t),
-            int(0x18 + (0x3A - 0x18) * t),
-        ))
-
-    # Stars
-    rng = random.Random(1337)
-    for _ in range(70):
-        fx, fy = rng.random(), rng.random()
-        sx, sy = fx * ds, fy * ds * 0.65
-        sr = max(2, int((1.5 + fx * 2) * (ds / 512)))
-        sa = int(220 * (0.25 + fy * 0.45))
-        bg_draw.ellipse([sx-sr, sy-sr, sx+sr, sy+sr], fill=(sa, sa, sa))
-
-    gnome = draw_gnome_rgba(ds)
-    bg_rgba = bg.convert('RGBA')
-    result = Image.alpha_composite(bg_rgba, gnome)
-    return result.convert('RGB')
+def to_pil_rgb(surf: cairo.ImageSurface) -> Image.Image:
+    """Convert a cairo ARGB32 surface to a PIL RGB image."""
+    w, h = surf.get_width(), surf.get_height()
+    img  = Image.frombuffer('RGBA', (w, h), bytes(surf.get_data()), 'raw', 'BGRA', 0, 1)
+    return img.convert('RGB')
 
 
-def make_foreground(gnome_rgba, fg_size, safe_size):
-    """
-    Pad gnome_rgba so it fills the adaptive icon safe zone.
-
-    fg_size   = total foreground canvas in px  (108dp * density)
-    safe_size = inner safe zone in px          ( 72dp * density, = fg_size * 2/3)
-
-    The gnome is scaled to safe_size, then centred on the fg_size canvas.
-    """
-    scaled = gnome_rgba.resize((safe_size, safe_size), Image.LANCZOS)
-    fg = Image.new('RGBA', (fg_size, fg_size), (0, 0, 0, 0))
-    offset = (fg_size - safe_size) // 2
-    fg.paste(scaled, (offset, offset), scaled)
-    return fg
-
-
-# ── Output paths ──────────────────────────────────────────────────────────────
+# ── Output paths & sizes ──────────────────────────────────────────────────────
 
 BASE  = r"C:\Users\wlambrechts\AndroidStudioProjects\MetroGnome\app\src\main\res"
 STORE = r"C:\Users\wlambrechts\AndroidStudioProjects\MetroGnome\app"
 
-# icon_px: size of ic_launcher.webp (the legacy / full icon)
-# fg_px:   total foreground canvas  (= icon_px * 108/48)
-# safe_px: inner safe zone          (= icon_px * 72/48  = fg_px * 2/3)
-SIZES = {
-    'mipmap-mdpi':    {'icon': 48,  'fg': 108, 'safe': 72},
-    'mipmap-hdpi':    {'icon': 72,  'fg': 162, 'safe': 108},
-    'mipmap-xhdpi':   {'icon': 96,  'fg': 216, 'safe': 144},
-    'mipmap-xxhdpi':  {'icon': 144, 'fg': 324, 'safe': 216},
-    'mipmap-xxxhdpi': {'icon': 192, 'fg': 432, 'safe': 288},
+DENSITIES = {
+    'mipmap-mdpi':    48,
+    'mipmap-hdpi':    72,
+    'mipmap-xhdpi':   96,
+    'mipmap-xxhdpi':  144,
+    'mipmap-xxxhdpi': 192,
 }
 
 if __name__ == '__main__':
-    print("Drawing Metro at 2048×2048…")
-    gnome_rgba = draw_gnome_rgba(2048)    # transparent — master for foreground
-    gnome_full = draw_gnome_full(2048)    # dark bg     — master for legacy icon
+    print("Rendering assets from XML using pycairo…\n")
 
-    # Store icon (512×512, full background)
-    store_path = os.path.join(STORE, 'store_icon_512.png')
-    gnome_full.resize((512, 512), Image.LANCZOS).save(store_path, 'PNG')
-    print("  Saved store_icon_512.png")
+    # Play Store icon (512×512)
+    surf = draw_icon(512)
+    out  = os.path.join(STORE, 'store_icon_512.png')
+    to_pil_rgb(surf).save(out, 'PNG')
+    print(f"  {out}  (512×512)")
 
-    for folder, sizes in SIZES.items():
-        icon_px = sizes['icon']
-        fg_px   = sizes['fg']
-        safe_px = sizes['safe']
+    # Play Store feature graphic (1024×500)
+    fg  = draw_feature_graphic()
+    out = os.path.join(STORE, 'feature_graphic_1024x500.png')
+    fg.save(out, 'PNG')
+    print(f"  {out}  (1024×500)")
 
-        # Legacy launcher icon (full gnome + dark background)
-        full_icon = gnome_full.resize((icon_px, icon_px), Image.LANCZOS)
-        for name in ['ic_launcher.webp', 'ic_launcher_round.webp']:
-            full_icon.save(os.path.join(BASE, folder, name), 'WEBP', quality=95)
+    # Launcher icons
+    print()
+    for folder, px in DENSITIES.items():
+        surf = draw_icon(px)
+        img  = to_pil_rgb(surf)
+        for name in ('ic_launcher.webp', 'ic_launcher_round.webp'):
+            img.save(os.path.join(BASE, folder, name), 'WEBP', quality=95)
+        print(f"  {folder}  {px}×{px}px")
 
-        # Adaptive icon foreground (gnome on transparent background, safe-zone padded)
-        fg = make_foreground(gnome_rgba, fg_px, safe_px)
-        fg.save(os.path.join(BASE, folder, 'ic_launcher_foreground.webp'), 'WEBP', quality=95)
-
-        print(f"  Saved {folder}: icon={icon_px}px  foreground={fg_px}px (safe={safe_px}px)")
-
-    print("\nDone!  Now run the app — the launcher icon will match Metro exactly.")
+    print("\nDone.")

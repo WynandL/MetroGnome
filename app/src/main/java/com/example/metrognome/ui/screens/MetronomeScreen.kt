@@ -27,15 +27,24 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import com.example.metrognome.ui.components.UnlockCelebrationOverlay
+import com.example.metrognome.ui.components.WhatsNewOverlayDispatcher
+import com.example.metrognome.ui.components.metro_items.MetroItem
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.offset
@@ -49,6 +58,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.components.GnomeCanvas
+import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
+import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 
 @Composable
@@ -59,8 +70,22 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
     val currentBeat by vm.currentBeat.collectAsStateWithLifecycle()
     val accentBeat by vm.accentBeat.collectAsStateWithLifecycle()
+    val activeItemIds by vm.activeItemIds.collectAsStateWithLifecycle()
+    val activeItems = androidx.compose.runtime.remember(activeItemIds) {
+        METRO_ITEM_REGISTRY.filter { it.item.id in activeItemIds }.map { it.item }
+    }
     val isMuted by vm.isMuted.collectAsStateWithLifecycle()
     val keepScreenOn by vm.keepScreenOn.collectAsStateWithLifecycle()
+    val isAdFree by vm.isAdFree.collectAsStateWithLifecycle()
+    var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
+    val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
+    val pendingWhatsNew by vm.pendingWhatsNew.collectAsStateWithLifecycle()
+
+    // Refresh active items every time this tab is opened so rhythm-game unlocks
+    // (recorded by RhythmGameViewModel's own tracker) appear on the canvas immediately.
+    LaunchedEffect(Unit) {
+        vm.checkForNewUnlocks()
+    }
 
     val activity = LocalActivity.current
     DisposableEffect(keepScreenOn) {
@@ -74,10 +99,11 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0D0B1E))
+            .background(AppColors.background)
     ) {
         // Beat indicator dots (top)
         BeatIndicatorRow(
@@ -102,6 +128,8 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
                 beatEvents = vm.beatEvents,
                 flashOnBeat = flashOnBeat,
                 accentBeat = accentBeat,
+                activeItems = activeItems,
+                onItemTapped = { tappedItem = it },
                 modifier = Modifier.fillMaxSize()
             )
 
@@ -123,7 +151,7 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             onTapTempo = { vm.tapTempo() },
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF0D0B1E))
+                .background(AppColors.background)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         )
 
@@ -135,13 +163,50 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             onToggleKeepScreenOn = { vm.setKeepScreenOn(!keepScreenOn) },
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF0D0B1E))
+                .background(AppColors.background)
                 .padding(horizontal = 16.dp, vertical = 6.dp)
         )
 
-        // AdMob banner
-        AdBannerView(modifier = Modifier.fillMaxWidth())
+        if (!isAdFree) {
+            AdBannerView(modifier = Modifier.fillMaxWidth())
+        }
     }
+
+    tappedItem?.let { item ->
+        AlertDialog(
+            onDismissRequest = { tappedItem = null },
+            title = {
+                Text(
+                    item.displayName,
+                    color = AppColors.gold,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(item.earnedMessage, color = AppColors.textPrimary)
+            },
+            confirmButton = {
+                TextButton(onClick = { tappedItem = null }) {
+                    Text("Nice!", color = AppColors.gold, fontWeight = FontWeight.Bold)
+                }
+            },
+            containerColor = AppColors.surface,
+            tonalElevation = 0.dp
+        )
+    }
+
+    pendingWhatsNew?.let { key ->
+        WhatsNewOverlayDispatcher(
+            versionKey = key,
+            onDismiss = { vm.markWhatsNewShown(key) },
+        )
+    } ?: unlockQueue.firstOrNull()?.let { entry ->
+        UnlockCelebrationOverlay(
+            entry = entry,
+            onDismiss = { vm.markCelebrated(entry.item.id) },
+        )
+    }
+    } // close outer Box
 }
 
 @Composable
@@ -162,8 +227,8 @@ private fun BeatIndicatorRow(
             val isAccent = accentBeat > 0 && i == accentBeat - 1
             val dotColor by animateColorAsState(
                 targetValue = when {
-                    isActive && isAccent -> Color(0xFFFFD700)
-                    isActive -> Color(0xFFAB7DE0)
+                    isActive && isAccent -> AppColors.gold
+                    isActive -> AppColors.textAccent
                     isAccent -> Color(0x66FFD700)
                     else -> Color(0x33FFFFFF)
                 },
@@ -220,7 +285,7 @@ private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
                 text = tempoLabel(bpm),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFFFFD700),
+                color = AppColors.gold,
                 letterSpacing = 1.5.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.offset(y = (-6).dp).padding(bottom = 2.dp)
@@ -291,7 +356,7 @@ private fun BpmButton(label: String, onClick: () -> Unit) {
 @Composable
 private fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
     val bgColor by animateColorAsState(
-        targetValue = if (isPlaying) Color(0xFFCC2233) else Color(0xFF5B2D8A),
+        targetValue = if (isPlaying) AppColors.danger else AppColors.primaryPurple,
         label = "playButtonColor"
     )
     Surface(
@@ -347,9 +412,9 @@ private fun UtilityToggle(
     onClick: () -> Unit
 ) {
     val shape = RoundedCornerShape(20.dp)
-    val borderColor = if (active) Color(0xFFFFD700) else Color(0x33FFFFFF)
-    val bgColor = if (active) Color(0xFF2A1F55) else Color(0xFF1E1B3A)
-    val contentColor = if (active) Color(0xFFFFD700) else Color(0x80FFFFFF)
+    val borderColor = if (active) AppColors.gold else Color(0x33FFFFFF)
+    val bgColor = if (active) AppColors.darkPurple else AppColors.surface
+    val contentColor = if (active) AppColors.gold else Color(0x80FFFFFF)
 
     Box(
         contentAlignment = Alignment.Center,

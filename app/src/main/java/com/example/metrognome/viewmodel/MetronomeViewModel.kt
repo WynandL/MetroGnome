@@ -1,5 +1,6 @@
 package com.example.metrognome.viewmodel
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.media.AudioAttributes
@@ -9,6 +10,14 @@ import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.MetronomeEngine
+import com.example.metrognome.billing.BillingManager
+import com.example.metrognome.ui.components.metro_items.MetroItemTracker
+import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
+import com.example.metrognome.ui.components.metro_items.MetroItemEntry
+import com.example.metrognome.whats_new.AppWhatsNew
+import com.example.metrognome.whats_new.WhatsNewTracker
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
@@ -19,6 +28,39 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val prefs = app.getSharedPreferences("metrognome_prefs", Context.MODE_PRIVATE)
     private val engine = MetronomeEngine()
+    val itemTracker = MetroItemTracker(app)
+    val billingManager = BillingManager(app)
+    private val whatsNewTracker = WhatsNewTracker(app)
+
+    val isAdFree: StateFlow<Boolean>          = billingManager.isAdFree
+    val removeAdsPriceText: StateFlow<String?> = billingManager.priceText
+    val isBillingAvailable: StateFlow<Boolean> = billingManager.isBillingAvailable
+    val isPurchasing: StateFlow<Boolean>       = billingManager.isPurchasing
+    val isBillingConnecting: StateFlow<Boolean> = billingManager.isConnecting
+
+    fun purchaseRemoveAds(activity: Activity) = billingManager.launchPurchaseFlow(activity)
+    fun restorePurchases() = billingManager.restorePurchases()
+    fun debugClearAdFree() = billingManager.debugClearAdFree()
+
+    private val _activeItemIds = MutableStateFlow(itemTracker.unlockedIds(METRO_ITEM_REGISTRY))
+    val activeItemIds: StateFlow<Set<String>> = _activeItemIds.asStateFlow()
+
+    private val _unlockQueue = MutableStateFlow<List<MetroItemEntry>>(emptyList())
+    val unlockQueue: StateFlow<List<MetroItemEntry>> = _unlockQueue.asStateFlow()
+
+    private val _pendingWhatsNew = MutableStateFlow(whatsNewTracker.pendingKey(AppWhatsNew.ALL))
+    val pendingWhatsNew: StateFlow<String?> = _pendingWhatsNew.asStateFlow()
+
+    private val _cheatModeEnabled = MutableStateFlow(itemTracker.isCheatModeEnabled())
+    val cheatModeEnabled: StateFlow<Boolean> = _cheatModeEnabled.asStateFlow()
+
+    fun toggleCheatMode() {
+        itemTracker.toggleCheatMode()
+        _cheatModeEnabled.value = itemTracker.isCheatModeEnabled()
+        _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+    }
+
+    private var playTimerJob: Job? = null
 
     private val audioManager = app.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -105,6 +147,47 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         syncEngineSettings()
+        checkForNewUnlocks()
+    }
+
+    fun markWhatsNewShown(versionKey: String) {
+        whatsNewTracker.markShown(versionKey)
+        _pendingWhatsNew.value = whatsNewTracker.pendingKey(AppWhatsNew.ALL)
+    }
+
+    /** DEV: wipe all progress counters — simulates a clean install. */
+    fun resetAllProgress() {
+        itemTracker.resetAllProgress()
+        _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+        _unlockQueue.value = emptyList()
+    }
+
+    /** DEV: fire the celebration overlay for a specific registry item (no side-effects on celebrated set). */
+    fun previewUnlockCelebration(index: Int) {
+        if (METRO_ITEM_REGISTRY.isEmpty()) return
+        val entry = METRO_ITEM_REGISTRY[index.coerceIn(0, METRO_ITEM_REGISTRY.lastIndex)]
+        if (entry !in _unlockQueue.value) {
+            _unlockQueue.value = _unlockQueue.value + entry
+        }
+    }
+
+    fun checkForNewUnlocks() {
+        _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+        val celebrated = itemTracker.celebratedIds()
+        // Purge: remove entries that are celebrated OR no longer unlocked (e.g. after dev reset)
+        _unlockQueue.value = _unlockQueue.value.filter { it.item.id in _activeItemIds.value && it.item.id !in celebrated }
+        val newEntries = METRO_ITEM_REGISTRY.filter { it.item.id in _activeItemIds.value && it.item.id !in celebrated }
+        if (newEntries.isEmpty()) return
+        val existing = _unlockQueue.value.map { it.item.id }.toSet()
+        val toAdd = newEntries.filter { it.item.id !in existing }
+        if (toAdd.isNotEmpty()) {
+            _unlockQueue.value = _unlockQueue.value + toAdd
+        }
+    }
+
+    fun markCelebrated(id: String) {
+        itemTracker.markCelebrated(id)
+        _unlockQueue.value = _unlockQueue.value.filter { it.item.id != id }
     }
 
     // ── Public actions ─────────────────────────────────────────────────────────
@@ -117,6 +200,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             syncEngineSettings()
             engine.start()
             _isPlaying.value = true
+            startPlayTimer()
         }
     }
 
@@ -128,9 +212,27 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun stopInternal() {
+        stopPlayTimer()
         engine.stop()
         _isPlaying.value = false
         _currentBeat.value = 0
+    }
+
+    private fun startPlayTimer() {
+        playTimerJob?.cancel()
+        playTimerJob = viewModelScope.launch {
+            while (true) {
+                delay(10_000L)   // tick every 10 seconds
+                itemTracker.addMetronomeSeconds(10)
+                _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+                checkForNewUnlocks()
+            }
+        }
+    }
+
+    private fun stopPlayTimer() {
+        playTimerJob?.cancel()
+        playTimerJob = null
     }
 
     fun setBpm(newBpm: Int) {
@@ -210,6 +312,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     override fun onCleared() {
         stopInternal()
         abandonAudioFocus()
+        billingManager.release()
         super.onCleared()
     }
 }
