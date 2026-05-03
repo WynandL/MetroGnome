@@ -139,8 +139,8 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     /** Live mic amplitude 0..1. Non-zero only while mic mode is active. */
     val micAmplitude: StateFlow<Float> = detector.amplitude
 
-    private val _newlyUnlocked = MutableSharedFlow<MetroItemEntry>(extraBufferCapacity = 8)
-    val newlyUnlocked: SharedFlow<MetroItemEntry> = _newlyUnlocked.asSharedFlow()
+    private val _unlockQueue = MutableStateFlow<List<MetroItemEntry>>(emptyList())
+    val unlockQueue: StateFlow<List<MetroItemEntry>> = _unlockQueue.asStateFlow()
 
     /**
      * Fires on every microphone onset detection — regardless of timing.
@@ -456,17 +456,24 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         _phase.value = GamePhase.RESULT
     }
 
-    private fun checkForNewUnlocks() {
+    fun checkForNewUnlocks() {
         val unlocked = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
         val celebrated = itemTracker.celebratedIds()
+        // Purge: remove entries that are celebrated OR no longer unlocked (e.g. after dev reset)
+        _unlockQueue.value = _unlockQueue.value.filter { it.item.id in unlocked && it.item.id !in celebrated }
         val newEntries = METRO_ITEM_REGISTRY.filter { it.item.id in unlocked && it.item.id !in celebrated }
         if (newEntries.isEmpty()) return
-        viewModelScope.launch {
-            newEntries.forEach { entry -> _newlyUnlocked.emit(entry) }
+        val existing = _unlockQueue.value.map { it.item.id }.toSet()
+        val toAdd = newEntries.filter { it.item.id !in existing }
+        if (toAdd.isNotEmpty()) {
+            _unlockQueue.value = _unlockQueue.value + toAdd
         }
     }
 
-    fun markCelebrated(id: String) { itemTracker.markCelebrated(id) }
+    fun markCelebrated(id: String) {
+        itemTracker.markCelebrated(id)
+        _unlockQueue.value = _unlockQueue.value.filter { it.item.id != id }
+    }
 
     private fun reset() {
         cancelJobs()

@@ -37,13 +37,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import com.example.metrognome.ui.components.UnlockCelebrationOverlay
+import com.example.metrognome.ui.components.WhatsNewOverlayDispatcher
 import com.example.metrognome.ui.components.metro_items.MetroItem
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,11 +76,15 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     }
     val isMuted by vm.isMuted.collectAsStateWithLifecycle()
     val keepScreenOn by vm.keepScreenOn.collectAsStateWithLifecycle()
+    val isAdFree by vm.isAdFree.collectAsStateWithLifecycle()
     var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
-    val unlockQueue = remember { mutableStateListOf<com.example.metrognome.ui.components.metro_items.MetroItemEntry>() }
+    val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
+    val pendingWhatsNew by vm.pendingWhatsNew.collectAsStateWithLifecycle()
 
-    LaunchedEffect(vm) {
-        vm.newlyUnlocked.collect { entry -> unlockQueue.add(entry) }
+    // Refresh active items every time this tab is opened so rhythm-game unlocks
+    // (recorded by RhythmGameViewModel's own tracker) appear on the canvas immediately.
+    LaunchedEffect(Unit) {
+        vm.checkForNewUnlocks()
     }
 
     val activity = LocalActivity.current
@@ -163,8 +167,9 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
                 .padding(horizontal = 16.dp, vertical = 6.dp)
         )
 
-        // AdMob banner
-        AdBannerView(modifier = Modifier.fillMaxWidth())
+        if (!isAdFree) {
+            AdBannerView(modifier = Modifier.fillMaxWidth())
+        }
     }
 
     tappedItem?.let { item ->
@@ -190,10 +195,15 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
         )
     }
 
-    unlockQueue.firstOrNull()?.let { entry ->
+    pendingWhatsNew?.let { key ->
+        WhatsNewOverlayDispatcher(
+            versionKey = key,
+            onDismiss = { vm.markWhatsNewShown(key) },
+        )
+    } ?: unlockQueue.firstOrNull()?.let { entry ->
         UnlockCelebrationOverlay(
             entry = entry,
-            onDismiss = { vm.markCelebrated(entry.item.id); unlockQueue.removeAt(0) },
+            onDismiss = { vm.markCelebrated(entry.item.id) },
         )
     }
     } // close outer Box

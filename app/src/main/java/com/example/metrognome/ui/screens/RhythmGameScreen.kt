@@ -102,7 +102,8 @@ private val difficulties = listOf(
 fun RhythmGameScreen(
     vm: RhythmGameViewModel,
     isMetronomePlaying: Boolean = false,
-    onStopMetronome: () -> Unit = {}
+    onStopMetronome: () -> Unit = {},
+    isAdFree: Boolean = false,
 ) {
     val phase by vm.phase.collectAsStateWithLifecycle()
     val score by vm.score.collectAsStateWithLifecycle()
@@ -119,9 +120,11 @@ fun RhythmGameScreen(
     val highScores by vm.highScores.collectAsStateWithLifecycle()
     val visibleNotes by vm.visibleNotes.collectAsStateWithLifecycle()
 
-    val unlockQueue = remember { mutableStateListOf<com.example.metrognome.ui.components.metro_items.MetroItemEntry>() }
-    LaunchedEffect(vm) {
-        vm.newlyUnlocked.collect { entry -> unlockQueue.add(entry) }
+    val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
+
+    // Purge stale queue entries and pick up day-based unlocks on every tab entry
+    LaunchedEffect(Unit) {
+        vm.checkForNewUnlocks()
     }
 
     val context = LocalContext.current
@@ -172,13 +175,15 @@ fun RhythmGameScreen(
                 GamePhase.RESULT -> ResultPanel(result = result, onDismiss = { vm.dismissResult() })
             }
         }
-        AdBannerView(modifier = Modifier.fillMaxWidth())
+        if (!isAdFree) {
+            AdBannerView(modifier = Modifier.fillMaxWidth())
+        }
     }
 
     unlockQueue.firstOrNull()?.let { entry ->
         UnlockCelebrationOverlay(
             entry = entry,
-            onDismiss = { vm.markCelebrated(entry.item.id); unlockQueue.removeAt(0) },
+            onDismiss = { vm.markCelebrated(entry.item.id) },
         )
     }
     } // close outer Box
@@ -364,7 +369,7 @@ private fun IdlePanel(
                     )
                     Column {
                         Text(
-                            "Play With Sound",
+                            "Play With Sound (Beta)",
                             color = if (useMic) AppColors.gold else Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp

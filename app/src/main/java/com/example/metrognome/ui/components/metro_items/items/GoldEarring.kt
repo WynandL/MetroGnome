@@ -12,10 +12,10 @@ import com.example.metrognome.ui.theme.ItemPalette
 /**
  * A small, detailed gold hoop earring on Metro's left ear.
  *
- * Coordinate anchor (from GnomeCanvas, origin at cx/baseY after translate):
- *   Left ear centre: Offset(-(r*0.97f + 0.1f*u), -10.15f*u)
- *   where r = 1.85f*u
- *   → effectively Offset(-1.895f*u, -10.15f*u)
+ * Coordinate anchor derived from drawEars geometry (ecy = cy + 0.1f·u = -9.9f·u):
+ *   earX = -1.95f·u  — x of the lower-bezier CP2 (side * 1.95f·u, lobe region)
+ *   earY = ecy + 0.13f·u = -9.77f·u  — attachment just above the lobe proper
+ *   hoopCy = earY + hoopR = -9.49f·u  — hoop centre sits in the lobe zone
  *
  * The hoop hangs below the ear lobe as a proper earring would.
  * Rendered as:
@@ -33,7 +33,7 @@ object GoldEarring : MetroItem {
     override val isBodyAttached  = true
     override val isHeadAttached  = true
 
-    override fun hitCenter(u: Float) = Offset(-(1.85f * 0.97f + 0.05f) * u, (-10.0f + 0.35f + 0.28f) * u)
+    override fun hitCenter(u: Float) = Offset(-1.95f * u, (-10.0f + 0.51f) * u)
     override fun hitRadius(u: Float) = u * 0.45f
 
     // Palette
@@ -42,9 +42,11 @@ object GoldEarring : MetroItem {
     private val ringShade  = Color(0x44000000)
 
     override fun DrawScope.draw(u: Float, cx: Float, baseY: Float) {
-        // Ear lobe anchor — left ear, slightly below centre
-        val earX = -(1.85f * u * 0.97f) - 0.05f * u   // just past the ear edge
-        val earY = -10.0f * u + 0.35f * u               // earlobe height
+        // Ear lobe anchor — derived from drawEars pointy-ear geometry
+        // earX: lower-bezier CP2 x = side * 1.95f * u (side = -1 for left ear)
+        // earY: ecy + 0.13f·u, where ecy = (cy + 0.1f) * u = -9.9f·u
+        val earX = -1.95f * u
+        val earY = (-10.0f + 0.23f) * u                 // = -9.77f·u
 
         val hoopR      = 0.28f * u    // outer radius of the hoop
         val wireW      = 0.10f * u    // stroke width of the ring wire

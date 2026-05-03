@@ -87,7 +87,7 @@ private val confettiDefs: List<ConfettiDef> = run {
     }
 }
 
-private fun DrawScope.drawConfetti(time: Float) {
+internal fun DrawScope.drawConfetti(time: Float) {
     for (p in confettiDefs) {
         val t = ((time * p.speed + p.phaseOffset) % 1f + 1f) % 1f
         val px = (p.baseX + p.hWobble * sin(t * p.wobbleFreq * 2.0 * PI).toFloat()) * size.width

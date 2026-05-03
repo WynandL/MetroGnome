@@ -24,28 +24,31 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.BuildConfig
+import com.example.metrognome.dev.DevEasterEgg
+import com.example.metrognome.dev.DevTapTarget
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.components.UnlockCelebrationOverlay
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
-import com.example.metrognome.ui.components.metro_items.MetroItemEntry
 import com.example.metrognome.ui.components.metro_items.UnlockCondition
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
@@ -53,6 +56,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(vm: MetronomeViewModel) {
+    val context = LocalContext.current
     val bpm by vm.bpm.collectAsStateWithLifecycle()
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
     val accentBeat by vm.accentBeat.collectAsStateWithLifecycle()
@@ -60,11 +64,18 @@ fun SettingsScreen(vm: MetronomeViewModel) {
     val volume by vm.volume.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
     val cheatModeEnabled by vm.cheatModeEnabled.collectAsStateWithLifecycle()
+    var isDevMode by remember { mutableStateOf(DevEasterEgg.isDevModeActive(context)) }
 
-    val unlockQueue = remember { mutableStateListOf<MetroItemEntry>() }
+    val isAdFree by vm.isAdFree.collectAsStateWithLifecycle()
+    val removeAdsPriceText by vm.removeAdsPriceText.collectAsStateWithLifecycle()
+    val isBillingAvailable by vm.isBillingAvailable.collectAsStateWithLifecycle()
+    val isPurchasing by vm.isPurchasing.collectAsStateWithLifecycle()
+    val isBillingConnecting by vm.isBillingConnecting.collectAsStateWithLifecycle()
+    val activity = LocalActivity.current
+
+    val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
     var previewIndex by remember { mutableIntStateOf(0) }
     var showUnlockRules by remember { mutableStateOf(false) }
-    LaunchedEffect(vm) { vm.newlyUnlocked.collect { entry -> unlockQueue.add(entry) } }
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(
@@ -196,24 +207,49 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             HorizontalDivider(color = AppColors.surfaceVariant)
             Spacer(Modifier.height(8.dp))
 
+            SettingsSectionTitle("Remove Ads")
+
+            RemoveAdsSection(
+                isAdFree = isAdFree,
+                priceText = removeAdsPriceText,
+                isBillingAvailable = isBillingAvailable,
+                isPurchasing = isPurchasing,
+                isBillingConnecting = isBillingConnecting,
+                onPurchase = { activity?.let { vm.purchaseRemoveAds(it) } },
+                onRestore  = { vm.restorePurchases() },
+            )
+
+            Spacer(Modifier.height(8.dp))
+            HorizontalDivider(color = AppColors.surfaceVariant)
+            Spacer(Modifier.height(8.dp))
+
             SettingsSectionTitle("About")
 
-            Text(
-                "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-                color = AppColors.textMuted,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-            Text(
-                "Build: ${if (BuildConfig.DEBUG) "Debug" else "Release"}",
-                color = if (BuildConfig.DEBUG) AppColors.gold else AppColors.textMuted,
-                fontSize = 12.sp
-            )
+            DevTapTarget(onToggled = { isDevMode = it }) {
+                Column {
+                    Text(
+                        "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                        color = AppColors.textMuted,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Text(
+                        buildString {
+                            append("Build: ${if (BuildConfig.DEBUG) "Debug" else "Release"}")
+                            if (!BuildConfig.DEBUG && DevEasterEgg.isManuallyEnabled(context)) {
+                                append(" · Dev Mode ✓")
+                            }
+                        },
+                        color = if (isDevMode) AppColors.gold else AppColors.textMuted,
+                        fontSize = 12.sp
+                    )
+                }
+            }
 
             Spacer(Modifier.height(16.dp))
 
-            if (BuildConfig.DEBUG) {
-            // ── DEV ONLY — hidden automatically in release builds ─────────────────
+            if (isDevMode) {
+            // ── DEV ONLY ──────────────────────────────────────────────────────────
             OutlinedButton(
                 onClick = { vm.toggleCheatMode() },
                 modifier = Modifier.fillMaxWidth(),
@@ -226,7 +262,7 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                 )
             ) {
                 Text(
-                    if (cheatModeEnabled) "DEV: All Items ON" else "DEV: All Items OFF",
+                    if (cheatModeEnabled) "All Items ON" else "All Items OFF",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -241,7 +277,7 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.mediumPurple),
                     border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.deepPurple)
                 ) {
-                    Text("DEV: Preview Popup", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Preview Popup", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 OutlinedButton(
                     onClick = { if (METRO_ITEM_REGISTRY.isNotEmpty()) previewIndex = (previewIndex + 1) % METRO_ITEM_REGISTRY.size },
@@ -264,7 +300,7 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
                 border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
             ) {
-                Text("DEV: Show Unlock Rules", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("Show Unlock Rules", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
 
             Spacer(Modifier.height(6.dp))
@@ -275,15 +311,31 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
                 border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
             ) {
-                Text("DEV: Reset All Progress", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("Reset All Progress", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
+                onClick = { vm.debugClearAdFree() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
+            ) {
+                Text(
+                    if (isAdFree) "Clear Ad-Free State" else "Ad-Free Already Cleared",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
             } // end DEBUG block
 
             Spacer(Modifier.height(8.dp))
         }
 
-        // AdMob banner
-        AdBannerView(modifier = Modifier.fillMaxWidth())
+        if (!isAdFree) {
+            AdBannerView(modifier = Modifier.fillMaxWidth())
+        }
     }
 
     if (showUnlockRules) {
@@ -329,10 +381,117 @@ fun SettingsScreen(vm: MetronomeViewModel) {
     unlockQueue.firstOrNull()?.let { entry ->
         UnlockCelebrationOverlay(
             entry = entry,
-            onDismiss = { vm.markCelebrated(entry.item.id); unlockQueue.removeAt(0) },
+            onDismiss = { vm.markCelebrated(entry.item.id) },
         )
     }
     } // close outer Box
+}
+
+@Composable
+private fun RemoveAdsSection(
+    isAdFree: Boolean,
+    priceText: String?,
+    isBillingAvailable: Boolean,
+    isPurchasing: Boolean,
+    isBillingConnecting: Boolean,
+    onPurchase: () -> Unit,
+    onRestore: () -> Unit,
+) {
+    if (isAdFree) {
+        Column(modifier = Modifier.padding(bottom = 8.dp)) {
+            Text(
+                text = "✓  You're ad-free!",
+                color = AppColors.gold,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            Text(
+                text = "Metro has the full stage to himself. Enjoy the extra room.",
+                color = AppColors.textSecondary,
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
+            )
+        }
+        return
+    }
+
+    Column(modifier = Modifier.padding(bottom = 4.dp)) {
+        Text(
+            text = "Give Metro the full stage",
+            color = AppColors.textPrimary,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        Text(
+            text = "Remove the banner ad and Metro gets more room to dance. " +
+                    "A bigger canvas, all yours. One-time purchase, forever.",
+            color = AppColors.textSecondary,
+            fontSize = 13.sp,
+            lineHeight = 19.sp,
+            modifier = Modifier.padding(bottom = 14.dp),
+        )
+
+        when {
+            // Still connecting to Play on startup — neutral loading text, no button yet
+            isBillingConnecting -> {
+                Text(
+                    text = "Loading…",
+                    color = AppColors.textMuted,
+                    fontSize = 13.sp,
+                    fontStyle = FontStyle.Italic,
+                )
+            }
+
+            // Connected but product not found in Play Console
+            !isBillingAvailable && priceText == null -> {
+                Text(
+                    text = "Unavailable",
+                    color = AppColors.textMuted,
+                    fontSize = 13.sp,
+                    fontStyle = FontStyle.Italic,
+                )
+            }
+
+            else -> {
+                val buttonLabel = when {
+                    isPurchasing -> "Please wait…"
+                    priceText != null -> "Remove Ads — $priceText"
+                    else -> "Remove Ads"
+                }
+                OutlinedButton(
+                    onClick = onPurchase,
+                    enabled = !isPurchasing && isBillingAvailable,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = AppColors.gold,
+                        disabledContentColor = AppColors.textMuted,
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (!isPurchasing) AppColors.gold else AppColors.surfaceVariant
+                    ),
+                ) {
+                    Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                TextButton(
+                    onClick = onRestore,
+                    enabled = !isPurchasing,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = "Restore Purchase",
+                        color = if (!isPurchasing) AppColors.textMuted else AppColors.textDim,
+                        fontSize = 12.sp,
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

@@ -14,7 +14,16 @@
       "Bash(./gradlew assembleDebug --info)",
       "Bash(git checkout *)",
       "Bash(./gradlew assembleRelease)",
-      "Bash(./gradlew clean *)"
+      "Bash(./gradlew clean *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\" -Recurse -Directory -Filter \"mipmap*\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\app\\\\src\\\\main\\\\res\" -Recurse -File | Where-Object { $_.Directory.Name -match 'mipmap' } | Select-Object -ExpandProperty FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\app\\\\src\\\\main\\\\res\" -Recurse -File | Where-Object { $_.Name -match 'ic_launcher_\\(foreground|background\\)' } | Select-Object -ExpandProperty FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\" -Recurse -File | Where-Object { \\($_.Extension -eq '.png' -or $_.Extension -eq '.webp'\\) -and \\($_.Name -match 'icon|launcher' -or $_.Directory.Name -match 'drawable|mipmap'\\) } | Select-Object -ExpandProperty FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\app\\\\src\\\\main\\\\res\" -Recurse -File -Name | Where-Object { $_ -match 'ic_launcher' })",
+      "Bash(where magick *)",
+      "Bash(where convert *)",
+      "Bash(npm list *)"
     ]
   }
 }
