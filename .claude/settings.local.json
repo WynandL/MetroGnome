@@ -23,7 +23,13 @@
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\app\\\\src\\\\main\\\\res\" -Recurse -File -Name | Where-Object { $_ -match 'ic_launcher' })",
       "Bash(where magick *)",
       "Bash(where convert *)",
-      "Bash(npm list *)"
+      "Bash(npm list *)",
+      "Bash(git merge *)",
+      "Bash(git branch *)",
+      "Bash(git stash *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }
