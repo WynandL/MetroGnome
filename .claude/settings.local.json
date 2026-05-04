@@ -29,7 +29,11 @@
       "Bash(git stash *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\app\\\\src\\\\main\\\\java\\\\com\\\\example\\\\metrognome\" -Recurse -Filter \"*.kt\")",
+      "Bash(Select-Object FullName)",
+      "PowerShell(Select-String *)",
+      "PowerShell(Remove-Item *)"
     ]
   }
 }
