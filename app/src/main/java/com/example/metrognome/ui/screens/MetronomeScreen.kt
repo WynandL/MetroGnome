@@ -42,8 +42,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
-import com.example.metrognome.ui.components.UnlockCelebrationOverlay
-import com.example.metrognome.ui.components.WhatsNewOverlayDispatcher
+import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
+import com.example.metrognome.ui.overlays.WhatsNewOverlayDispatcher
 import com.example.metrognome.ui.components.metro_items.MetroItem
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip

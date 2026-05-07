@@ -33,7 +33,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\app\\\\src\\\\main\\\\java\\\\com\\\\example\\\\metrognome\" -Recurse -Filter \"*.kt\")",
       "Bash(Select-Object FullName)",
       "PowerShell(Select-String *)",
-      "PowerShell(Remove-Item *)"
+      "PowerShell(Remove-Item *)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\*.gradle\")"
     ]
   }
 }

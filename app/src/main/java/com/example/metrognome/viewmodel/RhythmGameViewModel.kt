@@ -466,7 +466,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         val existing = _unlockQueue.value.map { it.item.id }.toSet()
         val toAdd = newEntries.filter { it.item.id !in existing }
         if (toAdd.isNotEmpty()) {
-            _unlockQueue.value = _unlockQueue.value + toAdd
+            _unlockQueue.value += toAdd
         }
     }
 

@@ -6,6 +6,7 @@ import android.media.AudioTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
 import kotlin.math.PI
@@ -31,6 +32,9 @@ class MetronomeEngine {
     private val woodAccent = generateClick(frequency = 800.0, durationMs = 55, volume = 0.95f)
     private val deepClick = generateDeepClick(frequency = 350.0, durationMs = 130, volume = 1.0f)
     private val deepAccent = generateDeepClick(frequency = 440.0, durationMs = 150, volume = 1.0f)
+    // Premium (index 4)
+    private val bellClick  = generateBellClick(frequency = 880.0,  durationMs = 200, volume = 0.80f)
+    private val bellAccent = generateBellClick(frequency = 1109.0, durationMs = 240, volume = 0.95f)
 
     // Mutable settings — read from audio thread, written from main thread (volatile)
     @Volatile
@@ -40,7 +44,7 @@ class MetronomeEngine {
     @Volatile
     var accentBeat: Int = 0   // 0-based beat index; -1 = no accent
     @Volatile
-    var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock, 3=warm
+    var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock, 3=warm, 4=bell (premium)
     @Volatile
     var volume: Float = 1.0f
     @Volatile
@@ -51,6 +55,9 @@ class MetronomeEngine {
     private var audioTrack: AudioTrack? = null
     private var job: Job? = null
     private val scope = CoroutineScope(Dispatchers.Default)
+
+    @Volatile
+    private var previewTrack: AudioTrack? = null
 
     fun start() {
         if (job?.isActive == true) return
@@ -126,9 +133,72 @@ class MetronomeEngine {
         audioTrack?.stop()
         audioTrack?.release()
         audioTrack = null
+        previewTrack?.stop()
+        previewTrack?.release()
+        previewTrack = null
     }
 
     fun isPlaying() = job?.isActive == true
+
+    /**
+     * Plays a short preview of [soundTypeIndex] (4 beats at 100 BPM) on a separate
+     * one-shot AudioTrack. Safe to call while the metronome is running.
+     */
+    fun playPreview(soundTypeIndex: Int) {
+        scope.launch {
+            previewTrack?.stop()
+            previewTrack?.release()
+            previewTrack = null
+
+            val buffer = buildPreviewBuffer(soundTypeIndex, numBeats = 4, bpm = 100)
+            val minBuf = AudioTrack.getMinBufferSize(
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT
+            )
+            val track = AudioTrack.Builder()
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+                .setAudioFormat(
+                    AudioFormat.Builder()
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .build()
+                )
+                .setBufferSizeInBytes(minBuf * 2)
+                .setTransferMode(AudioTrack.MODE_STREAM)
+                .build()
+
+            if (track.state != AudioTrack.STATE_INITIALIZED) {
+                track.release()
+                return@launch
+            }
+            previewTrack = track
+            track.play()
+            // STREAM mode: write blocks until the hardware ring buffer accepts data,
+            // so loop until all samples are submitted, then wait for playback to drain.
+            var offset = 0
+            while (isActive && offset < buffer.size) {
+                try {
+                    val written = track.write(buffer, offset, buffer.size - offset)
+                    if (written < 0) break
+                    offset += written
+                } catch (e: IllegalStateException) {
+                    break
+                }
+            }
+            val remainingMs = (buffer.size - offset).toLong() * 1000L / sampleRate
+            delay(remainingMs + 300L)
+            previewTrack?.stop()
+            previewTrack?.release()
+            previewTrack = null
+        }
+    }
 
     // ── Private helpers ────────────────────────────────────────────────────────
 
@@ -139,6 +209,7 @@ class MetronomeEngine {
             1 -> if (isAccent) hihatAccent else hihatClick
             2 -> if (isAccent) woodAccent else woodClick
             3 -> if (isAccent) deepAccent else deepClick
+            4 -> if (isAccent) bellAccent else bellClick
             else -> if (isAccent) accentClick else normalClick
         }
         val buf = ShortArray(samplesPerBeat)
@@ -148,6 +219,27 @@ class MetronomeEngine {
             buf[i] = (click[i] * vol).toInt().toShort()
         }
         return buf
+    }
+
+    private fun buildPreviewBuffer(soundTypeIndex: Int, numBeats: Int, bpm: Int): ShortArray {
+        val samplesPerBeat = (sampleRate * 60.0 / bpm).toInt()
+        val result = ShortArray(samplesPerBeat * numBeats)
+        val click = when (soundTypeIndex) {
+            1 -> hihatClick
+            2 -> woodClick
+            3 -> deepClick
+            4 -> bellClick
+            else -> normalClick
+        }
+        val vol = volume.coerceIn(0f, 1f)
+        for (beat in 0 until numBeats) {
+            val offset = beat * samplesPerBeat
+            val len = minOf(click.size, samplesPerBeat)
+            for (i in 0 until len) {
+                result[offset + i] = (click[i] * vol).toInt().toShort()
+            }
+        }
+        return result
     }
 
     /**
@@ -194,5 +286,30 @@ class MetronomeEngine {
                 sample.toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
         }
         return buf
+    }
+
+    /**
+     * Bell-like click using inharmonic additive synthesis.
+     * Four partials at Chladni ratios (1x, 2.756x, 5.404x, 8x) each with
+     * progressively faster decay — gives the characteristic bell ring without
+     * sustained sustain that would blur fast tempos.
+     */
+    private fun generateBellClick(frequency: Double, durationMs: Int, volume: Float): ShortArray {
+        val numSamples = sampleRate * durationMs / 1000
+        val wet = FloatArray(numSamples) { i ->
+            val t = i.toDouble() / sampleRate
+            val p = i.toDouble() / numSamples
+            val f1 = sin(2.0 * PI * frequency         * t) * (1.0 - p).pow(2.0) * 0.70
+            val f2 = sin(2.0 * PI * frequency * 2.756 * t) * (1.0 - p).pow(3.5) * 0.45
+            val f3 = sin(2.0 * PI * frequency * 5.404 * t) * (1.0 - p).pow(5.5) * 0.25
+            val f4 = sin(2.0 * PI * frequency * 8.0   * t) * (1.0 - p).pow(8.0) * 0.10
+            ((f1 + f2 + f3 + f4) * volume).toFloat()
+        }
+        val peak = wet.maxOf { abs(it) }
+        val scale = if (peak > 0.99f) 0.99f / peak else 1f
+        return ShortArray(numSamples) { i ->
+            (wet[i] * scale * Short.MAX_VALUE).toInt()
+                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
     }
 }

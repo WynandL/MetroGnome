@@ -18,13 +18,12 @@ class MetroItemTracker(context: Context) {
 
     private val prefs = context.getSharedPreferences("metro_cosmetics", Context.MODE_PRIVATE)
 
-    // ── Counter keys ──────────────────────────────────────────────────────────
-
     companion object {
         private const val KEY_METRONOME_SECONDS  = "metronome_seconds"
         private const val KEY_GAMES_COMPLETED    = "games_completed"
         private const val KEY_FIRST_LAUNCH_MS    = "first_launch_ms"
         private const val KEY_CHEAT_MODE         = "cheat_mode"
+        private const val KEY_FORCE_UNLOCKED_IDS = "force_unlocked_ids"
     }
 
     init {
@@ -67,6 +66,30 @@ class MetroItemTracker(context: Context) {
         prefs.edit { putBoolean(KEY_CHEAT_MODE, !isCheatModeEnabled()) }
     }
 
+    // ── Purchase-based unlock override ────────────────────────────────────────
+
+    /**
+     * Permanently mark [itemId] as unlocked regardless of its time/game condition.
+     * Called by the ViewModel when a purchase is confirmed or restored.
+     * Idempotent — safe to call on every app launch during purchase restore.
+     */
+    fun forceUnlock(itemId: String) {
+        val current = prefs.getStringSet(KEY_FORCE_UNLOCKED_IDS, emptySet())?.toMutableSet()
+            ?: mutableSetOf()
+        if (itemId !in current) {
+            current.add(itemId)
+            prefs.edit { putStringSet(KEY_FORCE_UNLOCKED_IDS, current) }
+        }
+    }
+
+    fun isForceUnlocked(itemId: String): Boolean =
+        itemId in (prefs.getStringSet(KEY_FORCE_UNLOCKED_IDS, emptySet()) ?: emptySet())
+
+    /** DEV: clear purchase-based unlocks (does not touch time counters or celebrations). */
+    fun debugClearItemPurchases() {
+        prefs.edit { remove(KEY_FORCE_UNLOCKED_IDS) }
+    }
+
     // ── Unlock evaluation ─────────────────────────────────────────────────────
 
     fun isUnlocked(condition: UnlockCondition): Boolean {
@@ -79,9 +102,13 @@ class MetroItemTracker(context: Context) {
         }
     }
 
-    /** Returns the set of item IDs that are currently unlocked. */
-    fun unlockedIds(registry: List<MetroItemEntry>): Set<String> =
-        registry.filter { isUnlocked(it.condition) }.map { it.item.id }.toSet()
+    /** Returns the set of item IDs that are currently unlocked (by time OR by purchase). */
+    fun unlockedIds(registry: List<MetroItemEntry>): Set<String> {
+        val forced = prefs.getStringSet(KEY_FORCE_UNLOCKED_IDS, emptySet()) ?: emptySet()
+        return registry.filter { entry ->
+            entry.item.id in forced || isUnlocked(entry.condition)
+        }.map { it.item.id }.toSet()
+    }
 
     // ── Celebration tracking ──────────────────────────────────────────────────
 
@@ -103,6 +130,7 @@ class MetroItemTracker(context: Context) {
             remove(KEY_GAMES_COMPLETED)
             remove(KEY_FIRST_LAUNCH_MS)
             remove(KEY_CELEBRATED_IDS)
+            // KEY_FORCE_UNLOCKED_IDS is intentionally preserved — it reflects real purchases
         }
     }
 }

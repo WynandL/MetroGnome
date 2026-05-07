@@ -1,4 +1,4 @@
-package com.example.metrognome.ui.components
+package com.example.metrognome.ui.overlays
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -246,7 +246,7 @@ fun UnlockCelebrationOverlay(
 // ── Item preview canvas ───────────────────────────────────────────────────────
 
 @Composable
-private fun ItemPreviewCanvas(entry: MetroItemEntry) {
+internal fun ItemPreviewCanvas(entry: MetroItemEntry) {
     val item = entry.item
 
     Box(

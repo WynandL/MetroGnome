@@ -3,6 +3,7 @@ package com.example.metrognome.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -47,8 +49,13 @@ import com.example.metrognome.BuildConfig
 import com.example.metrognome.dev.DevEasterEgg
 import com.example.metrognome.dev.DevTapTarget
 import com.example.metrognome.ui.components.AdBannerView
-import com.example.metrognome.ui.components.UnlockCelebrationOverlay
+import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
+import com.example.metrognome.billing.PremiumSoundDef
+import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
+import com.example.metrognome.ui.overlays.ItemPreviewCanvas
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
+import com.example.metrognome.billing.PurchasableItemDef
+import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.UnlockCondition
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
@@ -73,9 +80,36 @@ fun SettingsScreen(vm: MetronomeViewModel) {
     val isBillingConnecting by vm.isBillingConnecting.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
 
+    val purchasedSoundIds by vm.purchasedSoundIds.collectAsStateWithLifecycle()
+    val soundPrices by vm.soundPrices.collectAsStateWithLifecycle()
+    val availableSoundProductIds by vm.availableSoundProductIds.collectAsStateWithLifecycle()
+
+    val purchasedItemProductIds by vm.purchasedItemProductIds.collectAsStateWithLifecycle()
+    val itemPrices by vm.itemPrices.collectAsStateWithLifecycle()
+    val availableItemProductIds by vm.availableItemProductIds.collectAsStateWithLifecycle()
+    val activeItemIds by vm.activeItemIds.collectAsStateWithLifecycle()
+
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
     var previewIndex by remember { mutableIntStateOf(0) }
     var showUnlockRules by remember { mutableStateOf(false) }
+    var dialogSoundDef by remember { mutableStateOf<PremiumSoundDef?>(null) }
+    var dialogItemDef  by remember { mutableStateOf<PurchasableItemDef?>(null) }
+
+    LaunchedEffect(purchasedSoundIds) {
+        val def = dialogSoundDef ?: return@LaunchedEffect
+        if (def.productId in purchasedSoundIds) {
+            dialogSoundDef = null
+            vm.setSoundType(def.soundTypeIndex)
+        }
+    }
+
+    LaunchedEffect(purchasedItemProductIds) {
+        val def = dialogItemDef ?: return@LaunchedEffect
+        if (def.productId in purchasedItemProductIds) {
+            dialogItemDef = null
+            // Unlock is handled by the ViewModel's billing observer; no extra call needed
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(
@@ -132,12 +166,41 @@ fun SettingsScreen(vm: MetronomeViewModel) {
 
             // Sound type chips
             SettingsRow(label = "Click Sound") {
-                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                FlowRow(modifier = Modifier.fillMaxWidth()) {
                     listOf("Classic", "Hi-Hat", "Wood", "Warm").forEachIndexed { index, name ->
                         FilterChip(
                             selected = index == soundType,
                             onClick = { vm.setSoundType(index) },
                             label = { Text(name) },
+                            modifier = Modifier.padding(end = 6.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AppColors.primaryPurple,
+                                selectedLabelColor = Color.White,
+                                containerColor = AppColors.surface,
+                                labelColor = AppColors.textSecondary
+                            )
+                        )
+                    }
+                    // Premium sounds — one chip per registry entry
+                    PREMIUM_SOUND_REGISTRY.forEach { def ->
+                        val owned = def.productId in purchasedSoundIds
+                        FilterChip(
+                            selected = soundType == def.soundTypeIndex,
+                            onClick = {
+                                if (owned) vm.setSoundType(def.soundTypeIndex)
+                                else dialogSoundDef = def
+                            },
+                            label = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(def.displayName)
+                                    Text(
+                                        "  ★",
+                                        color = if (soundType == def.soundTypeIndex) Color.White
+                                                else AppColors.gold,
+                                        fontSize = 9.sp
+                                    )
+                                }
+                            },
                             modifier = Modifier.padding(end = 6.dp),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = AppColors.primaryPurple,
@@ -202,6 +265,24 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                 checked = flashOnBeat,
                 onChecked = { vm.setFlashOnBeat(it) }
             )
+
+            Spacer(Modifier.height(8.dp))
+            HorizontalDivider(color = AppColors.surfaceVariant)
+            Spacer(Modifier.height(8.dp))
+
+            SettingsSectionTitle("Items")
+
+            PURCHASABLE_ITEM_REGISTRY.forEach { def ->
+                val alreadyUnlocked = def.itemId in activeItemIds
+                PurchasableItemRow(
+                    def = def,
+                    alreadyUnlocked = alreadyUnlocked,
+                    priceText = itemPrices[def.productId],
+                    isBillingConnecting = isBillingConnecting,
+                    isAvailable = def.productId in availableItemProductIds,
+                    onClick = { dialogItemDef = def }
+                )
+            }
 
             Spacer(Modifier.height(8.dp))
             HorizontalDivider(color = AppColors.surfaceVariant)
@@ -328,6 +409,36 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                     fontWeight = FontWeight.Bold
                 )
             }
+
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
+                onClick = { vm.debugClearSoundPurchases() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
+            ) {
+                Text(
+                    if (purchasedSoundIds.isNotEmpty()) "Clear Sound Purchases" else "No Sound Purchases to Clear",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
+                onClick = { vm.debugClearItemPurchases() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
+            ) {
+                Text(
+                    if (purchasedItemProductIds.isNotEmpty()) "Clear Item Purchases" else "No Item Purchases to Clear",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
             } // end DEBUG block
 
             Spacer(Modifier.height(8.dp))
@@ -378,6 +489,38 @@ fun SettingsScreen(vm: MetronomeViewModel) {
         )
     }
 
+    dialogItemDef?.let { def ->
+        val entry = METRO_ITEM_REGISTRY.find { it.item.id == def.itemId }
+        if (entry != null) {
+            PurchasableItemDialog(
+                def = def,
+                entry = entry,
+                alreadyUnlocked = def.itemId in activeItemIds,
+                priceText = itemPrices[def.productId],
+                isPurchasing = isPurchasing,
+                isBillingConnecting = isBillingConnecting,
+                isAvailable = def.productId in availableItemProductIds,
+                onPurchase = { activity?.let { vm.purchaseItem(it, def.productId) } },
+                onRestore = { vm.restorePurchases() },
+                onDismiss = { dialogItemDef = null }
+            )
+        }
+    }
+
+    dialogSoundDef?.let { def ->
+        PremiumSoundDialog(
+            def = def,
+            priceText = soundPrices[def.productId],
+            isPurchasing = isPurchasing,
+            isBillingConnecting = isBillingConnecting,
+            isAvailable = def.productId in availableSoundProductIds,
+            onPreview = { vm.previewSound(def.soundTypeIndex) },
+            onPurchase = { activity?.let { vm.purchaseSound(it, def.productId) } },
+            onRestore = { vm.restorePurchases() },
+            onDismiss = { dialogSoundDef = null }
+        )
+    }
+
     unlockQueue.firstOrNull()?.let { entry ->
         UnlockCelebrationOverlay(
             entry = entry,
@@ -385,6 +528,290 @@ fun SettingsScreen(vm: MetronomeViewModel) {
         )
     }
     } // close outer Box
+}
+
+@Composable
+private fun PurchasableItemRow(
+    def: PurchasableItemDef,
+    alreadyUnlocked: Boolean,
+    priceText: String?,
+    isBillingConnecting: Boolean,
+    isAvailable: Boolean,
+    onClick: () -> Unit,
+) {
+    Column(modifier = Modifier.padding(bottom = 14.dp)) {
+        Text(
+            def.displayName,
+            color = AppColors.textPrimary,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(bottom = 2.dp)
+        )
+        Text(
+            def.description,
+            color = AppColors.textSecondary,
+            fontSize = 12.sp,
+            lineHeight = 18.sp,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+        if (!alreadyUnlocked) {
+            Text(
+                def.unlockAlternative,
+                color = AppColors.textMuted,
+                fontSize = 12.sp,
+                fontStyle = FontStyle.Italic,
+                modifier = Modifier.padding(bottom = 10.dp)
+            )
+        }
+        when {
+            alreadyUnlocked -> Text(
+                "✓  Already yours",
+                color = AppColors.gold,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp
+            )
+            else -> {
+                // Always tappable — dialog handles all billing states (loading, unavailable, buy)
+                val buttonLabel = when {
+                    isBillingConnecting -> "Loading…"
+                    priceText != null   -> "Get ${def.displayName}  —  $priceText"
+                    else                -> "Get ${def.displayName}"
+                }
+                OutlinedButton(
+                    onClick = onClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = if (!isBillingConnecting && isAvailable) AppColors.gold
+                                       else AppColors.textMuted
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (!isBillingConnecting && isAvailable) AppColors.gold
+                        else AppColors.surfaceVariant
+                    )
+                ) {
+                    Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PurchasableItemDialog(
+    def: PurchasableItemDef,
+    entry: com.example.metrognome.ui.components.metro_items.MetroItemEntry,
+    alreadyUnlocked: Boolean,
+    priceText: String?,
+    isPurchasing: Boolean,
+    isBillingConnecting: Boolean,
+    isAvailable: Boolean,
+    onPurchase: () -> Unit,
+    onRestore: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = AppColors.surfaceDeep,
+        titleContentColor = AppColors.gold,
+        textContentColor = AppColors.textSecondary,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(def.displayName, fontWeight = FontWeight.Bold)
+                Text(
+                    "  ★  Premium Item",
+                    color = AppColors.gold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                ItemPreviewCanvas(entry = entry)
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    def.description,
+                    fontSize = 13.sp,
+                    lineHeight = 20.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                Text(
+                    def.unlockAlternative,
+                    color = AppColors.textMuted,
+                    fontSize = 12.sp,
+                    fontStyle = FontStyle.Italic,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(bottom = 14.dp)
+                )
+                when {
+                    alreadyUnlocked -> Text(
+                        "✓  Already yours",
+                        color = AppColors.gold,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                    isBillingConnecting -> Text(
+                        "Loading…",
+                        color = AppColors.textMuted,
+                        fontSize = 13.sp,
+                        fontStyle = FontStyle.Italic
+                    )
+                    !isAvailable -> Text(
+                        "Unavailable",
+                        color = AppColors.textMuted,
+                        fontSize = 13.sp,
+                        fontStyle = FontStyle.Italic
+                    )
+                    else -> {
+                        val buttonLabel = when {
+                            isPurchasing -> "Please wait…"
+                            priceText != null -> "Get ${def.displayName}  —  $priceText"
+                            else -> "Get ${def.displayName}"
+                        }
+                        OutlinedButton(
+                            onClick = onPurchase,
+                            enabled = !isPurchasing,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = AppColors.gold,
+                                disabledContentColor = AppColors.textMuted
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (!isPurchasing) AppColors.gold else AppColors.surfaceVariant
+                            )
+                        ) {
+                            Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                        Spacer(Modifier.height(2.dp))
+                        TextButton(
+                            onClick = onRestore,
+                            enabled = !isPurchasing,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "Restore Purchase",
+                                color = if (!isPurchasing) AppColors.textMuted else AppColors.textDim,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = AppColors.textMuted, fontSize = 13.sp)
+            }
+        }
+    )
+}
+
+@Composable
+private fun PremiumSoundDialog(
+    def: PremiumSoundDef,
+    priceText: String?,
+    isPurchasing: Boolean,
+    isBillingConnecting: Boolean,
+    isAvailable: Boolean,
+    onPreview: () -> Unit,
+    onPurchase: () -> Unit,
+    onRestore: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = AppColors.surfaceDeep,
+        titleContentColor = AppColors.gold,
+        textContentColor = AppColors.textSecondary,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(def.displayName, fontWeight = FontWeight.Bold)
+                Text(
+                    "  ★  Premium",
+                    color = AppColors.gold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
+        text = {
+            Column {
+                Text(
+                    def.description,
+                    fontSize = 13.sp,
+                    lineHeight = 20.sp,
+                    modifier = Modifier.padding(bottom = 14.dp)
+                )
+                OutlinedButton(
+                    onClick = onPreview,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.textAccent),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.surfaceVariant)
+                ) {
+                    Text("▶  Preview (4 beats)", fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                }
+                Spacer(Modifier.height(14.dp))
+                when {
+                    isBillingConnecting -> Text(
+                        "Loading…",
+                        color = AppColors.textMuted,
+                        fontSize = 13.sp,
+                        fontStyle = FontStyle.Italic
+                    )
+                    !isAvailable -> Text(
+                        "Unavailable",
+                        color = AppColors.textMuted,
+                        fontSize = 13.sp,
+                        fontStyle = FontStyle.Italic
+                    )
+                    else -> {
+                        val buttonLabel = when {
+                            isPurchasing -> "Please wait…"
+                            priceText != null -> "Unlock ${def.displayName}  —  $priceText"
+                            else -> "Unlock ${def.displayName}"
+                        }
+                        OutlinedButton(
+                            onClick = onPurchase,
+                            enabled = !isPurchasing,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = AppColors.gold,
+                                disabledContentColor = AppColors.textMuted
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (!isPurchasing) AppColors.gold else AppColors.surfaceVariant
+                            )
+                        ) {
+                            Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                        Spacer(Modifier.height(2.dp))
+                        TextButton(
+                            onClick = onRestore,
+                            enabled = !isPurchasing,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "Restore Purchase",
+                                color = if (!isPurchasing) AppColors.textMuted else AppColors.textDim,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = AppColors.textMuted, fontSize = 13.sp)
+            }
+        }
+    )
 }
 
 @Composable

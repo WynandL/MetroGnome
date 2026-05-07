@@ -10,10 +10,12 @@ import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.MetronomeEngine
+import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
 import com.example.metrognome.billing.BillingManager
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
+import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.whats_new.AppWhatsNew
 import com.example.metrognome.whats_new.WhatsNewTracker
 import kotlinx.coroutines.Job
@@ -32,15 +34,41 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     val billingManager = BillingManager(app)
     private val whatsNewTracker = WhatsNewTracker(app)
 
-    val isAdFree: StateFlow<Boolean>          = billingManager.isAdFree
-    val removeAdsPriceText: StateFlow<String?> = billingManager.priceText
-    val isBillingAvailable: StateFlow<Boolean> = billingManager.isBillingAvailable
-    val isPurchasing: StateFlow<Boolean>       = billingManager.isPurchasing
-    val isBillingConnecting: StateFlow<Boolean> = billingManager.isConnecting
+    val isAdFree: StateFlow<Boolean>                    = billingManager.isAdFree
+    val removeAdsPriceText: StateFlow<String?>           = billingManager.priceText
+    val isBillingAvailable: StateFlow<Boolean>           = billingManager.isBillingAvailable
+    val isPurchasing: StateFlow<Boolean>                 = billingManager.isPurchasing
+    val isBillingConnecting: StateFlow<Boolean>          = billingManager.isConnecting
+
+    // Sounds
+    val purchasedSoundIds: StateFlow<Set<String>>        = billingManager.purchasedSoundIds
+    val soundPrices: StateFlow<Map<String, String?>>     = billingManager.soundPrices
+    val availableSoundProductIds: StateFlow<Set<String>> = billingManager.availableSoundProductIds
+
+    // Items
+    val purchasedItemProductIds: StateFlow<Set<String>>  = billingManager.purchasedItemProductIds
+    val itemPrices: StateFlow<Map<String, String?>>      = billingManager.itemPrices
+    val availableItemProductIds: StateFlow<Set<String>>  = billingManager.availableItemProductIds
 
     fun purchaseRemoveAds(activity: Activity) = billingManager.launchPurchaseFlow(activity)
+    fun purchaseSound(activity: Activity, productId: String) =
+        billingManager.launchSoundPurchaseFlow(activity, productId)
+    fun purchaseItem(activity: Activity, productId: String) =
+        billingManager.launchItemPurchaseFlow(activity, productId)
     fun restorePurchases() = billingManager.restorePurchases()
     fun debugClearAdFree() = billingManager.debugClearAdFree()
+    fun debugClearSoundPurchases() {
+        billingManager.debugClearSoundPurchases()
+        val premiumIndexes = PREMIUM_SOUND_REGISTRY.map { it.soundTypeIndex }.toSet()
+        if (_soundType.value in premiumIndexes) setSoundType(0)
+    }
+    fun debugClearItemPurchases() {
+        billingManager.debugClearItemPurchases()
+        itemTracker.debugClearItemPurchases()
+        _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+    }
+
+    fun previewSound(soundTypeIndex: Int) = engine.playPreview(soundTypeIndex)
 
     private val _activeItemIds = MutableStateFlow(itemTracker.unlockedIds(METRO_ITEM_REGISTRY))
     val activeItemIds: StateFlow<Set<String>> = _activeItemIds.asStateFlow()
@@ -140,6 +168,29 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val tapTimes = ArrayDeque<Long>(8)
 
     init {
+        // If a premium sound was persisted but its purchase is no longer active (e.g. revoked),
+        // fall back to Classic before the engine ever sees the saved value.
+        val savedType = _soundType.value
+        val requiredProduct = PREMIUM_SOUND_REGISTRY.find { it.soundTypeIndex == savedType }?.productId
+        if (requiredProduct != null && requiredProduct !in billingManager.purchasedSoundIds.value) {
+            _soundType.value = 0
+            prefs.edit { putInt("sound_type", 0) }
+        }
+
+        // When billing confirms an item purchase (new or restored), force-unlock it in the
+        // tracker so it appears on screen and triggers the celebration overlay.
+        viewModelScope.launch {
+            billingManager.purchasedItemProductIds.collect { purchasedProductIds ->
+                PURCHASABLE_ITEM_REGISTRY.forEach { def ->
+                    if (def.productId in purchasedProductIds) {
+                        itemTracker.forceUnlock(def.itemId)
+                    }
+                }
+                _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
+                checkForNewUnlocks()
+            }
+        }
+
         engine.onBeat = { beat ->
             viewModelScope.launch {
                 _currentBeat.value = beat
@@ -272,6 +323,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setSoundType(type: Int) {
+        val requiredProduct = PREMIUM_SOUND_REGISTRY.find { it.soundTypeIndex == type }?.productId
+        if (requiredProduct != null && requiredProduct !in billingManager.purchasedSoundIds.value) return
         _soundType.value = type
         engine.soundType = type
         prefs.edit { putInt("sound_type", type) }

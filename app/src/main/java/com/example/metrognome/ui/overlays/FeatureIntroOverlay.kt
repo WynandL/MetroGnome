@@ -1,4 +1,4 @@
-package com.example.metrognome.ui.components
+package com.example.metrognome.ui.overlays
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
