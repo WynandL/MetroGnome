@@ -34,7 +34,8 @@
       "Bash(Select-Object FullName)",
       "PowerShell(Select-String *)",
       "PowerShell(Remove-Item *)",
-      "Bash(dir /s /b \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\*.gradle\")"
+      "Bash(dir /s /b \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\*.gradle\")",
+      "Bash(git rm *)"
     ]
   }
 }
