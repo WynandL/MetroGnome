@@ -82,9 +82,6 @@ class MetroItemTracker(context: Context) {
         }
     }
 
-    fun isForceUnlocked(itemId: String): Boolean =
-        itemId in (prefs.getStringSet(KEY_FORCE_UNLOCKED_IDS, emptySet()) ?: emptySet())
-
     /** DEV: clear purchase-based unlocks (does not touch time counters or celebrations). */
     fun debugClearItemPurchases() {
         prefs.edit { remove(KEY_FORCE_UNLOCKED_IDS) }
@@ -123,7 +120,7 @@ class MetroItemTracker(context: Context) {
     fun celebratedIds(): Set<String> =
         prefs.getStringSet(KEY_CELEBRATED_IDS, emptySet()) ?: emptySet()
 
-    /** DEV: wipe all progress counters and celebrations — simulates a clean install. */
+    /** DEV: wipe all progress counters and celebrations — simulates a clean installation. */
     fun resetAllProgress() {
         prefs.edit {
             remove(KEY_METRONOME_SECONDS)

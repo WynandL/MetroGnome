@@ -88,8 +88,8 @@ class RhythmDetector {
         job = scope.launch {
             val buf = ShortArray(bufferSize / 2)
             var noiseFloor = 300.0
-            var calibFrames = 0
-            val calibTarget = 20         // ~0.5 s of ambient calibration
+            var calibrationFrames = 0
+            val calibrationTarget = 20         // ~0.5 s of ambient calibration
             var lastDetectMs = 0L
             var prevRms = 0.0        // previous frame RMS — used for onset detection
 
@@ -104,10 +104,10 @@ class RhythmDetector {
                 _amplitude.value = (rms / 32768.0).toFloat().coerceIn(0f, 1f)
 
                 // Calibrate noise floor from the first ~0.5 s
-                if (calibFrames < calibTarget) {
-                    noiseFloor = (noiseFloor * calibFrames + rms) / (calibFrames + 1)
+                if (calibrationFrames < calibrationTarget) {
+                    noiseFloor = (noiseFloor * calibrationFrames + rms) / (calibrationFrames + 1)
                     prevRms = rms
-                    calibFrames++
+                    calibrationFrames++
                     continue
                 }
 
@@ -146,8 +146,6 @@ class RhythmDetector {
         record = null
         _amplitude.value = 0f
     }
-
-    fun isRunning() = job?.isActive == true
 
     private fun rms(buf: ShortArray, len: Int): Double {
         if (len == 0) return 0.0

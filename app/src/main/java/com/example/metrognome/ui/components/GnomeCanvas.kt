@@ -34,8 +34,10 @@ import com.example.metrognome.ui.components.metro_items.MetroItem
 import com.example.metrognome.ui.theme.ItemPalette
 import com.example.metrognome.ui.theme.GnomeColors
 import com.example.metrognome.viewmodel.BeatEvent
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
 import kotlin.math.abs
 import kotlin.random.Random
 
@@ -895,5 +897,20 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
             )
         }
     }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@Preview(showBackground = true, backgroundColor = 0xFF1A1040, widthDp = 360, heightDp = 500)
+@Composable
+private fun GnomeCanvasIdlePreview() {
+    GnomeCanvas(
+        bpm = 120,
+        isPlaying = false,
+        beatEvents = MutableSharedFlow(),
+        flashOnBeat = false,
+        accentBeat = 0,
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
