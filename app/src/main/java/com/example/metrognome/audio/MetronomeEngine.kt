@@ -30,8 +30,8 @@ class MetronomeEngine {
     private val woodClick = generateClick(frequency = 600.0, durationMs = 45, volume = 0.80f)
     private val hihatAccent = generateClick(frequency = 9000.0, durationMs = 30, volume = 0.90f)
     private val woodAccent = generateClick(frequency = 800.0, durationMs = 55, volume = 0.95f)
-    private val deepClick = generateDeepClick(frequency = 350.0, durationMs = 130, volume = 1.0f)
-    private val deepAccent = generateDeepClick(frequency = 440.0, durationMs = 150, volume = 1.0f)
+    private val deepClick = generateDeepClick(frequency = 350.0, durationMs = 130)
+    private val deepAccent = generateDeepClick(frequency = 440.0, durationMs = 150)
     // Premium (index 4)
     private val bellClick  = generateBellClick(frequency = 880.0,  durationMs = 200, volume = 0.80f)
     private val bellAccent = generateBellClick(frequency = 1109.0, durationMs = 240, volume = 0.95f)
@@ -119,7 +119,7 @@ class MetronomeEngine {
                 try {
                     val written = audioTrack?.write(buffer, 0, buffer.size) ?: break
                     if (written < 0) break  // AudioTrack.ERROR_* — exit cleanly
-                } catch (e: IllegalStateException) {
+                } catch (_: IllegalStateException) {
                     break  // track was released, exit cleanly
                 }
                 if (!isActive) break
@@ -138,8 +138,6 @@ class MetronomeEngine {
         previewTrack = null
     }
 
-    fun isPlaying() = job?.isActive == true
-
     /**
      * Plays a short preview of [soundTypeIndex] (4 beats at 100 BPM) on a separate
      * one-shot AudioTrack. Safe to call while the metronome is running.
@@ -150,7 +148,7 @@ class MetronomeEngine {
             previewTrack?.release()
             previewTrack = null
 
-            val buffer = buildPreviewBuffer(soundTypeIndex, numBeats = 4, bpm = 100)
+            val buffer = buildPreviewBuffer(soundTypeIndex)
             val minBuf = AudioTrack.getMinBufferSize(
                 sampleRate,
                 AudioFormat.CHANNEL_OUT_MONO,
@@ -188,7 +186,7 @@ class MetronomeEngine {
                     val written = track.write(buffer, offset, buffer.size - offset)
                     if (written < 0) break
                     offset += written
-                } catch (e: IllegalStateException) {
+                } catch (_: IllegalStateException) {
                     break
                 }
             }
@@ -221,7 +219,9 @@ class MetronomeEngine {
         return buf
     }
 
-    private fun buildPreviewBuffer(soundTypeIndex: Int, numBeats: Int, bpm: Int): ShortArray {
+    private fun buildPreviewBuffer(soundTypeIndex: Int): ShortArray {
+        val numBeats = 4
+        val bpm = 100
         val samplesPerBeat = (sampleRate * 60.0 / bpm).toInt()
         val result = ShortArray(samplesPerBeat * numBeats)
         val click = when (soundTypeIndex) {
@@ -247,12 +247,12 @@ class MetronomeEngine {
      * Three delayed copies at decreasing amplitudes give warmth without a
      * dedicated reverb unit — inaudible as distinct echoes at typical BPM.
      */
-    private fun generateDeepClick(frequency: Double, durationMs: Int, volume: Float): ShortArray {
+    private fun generateDeepClick(frequency: Double, durationMs: Int): ShortArray {
         val numSamples = sampleRate * durationMs / 1000
         val dry = FloatArray(numSamples) { i ->
             val t = i.toDouble() / sampleRate
             val envelope = (1.0 - i.toDouble() / numSamples).pow(2.0)
-            (envelope * sin(2.0 * PI * frequency * t) * volume).toFloat()
+            (envelope * sin(2.0 * PI * frequency * t)).toFloat()
         }
         val r1 = (0.028 * sampleRate).toInt()
         val r2 = (0.052 * sampleRate).toInt()

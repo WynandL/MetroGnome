@@ -61,6 +61,7 @@ import com.example.metrognome.ui.components.GnomeCanvas
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun MetronomeScreen(vm: MetronomeViewModel) {
@@ -445,4 +446,39 @@ private fun UtilityToggle(
             )
         }
     }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@Preview(showBackground = true, backgroundColor = 0xFF1A1040)
+@Composable
+private fun BpmDisplayPreview() {
+    BpmDisplay(bpm = 120)
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF1A1040)
+@Composable
+private fun BeatIndicatorRowPreview() {
+    BeatIndicatorRow(timeSig = 4, currentBeat = 1, isPlaying = true, accentBeat = 1)
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF1A1040)
+@Composable
+private fun PlayPauseButtonsPreview() {
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        PlayPauseButton(isPlaying = false, onClick = {})
+        PlayPauseButton(isPlaying = true, onClick = {})
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF1A1040, widthDp = 360)
+@Composable
+private fun ControlsBarPreview() {
+    ControlsBar(
+        bpm = 120,
+        isPlaying = false,
+        onBpmChange = {},
+        onTogglePlay = {},
+        onTapTempo = {}
+    )
 }

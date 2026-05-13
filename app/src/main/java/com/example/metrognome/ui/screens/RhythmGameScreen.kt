@@ -76,6 +76,7 @@ import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.GameColors
+import androidx.compose.ui.tooling.preview.Preview
 import com.example.metrognome.viewmodel.GamePhase
 import com.example.metrognome.viewmodel.HitQuality
 import com.example.metrognome.viewmodel.NoteState
@@ -203,28 +204,27 @@ private fun IdlePanel(
     onStopMetronome: () -> Unit,
     highScores: Map<String, Int> = emptyMap()
 ) {
-    @Suppress("UNUSED_VALUE")
-    var pendingStart by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val pendingStart = remember { mutableStateOf<(() -> Unit)?>(null) }
     var showTolerance by remember { mutableStateOf(false) }
 
-    if (pendingStart != null) {
+    if (pendingStart.value != null) {
         AlertDialog(
-            onDismissRequest = { pendingStart = null },
+            onDismissRequest = { pendingStart.value = null },
             title = { Text("Metronome is running") },
             text = { Text("Stop it before starting the game, or let it keep playing in the background?") },
             confirmButton = {
                 TextButton(onClick = {
                     onStopMetronome()
-                    pendingStart?.invoke()
-                    pendingStart = null
+                    pendingStart.value?.invoke()
+                    pendingStart.value = null
                 }) {
                     Text("Stop & Play")
                 }
             },
             dismissButton = {
                 TextButton(onClick = {
-                    pendingStart?.invoke()
-                    pendingStart = null
+                    pendingStart.value?.invoke()
+                    pendingStart.value = null
                 }) {
                     Text("Keep Playing")
                 }
@@ -260,7 +260,7 @@ private fun IdlePanel(
                 onClick = {
                     val start = { vm.setDifficulty(d.bpm, d.beats, d.name); vm.startGame() }
                     if (isMetronomePlaying) {
-                        pendingStart = start
+                        pendingStart.value = start
                     } else start()
                 }
             )
@@ -659,9 +659,9 @@ private fun BeatDotsRow(currentBeat: Int, timeSig: Int) {
 // ── Mic Equaliser ─────────────────────────────────────────────────────────────
 //
 // Scrolling bar graph driven by the live microphone RMS amplitude.
-// Acts like a mini audio spectrum analyser — bars shift left each frame.
+// Acts like a mini audio spectrum analyzer — bars shift left each frame.
 // When a hit is detected (lastQuality changes to non-NONE), the bars flash
-// briefly in the quality colour so the developer/player can see the trigger.
+// briefly in the quality color so the developer/player can see the trigger.
 
 private const val EQ_BARS = 30
 
@@ -721,7 +721,7 @@ private fun MicEqualizer(
             val barW = (size.width - totalGap) / EQ_BARS
             val maxH = size.height
 
-            // Determine the active overlay colour:
+            // Determine the active overlay color:
             // Quality flash wins over raw flash when both are active.
             val qA = qualityAlpha.value
             val rA = rawAlpha.value
@@ -737,7 +737,7 @@ private fun MicEqualizer(
                 val barH = (amp * maxH * 8f).coerceAtMost(maxH).coerceAtLeast(2.dp.toPx())
                 val x = i * (barW + 2.dp.toPx())
 
-                // Base colour: dark purple (silence) → purple → gold (loud)
+                // Base color: dark purple (silence) → purple → gold (loud)
                 val baseColor = when {
                     amp > 0.20f -> AppColors.gold
                     amp > 0.06f -> AppColors.textAccent
@@ -1027,4 +1027,28 @@ private fun ResultRow(label: String, value: String, color: Color) {
         Text(label, color = AppColors.textSecondary)
         Text(value, color = color, fontWeight = FontWeight.Bold)
     }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@Preview(showBackground = true, backgroundColor = 0xFF0D0D1A, widthDp = 360)
+@Composable
+private fun DifficultyCardPreview() {
+    DifficultyCard(
+        difficulty = Difficulty("Medium", 100, 32, "100 BPM · 32 beats · the classic challenge"),
+        bestScore = 850,
+        onClick = {}
+    )
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0D0D1A, widthDp = 360, heightDp = 400)
+@Composable
+private fun CountdownPanelPreview() {
+    CountdownPanel(countDown = 3)
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0D0D1A)
+@Composable
+private fun BeatDotsRowPreview() {
+    BeatDotsRow(currentBeat = 1, timeSig = 4)
 }

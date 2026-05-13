@@ -37,7 +37,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontStyle
@@ -264,7 +263,7 @@ internal fun ItemPreviewCanvas(entry: MetroItemEntry) {
 
             if (!item.isBodyAttached) {
                 // Background item: draws at canvas-proportional positions using size.width/height.
-                // Compute its visual centre + radius, then centre+zoom it to fill the box.
+                // Compute its visual center + radius, then center+zoom it to fill the box.
                 val u     = size.height / 17f
                 val baseY = size.height * 0.97f
                 val center = item.previewCenter(size.width, size.height, u, baseY)
@@ -274,20 +273,19 @@ internal fun ItemPreviewCanvas(entry: MetroItemEntry) {
                 val dy     = halfH - center.y
                 withTransform({
                     translate(dx, dy)
-                    // pivot is in post-translate space → screen-space pivot = canvas centre
+                    // pivot is in post-translate space → screen-space pivot = canvas center
                     scale(zoom, zoom, pivot = Offset(center.x, center.y))
                 }) {
                     with(item) { draw(u, cx, baseY) }
                 }
             } else {
                 // Body-attached wearable: boost u so the item is large enough to see.
-                // Compute where hitCenter lands in canvas space, then centre+zoom it.
+                // Compute where hitCenter lands in canvas space, then center+zoom it.
                 val boostedU    = size.height / 5f
                 val hitCenter   = item.hitCenter(boostedU) ?: Offset.Zero
-                val bodyOriginX = halfW
                 val bodyOriginY = size.height * 0.97f
                 // Item screen position (before outer transform)
-                val itemX = bodyOriginX + hitCenter.x
+                val itemX = halfW + hitCenter.x
                 val itemY = bodyOriginY + hitCenter.y
                 val radius = item.hitRadius(boostedU).coerceAtLeast(boostedU * 0.3f)
                 val zoom   = (size.minDimension * 0.38f / radius).coerceIn(1.5f, 15f)
@@ -297,8 +295,8 @@ internal fun ItemPreviewCanvas(entry: MetroItemEntry) {
                     translate(dx, dy)
                     scale(zoom, zoom, pivot = Offset(itemX, itemY))
                 }) {
-                    withTransform({ translate(bodyOriginX, bodyOriginY) }) {
-                        with(item) { draw(boostedU, bodyOriginX, bodyOriginY) }
+                    withTransform({ translate(halfW, bodyOriginY) }) {
+                        with(item) { draw(boostedU, halfW, bodyOriginY) }
                     }
                 }
             }

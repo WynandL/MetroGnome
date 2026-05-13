@@ -13,15 +13,15 @@ interface MetroItem {
     val isHeadAttached: Boolean get() = false  // true = moves with the head-bob transform
 
     /**
-     * Centre of the tap target in body coordinates (after translate(cx, baseY)).
+     * Center of the tap target in body coordinates (after translate(cx, baseY)).
      * Return null for background/non-tappable items.
      */
     fun hitCenter(u: Float): Offset? = null
     fun hitRadius(u: Float): Float = u * 0.5f
 
     /**
-     * Visual centre of this item in absolute canvas coordinates for the unlock preview box.
-     * Used by ItemPreviewCanvas to centre + zoom the item.
+     * Visual center of this item in absolute canvas coordinates for the unlock preview box.
+     * Used by ItemPreviewCanvas to center + zoom the item.
      * Background items must override with their actual draw position.
      * Body-attached items are handled separately via hitCenter — no override needed.
      */

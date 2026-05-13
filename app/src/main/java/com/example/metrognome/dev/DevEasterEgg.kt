@@ -10,10 +10,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.example.metrognome.BuildConfig
+import androidx.core.content.edit
 
 /**
- * Developer Easter Egg — tap [tapCount] times within [windowMs] ms to toggle dev mode.
- *
  * Works in both debug (always active) and release builds (toggle via rapid taps).
  * State persists across app restarts via SharedPreferences.
  *
@@ -58,7 +57,7 @@ object DevEasterEgg {
      */
     internal fun toggle(context: Context): Boolean {
         val next = !isManuallyEnabled(context)
-        prefs(context).edit().putBoolean(KEY_ENABLED, next).apply()
+        prefs(context).edit { putBoolean(KEY_ENABLED, next) }
         return next
     }
 

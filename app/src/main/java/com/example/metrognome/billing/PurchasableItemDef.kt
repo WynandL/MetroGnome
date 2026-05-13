@@ -14,7 +14,7 @@ data class PurchasableItemDef(
  * Purchase is just an instant override — both paths lead to the same unlocked state.
  *
  * To add a new purchasable item:
- *   1. Add PRODUCT_ITEM_* constant to BillingManager.companion
+ *   1. Add PRODUCT_ITEM_* constant to BillingManager companion
  *   2. Add it to BillingManager.ITEM_PRODUCTS
  *   3. Add an entry here
  *   4. Create the product in Play Console

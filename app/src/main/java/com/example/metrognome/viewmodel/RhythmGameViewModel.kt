@@ -25,6 +25,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import androidx.core.content.edit
+import com.example.metrognome.analytics.AnalyticsTracker
 
 // ── Enums ──────────────────────────────────────────────────────────────────────
 
@@ -33,7 +34,7 @@ enum class GamePhase { IDLE, COUNTDOWN, PLAYING, RESULT }
 /** Lifecycle of a single note. HIT and MISSED are terminal states. */
 enum class NoteState { UPCOMING, ACTIVE, HIT, MISSED }
 
-/** Judgement given for a tap. */
+/** Judgment given for a tap. */
 enum class HitQuality { PERFECT, GOOD, ALMOST, MISS, NONE }
 
 // ── Data classes ───────────────────────────────────────────────────────────────
@@ -216,6 +217,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     fun startGame() {
         reset()
         _phase.value = GamePhase.COUNTDOWN
+        AnalyticsTracker.logGameStarted(currentDifficultyName, _bpm.value)
         countdownJob = viewModelScope.launch {
             for (i in 3 downTo 1) {
                 _countDown.value = i
@@ -453,6 +455,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         checkForNewUnlocks()
         _result.value =
             GameResult(finalScore, maxCombo, countPerfect, countGood, countBad, countMiss, isNew)
+        AnalyticsTracker.logGameCompleted(currentDifficultyName, finalScore, countPerfect, countGood, countBad, countMiss, isNew)
         _phase.value = GamePhase.RESULT
     }
 

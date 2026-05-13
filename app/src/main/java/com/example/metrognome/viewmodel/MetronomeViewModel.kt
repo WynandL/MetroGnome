@@ -23,6 +23,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
+import com.example.metrognome.analytics.AnalyticsTracker
 
 data class BeatEvent(val beat: Int)
 
@@ -206,19 +207,19 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         _pendingWhatsNew.value = whatsNewTracker.pendingKey(AppWhatsNew.ALL)
     }
 
-    /** DEV: wipe all progress counters — simulates a clean install. */
+    /** DEV: wipe all progress counters — simulates a clean installation. */
     fun resetAllProgress() {
         itemTracker.resetAllProgress()
         _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
         _unlockQueue.value = emptyList()
     }
 
-    /** DEV: fire the celebration overlay for a specific registry item (no side-effects on celebrated set). */
+    /** DEV: fire the celebration overlay for a specific registry item (no side effects on celebrated set). */
     fun previewUnlockCelebration(index: Int) {
         if (METRO_ITEM_REGISTRY.isEmpty()) return
         val entry = METRO_ITEM_REGISTRY[index.coerceIn(0, METRO_ITEM_REGISTRY.lastIndex)]
         if (entry !in _unlockQueue.value) {
-            _unlockQueue.value = _unlockQueue.value + entry
+            _unlockQueue.value += entry
         }
     }
 
@@ -232,7 +233,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         val existing = _unlockQueue.value.map { it.item.id }.toSet()
         val toAdd = newEntries.filter { it.item.id !in existing }
         if (toAdd.isNotEmpty()) {
-            _unlockQueue.value = _unlockQueue.value + toAdd
+            _unlockQueue.value += toAdd
+            toAdd.forEach { AnalyticsTracker.logItemUnlocked(it.item.id, it.item.displayName) }
         }
     }
 
@@ -251,6 +253,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             syncEngineSettings()
             engine.start()
             _isPlaying.value = true
+            AnalyticsTracker.logMetronomeStarted(_bpm.value, _soundType.value, _timeSig.value)
             startPlayTimer()
         }
     }
@@ -266,6 +269,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         stopPlayTimer()
         engine.stop()
         _isPlaying.value = false
+        AnalyticsTracker.logMetronomeStopped()
         _currentBeat.value = 0
     }
 
@@ -315,7 +319,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         prefs.edit { putInt("time_sig", sig) }
     }
 
-    // beat is 1-based (1..timeSig); 0 means no accent
+    // beat is 1-based (1...timeSig); 0 means no accent
     fun setAccentBeat(beat: Int) {
         _accentBeat.value = beat
         engine.accentBeat = beat - 1   // 0 (None) → -1 (disabled); 1..N → 0..N-1
@@ -328,6 +332,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         _soundType.value = type
         engine.soundType = type
         prefs.edit { putInt("sound_type", type) }
+        AnalyticsTracker.logSoundChanged(type)
     }
 
     fun setVolume(v: Float) {

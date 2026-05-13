@@ -37,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
@@ -260,8 +259,6 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             }
 
             SettingsSwitchRow(
-                label = "Flash on Beat",
-                description = "Golden screen flash on each beat",
                 checked = flashOnBeat,
                 onChecked = { vm.setFlashOnBeat(it) }
             )
@@ -977,8 +974,6 @@ private fun SettingsRow(label: String, content: @Composable () -> Unit) {
 
 @Composable
 private fun SettingsSwitchRow(
-    label: String,
-    description: String,
     checked: Boolean,
     onChecked: (Boolean) -> Unit
 ) {
@@ -989,8 +984,8 @@ private fun SettingsSwitchRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, color = AppColors.textPrimary, fontWeight = FontWeight.Medium)
-            Text(description, color = AppColors.textMuted, fontSize = 12.sp)
+            Text("Flash on Beat", color = AppColors.textPrimary, fontWeight = FontWeight.Medium)
+            Text("Golden screen flash on each beat", color = AppColors.textMuted, fontSize = 12.sp)
         }
         Switch(
             checked = checked,

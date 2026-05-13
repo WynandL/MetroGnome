@@ -10,7 +10,7 @@ data class PremiumSoundDef(
 /**
  * Registry of all purchasable sounds.
  * To add a new premium sound:
- *   1. Add a PRODUCT_SOUND_* constant to BillingManager.companion
+ *   1. Add a PRODUCT_SOUND_* constant to BillingManager companion
  *   2. Add it to BillingManager.SOUND_PRODUCTS
  *   3. Add buffers + a case in MetronomeEngine.buildBeatBuffer / buildPreviewBuffer
  *   4. Add an entry here

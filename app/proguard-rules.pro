@@ -9,6 +9,7 @@
 # used internally by Jetpack libraries.
 -keepattributes *Annotation*
 -keepattributes Signature
+-keepattributes Exceptions
 -keepattributes InnerClasses, EnclosingMethod
 -keepattributes RuntimeVisibleAnnotations, RuntimeInvisibleAnnotations
 # Keep line numbers so crash reports are readable
@@ -16,8 +17,13 @@
 -renamesourcefileattribute SourceFile
 
 # ── Kotlin Coroutines ─────────────────────────────────────────────────────────
--keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
--keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+# These two classes are loaded at runtime via ServiceLoader — R8 cannot trace
+# the reference statically and will strip them unless explicitly kept.
+# Removing either causes an immediate crash: "Module with the Main dispatcher
+# is missing. Add dependency providing the Main dispatcher."
+-keep class kotlinx.coroutines.internal.MainDispatcherFactory { *; }
+-keep class kotlinx.coroutines.android.AndroidDispatcherFactory { *; }
+-keep class kotlinx.coroutines.CoroutineExceptionHandler { *; }
 # Atomics used by coroutines internals
 -keepclassmembernames class kotlinx.** { volatile <fields>; }
 -dontwarn kotlinx.coroutines.**
@@ -34,6 +40,21 @@
 # Compose libraries ship their own consumer-rules.pro, so nothing extra needed.
 # Suppress spurious warnings from the toolchain.
 -dontwarn androidx.compose.**
+
+# ── Firebase ─────────────────────────────────────────────────────────────────
+# Analytics and Crashlytics ship their own consumer rules, but this catches
+# anything the Crashlytics plugin needs to upload the mapping file correctly.
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**
+
+# ── WorkManager + Room (transitive via Firebase) ──────────────────────────────
+# Firebase pulls in WorkManager, which uses Room internally. Room accesses its
+# generated *_Impl class via reflection — R8 cannot trace the reference and
+# strips the class, causing a crash at startup before any app code runs:
+#   Room.getGeneratedImplementation() → WorkDatabase_Impl not found
+-keep class * extends androidx.room.RoomDatabase { *; }
+-keep class androidx.work.impl.** { *; }
+-dontwarn androidx.work.**
 
 # ── Jetpack ViewModel ─────────────────────────────────────────────────────────
 # Keep ViewModel subclass constructors so the factory can instantiate them.
