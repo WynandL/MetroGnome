@@ -28,7 +28,9 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.metrognome.ads.InterstitialAdManager
 
 enum class AppTab(val label: String, val icon: ImageVector) {
@@ -60,6 +62,13 @@ fun MetroGnomeApp() {
     val context = LocalContext.current
     val activity = LocalActivity.current
     val interstitialManager = remember { InterstitialAdManager(context).also { it.preload() } }
+
+    // Re-query Play Store for owned purchases every time the app returns to foreground.
+    // This handles: switching devices, purchasing on one device then opening another,
+    // and any case where the local cache drifts from Play's source of truth.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        metronomeVm.reconcilePurchases()
+    }
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {

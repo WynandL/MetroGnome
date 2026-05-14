@@ -23,6 +23,9 @@ class BpmPresetsManager(context: Context) {
         } catch (_: Exception) { emptyList() }
     }
 
+    fun nameExists(name: String): Boolean =
+        loadPresets().any { it.name.equals(name.trim(), ignoreCase = true) }
+
     fun savePreset(name: String, bpm: Int): Boolean {
         val current = loadPresets().toMutableList()
         if (current.size >= MAX_PRESETS) return false

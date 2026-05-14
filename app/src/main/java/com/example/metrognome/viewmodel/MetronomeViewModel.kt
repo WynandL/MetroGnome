@@ -64,12 +64,6 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _practiceGoalSeconds       = MutableStateFlow(0)
     val practiceGoalSeconds: StateFlow<Int>              = _practiceGoalSeconds.asStateFlow()
 
-    private val _practiceStreak            = MutableStateFlow(practiceManager.getCurrentStreak())
-    val practiceStreak: StateFlow<Int>                   = _practiceStreak.asStateFlow()
-
-    private val _practiceTotalSessions     = MutableStateFlow(practiceManager.getTotalSessions())
-    val practiceTotalSessions: StateFlow<Int>            = _practiceTotalSessions.asStateFlow()
-
     private val _pendingPracticeResult     = MutableStateFlow<PracticeResult?>(null)
     val pendingPracticeResult: StateFlow<PracticeResult?> = _pendingPracticeResult.asStateFlow()
 
@@ -77,6 +71,9 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _presets = MutableStateFlow(presetsManager.loadPresets())
     val presets: StateFlow<List<BpmPreset>> = _presets.asStateFlow()
+
+    private val _presetLongPressHintSeen = MutableStateFlow(prefs.getBoolean("preset_long_press_hint_seen", false))
+    val presetLongPressHintSeen: StateFlow<Boolean> = _presetLongPressHintSeen.asStateFlow()
 
     // Sounds
     val purchasedSoundIds: StateFlow<Set<String>>        = billingManager.purchasedSoundIds
@@ -95,6 +92,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     fun purchaseItem(activity: Activity, productId: String) =
         billingManager.launchItemPurchaseFlow(activity, productId)
     fun restorePurchases() = billingManager.restorePurchases()
+    fun reconcilePurchases() { viewModelScope.launch { billingManager.reconcileInBackground() } }
     fun debugClearAdFree() = billingManager.debugClearAdFree()
     fun debugClearPresets() {
         billingManager.debugClearPresets()
@@ -116,13 +114,27 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun savePreset(name: String, bpm: Int): Boolean {
         val saved = presetsManager.savePreset(name, bpm)
-        if (saved) _presets.value = presetsManager.loadPresets()
+        if (saved) {
+            _presets.value = presetsManager.loadPresets()
+            AnalyticsTracker.logPresetSaved(bpm)
+        }
         return saved
+    }
+
+    fun selectPreset(preset: BpmPreset) {
+        setBpm(preset.bpm)
+        AnalyticsTracker.logPresetLoaded(preset.bpm)
     }
 
     fun deletePreset(index: Int) {
         presetsManager.deletePreset(index)
         _presets.value = presetsManager.loadPresets()
+    }
+
+    fun markPresetLongPressHintSeen() {
+        if (_presetLongPressHintSeen.value) return
+        _presetLongPressHintSeen.value = true
+        prefs.edit { putBoolean("preset_long_press_hint_seen", true) }
     }
 
     fun purchasePracticeMode(activity: Activity) = billingManager.launchPracticePurchaseFlow(activity)
@@ -161,8 +173,6 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     fun debugClearPracticeMode() {
         billingManager.debugClearPracticeMode()
         practiceManager.debugClear()
-        _practiceStreak.value = 0
-        _practiceTotalSessions.value = 0
         cancelPractice()
     }
 
@@ -182,14 +192,13 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun completePractice() {
-        val goalMinutes  = _practiceGoalSeconds.value / 60
-        val newStreak    = practiceManager.recordSession()
+        val goalMinutes   = _practiceGoalSeconds.value / 60
+        val newStreak     = practiceManager.recordSession()
         val totalSessions = practiceManager.getTotalSessions()
-        _practiceStreak.value        = newStreak
-        _practiceTotalSessions.value = totalSessions
-        _isPracticeActive.value      = false
+        _isPracticeActive.value = false
         AnalyticsTracker.logPracticeCompleted(goalMinutes, newStreak, totalSessions)
         _pendingPracticeResult.value = PracticeResult(goalMinutes, newStreak, totalSessions)
+        checkForNewUnlocks()
     }
 
     private val _activeItemIds = MutableStateFlow(itemTracker.unlockedIds(METRO_ITEM_REGISTRY))

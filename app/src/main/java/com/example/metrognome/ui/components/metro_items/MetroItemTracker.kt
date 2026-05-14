@@ -16,7 +16,8 @@ import java.util.concurrent.TimeUnit
  */
 class MetroItemTracker(context: Context) {
 
-    private val prefs = context.getSharedPreferences("metro_cosmetics", Context.MODE_PRIVATE)
+    private val prefs         = context.getSharedPreferences("metro_cosmetics", Context.MODE_PRIVATE)
+    private val practicePrefs = context.getSharedPreferences("practice_sessions", Context.MODE_PRIVATE)
 
     companion object {
         private const val KEY_METRONOME_SECONDS  = "metronome_seconds"
@@ -24,6 +25,9 @@ class MetroItemTracker(context: Context) {
         private const val KEY_FIRST_LAUNCH_MS    = "first_launch_ms"
         private const val KEY_CHEAT_MODE         = "cheat_mode"
         private const val KEY_FORCE_UNLOCKED_IDS = "force_unlocked_ids"
+
+        // Mirrors PracticeSessionManager key — read-only here, written only by PracticeSessionManager
+        private const val KEY_PRACTICE_TOTAL = "total_sessions"
     }
 
     init {
@@ -49,8 +53,9 @@ class MetroItemTracker(context: Context) {
 
     // ── Readers ───────────────────────────────────────────────────────────────
 
-    fun metronomeSeconds(): Long = prefs.getLong(KEY_METRONOME_SECONDS, 0L)
-    fun gamesCompleted(): Int    = prefs.getInt(KEY_GAMES_COMPLETED, 0)
+    fun metronomeSeconds(): Long    = prefs.getLong(KEY_METRONOME_SECONDS, 0L)
+    fun gamesCompleted(): Int       = prefs.getInt(KEY_GAMES_COMPLETED, 0)
+    fun practiceSessionsCompleted(): Int = practicePrefs.getInt(KEY_PRACTICE_TOTAL, 0)
     fun daysSinceFirstLaunch(): Int {
         val firstMs = prefs.getLong(KEY_FIRST_LAUNCH_MS, System.currentTimeMillis())
         val elapsedMs = System.currentTimeMillis() - firstMs
@@ -92,10 +97,11 @@ class MetroItemTracker(context: Context) {
     fun isUnlocked(condition: UnlockCondition): Boolean {
         if (isCheatModeEnabled()) return true
         return when (condition) {
-            is UnlockCondition.MetronomeSeconds    -> metronomeSeconds() >= condition.required
-            is UnlockCondition.RhythmGamesCompleted -> gamesCompleted() >= condition.required
-            is UnlockCondition.DaysSinceFirstLaunch -> daysSinceFirstLaunch() >= condition.required
-            UnlockCondition.Always                  -> true
+            is UnlockCondition.MetronomeSeconds        -> metronomeSeconds() >= condition.required
+            is UnlockCondition.RhythmGamesCompleted    -> gamesCompleted() >= condition.required
+            is UnlockCondition.DaysSinceFirstLaunch    -> daysSinceFirstLaunch() >= condition.required
+            is UnlockCondition.PracticeSessionsCompleted -> practiceSessionsCompleted() >= condition.required
+            UnlockCondition.Always                     -> true
         }
     }
 

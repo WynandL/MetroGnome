@@ -99,6 +99,10 @@ class BillingManager(application: Application) {
             BillingClient.BillingResponseCode.OK ->
                 purchases?.forEach { handlePurchase(it) }
             BillingClient.BillingResponseCode.USER_CANCELED -> Unit
+            // ITEM_ALREADY_OWNED means Play knows the user owns it — silently reconcile
+            // so the local cache reflects reality without requiring a manual restore.
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED ->
+                scope.launch { reconcileInBackground() }
             else -> Unit
         }
     }
@@ -123,7 +127,7 @@ class BillingManager(application: Application) {
                 if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                     scope.launch {
                         queryProductDetails()
-                        restorePurchases()
+                        reconcileInBackground()
                     }
                 }
             }
@@ -234,52 +238,52 @@ class BillingManager(application: Application) {
 
     // ── Restore purchases ─────────────────────────────────────────────────────
 
+    /**
+     * User-initiated restore (e.g. tapping "Already purchased? Restore").
+     * Shows the `_isPurchasing` spinner while in flight.
+     */
     fun restorePurchases() {
         if (_isPurchasing.value) return
         _isPurchasing.value = true
-
         scope.launch {
-            val result = billingClient.queryPurchasesAsync(
-                QueryPurchasesParams.newBuilder()
-                    .setProductType(BillingClient.ProductType.INAPP)
-                    .build()
-            )
+            reconcileInBackground()
             _isPurchasing.value = false
-
-            if (result.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                val purchases = result.purchasesList
-
-                setAdFree(purchases.any {
-                    it.products.contains(PRODUCT_REMOVE_ADS) &&
-                            it.purchaseState == Purchase.PurchaseState.PURCHASED
-                })
-                setPresetsUnlocked(purchases.any {
-                    it.products.contains(PRODUCT_BPM_PRESETS) &&
-                            it.purchaseState == Purchase.PurchaseState.PURCHASED
-                })
-                setPracticeModeUnlocked(purchases.any {
-                    it.products.contains(PRODUCT_PRACTICE_MODE) &&
-                            it.purchaseState == Purchase.PurchaseState.PURCHASED
-                })
-                setPurchasedSounds(purchases
-                    .filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
-                    .flatMap { it.products }
-                    .filter { it in SOUND_PRODUCTS }
-                    .toSet()
-                )
-                setPurchasedItems(purchases
-                    .filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
-                    .flatMap { it.products }
-                    .filter { it in ITEM_PRODUCTS }
-                    .toSet()
-                )
-
-                purchases
-                    .filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
-                    .filter { !it.isAcknowledged }
-                    .forEach { acknowledgePurchase(it) }
-            }
         }
+    }
+
+    /**
+     * Authoritative reconcile against Play's local cache.
+     * Called on billing setup, onResume, ITEM_ALREADY_OWNED, and user-initiated restore.
+     * Never touches `_isPurchasing` directly — callers manage the spinner if needed.
+     *
+     * `queryPurchasesAsync` reads the Play Store app's local cache (no live network call),
+     * so an OK response with a product absent genuinely means it is not owned — handles refunds.
+     * Non-OK response (offline, service error) leaves the cache unchanged.
+     */
+    suspend fun reconcileInBackground() {
+        if (!billingClient.isReady) return
+        val result = billingClient.queryPurchasesAsync(
+            QueryPurchasesParams.newBuilder()
+                .setProductType(BillingClient.ProductType.INAPP)
+                .build()
+        )
+        if (result.billingResult.responseCode != BillingClient.BillingResponseCode.OK) return
+
+        val owned = result.purchasesList
+            .filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
+            .flatMap { it.products }
+            .toSet()
+
+        setAdFree(PRODUCT_REMOVE_ADS in owned)
+        setPresetsUnlocked(PRODUCT_BPM_PRESETS in owned)
+        setPracticeModeUnlocked(PRODUCT_PRACTICE_MODE in owned)
+        setPurchasedSounds(owned.filter { it in SOUND_PRODUCTS }.toSet())
+        setPurchasedItems(owned.filter { it in ITEM_PRODUCTS }.toSet())
+
+        result.purchasesList
+            .filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
+            .filter { !it.isAcknowledged }
+            .forEach { acknowledgePurchase(it) }
     }
 
     // ── Handle purchase callback ──────────────────────────────────────────────

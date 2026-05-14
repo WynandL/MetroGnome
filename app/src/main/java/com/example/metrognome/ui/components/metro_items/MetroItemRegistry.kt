@@ -10,6 +10,7 @@ import com.example.metrognome.ui.components.metro_items.items.TorchPost
 import com.example.metrognome.ui.components.metro_items.items.Fireflies
 import com.example.metrognome.ui.components.metro_items.items.MoonAndStars
 import com.example.metrognome.ui.components.metro_items.items.GlissieFairy
+import com.example.metrognome.ui.components.metro_items.items.MusicStand
 
 /**
  * Single source of truth for every cosmetic item and its unlock condition.
@@ -24,6 +25,12 @@ import com.example.metrognome.ui.components.metro_items.items.GlissieFairy
  *    3 h    =  10 800 s
  *    6 h    =  21 600 s
  *   10 h    =  36 000 s
+ *
+ * Practice sessions (PracticeSessionsCompleted):
+ *   Counts unique days practised (not raw session count — one session per day).
+ *   Only available to users who purchased Practice Mode.
+ *   Safe for permanent unlocks — total never decreases.
+ *   Do NOT use PracticeStreakDays as an unlock condition: a broken streak hides earned items.
  */
 val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
 
@@ -42,6 +49,10 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     MetroItemEntry(Fireflies,          UnlockCondition.MetronomeSeconds(10_800)),   // 3 h  — farthest back
     MetroItemEntry(MoonAndStars,       UnlockCondition.MetronomeSeconds(36_000)),   // 10 h
     MetroItemEntry(GlissieFairy,        UnlockCondition.MetronomeSeconds(21_600)),   // 6 h — drawn last, floats closest
+
+    // ── Practice rewards — require Practice Mode IAP to earn ─────────────────
+    // Earn-only (no purchase path): these reward consistent practice, not spending.
+    MetroItemEntry(MusicStand, UnlockCondition.PracticeSessionsCompleted(5)),  // 5 sessions
 
     // ── Future wearables — add entries here as new files are created ──────────
     // MetroItemEntry(ArmBracelet,   UnlockCondition.MetronomeSeconds(7_200)),    // 2 h

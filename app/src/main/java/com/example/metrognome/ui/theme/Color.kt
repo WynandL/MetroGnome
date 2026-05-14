@@ -94,6 +94,11 @@ object AppColors {
     val deepPurple      = Color(0xFF3A2560)
     val darkPurple      = Color(0xFF2A1F55)
     val danger          = Color(0xFFCC2233)   // play-button stop, destructive
+    val warning         = Color(0xFFFFAA33)   // soft warning (duplicate name, etc.)
+
+    // Practice timer urgency gradient
+    val practiceTimerAmber    = Color(0xFFB8731A)   // mid-urgency warm amber
+    val practiceTimerCritical = Color(0xFFFF4D5E)   // high-urgency coral red
 
     // Controls
     val controlInactive = Color(0xFF666688)   // unchecked switch thumb

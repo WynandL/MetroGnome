@@ -184,7 +184,7 @@ private fun V3FeatureIntroOverlay(onDismiss: () -> Unit) {
                     onClick = onDismiss,
                     colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
                     shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier.fillMaxWidth(0.6f),
+                    modifier = Modifier.fillMaxWidth(0.65f),
                 ) {
                     Text(
                         text = "Let's Explore!",

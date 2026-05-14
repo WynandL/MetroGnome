@@ -4,32 +4,37 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
@@ -43,8 +48,6 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -58,6 +61,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import com.example.metrognome.ui.overlays.PracticeCompleteOverlay
+import com.example.metrognome.ui.overlays.PresetDeleteDialog
+import com.example.metrognome.ui.overlays.SavePresetDialog
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.ui.overlays.WhatsNewOverlayDispatcher
 import com.example.metrognome.ui.components.metro_items.MetroItem
@@ -76,6 +81,7 @@ import kotlinx.coroutines.launch
 import com.example.metrognome.presets.BpmPreset
 import com.example.metrognome.ads.AdBannerView
 import com.example.metrognome.ui.components.GnomeCanvas
+import com.example.metrognome.ui.components.PresetChipsRow
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
@@ -116,7 +122,8 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     var showSavePresetDialog by remember { mutableStateOf(false) }
     var showBuyPresetsDialog by remember { mutableStateOf(false) }
     var showBuyPracticeDialog by remember { mutableStateOf(false) }
-    var selectedPreset by remember { mutableStateOf<Pair<Int, BpmPreset>?>(null) }
+    var presetPendingDelete by remember { mutableStateOf<Pair<Int, BpmPreset>?>(null) }
+    val presetLongPressHintSeen by vm.presetLongPressHintSeen.collectAsStateWithLifecycle()
     var showPracticeDialog by remember { mutableStateOf(false) }
 
     // Auto-close the buy dialog and open the save dialog once purchase confirms
@@ -190,18 +197,6 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             )
         }
 
-        if (isPracticeActive) {
-            PracticeProgressRow(
-                practiceSecondsRemaining = practiceSecondsRemaining,
-                practiceGoalSeconds = practiceGoalSeconds,
-                onCancelPractice = { vm.cancelPractice() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(AppColors.background)
-                    .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 6.dp)
-            )
-        }
-
         BpmStepperRow(
             bpm = bpm,
             isPlaying = isPlaying,
@@ -252,14 +247,32 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
                 .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
         )
 
-        if (isPresetsUnlocked && presets.isNotEmpty()) {
-            PresetChipsRow(
-                presets = presets,
-                onPresetClick = { index, preset -> selectedPreset = Pair(index, preset) },
+        if (isPracticeActive) {
+            PracticeProgressRow(
+                practiceSecondsRemaining = practiceSecondsRemaining,
+                practiceGoalSeconds = practiceGoalSeconds,
+                onCancelPractice = { vm.cancelPractice() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(AppColors.background)
-                    .padding(start = 16.dp, end = 16.dp, bottom = 6.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 4.dp)
+            )
+        }
+
+        if (isPresetsUnlocked && presets.isNotEmpty()) {
+            PresetChipsRow(
+                presets = presets,
+                currentBpm = bpm,
+                showLongPressHint = !presetLongPressHintSeen,
+                onPresetTap = { preset -> vm.selectPreset(preset) },
+                onPresetLongPress = { index, preset ->
+                    vm.markPresetLongPressHintSeen()
+                    presetPendingDelete = Pair(index, preset)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppColors.background)
+                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 6.dp)
             )
         }
 
@@ -294,6 +307,7 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     if (showSavePresetDialog) {
         SavePresetDialog(
             bpm = bpm,
+            existingNames = presets.map { it.name }.toSet(),
             onSave = { name ->
                 vm.savePreset(name, bpm)
                 showSavePresetDialog = false
@@ -324,18 +338,14 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
         )
     }
 
-    selectedPreset?.let { (index, preset) ->
-        PresetActionDialog(
+    presetPendingDelete?.let { (index, preset) ->
+        PresetDeleteDialog(
             preset = preset,
-            onApply = {
-                vm.setBpm(preset.bpm)
-                selectedPreset = null
-            },
-            onDelete = {
+            onConfirmDelete = {
                 vm.deletePreset(index)
-                selectedPreset = null
+                presetPendingDelete = null
             },
-            onDismiss = { selectedPreset = null }
+            onDismiss = { presetPendingDelete = null }
         )
     }
 
@@ -417,33 +427,37 @@ private fun SecondaryControlsRow(
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         CompactIconChip(
             icon = Icons.Filled.Favorite,
             contentDescription = "Save BPM preset",
             active = isOnSavedPreset,
             accentColor = AppColors.gold,
-            onClick = onSavePreset
+            onClick = onSavePreset,
+            modifier = Modifier.weight(1f).height(44.dp)
         )
         CompactIconChip(
             icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
             contentDescription = if (isMuted) "Unmute" else "Mute",
             active = isMuted,
-            onClick = onToggleMute
+            onClick = onToggleMute,
+            modifier = Modifier.weight(1f).height(44.dp)
         )
         CompactIconChip(
             icon = if (keepScreenOn) Icons.Filled.LightMode else Icons.Filled.ModeNight,
             contentDescription = "Keep screen on",
             active = keepScreenOn,
-            onClick = onToggleScreenOn
+            onClick = onToggleScreenOn,
+            modifier = Modifier.weight(1f).height(44.dp)
         )
         CompactIconChip(
             icon = Icons.Filled.Timer,
             contentDescription = "Practice session",
             active = isPracticeActive,
             accentColor = AppColors.primaryPurple,
-            onClick = onPractice
+            onClick = onPractice,
+            modifier = Modifier.weight(1f).height(44.dp)
         )
     }
 }
@@ -454,13 +468,13 @@ private fun CompactIconChip(
     contentDescription: String,
     active: Boolean,
     onClick: () -> Unit,
-    accentColor: Color = AppColors.gold
+    modifier: Modifier = Modifier,
+    accentColor: Color = AppColors.gold,
 ) {
     val shape = RoundedCornerShape(12.dp)
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(40.dp)
+        modifier = modifier
             .clip(shape)
             .background(if (active) AppColors.darkPurple else AppColors.surface)
             .border(1.dp, if (active) accentColor else Color(0x33FFFFFF), shape)
@@ -470,42 +484,17 @@ private fun CompactIconChip(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = if (active) accentColor else Color(0x80FFFFFF),
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(20.dp)
         )
-    }
-}
-
-@Composable
-private fun PresetChipsRow(
-    presets: List<BpmPreset>,
-    onPresetClick: (index: Int, preset: BpmPreset) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.horizontalScroll(rememberScrollState()),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        presets.forEachIndexed { index, preset ->
-            Surface(
-                onClick = { onPresetClick(index, preset) },
-                color = AppColors.surfaceActive,
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.height(30.dp)
-            ) {
-                Box(
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(preset.name, color = Color.White, fontSize = 12.sp)
-                }
-            }
-        }
     }
 }
 
 // ── Practice ──────────────────────────────────────────────────────────────────
 
+/**
+ * The Pulse Bar — practice timer with mounting urgency. Heart icon beats faster,
+ * fill warms from purple → gold → coral, and digits flash red in the final 10s.
+ */
 @Composable
 private fun PracticeProgressRow(
     practiceSecondsRemaining: Int,
@@ -513,33 +502,200 @@ private fun PracticeProgressRow(
     onCancelPractice: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(12.dp)
-    val elapsed  = practiceGoalSeconds - practiceSecondsRemaining
-    val progress = (elapsed.toFloat() / practiceGoalSeconds.coerceAtLeast(1)).coerceIn(0f, 1f)
+    val shape = RoundedCornerShape(10.dp)
+    val total = practiceGoalSeconds.coerceAtLeast(1)
+    val elapsed = total - practiceSecondsRemaining
+    val progress = (elapsed.toFloat() / total).coerceIn(0f, 1f)
+
+    // Urgency curve: 0 (chill) → 1 (panic). Stays at 0 until past the midpoint,
+    // then climbs slowly, then steeply in the final stretch.
+    val urgency = when {
+        progress < 0.5f  -> 0f
+        progress < 0.8f  -> (progress - 0.5f) / 0.3f * 0.45f          // 0 → 0.45
+        progress < 0.95f -> 0.45f + (progress - 0.8f) / 0.15f * 0.40f // 0.45 → 0.85
+        else             -> 0.85f + (progress - 0.95f) / 0.05f * 0.15f // 0.85 → 1.0
+    }.coerceIn(0f, 1f)
+
+    val isCritical = practiceSecondsRemaining in 1..10
+
+    // Heartbeat cadence — slow at start (~1.5s/beat = 40bpm), fast at end (~430ms/beat = ~140bpm)
+    val pulsePeriodMs = (1500f - urgency * 1070f).toInt().coerceAtLeast(380)
+    val transition = rememberInfiniteTransition(label = "practicePulse")
+    val pulse by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = pulsePeriodMs, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "pulse"
+    )
+    val shimmer by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer"
+    )
+    val beat = heartbeatCurve(pulse)
+
+    // Color zones — purple at calm, gold mid-urgency, coral at the brink.
+    val fillStart = if (urgency < 0.5f)
+        lerp(AppColors.deepPurple, AppColors.primaryPurple, urgency * 2f)
+    else
+        lerp(AppColors.primaryPurple, AppColors.practiceTimerAmber, (urgency - 0.5f) * 2f)
+    val fillEnd = if (urgency < 0.5f)
+        lerp(AppColors.mediumPurple, AppColors.gold, urgency * 2f)
+    else
+        lerp(AppColors.gold, AppColors.practiceTimerCritical, (urgency - 0.5f) * 2f)
+    val edgeColor = lerp(fillEnd, Color.White, 0.45f)
+
+    val animatedBorder by animateColorAsState(
+        targetValue = lerp(
+            AppColors.primaryPurple.copy(alpha = 0.55f),
+            AppColors.practiceTimerCritical.copy(alpha = 0.75f),
+            urgency
+        ),
+        animationSpec = tween(400),
+        label = "border"
+    )
+
     Box(
         modifier = modifier
-            .height(44.dp)
+            .height(38.dp)
             .clip(shape)
-            .background(AppColors.surface)
-            .border(1.dp, AppColors.primaryPurple.copy(alpha = 0.5f), shape)
+            .background(AppColors.surfaceDim)
+            .border(1.dp, animatedBorder, shape)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(progress)
-                .fillMaxHeight()
-                .background(AppColors.primaryPurple.copy(alpha = 0.20f))
-        )
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+
+            // Quarter ticks on the empty track
+            for (i in 1..3) {
+                val x = w * (i / 4f)
+                if (x > w * progress) {
+                    drawLine(
+                        color = AppColors.textDim.copy(alpha = 0.22f),
+                        start = Offset(x, h * 0.32f),
+                        end = Offset(x, h * 0.68f),
+                        strokeWidth = 1f
+                    )
+                }
+            }
+
+            val fillW = w * progress
+            if (fillW > 0f) {
+                // Main gradient fill
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(fillStart, fillEnd),
+                        startX = 0f,
+                        endX = w
+                    ),
+                    topLeft = Offset(0f, 0f),
+                    size = Size(fillW, h)
+                )
+
+                // Glassy top highlight
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        0f to Color.White.copy(alpha = 0.18f),
+                        0.55f to Color.Transparent
+                    ),
+                    topLeft = Offset(0f, 0f),
+                    size = Size(fillW, h)
+                )
+                // Bottom shade
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        0.55f to Color.Transparent,
+                        1f to Color.Black.copy(alpha = 0.18f)
+                    ),
+                    topLeft = Offset(0f, 0f),
+                    size = Size(fillW, h)
+                )
+
+                // Shimmer band sweeping across the fill
+                val bandHalf = 36f
+                val bandX = shimmer * (fillW + bandHalf * 2) - bandHalf
+                if (bandX in -bandHalf..(fillW + bandHalf)) {
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.White.copy(alpha = 0.10f + urgency * 0.06f),
+                                Color.Transparent
+                            ),
+                            startX = bandX - bandHalf,
+                            endX = bandX + bandHalf
+                        ),
+                        topLeft = Offset(0f, 0f),
+                        size = Size(fillW, h)
+                    )
+                }
+
+                // Leading wavefront — soft glow trailing back into the fill
+                val glowR = 20f + urgency * 28f + beat * 18f
+                val glowStart = (fillW - glowR).coerceAtLeast(0f)
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            edgeColor.copy(alpha = 0f),
+                            edgeColor.copy(alpha = 0.30f + urgency * 0.30f + beat * 0.20f)
+                        ),
+                        startX = glowStart,
+                        endX = fillW
+                    ),
+                    topLeft = Offset(glowStart, 0f),
+                    size = Size(fillW - glowStart, h)
+                )
+                // Bright leading line
+                if (fillW < w - 0.5f) {
+                    drawLine(
+                        color = edgeColor,
+                        start = Offset(fillW, h * 0.05f),
+                        end = Offset(fillW, h * 0.95f),
+                        strokeWidth = 1.8f + beat * 1.6f
+                    )
+                }
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 14.dp),
+                .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Pulsing heart — calm at the start, racing at the end
+            val heartScale = 1f + beat * (0.18f + urgency * 0.22f)
+            val heartColor = lerp(
+                AppColors.gold.copy(alpha = 0.75f),
+                AppColors.practiceTimerCritical,
+                urgency
+            )
+            Icon(
+                imageVector = Icons.Filled.Favorite,
+                contentDescription = null,
+                tint = heartColor,
+                modifier = Modifier
+                    .size(13.dp)
+                    .scale(heartScale)
+            )
+            Spacer(Modifier.width(9.dp))
+            val digitColor = if (isCritical)
+                lerp(Color.White, AppColors.practiceTimerCritical, 0.35f + beat * 0.55f)
+            else
+                Color.White
             Text(
-                "⏱  ${formatPracticeTime(practiceSecondsRemaining)}",
-                color = Color.White,
+                text = formatPracticeTime(practiceSecondsRemaining),
+                color = digitColor,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
+                fontFamily = FontFamily.Monospace,
                 modifier = Modifier.weight(1f)
             )
             Icon(
@@ -547,11 +703,30 @@ private fun PracticeProgressRow(
                 contentDescription = "Cancel practice",
                 tint = AppColors.textMuted,
                 modifier = Modifier
-                    .size(18.dp)
+                    .size(16.dp)
                     .clickable(onClick = onCancelPractice)
             )
         }
     }
+}
+
+// Lub-dub heartbeat shape over t∈[0,1): sharp systolic peak (~t=0.05–0.18)
+// followed by a smaller diastolic bump (~t=0.22–0.36), then rest.
+private fun heartbeatCurve(t: Float): Float {
+    val tt = t % 1f
+    val lub = when {
+        tt < 0.08f -> tt / 0.08f
+        tt < 0.18f -> 1f - (tt - 0.08f) / 0.10f
+        else       -> 0f
+    }
+    val dub = when {
+        tt in 0.22f..0.36f -> {
+            val x = (tt - 0.22f) / 0.14f
+            (kotlin.math.sin(x * Math.PI).toFloat()) * 0.55f
+        }
+        else -> 0f
+    }
+    return (lub + dub).coerceIn(0f, 1f)
 }
 
 @Composable
@@ -591,6 +766,12 @@ private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit
                         }
                     }
                 }
+                Text(
+                    "✨ Time spent practicing unlocks new gnome items",
+                    color = AppColors.gold.copy(alpha = 0.85f),
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 14.dp)
+                )
             }
         },
         confirmButton = {
@@ -608,123 +789,6 @@ private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit
 
 private fun formatPracticeTime(seconds: Int): String =
     "%d:%02d".format(seconds / 60, seconds % 60)
-
-// ── Preset dialogs ────────────────────────────────────────────────────────────
-
-@Composable
-private fun SavePresetDialog(bpm: Int, onSave: (String) -> Unit, onDismiss: () -> Unit) {
-    var name by remember { mutableStateOf("♩ $bpm") }
-    androidx.compose.ui.window.Dialog(
-        onDismissRequest = onDismiss,
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = AppColors.surfaceDeep,
-            shadowElevation = 24.dp,
-            modifier = Modifier
-                .padding(horizontal = 20.dp)
-                .widthIn(min = 280.dp, max = 380.dp),
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 22.dp, vertical = 18.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    Spacer(Modifier.weight(1f))
-                    DialogCloseButton(onClick = onDismiss)
-                }
-
-                Spacer(Modifier.height(2.dp))
-
-                Text(
-                    text          = "Save Preset",
-                    color         = AppColors.gold,
-                    fontSize      = 24.sp,
-                    fontWeight    = FontWeight.ExtraBold,
-                    letterSpacing = (-0.5).sp,
-                )
-
-                Spacer(Modifier.height(14.dp))
-
-                Text(
-                    text       = "$bpm BPM",
-                    color      = Color.White,
-                    fontSize   = 44.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-1).sp,
-                )
-
-                Spacer(Modifier.height(18.dp))
-
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor   = AppColors.gold,
-                        unfocusedBorderColor = AppColors.surfaceVariant,
-                        focusedTextColor     = Color.White,
-                        unfocusedTextColor   = AppColors.textSecondary,
-                        cursorColor          = AppColors.gold,
-                    ),
-                )
-
-                Spacer(Modifier.height(20.dp))
-
-                Surface(
-                    onClick  = { onSave(name) },
-                    shape    = RoundedCornerShape(16.dp),
-                    color    = Color.Transparent,
-                    border   = BorderStroke(1.dp, AppColors.gold),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text       = "Save Preset",
-                            color      = AppColors.gold,
-                            fontSize   = 15.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.3.sp,
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    text     = "Cancel",
-                    color    = AppColors.textDim,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .clickable(onClick = onDismiss)
-                        .padding(vertical = 6.dp, horizontal = 12.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DialogCloseButton(onClick: () -> Unit) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(34.dp)
-            .clip(CircleShape)
-            .clickable(onClick = onClick),
-    ) {
-        Icon(
-            imageVector        = Icons.Filled.Close,
-            contentDescription = "Close",
-            tint               = AppColors.textMuted,
-            modifier           = Modifier.size(18.dp),
-        )
-    }
-}
 
 @Composable
 private fun BuyPresetsDialog(
@@ -770,100 +834,6 @@ private fun BuyPracticeDialog(
         onRestore          = onRestore,
         onDismiss          = onDismiss,
     )
-}
-
-@Composable
-private fun PresetActionDialog(
-    preset: BpmPreset,
-    onApply: () -> Unit,
-    onDelete: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    androidx.compose.ui.window.Dialog(
-        onDismissRequest = onDismiss,
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = AppColors.surfaceDeep,
-            shadowElevation = 24.dp,
-            modifier = Modifier
-                .padding(horizontal = 20.dp)
-                .widthIn(min = 280.dp, max = 380.dp),
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 22.dp, vertical = 18.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    Spacer(Modifier.weight(1f))
-                    DialogCloseButton(onClick = onDismiss)
-                }
-
-                Spacer(Modifier.height(2.dp))
-
-                Text(
-                    text          = preset.name,
-                    color         = AppColors.gold,
-                    fontSize      = 24.sp,
-                    fontWeight    = FontWeight.ExtraBold,
-                    letterSpacing = (-0.5).sp,
-                    textAlign     = TextAlign.Center,
-                )
-
-                Spacer(Modifier.height(14.dp))
-
-                Text(
-                    text       = "${preset.bpm}",
-                    color      = Color.White,
-                    fontSize   = 56.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-2).sp,
-                )
-                Text(
-                    text     = "BPM",
-                    color    = AppColors.textMuted,
-                    fontSize = 12.sp,
-                    letterSpacing = 2.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-
-                Spacer(Modifier.height(24.dp))
-
-                Surface(
-                    onClick  = onApply,
-                    shape    = RoundedCornerShape(16.dp),
-                    color    = Color.Transparent,
-                    border   = BorderStroke(1.dp, AppColors.gold),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text       = "Apply",
-                            color      = AppColors.gold,
-                            fontSize   = 15.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.3.sp,
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    text     = "Delete preset",
-                    color    = AppColors.danger.copy(alpha = 0.75f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier
-                        .clickable(onClick = onDelete)
-                        .padding(vertical = 6.dp, horizontal = 12.dp),
-                )
-            }
-        }
-    }
 }
 
 // ── Beat indicator ────────────────────────────────────────────────────────────

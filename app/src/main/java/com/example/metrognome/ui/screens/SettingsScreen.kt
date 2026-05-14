@@ -56,9 +56,14 @@ import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.billing.PurchasableItemDef
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.UnlockCondition
+import com.example.metrognome.ui.components.OwnedBadge
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import kotlin.math.roundToInt
+
+private val itemOwnedMessages = mapOf(
+    "glissie_fairy" to "Glissie's in your collection. She knows how to make an entrance.",
+)
 
 @Composable
 fun SettingsScreen(vm: MetronomeViewModel) {
@@ -280,6 +285,7 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                     priceText = itemPrices[def.productId],
                     isBillingConnecting = isBillingConnecting,
                     isAvailable = def.productId in availableItemProductIds,
+                    ownedMessage = itemOwnedMessages[def.itemId] ?: "She's all yours.",
                     onClick = { dialogItemDef = def }
                 )
             }
@@ -505,10 +511,11 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     METRO_ITEM_REGISTRY.sortedBy { entry ->
                         when (val c = entry.condition) {
-                            is UnlockCondition.MetronomeSeconds     -> c.required.toDouble()
-                            is UnlockCondition.RhythmGamesCompleted -> c.required * 300.0
-                            is UnlockCondition.DaysSinceFirstLaunch -> c.required * 86_400.0
-                            UnlockCondition.Always                  -> -1.0
+                            is UnlockCondition.MetronomeSeconds          -> c.required.toDouble()
+                            is UnlockCondition.RhythmGamesCompleted      -> c.required * 300.0
+                            is UnlockCondition.DaysSinceFirstLaunch      -> c.required * 86_400.0
+                            is UnlockCondition.PracticeSessionsCompleted -> c.required * 1_200.0
+                            UnlockCondition.Always                       -> -1.0
                         }
                     }.forEach { entry ->
                         Text(
@@ -582,13 +589,14 @@ private fun PurchasableItemRow(
     priceText: String?,
     isBillingConnecting: Boolean,
     isAvailable: Boolean,
+    ownedMessage: String,
     onClick: () -> Unit,
 ) {
     Column(modifier = Modifier.padding(bottom = 14.dp)) {
         Text(
             def.displayName,
             color = AppColors.textPrimary,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.Normal,
             fontSize = 14.sp,
             modifier = Modifier.padding(bottom = 2.dp)
         )
@@ -599,35 +607,28 @@ private fun PurchasableItemRow(
             lineHeight = 18.sp,
             modifier = Modifier.padding(bottom = 6.dp)
         )
-        when {
-            alreadyUnlocked -> Text(
-                "✓  Already yours",
-                color = AppColors.gold,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp
-            )
-            else -> {
-                // Always tappable — dialog handles all billing states (loading, unavailable, buy)
-                val buttonLabel = when {
-                    isBillingConnecting -> "Loading…"
-                    priceText != null   -> "Get ${def.displayName} - $priceText"
-                    else                -> "Get ${def.displayName}"
-                }
-                OutlinedButton(
-                    onClick = onClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = if (!isBillingConnecting && isAvailable) AppColors.gold
-                                       else AppColors.textMuted
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (!isBillingConnecting && isAvailable) AppColors.gold
-                        else AppColors.surfaceVariant
-                    )
-                ) {
-                    Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                }
+        if (alreadyUnlocked) {
+            OwnedBadge(ownedMessage)
+        } else {
+            val buttonLabel = when {
+                isBillingConnecting -> "Loading…"
+                priceText != null   -> "Get ${def.displayName} - $priceText"
+                else                -> "Get ${def.displayName}"
+            }
+            OutlinedButton(
+                onClick = onClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (!isBillingConnecting && isAvailable) AppColors.gold
+                                   else AppColors.textMuted
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (!isBillingConnecting && isAvailable) AppColors.gold
+                    else AppColors.surfaceVariant
+                )
+            ) {
+                Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
         }
     }
@@ -703,33 +704,19 @@ private fun PracticeModeSection(
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
 ) {
-    if (isPracticeModeUnlocked) {
-        Column(modifier = Modifier.padding(bottom = 8.dp)) {
-            Text(
-                "✓  Practice Mode unlocked",
-                color = AppColors.gold,
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-            Text(
-                "Set daily goals, track your streak, and celebrate every completed session.",
-                color = AppColors.textSecondary,
-                fontSize = 13.sp,
-                lineHeight = 19.sp,
-            )
-        }
-        return
-    }
-
     Column(modifier = Modifier.padding(bottom = 4.dp)) {
         Text(
             "Build a practice habit",
             color = AppColors.textPrimary,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.Normal,
             fontSize = 14.sp,
             modifier = Modifier.padding(bottom = 4.dp)
         )
+
+        if (isPracticeModeUnlocked) {
+            OwnedBadge("A serious musician. Goals, streaks, every session celebrated.")
+            return
+        }
         Text(
             "Set a daily practice goal, track your streak, and celebrate every completed session - building a habit one day at a time.",
             color = AppColors.textSecondary,
@@ -751,7 +738,7 @@ private fun PracticeModeSection(
                 fontStyle = FontStyle.Italic
             )
             else -> {
-                val label = if (isPurchasing) "Please wait…" else "Unlock Practice Mode  —  $priceText"
+                val label = if (isPurchasing) "Please wait…" else "Unlock Practice Mode - $priceText"
                 OutlinedButton(
                     onClick = onPurchase,
                     enabled = !isPurchasing,
@@ -789,33 +776,19 @@ private fun RemoveAdsSection(
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
 ) {
-    if (isAdFree) {
-        Column(modifier = Modifier.padding(bottom = 8.dp)) {
-            Text(
-                text = "✓  You're ad-free!",
-                color = AppColors.gold,
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-            Text(
-                text = "Metro has the full stage to himself. Enjoy the extra room.",
-                color = AppColors.textSecondary,
-                fontSize = 13.sp,
-                lineHeight = 19.sp,
-            )
-        }
-        return
-    }
-
     Column(modifier = Modifier.padding(bottom = 4.dp)) {
         Text(
             text = "Give Metro the full stage",
             color = AppColors.textPrimary,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.Normal,
             fontSize = 14.sp,
             modifier = Modifier.padding(bottom = 4.dp),
         )
+
+        if (isAdFree) {
+            OwnedBadge("Pure Metro - no ads, no interruptions. Just you and the music.")
+            return
+        }
         Text(
             text = "Remove all ads, banner and full-screen, and Metro gets more room to dance. " +
                     "A bigger canvas, no interruptions. One-time purchase, forever.",

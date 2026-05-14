@@ -93,6 +93,20 @@ object AnalyticsTracker {
         }
     }
 
+    // ── BPM Presets ───────────────────────────────────────────────────────────
+
+    fun logPresetSaved(bpm: Int) {
+        Firebase.analytics.logEvent("preset_saved") {
+            param("bpm", bpm.toLong())
+        }
+    }
+
+    fun logPresetLoaded(bpm: Int) {
+        Firebase.analytics.logEvent("preset_loaded") {
+            param("bpm", bpm.toLong())
+        }
+    }
+
     // ── Items ─────────────────────────────────────────────────────────────────
 
     fun logItemUnlocked(itemId: String, itemName: String) {

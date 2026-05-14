@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import com.example.metrognome.ui.components.DialogCloseButton
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,9 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -91,7 +89,7 @@ fun PremiumPurchaseDialog(
                 ) {
                     PremiumBadge()
                     Spacer(Modifier.weight(1f))
-                    CloseButton(onClick = onDismiss)
+                    DialogCloseButton(onClick = onDismiss)
                 }
 
                 Spacer(Modifier.height(6.dp))
@@ -169,24 +167,6 @@ private fun PremiumBadge() {
             color      = AppColors.gold,
             fontSize   = 16.sp,
             fontWeight = FontWeight.Bold,
-        )
-    }
-}
-
-@Composable
-private fun CloseButton(onClick: () -> Unit) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(34.dp)
-            .clip(CircleShape)
-            .clickable(onClick = onClick),
-    ) {
-        Icon(
-            imageVector        = Icons.Filled.Close,
-            contentDescription = "Close",
-            tint               = AppColors.textMuted,
-            modifier           = Modifier.size(18.dp),
         )
     }
 }
