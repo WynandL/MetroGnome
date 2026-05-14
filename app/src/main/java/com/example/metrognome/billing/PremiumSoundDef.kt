@@ -24,5 +24,12 @@ val PREMIUM_SOUND_REGISTRY: List<PremiumSoundDef> = listOf(
         description = "A clear bell strike with natural harmonic overtones. " +
                 "Bright and distinct. Sits above the mix without being sharp."
     ),
+    PremiumSoundDef(
+        soundTypeIndex = 5,
+        productId = BillingManager.PRODUCT_SOUND_BOWL,
+        displayName = "Crystal Bowl",
+        description = "A crystal singing bowl strike - warm, resonant harmonics with a gentle shimmer. " +
+                "Deep and meditative. The kind of sound you could practise to for hours."
+    ),
     // Add new premium sounds here
 )

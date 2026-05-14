@@ -41,7 +41,7 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     // ── Sky / atmosphere — long play-time (draw order: back → front) ─────────
     MetroItemEntry(Fireflies,          UnlockCondition.MetronomeSeconds(10_800)),   // 3 h  — farthest back
     MetroItemEntry(MoonAndStars,       UnlockCondition.MetronomeSeconds(36_000)),   // 10 h
-    MetroItemEntry(GlissieFairy,        UnlockCondition.MetronomeSeconds(21_600)),   // 6 h  — drawn last, floats closest
+    MetroItemEntry(GlissieFairy,        UnlockCondition.MetronomeSeconds(21_600)),   // 6 h — drawn last, floats closest
 
     // ── Future wearables — add entries here as new files are created ──────────
     // MetroItemEntry(ArmBracelet,   UnlockCondition.MetronomeSeconds(7_200)),    // 2 h

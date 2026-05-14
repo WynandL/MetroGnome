@@ -47,7 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.BuildConfig
 import com.example.metrognome.dev.DevEasterEgg
 import com.example.metrognome.dev.DevTapTarget
-import com.example.metrognome.ui.components.AdBannerView
+import com.example.metrognome.ads.AdBannerView
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.billing.PremiumSoundDef
 import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
@@ -87,6 +87,9 @@ fun SettingsScreen(vm: MetronomeViewModel) {
     val itemPrices by vm.itemPrices.collectAsStateWithLifecycle()
     val availableItemProductIds by vm.availableItemProductIds.collectAsStateWithLifecycle()
     val activeItemIds by vm.activeItemIds.collectAsStateWithLifecycle()
+    val isPresetsUnlocked by vm.isPresetsUnlocked.collectAsStateWithLifecycle()
+    val isPracticeModeUnlocked by vm.isPracticeModeUnlocked.collectAsStateWithLifecycle()
+    val practiceModePrice by vm.practiceModePriceText.collectAsStateWithLifecycle()
 
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
     var previewIndex by remember { mutableIntStateOf(0) }
@@ -285,6 +288,21 @@ fun SettingsScreen(vm: MetronomeViewModel) {
             HorizontalDivider(color = AppColors.surfaceVariant)
             Spacer(Modifier.height(8.dp))
 
+            SettingsSectionTitle("Practice Mode")
+
+            PracticeModeSection(
+                isPracticeModeUnlocked = isPracticeModeUnlocked,
+                priceText = practiceModePrice,
+                isPurchasing = isPurchasing,
+                isBillingConnecting = isBillingConnecting,
+                onPurchase = { activity?.let { vm.purchasePracticeMode(it) } },
+                onRestore  = { vm.restorePurchases() },
+            )
+
+            Spacer(Modifier.height(8.dp))
+            HorizontalDivider(color = AppColors.surfaceVariant)
+            Spacer(Modifier.height(8.dp))
+
             SettingsSectionTitle("Remove Ads")
 
             RemoveAdsSection(
@@ -436,6 +454,36 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                     fontWeight = FontWeight.Bold
                 )
             }
+
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
+                onClick = { vm.debugClearPresets() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
+            ) {
+                Text(
+                    if (isPresetsUnlocked) "Clear Presets Unlock + Data" else "Presets Not Unlocked",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
+                onClick = { vm.debugClearPracticeMode() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
+            ) {
+                Text(
+                    if (isPracticeModeUnlocked) "Clear Practice Mode + Streak" else "Practice Not Unlocked",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
             } // end DEBUG block
 
             Spacer(Modifier.height(8.dp))
@@ -551,15 +599,6 @@ private fun PurchasableItemRow(
             lineHeight = 18.sp,
             modifier = Modifier.padding(bottom = 6.dp)
         )
-        if (!alreadyUnlocked) {
-            Text(
-                def.unlockAlternative,
-                color = AppColors.textMuted,
-                fontSize = 12.sp,
-                fontStyle = FontStyle.Italic,
-                modifier = Modifier.padding(bottom = 10.dp)
-            )
-        }
         when {
             alreadyUnlocked -> Text(
                 "✓  Already yours",
@@ -571,7 +610,7 @@ private fun PurchasableItemRow(
                 // Always tappable — dialog handles all billing states (loading, unavailable, buy)
                 val buttonLabel = when {
                     isBillingConnecting -> "Loading…"
-                    priceText != null   -> "Get ${def.displayName}  —  $priceText"
+                    priceText != null   -> "Get ${def.displayName} - $priceText"
                     else                -> "Get ${def.displayName}"
                 }
                 OutlinedButton(
@@ -607,103 +646,19 @@ private fun PurchasableItemDialog(
     onRestore: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = AppColors.surfaceDeep,
-        titleContentColor = AppColors.gold,
-        textContentColor = AppColors.textSecondary,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(def.displayName, fontWeight = FontWeight.Bold)
-                Text(
-                    "  ★  Premium Item",
-                    color = AppColors.gold,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        },
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                ItemPreviewCanvas(entry = entry)
-                Spacer(Modifier.height(14.dp))
-                Text(
-                    def.description,
-                    fontSize = 13.sp,
-                    lineHeight = 20.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-                Text(
-                    def.unlockAlternative,
-                    color = AppColors.textMuted,
-                    fontSize = 12.sp,
-                    fontStyle = FontStyle.Italic,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 14.dp)
-                )
-                when {
-                    alreadyUnlocked -> Text(
-                        "✓  Already yours",
-                        color = AppColors.gold,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                    isBillingConnecting -> Text(
-                        "Loading…",
-                        color = AppColors.textMuted,
-                        fontSize = 13.sp,
-                        fontStyle = FontStyle.Italic
-                    )
-                    !isAvailable -> Text(
-                        "Unavailable",
-                        color = AppColors.textMuted,
-                        fontSize = 13.sp,
-                        fontStyle = FontStyle.Italic
-                    )
-                    else -> {
-                        val buttonLabel = when {
-                            isPurchasing -> "Please wait…"
-                            priceText != null -> "Get ${def.displayName}  —  $priceText"
-                            else -> "Get ${def.displayName}"
-                        }
-                        OutlinedButton(
-                            onClick = onPurchase,
-                            enabled = !isPurchasing,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = AppColors.gold,
-                                disabledContentColor = AppColors.textMuted
-                            ),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (!isPurchasing) AppColors.gold else AppColors.surfaceVariant
-                            )
-                        ) {
-                            Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                        Spacer(Modifier.height(2.dp))
-                        TextButton(
-                            onClick = onRestore,
-                            enabled = !isPurchasing,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                "Restore Purchase",
-                                color = if (!isPurchasing) AppColors.textMuted else AppColors.textDim,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close", color = AppColors.textMuted, fontSize = 13.sp)
-            }
-        }
+    com.example.metrognome.ui.components.PremiumPurchaseDialog(
+        title              = def.displayName,
+        description        = def.description,
+        actionLabel        = "Get ${def.displayName}",
+        priceText          = priceText,
+        isPurchasing       = isPurchasing,
+        isBillingConnecting = isBillingConnecting,
+        isAvailable        = isAvailable,
+        alreadyUnlocked    = alreadyUnlocked,
+        onPurchase         = onPurchase,
+        onRestore          = onRestore,
+        onDismiss          = onDismiss,
+        previewContent     = { ItemPreviewCanvas(entry = entry) },
     )
 }
 
@@ -719,96 +674,109 @@ private fun PremiumSoundDialog(
     onRestore: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = AppColors.surfaceDeep,
-        titleContentColor = AppColors.gold,
-        textContentColor = AppColors.textSecondary,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(def.displayName, fontWeight = FontWeight.Bold)
-                Text(
-                    "  ★  Premium",
-                    color = AppColors.gold,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+    com.example.metrognome.ui.components.PremiumPurchaseDialog(
+        title              = def.displayName,
+        description        = def.description,
+        actionLabel        = "Unlock ${def.displayName}",
+        priceText          = priceText,
+        isPurchasing       = isPurchasing,
+        isBillingConnecting = isBillingConnecting,
+        isAvailable        = isAvailable,
+        onPurchase         = onPurchase,
+        onRestore          = onRestore,
+        onDismiss          = onDismiss,
+        secondaryButton    = {
+            com.example.metrognome.ui.components.PreviewActionButton(
+                label   = "▶  Preview (4 beats)",
+                onClick = onPreview,
+            )
         },
-        text = {
-            Column {
-                Text(
-                    def.description,
-                    fontSize = 13.sp,
-                    lineHeight = 20.sp,
-                    modifier = Modifier.padding(bottom = 14.dp)
-                )
+    )
+}
+
+@Composable
+private fun PracticeModeSection(
+    isPracticeModeUnlocked: Boolean,
+    priceText: String?,
+    isPurchasing: Boolean,
+    isBillingConnecting: Boolean,
+    onPurchase: () -> Unit,
+    onRestore: () -> Unit,
+) {
+    if (isPracticeModeUnlocked) {
+        Column(modifier = Modifier.padding(bottom = 8.dp)) {
+            Text(
+                "✓  Practice Mode unlocked",
+                color = AppColors.gold,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            Text(
+                "Set daily goals, track your streak, and celebrate every completed session.",
+                color = AppColors.textSecondary,
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
+            )
+        }
+        return
+    }
+
+    Column(modifier = Modifier.padding(bottom = 4.dp)) {
+        Text(
+            "Build a practice habit",
+            color = AppColors.textPrimary,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Text(
+            "Set a daily practice goal, track your streak, and celebrate every completed session - building a habit one day at a time.",
+            color = AppColors.textSecondary,
+            fontSize = 13.sp,
+            lineHeight = 19.sp,
+            modifier = Modifier.padding(bottom = 14.dp)
+        )
+        when {
+            isBillingConnecting -> Text(
+                "Loading…",
+                color = AppColors.textMuted,
+                fontSize = 13.sp,
+                fontStyle = FontStyle.Italic
+            )
+            priceText == null -> Text(
+                "Unavailable",
+                color = AppColors.textMuted,
+                fontSize = 13.sp,
+                fontStyle = FontStyle.Italic
+            )
+            else -> {
+                val label = if (isPurchasing) "Please wait…" else "Unlock Practice Mode  —  $priceText"
                 OutlinedButton(
-                    onClick = onPreview,
+                    onClick = onPurchase,
+                    enabled = !isPurchasing,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.textAccent),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.surfaceVariant)
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = AppColors.gold,
+                        disabledContentColor = AppColors.textMuted
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (!isPurchasing) AppColors.gold else AppColors.surfaceVariant
+                    )
                 ) {
-                    Text("▶  Preview (4 beats)", fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                    Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
-                Spacer(Modifier.height(14.dp))
-                when {
-                    isBillingConnecting -> Text(
-                        "Loading…",
-                        color = AppColors.textMuted,
-                        fontSize = 13.sp,
-                        fontStyle = FontStyle.Italic
+                TextButton(onClick = onRestore, enabled = !isPurchasing) {
+                    Text(
+                        "Already purchased? Restore",
+                        color = if (!isPurchasing) AppColors.textDim else Color(0x22FFFFFF),
+                        fontSize = 11.sp
                     )
-                    !isAvailable -> Text(
-                        "Unavailable",
-                        color = AppColors.textMuted,
-                        fontSize = 13.sp,
-                        fontStyle = FontStyle.Italic
-                    )
-                    else -> {
-                        val buttonLabel = when {
-                            isPurchasing -> "Please wait…"
-                            priceText != null -> "Unlock ${def.displayName}  —  $priceText"
-                            else -> "Unlock ${def.displayName}"
-                        }
-                        OutlinedButton(
-                            onClick = onPurchase,
-                            enabled = !isPurchasing,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = AppColors.gold,
-                                disabledContentColor = AppColors.textMuted
-                            ),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (!isPurchasing) AppColors.gold else AppColors.surfaceVariant
-                            )
-                        ) {
-                            Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                        Spacer(Modifier.height(2.dp))
-                        TextButton(
-                            onClick = onRestore,
-                            enabled = !isPurchasing,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                "Restore Purchase",
-                                color = if (!isPurchasing) AppColors.textMuted else AppColors.textDim,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
                 }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close", color = AppColors.textMuted, fontSize = 13.sp)
             }
         }
-    )
+    }
 }
 
 @Composable
@@ -849,8 +817,8 @@ private fun RemoveAdsSection(
             modifier = Modifier.padding(bottom = 4.dp),
         )
         Text(
-            text = "Remove the banner ad and Metro gets more room to dance. " +
-                    "A bigger canvas, all yours. One-time purchase, forever.",
+            text = "Remove all ads, banner and full-screen, and Metro gets more room to dance. " +
+                    "A bigger canvas, no interruptions. One-time purchase, forever.",
             color = AppColors.textSecondary,
             fontSize = 13.sp,
             lineHeight = 19.sp,
@@ -881,7 +849,7 @@ private fun RemoveAdsSection(
             else -> {
                 val buttonLabel = when {
                     isPurchasing -> "Please wait…"
-                    priceText != null -> "Remove Ads — $priceText"
+                    priceText != null -> "Remove Ads - $priceText"
                     else -> "Remove Ads"
                 }
                 OutlinedButton(
@@ -900,17 +868,11 @@ private fun RemoveAdsSection(
                     Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
 
-                Spacer(Modifier.height(8.dp))
-
-                TextButton(
-                    onClick = onRestore,
-                    enabled = !isPurchasing,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
+                TextButton(onClick = onRestore, enabled = !isPurchasing) {
                     Text(
-                        text = "Restore Purchase",
-                        color = if (!isPurchasing) AppColors.textMuted else AppColors.textDim,
-                        fontSize = 12.sp,
+                        "Already purchased? Restore",
+                        color = if (!isPurchasing) AppColors.textDim else Color(0x22FFFFFF),
+                        fontSize = 11.sp
                     )
                 }
             }

@@ -72,7 +72,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.metrognome.ui.components.AdBannerView
+import com.example.metrognome.ads.AdBannerView
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.GameColors
@@ -105,6 +105,7 @@ fun RhythmGameScreen(
     isMetronomePlaying: Boolean = false,
     onStopMetronome: () -> Unit = {},
     isAdFree: Boolean = false,
+    onBeforeResultDismiss: (() -> Unit) -> Unit = { it() },
 ) {
     val phase by vm.phase.collectAsStateWithLifecycle()
     val score by vm.score.collectAsStateWithLifecycle()
@@ -173,7 +174,7 @@ fun RhythmGameScreen(
                     visibleNotes = visibleNotes
                 )
 
-                GamePhase.RESULT -> ResultPanel(result = result, onDismiss = { vm.dismissResult() })
+                GamePhase.RESULT -> ResultPanel(result = result, onDismiss = { onBeforeResultDismiss { vm.dismissResult() } })
             }
         }
         if (!isAdFree) {
@@ -1012,6 +1013,16 @@ private fun ResultPanel(
                 .fillMaxWidth()
                 .height(52.dp)
         ) { Text("PLAY AGAIN", fontWeight = FontWeight.Bold, letterSpacing = 2.sp) }
+        Spacer(Modifier.height(10.dp))
+        OutlinedButton(
+            onClick = onDismiss,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(46.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.textMuted),
+            border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.surfaceVariant)
+        ) { Text("Done", fontWeight = FontWeight.Medium, letterSpacing = 1.sp) }
         Spacer(Modifier.height(12.dp))
     }
 }

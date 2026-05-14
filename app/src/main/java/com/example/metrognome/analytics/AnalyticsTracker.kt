@@ -70,6 +70,29 @@ object AnalyticsTracker {
         }
     }
 
+    // ── Practice ──────────────────────────────────────────────────────────────
+
+    fun logPracticeStarted(goalMinutes: Int) {
+        Firebase.analytics.logEvent("practice_started") {
+            param("goal_minutes", goalMinutes.toLong())
+        }
+    }
+
+    fun logPracticeCompleted(durationMinutes: Int, streak: Int, totalSessions: Int) {
+        Firebase.analytics.logEvent("practice_completed") {
+            param("duration_minutes", durationMinutes.toLong())
+            param("streak",           streak.toLong())
+            param("total_sessions",   totalSessions.toLong())
+        }
+    }
+
+    fun logPracticeCancelled(secondsElapsed: Int, goalSeconds: Int) {
+        Firebase.analytics.logEvent("practice_cancelled") {
+            param("seconds_elapsed", secondsElapsed.toLong())
+            param("goal_seconds",    goalSeconds.toLong())
+        }
+    }
+
     // ── Items ─────────────────────────────────────────────────────────────────
 
     fun logItemUnlocked(itemId: String, itemName: String) {

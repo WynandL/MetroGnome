@@ -35,7 +35,10 @@
       "PowerShell(Select-String *)",
       "PowerShell(Remove-Item *)",
       "Bash(dir /s /b \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\*.gradle\")",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\" -Recurse -Directory)",
+      "Bash(Sort-Object)",
+      "Bash(git reset *)"
     ]
   }
 }

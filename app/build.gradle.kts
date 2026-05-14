@@ -24,8 +24,8 @@ android {
         applicationId = "com.wynandl.metrognome"
         minSdk = 24
         targetSdk = 37
-        versionCode = 19
-        versionName = "3.1"
+        versionCode = 20
+        versionName = "3.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

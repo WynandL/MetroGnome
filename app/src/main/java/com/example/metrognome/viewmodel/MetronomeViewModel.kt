@@ -12,6 +12,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.MetronomeEngine
 import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
 import com.example.metrognome.billing.BillingManager
+import com.example.metrognome.practice.PracticeSessionManager
+import com.example.metrognome.presets.BpmPreset
+import com.example.metrognome.presets.BpmPresetsManager
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
@@ -26,6 +29,7 @@ import androidx.core.content.edit
 import com.example.metrognome.analytics.AnalyticsTracker
 
 data class BeatEvent(val beat: Int)
+data class PracticeResult(val durationMinutes: Int, val streak: Int, val totalSessions: Int)
 
 class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -34,12 +38,45 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     val itemTracker = MetroItemTracker(app)
     val billingManager = BillingManager(app)
     private val whatsNewTracker = WhatsNewTracker(app)
+    private val presetsManager   = BpmPresetsManager(app)
+    private val practiceManager  = PracticeSessionManager(app)
 
     val isAdFree: StateFlow<Boolean>                    = billingManager.isAdFree
     val removeAdsPriceText: StateFlow<String?>           = billingManager.priceText
     val isBillingAvailable: StateFlow<Boolean>           = billingManager.isBillingAvailable
     val isPurchasing: StateFlow<Boolean>                 = billingManager.isPurchasing
     val isBillingConnecting: StateFlow<Boolean>          = billingManager.isConnecting
+
+    // Presets
+    val isPresetsUnlocked: StateFlow<Boolean>            = billingManager.isPresetsUnlocked
+    val presetsPriceText: StateFlow<String?>             = billingManager.presetsPrice
+
+    // Practice Mode
+    val isPracticeModeUnlocked: StateFlow<Boolean>       = billingManager.isPracticeModeUnlocked
+    val practiceModePriceText: StateFlow<String?>        = billingManager.practiceModePrice
+
+    private val _isPracticeActive          = MutableStateFlow(false)
+    val isPracticeActive: StateFlow<Boolean>             = _isPracticeActive.asStateFlow()
+
+    private val _practiceSecondsRemaining  = MutableStateFlow(0)
+    val practiceSecondsRemaining: StateFlow<Int>         = _practiceSecondsRemaining.asStateFlow()
+
+    private val _practiceGoalSeconds       = MutableStateFlow(0)
+    val practiceGoalSeconds: StateFlow<Int>              = _practiceGoalSeconds.asStateFlow()
+
+    private val _practiceStreak            = MutableStateFlow(practiceManager.getCurrentStreak())
+    val practiceStreak: StateFlow<Int>                   = _practiceStreak.asStateFlow()
+
+    private val _practiceTotalSessions     = MutableStateFlow(practiceManager.getTotalSessions())
+    val practiceTotalSessions: StateFlow<Int>            = _practiceTotalSessions.asStateFlow()
+
+    private val _pendingPracticeResult     = MutableStateFlow<PracticeResult?>(null)
+    val pendingPracticeResult: StateFlow<PracticeResult?> = _pendingPracticeResult.asStateFlow()
+
+    private var practiceJob: Job? = null
+
+    private val _presets = MutableStateFlow(presetsManager.loadPresets())
+    val presets: StateFlow<List<BpmPreset>> = _presets.asStateFlow()
 
     // Sounds
     val purchasedSoundIds: StateFlow<Set<String>>        = billingManager.purchasedSoundIds
@@ -52,12 +89,18 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     val availableItemProductIds: StateFlow<Set<String>>  = billingManager.availableItemProductIds
 
     fun purchaseRemoveAds(activity: Activity) = billingManager.launchPurchaseFlow(activity)
+    fun purchasePresets(activity: Activity) = billingManager.launchPresetsPurchaseFlow(activity)
     fun purchaseSound(activity: Activity, productId: String) =
         billingManager.launchSoundPurchaseFlow(activity, productId)
     fun purchaseItem(activity: Activity, productId: String) =
         billingManager.launchItemPurchaseFlow(activity, productId)
     fun restorePurchases() = billingManager.restorePurchases()
     fun debugClearAdFree() = billingManager.debugClearAdFree()
+    fun debugClearPresets() {
+        billingManager.debugClearPresets()
+        presetsManager.debugClear()
+        _presets.value = emptyList()
+    }
     fun debugClearSoundPurchases() {
         billingManager.debugClearSoundPurchases()
         val premiumIndexes = PREMIUM_SOUND_REGISTRY.map { it.soundTypeIndex }.toSet()
@@ -70,6 +113,84 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun previewSound(soundTypeIndex: Int) = engine.playPreview(soundTypeIndex)
+
+    fun savePreset(name: String, bpm: Int): Boolean {
+        val saved = presetsManager.savePreset(name, bpm)
+        if (saved) _presets.value = presetsManager.loadPresets()
+        return saved
+    }
+
+    fun deletePreset(index: Int) {
+        presetsManager.deletePreset(index)
+        _presets.value = presetsManager.loadPresets()
+    }
+
+    fun purchasePracticeMode(activity: Activity) = billingManager.launchPracticePurchaseFlow(activity)
+
+    fun startPractice(minutes: Int) {
+        if (!_isPlaying.value) {
+            if (!requestAudioFocus()) return
+            syncEngineSettings()
+            engine.start()
+            _isPlaying.value = true
+            AnalyticsTracker.logMetronomeStarted(_bpm.value, _soundType.value, _timeSig.value)
+            startPlayTimer()
+        }
+        _practiceGoalSeconds.value = minutes * 60
+        _practiceSecondsRemaining.value = minutes * 60
+        _isPracticeActive.value = true
+        AnalyticsTracker.logPracticeStarted(minutes)
+        startPracticeTimer()
+    }
+
+    fun cancelPractice() {
+        if (_isPracticeActive.value) {
+            val elapsed = _practiceGoalSeconds.value - _practiceSecondsRemaining.value
+            AnalyticsTracker.logPracticeCancelled(elapsed, _practiceGoalSeconds.value)
+        }
+        practiceJob?.cancel()
+        practiceJob = null
+        _isPracticeActive.value = false
+        _practiceSecondsRemaining.value = 0
+    }
+
+    fun dismissPracticeResult() {
+        _pendingPracticeResult.value = null
+    }
+
+    fun debugClearPracticeMode() {
+        billingManager.debugClearPracticeMode()
+        practiceManager.debugClear()
+        _practiceStreak.value = 0
+        _practiceTotalSessions.value = 0
+        cancelPractice()
+    }
+
+    private fun startPracticeTimer() {
+        practiceJob?.cancel()
+        practiceJob = viewModelScope.launch {
+            while (_practiceSecondsRemaining.value > 0 && _isPracticeActive.value) {
+                delay(1_000L)
+                if (_isPlaying.value && _isPracticeActive.value) {
+                    _practiceSecondsRemaining.value -= 1
+                }
+            }
+            if (_isPracticeActive.value && _practiceSecondsRemaining.value == 0) {
+                completePractice()
+            }
+        }
+    }
+
+    private fun completePractice() {
+        val goalMinutes  = _practiceGoalSeconds.value / 60
+        val newStreak    = practiceManager.recordSession()
+        val totalSessions = practiceManager.getTotalSessions()
+        _practiceStreak.value        = newStreak
+        _practiceTotalSessions.value = totalSessions
+        _isPracticeActive.value      = false
+        AnalyticsTracker.logPracticeCompleted(goalMinutes, newStreak, totalSessions)
+        _pendingPracticeResult.value = PracticeResult(goalMinutes, newStreak, totalSessions)
+    }
 
     private val _activeItemIds = MutableStateFlow(itemTracker.unlockedIds(METRO_ITEM_REGISTRY))
     val activeItemIds: StateFlow<Set<String>> = _activeItemIds.asStateFlow()
@@ -93,7 +214,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val audioManager = app.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
-    // ── Audio Focus (cleanly encapsulated) ─────────────────────────────────────
+    // ── Audio Focus ────────────────────────────────────────────────────────────
 
     private val focusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         when (focusChange) {
@@ -165,12 +286,9 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _beatEvents = MutableSharedFlow<BeatEvent>(extraBufferCapacity = 4)
     val beatEvents: SharedFlow<BeatEvent> = _beatEvents.asSharedFlow()
 
-    // Tap-tempo state
     private val tapTimes = ArrayDeque<Long>(8)
 
     init {
-        // If a premium sound was persisted but its purchase is no longer active (e.g. revoked),
-        // fall back to Classic before the engine ever sees the saved value.
         val savedType = _soundType.value
         val requiredProduct = PREMIUM_SOUND_REGISTRY.find { it.soundTypeIndex == savedType }?.productId
         if (requiredProduct != null && requiredProduct !in billingManager.purchasedSoundIds.value) {
@@ -178,8 +296,6 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             prefs.edit { putInt("sound_type", 0) }
         }
 
-        // When billing confirms an item purchase (new or restored), force-unlock it in the
-        // tracker so it appears on screen and triggers the celebration overlay.
         viewModelScope.launch {
             billingManager.purchasedItemProductIds.collect { purchasedProductIds ->
                 PURCHASABLE_ITEM_REGISTRY.forEach { def ->
@@ -207,14 +323,12 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         _pendingWhatsNew.value = whatsNewTracker.pendingKey(AppWhatsNew.ALL)
     }
 
-    /** DEV: wipe all progress counters — simulates a clean installation. */
     fun resetAllProgress() {
         itemTracker.resetAllProgress()
         _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
         _unlockQueue.value = emptyList()
     }
 
-    /** DEV: fire the celebration overlay for a specific registry item (no side effects on celebrated set). */
     fun previewUnlockCelebration(index: Int) {
         if (METRO_ITEM_REGISTRY.isEmpty()) return
         val entry = METRO_ITEM_REGISTRY[index.coerceIn(0, METRO_ITEM_REGISTRY.lastIndex)]
@@ -226,7 +340,6 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     fun checkForNewUnlocks() {
         _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
         val celebrated = itemTracker.celebratedIds()
-        // Purge: remove entries that are celebrated OR no longer unlocked (e.g. after dev reset)
         _unlockQueue.value = _unlockQueue.value.filter { it.item.id in _activeItemIds.value && it.item.id !in celebrated }
         val newEntries = METRO_ITEM_REGISTRY.filter { it.item.id in _activeItemIds.value && it.item.id !in celebrated }
         if (newEntries.isEmpty()) return
@@ -277,7 +390,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         playTimerJob?.cancel()
         playTimerJob = viewModelScope.launch {
             while (true) {
-                delay(10_000L)   // tick every 10 seconds
+                delay(10_000L)
                 itemTracker.addMetronomeSeconds(10)
                 _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
                 checkForNewUnlocks()
@@ -319,10 +432,9 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         prefs.edit { putInt("time_sig", sig) }
     }
 
-    // beat is 1-based (1...timeSig); 0 means no accent
     fun setAccentBeat(beat: Int) {
         _accentBeat.value = beat
-        engine.accentBeat = beat - 1   // 0 (None) → -1 (disabled); 1..N → 0..N-1
+        engine.accentBeat = beat - 1
         prefs.edit { putInt("accent_beat", beat) }
     }
 
@@ -368,6 +480,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
+        practiceJob?.cancel()
         stopInternal()
         abandonAudioFocus()
         billingManager.release()

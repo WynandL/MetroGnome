@@ -35,6 +35,9 @@ class MetronomeEngine {
     // Premium (index 4)
     private val bellClick  = generateBellClick(frequency = 880.0,  durationMs = 200, volume = 0.80f)
     private val bellAccent = generateBellClick(frequency = 1109.0, durationMs = 240, volume = 0.95f)
+    // Premium (index 5)
+    private val bowlClick  = generateBowlClick(frequency = 261.0,  durationMs = 220, volume = 0.80f)
+    private val bowlAccent = generateBowlClick(frequency = 330.0,  durationMs = 260, volume = 0.94f)
 
     // Mutable settings — read from audio thread, written from main thread (volatile)
     @Volatile
@@ -44,7 +47,7 @@ class MetronomeEngine {
     @Volatile
     var accentBeat: Int = 0   // 0-based beat index; -1 = no accent
     @Volatile
-    var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock, 3=warm, 4=bell (premium)
+    var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock, 3=warm, 4=bell (premium), 5=bowl (premium)
     @Volatile
     var volume: Float = 1.0f
     @Volatile
@@ -208,6 +211,7 @@ class MetronomeEngine {
             2 -> if (isAccent) woodAccent else woodClick
             3 -> if (isAccent) deepAccent else deepClick
             4 -> if (isAccent) bellAccent else bellClick
+            5 -> if (isAccent) bowlAccent else bowlClick
             else -> if (isAccent) accentClick else normalClick
         }
         val buf = ShortArray(samplesPerBeat)
@@ -229,6 +233,7 @@ class MetronomeEngine {
             2 -> woodClick
             3 -> deepClick
             4 -> bellClick
+            5 -> bowlClick
             else -> normalClick
         }
         val vol = volume.coerceIn(0f, 1f)
@@ -304,6 +309,30 @@ class MetronomeEngine {
             val f3 = sin(2.0 * PI * frequency * 5.404 * t) * (1.0 - p).pow(5.5) * 0.25
             val f4 = sin(2.0 * PI * frequency * 8.0   * t) * (1.0 - p).pow(8.0) * 0.10
             ((f1 + f2 + f3 + f4) * volume).toFloat()
+        }
+        val peak = wet.maxOf { abs(it) }
+        val scale = if (peak > 0.99f) 0.99f / peak else 1f
+        return ShortArray(numSamples) { i ->
+            (wet[i] * scale * Short.MAX_VALUE).toInt()
+                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+    }
+
+    /**
+     * Crystal singing-bowl synthesis.
+     * Three near-harmonic partials: the 2nd partial is detuned ~2.2% above the octave,
+     * producing a ~5 Hz shimmer beat between partials — the defining quality of a real bowl ring.
+     * Normal click pitched to middle C (261 Hz); accent a major third higher (330 Hz).
+     */
+    private fun generateBowlClick(frequency: Double, durationMs: Int, volume: Float): ShortArray {
+        val numSamples = sampleRate * durationMs / 1000
+        val wet = FloatArray(numSamples) { i ->
+            val t = i.toDouble() / sampleRate
+            val p = i.toDouble() / numSamples
+            val f1 = sin(2.0 * PI * frequency         * t) * (1.0 - p).pow(1.8) * 0.65
+            val f2 = sin(2.0 * PI * frequency * 2.022 * t) * (1.0 - p).pow(2.8) * 0.28
+            val f3 = sin(2.0 * PI * frequency * 3.0   * t) * (1.0 - p).pow(4.5) * 0.09
+            ((f1 + f2 + f3) * volume).toFloat()
         }
         val peak = wet.maxOf { abs(it) }
         val scale = if (peak > 0.99f) 0.99f / peak else 1f

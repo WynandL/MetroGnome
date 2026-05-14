@@ -1,47 +1,63 @@
 package com.example.metrognome.ui.screens
 
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.ModeNight
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import com.example.metrognome.ui.overlays.PracticeCompleteOverlay
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.ui.overlays.WhatsNewOverlayDispatcher
 import com.example.metrognome.ui.components.metro_items.MetroItem
@@ -56,7 +72,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.metrognome.ui.components.AdBannerView
+import kotlinx.coroutines.launch
+import com.example.metrognome.presets.BpmPreset
+import com.example.metrognome.ads.AdBannerView
 import com.example.metrognome.ui.components.GnomeCanvas
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.theme.AppColors
@@ -78,12 +96,44 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     val isMuted by vm.isMuted.collectAsStateWithLifecycle()
     val keepScreenOn by vm.keepScreenOn.collectAsStateWithLifecycle()
     val isAdFree by vm.isAdFree.collectAsStateWithLifecycle()
+    val isPresetsUnlocked by vm.isPresetsUnlocked.collectAsStateWithLifecycle()
+    val presets by vm.presets.collectAsStateWithLifecycle()
+    val presetsPriceText by vm.presetsPriceText.collectAsStateWithLifecycle()
+    val isPurchasing by vm.isPurchasing.collectAsStateWithLifecycle()
+    val isBillingConnecting by vm.isBillingConnecting.collectAsStateWithLifecycle()
+    val isPracticeModeUnlocked by vm.isPracticeModeUnlocked.collectAsStateWithLifecycle()
+    val practiceModePriceText by vm.practiceModePriceText.collectAsStateWithLifecycle()
+    val isPracticeActive by vm.isPracticeActive.collectAsStateWithLifecycle()
+    val practiceSecondsRemaining by vm.practiceSecondsRemaining.collectAsStateWithLifecycle()
+    val practiceGoalSeconds by vm.practiceGoalSeconds.collectAsStateWithLifecycle()
+    val pendingPracticeResult by vm.pendingPracticeResult.collectAsStateWithLifecycle()
+
     var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
     val pendingWhatsNew by vm.pendingWhatsNew.collectAsStateWithLifecycle()
 
-    // Refresh active items every time this tab is opened so rhythm-game unlocks
-    // (recorded by RhythmGameViewModel's own tracker) appear on the canvas immediately.
+    var tapHintShown by remember { mutableStateOf(false) }
+    var showSavePresetDialog by remember { mutableStateOf(false) }
+    var showBuyPresetsDialog by remember { mutableStateOf(false) }
+    var showBuyPracticeDialog by remember { mutableStateOf(false) }
+    var selectedPreset by remember { mutableStateOf<Pair<Int, BpmPreset>?>(null) }
+    var showPracticeDialog by remember { mutableStateOf(false) }
+
+    // Auto-close the buy dialog and open the save dialog once purchase confirms
+    LaunchedEffect(isPresetsUnlocked) {
+        if (isPresetsUnlocked && showBuyPresetsDialog) {
+            showBuyPresetsDialog = false
+            showSavePresetDialog = true
+        }
+    }
+
+    LaunchedEffect(isPracticeModeUnlocked) {
+        if (isPracticeModeUnlocked && showBuyPracticeDialog) {
+            showBuyPracticeDialog = false
+            showPracticeDialog = true
+        }
+    }
+
     LaunchedEffect(Unit) {
         vm.checkForNewUnlocks()
     }
@@ -106,7 +156,6 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             .fillMaxSize()
             .background(AppColors.background)
     ) {
-        // Beat indicator dots (top)
         BeatIndicatorRow(
             timeSig = timeSig,
             currentBeat = currentBeat,
@@ -117,7 +166,6 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
                 .padding(top = 48.dp, bottom = 4.dp)
         )
 
-        // Gnome canvas — takes all remaining space
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -134,7 +182,6 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
                 modifier = Modifier.fillMaxSize()
             )
 
-            // BPM display overlay (centered in canvas, upper area)
             BpmDisplay(
                 bpm = bpm,
                 modifier = Modifier
@@ -143,30 +190,78 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             )
         }
 
-        // Controls bar
-        ControlsBar(
+        if (isPracticeActive) {
+            PracticeProgressRow(
+                practiceSecondsRemaining = practiceSecondsRemaining,
+                practiceGoalSeconds = practiceGoalSeconds,
+                onCancelPractice = { vm.cancelPractice() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppColors.background)
+                    .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 6.dp)
+            )
+        }
+
+        BpmStepperRow(
             bpm = bpm,
             isPlaying = isPlaying,
             onBpmChange = { vm.setBpm(it) },
             onTogglePlay = { vm.togglePlay() },
-            onTapTempo = { vm.tapTempo() },
+            onTapTempo = {
+                if (!tapHintShown) {
+                    tapHintShown = true
+                    Toast.makeText(activity, "Tap again to set the tempo", Toast.LENGTH_SHORT).show()
+                }
+                vm.tapTempo()
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .background(AppColors.background)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = 16.dp, vertical = 10.dp)
         )
 
-        // Utility toggles
-        UtilityTogglesRow(
+        SecondaryControlsRow(
             isMuted = isMuted,
             keepScreenOn = keepScreenOn,
-            onToggleMute = { vm.toggleMute() },
-            onToggleKeepScreenOn = { vm.setKeepScreenOn(!keepScreenOn) },
+            isOnSavedPreset = isPresetsUnlocked && presets.any { it.bpm == bpm },
+            isPracticeActive = isPracticeActive,
+            onSavePreset = {
+                if (isPresetsUnlocked) showSavePresetDialog = true
+                else showBuyPresetsDialog = true
+            },
+            onToggleMute = {
+                vm.toggleMute()
+                val msg = if (isMuted) "Sound on" else "Muted"
+                Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
+            },
+            onToggleScreenOn = {
+                val enabling = !keepScreenOn
+                vm.setKeepScreenOn(enabling)
+                val msg = if (enabling) "Screen will stay on" else "Screen timeout on"
+                Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
+            },
+            onPractice = {
+                if (!isPracticeActive) {
+                    if (isPracticeModeUnlocked) showPracticeDialog = true
+                    else showBuyPracticeDialog = true
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .background(AppColors.background)
-                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
         )
+
+        if (isPresetsUnlocked && presets.isNotEmpty()) {
+            PresetChipsRow(
+                presets = presets,
+                onPresetClick = { index, preset -> selectedPreset = Pair(index, preset) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppColors.background)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 6.dp)
+            )
+        }
 
         if (!isAdFree) {
             AdBannerView(modifier = Modifier.fillMaxWidth())
@@ -196,7 +291,70 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
         )
     }
 
-    pendingWhatsNew?.let { key ->
+    if (showSavePresetDialog) {
+        SavePresetDialog(
+            bpm = bpm,
+            onSave = { name ->
+                vm.savePreset(name, bpm)
+                showSavePresetDialog = false
+            },
+            onDismiss = { showSavePresetDialog = false }
+        )
+    }
+
+    if (showBuyPresetsDialog) {
+        BuyPresetsDialog(
+            priceText = presetsPriceText,
+            isPurchasing = isPurchasing,
+            isBillingConnecting = isBillingConnecting,
+            onBuy = { activity?.let { vm.purchasePresets(it) } },
+            onRestore = { vm.restorePurchases() },
+            onDismiss = { showBuyPresetsDialog = false }
+        )
+    }
+
+    if (showBuyPracticeDialog) {
+        BuyPracticeDialog(
+            priceText = practiceModePriceText,
+            isPurchasing = isPurchasing,
+            isBillingConnecting = isBillingConnecting,
+            onBuy = { activity?.let { vm.purchasePracticeMode(it) } },
+            onRestore = { vm.restorePurchases() },
+            onDismiss = { showBuyPracticeDialog = false }
+        )
+    }
+
+    selectedPreset?.let { (index, preset) ->
+        PresetActionDialog(
+            preset = preset,
+            onApply = {
+                vm.setBpm(preset.bpm)
+                selectedPreset = null
+            },
+            onDelete = {
+                vm.deletePreset(index)
+                selectedPreset = null
+            },
+            onDismiss = { selectedPreset = null }
+        )
+    }
+
+    if (showPracticeDialog) {
+        PracticeDurationDialog(
+            onStart = { minutes ->
+                showPracticeDialog = false
+                vm.startPractice(minutes)
+            },
+            onDismiss = { showPracticeDialog = false }
+        )
+    }
+
+    pendingPracticeResult?.let { result ->
+        PracticeCompleteOverlay(
+            result = result,
+            onDismiss = { vm.dismissPracticeResult() }
+        )
+    } ?: pendingWhatsNew?.let { key ->
         WhatsNewOverlayDispatcher(
             versionKey = key,
             onDismiss = { vm.markWhatsNewShown(key) },
@@ -210,12 +368,512 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     } // close outer Box
 }
 
+// ── Bottom controls ───────────────────────────────────────────────────────────
+
+@Composable
+private fun BpmStepperRow(
+    bpm: Int,
+    isPlaying: Boolean,
+    onBpmChange: (Int) -> Unit,
+    onTogglePlay: () -> Unit,
+    onTapTempo: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        BpmButton("-5", Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm - 5) }
+        BpmButton("−",  Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm - 1) }
+        PlayPauseButton(isPlaying = isPlaying, onClick = onTogglePlay)
+        BpmButton("+",  Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm + 1) }
+        BpmButton("+5", Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm + 5) }
+        Surface(
+            onClick = onTapTempo,
+            shape = RoundedCornerShape(12.dp),
+            color = AppColors.primaryPurple,
+            modifier = Modifier.weight(1f).height(44.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text("TAP", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SecondaryControlsRow(
+    isMuted: Boolean,
+    keepScreenOn: Boolean,
+    isOnSavedPreset: Boolean,
+    isPracticeActive: Boolean,
+    onSavePreset: () -> Unit,
+    onToggleMute: () -> Unit,
+    onToggleScreenOn: () -> Unit,
+    onPractice: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        CompactIconChip(
+            icon = Icons.Filled.Favorite,
+            contentDescription = "Save BPM preset",
+            active = isOnSavedPreset,
+            accentColor = AppColors.gold,
+            onClick = onSavePreset
+        )
+        CompactIconChip(
+            icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+            contentDescription = if (isMuted) "Unmute" else "Mute",
+            active = isMuted,
+            onClick = onToggleMute
+        )
+        CompactIconChip(
+            icon = if (keepScreenOn) Icons.Filled.LightMode else Icons.Filled.ModeNight,
+            contentDescription = "Keep screen on",
+            active = keepScreenOn,
+            onClick = onToggleScreenOn
+        )
+        CompactIconChip(
+            icon = Icons.Filled.Timer,
+            contentDescription = "Practice session",
+            active = isPracticeActive,
+            accentColor = AppColors.primaryPurple,
+            onClick = onPractice
+        )
+    }
+}
+
+@Composable
+private fun CompactIconChip(
+    icon: ImageVector,
+    contentDescription: String,
+    active: Boolean,
+    onClick: () -> Unit,
+    accentColor: Color = AppColors.gold
+) {
+    val shape = RoundedCornerShape(12.dp)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(40.dp)
+            .clip(shape)
+            .background(if (active) AppColors.darkPurple else AppColors.surface)
+            .border(1.dp, if (active) accentColor else Color(0x33FFFFFF), shape)
+            .clickable(onClick = onClick)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (active) accentColor else Color(0x80FFFFFF),
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+@Composable
+private fun PresetChipsRow(
+    presets: List<BpmPreset>,
+    onPresetClick: (index: Int, preset: BpmPreset) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        presets.forEachIndexed { index, preset ->
+            Surface(
+                onClick = { onPresetClick(index, preset) },
+                color = AppColors.surfaceActive,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.height(30.dp)
+            ) {
+                Box(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(preset.name, color = Color.White, fontSize = 12.sp)
+                }
+            }
+        }
+    }
+}
+
+// ── Practice ──────────────────────────────────────────────────────────────────
+
+@Composable
+private fun PracticeProgressRow(
+    practiceSecondsRemaining: Int,
+    practiceGoalSeconds: Int,
+    onCancelPractice: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(12.dp)
+    val elapsed  = practiceGoalSeconds - practiceSecondsRemaining
+    val progress = (elapsed.toFloat() / practiceGoalSeconds.coerceAtLeast(1)).coerceIn(0f, 1f)
+    Box(
+        modifier = modifier
+            .height(44.dp)
+            .clip(shape)
+            .background(AppColors.surface)
+            .border(1.dp, AppColors.primaryPurple.copy(alpha = 0.5f), shape)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress)
+                .fillMaxHeight()
+                .background(AppColors.primaryPurple.copy(alpha = 0.20f))
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "⏱  ${formatPracticeTime(practiceSecondsRemaining)}",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = "Cancel practice",
+                tint = AppColors.textMuted,
+                modifier = Modifier
+                    .size(18.dp)
+                    .clickable(onClick = onCancelPractice)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit) {
+    var selected by remember { mutableIntStateOf(10) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = AppColors.surface,
+        title = { Text("Start Practice Session", color = AppColors.gold, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text(
+                    "How long would you like to practice?",
+                    color = AppColors.textSecondary,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(bottom = 14.dp)
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(10, 15, 20, 30).forEach { mins ->
+                        Surface(
+                            onClick = { selected = mins },
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (selected == mins) AppColors.primaryPurple else AppColors.surfaceDim,
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "${mins}m",
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (selected == mins) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onStart(selected) }) {
+                Text("Start", color = AppColors.gold, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = AppColors.textMuted)
+            }
+        }
+    )
+}
+
+private fun formatPracticeTime(seconds: Int): String =
+    "%d:%02d".format(seconds / 60, seconds % 60)
+
+// ── Preset dialogs ────────────────────────────────────────────────────────────
+
+@Composable
+private fun SavePresetDialog(bpm: Int, onSave: (String) -> Unit, onDismiss: () -> Unit) {
+    var name by remember { mutableStateOf("♩ $bpm") }
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = AppColors.surfaceDeep,
+            shadowElevation = 24.dp,
+            modifier = Modifier
+                .padding(horizontal = 20.dp)
+                .widthIn(min = 280.dp, max = 380.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(Modifier.weight(1f))
+                    DialogCloseButton(onClick = onDismiss)
+                }
+
+                Spacer(Modifier.height(2.dp))
+
+                Text(
+                    text          = "Save Preset",
+                    color         = AppColors.gold,
+                    fontSize      = 24.sp,
+                    fontWeight    = FontWeight.ExtraBold,
+                    letterSpacing = (-0.5).sp,
+                )
+
+                Spacer(Modifier.height(14.dp))
+
+                Text(
+                    text       = "$bpm BPM",
+                    color      = Color.White,
+                    fontSize   = 44.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-1).sp,
+                )
+
+                Spacer(Modifier.height(18.dp))
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor   = AppColors.gold,
+                        unfocusedBorderColor = AppColors.surfaceVariant,
+                        focusedTextColor     = Color.White,
+                        unfocusedTextColor   = AppColors.textSecondary,
+                        cursorColor          = AppColors.gold,
+                    ),
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                Surface(
+                    onClick  = { onSave(name) },
+                    shape    = RoundedCornerShape(16.dp),
+                    color    = Color.Transparent,
+                    border   = BorderStroke(1.dp, AppColors.gold),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text       = "Save Preset",
+                            color      = AppColors.gold,
+                            fontSize   = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.3.sp,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text     = "Cancel",
+                    color    = AppColors.textDim,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .clickable(onClick = onDismiss)
+                        .padding(vertical = 6.dp, horizontal = 12.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DialogCloseButton(onClick: () -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(34.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+    ) {
+        Icon(
+            imageVector        = Icons.Filled.Close,
+            contentDescription = "Close",
+            tint               = AppColors.textMuted,
+            modifier           = Modifier.size(18.dp),
+        )
+    }
+}
+
+@Composable
+private fun BuyPresetsDialog(
+    priceText: String?,
+    isPurchasing: Boolean,
+    isBillingConnecting: Boolean,
+    onBuy: () -> Unit,
+    onRestore: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    com.example.metrognome.ui.components.PremiumPurchaseDialog(
+        title              = "BPM Presets",
+        description        = "Save your song tempos and switch between them in one tap — up to 10 presets, yours forever.",
+        actionLabel        = "Unlock Presets",
+        priceText          = priceText,
+        isPurchasing       = isPurchasing,
+        isBillingConnecting = isBillingConnecting,
+        isAvailable        = priceText != null,
+        onPurchase         = onBuy,
+        onRestore          = onRestore,
+        onDismiss          = onDismiss,
+    )
+}
+
+@Composable
+private fun BuyPracticeDialog(
+    priceText: String?,
+    isPurchasing: Boolean,
+    isBillingConnecting: Boolean,
+    onBuy: () -> Unit,
+    onRestore: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    com.example.metrognome.ui.components.PremiumPurchaseDialog(
+        title              = "Practice Sessions",
+        description        = "Set a daily goal, track your streak, and celebrate every finished session. Dedicated practitioners will unlock exclusive items over time.",
+        actionLabel        = "Unlock Practice",
+        priceText          = priceText,
+        isPurchasing       = isPurchasing,
+        isBillingConnecting = isBillingConnecting,
+        isAvailable        = priceText != null,
+        onPurchase         = onBuy,
+        onRestore          = onRestore,
+        onDismiss          = onDismiss,
+    )
+}
+
+@Composable
+private fun PresetActionDialog(
+    preset: BpmPreset,
+    onApply: () -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = AppColors.surfaceDeep,
+            shadowElevation = 24.dp,
+            modifier = Modifier
+                .padding(horizontal = 20.dp)
+                .widthIn(min = 280.dp, max = 380.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(Modifier.weight(1f))
+                    DialogCloseButton(onClick = onDismiss)
+                }
+
+                Spacer(Modifier.height(2.dp))
+
+                Text(
+                    text          = preset.name,
+                    color         = AppColors.gold,
+                    fontSize      = 24.sp,
+                    fontWeight    = FontWeight.ExtraBold,
+                    letterSpacing = (-0.5).sp,
+                    textAlign     = TextAlign.Center,
+                )
+
+                Spacer(Modifier.height(14.dp))
+
+                Text(
+                    text       = "${preset.bpm}",
+                    color      = Color.White,
+                    fontSize   = 56.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-2).sp,
+                )
+                Text(
+                    text     = "BPM",
+                    color    = AppColors.textMuted,
+                    fontSize = 12.sp,
+                    letterSpacing = 2.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+
+                Spacer(Modifier.height(24.dp))
+
+                Surface(
+                    onClick  = onApply,
+                    shape    = RoundedCornerShape(16.dp),
+                    color    = Color.Transparent,
+                    border   = BorderStroke(1.dp, AppColors.gold),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text       = "Apply",
+                            color      = AppColors.gold,
+                            fontSize   = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.3.sp,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text     = "Delete preset",
+                    color    = AppColors.danger.copy(alpha = 0.75f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .clickable(onClick = onDelete)
+                        .padding(vertical = 6.dp, horizontal = 12.dp),
+                )
+            }
+        }
+    }
+}
+
+// ── Beat indicator ────────────────────────────────────────────────────────────
+
 @Composable
 private fun BeatIndicatorRow(
     timeSig: Int,
     currentBeat: Int,
     isPlaying: Boolean,
-    accentBeat: Int,   // 1-based; 0 = no accent
+    accentBeat: Int,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -263,8 +921,25 @@ internal fun tempoLabel(bpm: Int): String = when {
 
 @Composable
 private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
+    val scalePulse = remember { Animatable(1f) }
+    val glowPulse  = remember { Animatable(0f) }
+
+    LaunchedEffect(bpm) {
+        launch {
+            scalePulse.snapTo(1.065f)
+            scalePulse.animateTo(
+                1f,
+                spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioMediumBouncy)
+            )
+        }
+        launch {
+            glowPulse.snapTo(1f)
+            glowPulse.animateTo(0f, tween(450))
+        }
+    }
+
     Surface(
-        modifier = modifier,
+        modifier = modifier.scale(scalePulse.value),
         color = Color(0x99000000),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -279,7 +954,7 @@ private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
                     fontWeight = FontWeight.Black,
                     letterSpacing = (-1).sp
                 ),
-                color = Color.White,
+                color = lerp(Color.White, AppColors.gold, glowPulse.value),
                 textAlign = TextAlign.Center
             )
             Text(
@@ -295,58 +970,14 @@ private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun ControlsBar(
-    bpm: Int,
-    isPlaying: Boolean,
-    onBpmChange: (Int) -> Unit,
-    onTogglePlay: () -> Unit,
-    onTapTempo: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        // BPM stepper row
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            // Fast decrease (−5)
-            BpmButton("-5") { onBpmChange(bpm - 5) }
-            Spacer(Modifier.width(6.dp))
-            // Fine decrease (−1)
-            BpmButton("−") { onBpmChange(bpm - 1) }
-            Spacer(Modifier.width(12.dp))
-            // Play / pause
-            PlayPauseButton(isPlaying = isPlaying, onClick = onTogglePlay)
-            Spacer(Modifier.width(12.dp))
-            // Fine increase (+1)
-            BpmButton("+") { onBpmChange(bpm + 1) }
-            Spacer(Modifier.width(6.dp))
-            // Fast increase (+5)
-            BpmButton("+5") { onBpmChange(bpm + 5) }
-        }
-
-        Spacer(Modifier.height(10.dp))
-
-        // Tap tempo button
-        FilledTonalButton(
-            onClick = onTapTempo,
-            modifier = Modifier.fillMaxWidth(0.6f),
-            shape = RoundedCornerShape(22.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            Text("TAP TO SET", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-        }
-    }
-}
 
 @Composable
-private fun BpmButton(label: String, onClick: () -> Unit) {
+private fun BpmButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
-        modifier = Modifier.size(width = 52.dp, height = 44.dp)
+        modifier = modifier
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -377,76 +1008,6 @@ private fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun UtilityTogglesRow(
-    isMuted: Boolean,
-    keepScreenOn: Boolean,
-    onToggleMute: () -> Unit,
-    onToggleKeepScreenOn: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        UtilityToggle(
-            icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-            label = if (isMuted) "Unmute" else "Mute",
-            active = isMuted,
-            onClick = onToggleMute
-        )
-        UtilityToggle(
-            icon = if (keepScreenOn) Icons.Filled.LightMode else Icons.Filled.ModeNight,
-            label = "Screen On",
-            active = keepScreenOn,
-            onClick = onToggleKeepScreenOn
-        )
-    }
-}
-
-@Composable
-private fun UtilityToggle(
-    icon: ImageVector,
-    label: String,
-    active: Boolean,
-    onClick: () -> Unit
-) {
-    val shape = RoundedCornerShape(20.dp)
-    val borderColor = if (active) AppColors.gold else Color(0x33FFFFFF)
-    val bgColor = if (active) AppColors.darkPurple else AppColors.surface
-    val contentColor = if (active) AppColors.gold else Color(0x80FFFFFF)
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .height(34.dp)
-            .clip(shape)
-            .background(bgColor)
-            .border(1.dp, borderColor, shape)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = contentColor,
-                modifier = Modifier.size(15.dp)
-            )
-            Text(
-                text = label,
-                color = contentColor,
-                fontSize = 12.sp,
-                fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
-                letterSpacing = 0.3.sp
-            )
-        }
-    }
-}
 
 // ── Previews ──────────────────────────────────────────────────────────────────
 
@@ -473,12 +1034,21 @@ private fun PlayPauseButtonsPreview() {
 
 @Preview(showBackground = true, backgroundColor = 0xFF1A1040, widthDp = 360)
 @Composable
-private fun ControlsBarPreview() {
-    ControlsBar(
-        bpm = 120,
-        isPlaying = false,
-        onBpmChange = {},
-        onTogglePlay = {},
-        onTapTempo = {}
+private fun BpmStepperRowPreview() {
+    BpmStepperRow(bpm = 120, isPlaying = false, onBpmChange = {}, onTogglePlay = {}, onTapTempo = {})
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF1A1040, widthDp = 360)
+@Composable
+private fun SecondaryControlsRowPreview() {
+    SecondaryControlsRow(
+        isMuted = false,
+        keepScreenOn = true,
+        isOnSavedPreset = false,
+        isPracticeActive = false,
+        onSavePreset = {},
+        onToggleMute = {},
+        onToggleScreenOn = {},
+        onPractice = {}
     )
 }

@@ -24,8 +24,12 @@ import com.example.metrognome.ui.screens.SettingsScreen
 import com.example.metrognome.ui.theme.MetroGnomeTheme
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.viewmodel.RhythmGameViewModel
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.metrognome.ads.InterstitialAdManager
 
 enum class AppTab(val label: String, val icon: ImageVector) {
     GNOME("Gnome", Icons.Filled.MusicNote),
@@ -53,6 +57,10 @@ fun MetroGnomeApp() {
     val rhythmVm: RhythmGameViewModel = viewModel()
     val isAdFree by metronomeVm.isAdFree.collectAsStateWithLifecycle()
 
+    val context = LocalContext.current
+    val activity = LocalActivity.current
+    val interstitialManager = remember { InterstitialAdManager(context).also { it.preload() } }
+
     NavigationSuiteScaffold(
         navigationSuiteItems = {
             AppTab.entries.forEach { tab ->
@@ -77,6 +85,13 @@ fun MetroGnomeApp() {
                 isMetronomePlaying = metronomeVm.isPlaying.collectAsState().value,
                 onStopMetronome = { metronomeVm.stopPlayback() },
                 isAdFree = isAdFree,
+                onBeforeResultDismiss = { onDone ->
+                    if (isAdFree) {
+                        onDone()
+                    } else {
+                        activity?.let { interstitialManager.showIfReady(it, onDone) } ?: onDone()
+                    }
+                }
             )
 
             AppTab.SETTINGS -> SettingsScreen(vm = metronomeVm)
