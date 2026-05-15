@@ -38,7 +38,9 @@
       "Bash(git rm *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\" -Recurse -Directory)",
       "Bash(Sort-Object)",
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "Bash(./gradlew assembleDebug -q)",
+      "Bash(git mv *)"
     ]
   }
 }
