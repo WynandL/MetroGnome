@@ -17,8 +17,10 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,6 +35,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -61,8 +64,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import com.example.metrognome.ui.overlays.PracticeCompleteOverlay
-import com.example.metrognome.ui.overlays.PresetDeleteDialog
-import com.example.metrognome.ui.overlays.SavePresetDialog
+import com.example.metrognome.ui.dialogs.PresetDeleteDialog
+import com.example.metrognome.ui.dialogs.SavePresetDialog
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.ui.overlays.WhatsNewOverlayDispatcher
 import com.example.metrognome.ui.components.metro_items.MetroItem
@@ -74,14 +77,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import com.example.metrognome.presets.BpmPreset
 import com.example.metrognome.ads.AdBannerView
+import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.components.GnomeCanvas
 import com.example.metrognome.ui.components.PresetChipsRow
+import com.example.metrognome.ui.dialogs.ShowcaseFrame
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
@@ -732,59 +739,134 @@ private fun heartbeatCurve(t: Float): Float {
 @Composable
 private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit) {
     var selected by remember { mutableIntStateOf(10) }
-    AlertDialog(
+
+    val cardScale = remember { Animatable(0.2f) }
+    LaunchedEffect(Unit) {
+        cardScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+        )
+    }
+
+    Dialog(
         onDismissRequest = onDismiss,
-        containerColor = AppColors.surface,
-        title = { Text("Start Practice Session", color = AppColors.gold, fontWeight = FontWeight.Bold) },
-        text = {
-            Column {
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = AppColors.surfaceDeep,
+            shadowElevation = 24.dp,
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .widthIn(min = 280.dp, max = 360.dp)
+                .graphicsLayer {
+                    scaleX = cardScale.value
+                    scaleY = cardScale.value
+                    alpha = ((cardScale.value - 0.2f) / 0.8f).coerceIn(0f, 1f)
+                },
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(Modifier.weight(1f))
+                    DialogCloseButton(onClick = onDismiss)
+                }
+
                 Text(
-                    "How long would you like to practice?",
-                    color = AppColors.textSecondary,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(bottom = 14.dp)
+                    text = "Practice Session",
+                    color = AppColors.gold,
+                    fontSize = 23.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-0.5).sp,
                 )
+
+                Spacer(Modifier.height(12.dp))
+
+                // Hero: the selected duration, mirroring Save Preset's big BPM number.
+                Text(
+                    text = "$selected min",
+                    color = Color.White,
+                    fontSize = 44.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-1).sp,
+                )
+
+                Spacer(Modifier.height(16.dp))
+
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(10, 15, 20, 30).forEach { mins ->
+                        val isSelected = selected == mins
                         Surface(
                             onClick = { selected = mins },
                             shape = RoundedCornerShape(20.dp),
-                            color = if (selected == mins) AppColors.primaryPurple else AppColors.surfaceDim,
-                            modifier = Modifier.height(34.dp)
+                            color = if (isSelected) AppColors.primaryPurple else AppColors.surfaceDim,
+                            border = if (isSelected) BorderStroke(1.dp, AppColors.gold) else null,
+                            modifier = Modifier.height(38.dp)
                         ) {
                             Box(
-                                modifier = Modifier.padding(horizontal = 12.dp),
+                                modifier = Modifier.padding(horizontal = 14.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     "${mins}m",
                                     color = Color.White,
                                     fontSize = 13.sp,
-                                    fontWeight = if (selected == mins) FontWeight.Bold else FontWeight.Normal
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
                         }
                     }
                 }
+
+                Spacer(Modifier.height(14.dp))
+
                 Text(
-                    "✨ Time spent practicing unlocks new gnome items",
+                    text = "✨ Time spent practicing unlocks new gnome items",
                     color = AppColors.gold.copy(alpha = 0.85f),
                     fontSize = 11.sp,
-                    modifier = Modifier.padding(top = 14.dp)
+                    textAlign = TextAlign.Center,
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                Surface(
+                    onClick = { onStart(selected) },
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.Transparent,
+                    border = BorderStroke(1.dp, AppColors.gold),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Start Practice",
+                            color = AppColors.gold,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.3.sp,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text = "Cancel",
+                    color = AppColors.textDim,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .clickable(onClick = onDismiss)
+                        .padding(vertical = 6.dp, horizontal = 12.dp),
                 )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = { onStart(selected) }) {
-                Text("Start", color = AppColors.gold, fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = AppColors.textMuted)
-            }
         }
-    )
+    }
 }
 
 private fun formatPracticeTime(seconds: Int): String =
@@ -799,9 +881,9 @@ private fun BuyPresetsDialog(
     onRestore: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    com.example.metrognome.ui.components.PremiumPurchaseDialog(
+    com.example.metrognome.ui.dialogs.PremiumPurchaseDialog(
         title              = "BPM Presets",
-        description        = "Save your song tempos and switch between them in one tap — up to 10 presets, yours forever.",
+        description        = "Stop dialing in the same tempos over and over. Save them once, recall them instantly.",
         actionLabel        = "Unlock Presets",
         priceText          = priceText,
         isPurchasing       = isPurchasing,
@@ -810,6 +892,29 @@ private fun BuyPresetsDialog(
         onPurchase         = onBuy,
         onRestore          = onRestore,
         onDismiss          = onDismiss,
+        highlights         = listOf(
+            "Save up to 10 song tempos",
+            "Switch tempo in a single tap",
+            "One-time unlock - yours forever",
+        ),
+        previewContent     = {
+            ShowcaseFrame(caption = "ONE-TAP TEMPO SWITCHING") {
+                PresetChipsRow(
+                    presets = remember {
+                        listOf(
+                            BpmPreset("♩ Ballad", 72),
+                            BpmPreset("Verse", 110),
+                            BpmPreset("Chorus", 140),
+                            BpmPreset("Guitar Solo", 168),
+                        )
+                    },
+                    currentBpm = 110,
+                    showLongPressHint = false,
+                    onPresetTap = {},
+                    onPresetLongPress = { _, _ -> },
+                )
+            }
+        },
     )
 }
 
@@ -822,9 +927,9 @@ private fun BuyPracticeDialog(
     onRestore: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    com.example.metrognome.ui.components.PremiumPurchaseDialog(
+    com.example.metrognome.ui.dialogs.PremiumPurchaseDialog(
         title              = "Practice Sessions",
-        description        = "Set a daily goal, track your streak, and celebrate every finished session. Dedicated practitioners will unlock exclusive items over time.",
+        description        = "Turn loose noodling into real, measurable progress - one focused session at a time.",
         actionLabel        = "Unlock Practice",
         priceText          = priceText,
         isPurchasing       = isPurchasing,
@@ -833,6 +938,22 @@ private fun BuyPracticeDialog(
         onPurchase         = onBuy,
         onRestore          = onRestore,
         onDismiss          = onDismiss,
+        highlights         = listOf(
+            "Set a daily practice goal",
+            "Track your day-by-day streak",
+            "Every finished session celebrated",
+            "Practice unlocks exclusive gnome items",
+        ),
+        previewContent     = {
+            ShowcaseFrame(caption = "YOUR LIVE PRACTICE TIMER") {
+                PracticeProgressRow(
+                    practiceSecondsRemaining = 150,
+                    practiceGoalSeconds      = 600,
+                    onCancelPractice         = {},
+                    modifier                 = Modifier.fillMaxWidth(),
+                )
+            }
+        },
     )
 }
 

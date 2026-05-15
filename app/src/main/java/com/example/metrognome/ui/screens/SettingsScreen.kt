@@ -1,5 +1,11 @@
 package com.example.metrognome.ui.screens
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,10 +16,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -38,6 +49,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
 import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -57,6 +69,7 @@ import com.example.metrognome.billing.PurchasableItemDef
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.UnlockCondition
 import com.example.metrognome.ui.components.OwnedBadge
+import com.example.metrognome.ui.dialogs.ShowcaseFrame
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import kotlin.math.roundToInt
@@ -647,7 +660,7 @@ private fun PurchasableItemDialog(
     onRestore: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    com.example.metrognome.ui.components.PremiumPurchaseDialog(
+    com.example.metrognome.ui.dialogs.PremiumPurchaseDialog(
         title              = def.displayName,
         description        = def.description,
         actionLabel        = "Get ${def.displayName}",
@@ -675,7 +688,7 @@ private fun PremiumSoundDialog(
     onRestore: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    com.example.metrognome.ui.components.PremiumPurchaseDialog(
+    com.example.metrognome.ui.dialogs.PremiumPurchaseDialog(
         title              = def.displayName,
         description        = def.description,
         actionLabel        = "Unlock ${def.displayName}",
@@ -686,13 +699,69 @@ private fun PremiumSoundDialog(
         onPurchase         = onPurchase,
         onRestore          = onRestore,
         onDismiss          = onDismiss,
+        previewContent     = { SoundShowcase(def.displayName) },
         secondaryButton    = {
-            com.example.metrognome.ui.components.PreviewActionButton(
+            com.example.metrognome.ui.dialogs.PreviewActionButton(
                 label   = "▶  Preview (4 beats)",
                 onClick = onPreview,
             )
         },
     )
+}
+
+/**
+ * Animated showcase for a premium sound: a music note radiating soft gold
+ * rings outward, suggesting a clear, resonant strike. The audible Preview
+ * button does the real selling — this gives the dialog a living focal point.
+ */
+@Composable
+private fun SoundShowcase(soundName: String) {
+    ShowcaseFrame(caption = "PREMIUM SOUND") {
+        val pulse by rememberInfiniteTransition(label = "soundPulse")
+            .animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(2400, easing = LinearEasing)),
+                label = "soundPulseT",
+            )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(contentAlignment = Alignment.Center) {
+                Canvas(modifier = Modifier.size(132.dp)) {
+                    val ringCount = 3
+                    for (i in 0 until ringCount) {
+                        val phase = (pulse + i.toFloat() / ringCount) % 1f
+                        val radius = size.minDimension * (0.16f + phase * 0.34f)
+                        drawCircle(
+                            color = AppColors.gold.copy(alpha = (1f - phase) * 0.55f),
+                            radius = radius,
+                            center = center,
+                            style = Stroke(width = 2.2f),
+                        )
+                    }
+                }
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(54.dp)
+                        .background(AppColors.gold.copy(alpha = 0.14f), CircleShape),
+                ) {
+                    Icon(
+                        imageVector        = Icons.Filled.MusicNote,
+                        contentDescription = null,
+                        tint               = AppColors.gold,
+                        modifier           = Modifier.size(30.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text       = soundName,
+                color      = Color.White,
+                fontSize   = 15.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
 }
 
 @Composable

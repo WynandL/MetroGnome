@@ -1,6 +1,10 @@
-package com.example.metrognome.ui.overlays
+package com.example.metrognome.ui.dialogs
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,15 +12,24 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -29,6 +42,9 @@ import com.example.metrognome.ui.theme.AppColors
 /**
  * Long-press confirmation: "Delete this preset?" with destructive Delete and neutral Cancel.
  * Mirrors the iOS-style "delete app" flow — short, focused, irreversible.
+ *
+ * Springs in with a bounce and leads with a danger-tinted trash icon so the
+ * destructive intent reads instantly.
  */
 @Composable
 fun PresetDeleteDialog(
@@ -36,6 +52,17 @@ fun PresetDeleteDialog(
     onConfirmDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val cardScale = remember { Animatable(0.2f) }
+    LaunchedEffect(Unit) {
+        cardScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+        )
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -46,16 +73,37 @@ fun PresetDeleteDialog(
             shadowElevation = 24.dp,
             modifier = Modifier
                 .padding(horizontal = 24.dp)
-                .widthIn(min = 260.dp, max = 340.dp),
+                .widthIn(min = 260.dp, max = 340.dp)
+                .graphicsLayer {
+                    scaleX = cardScale.value
+                    scaleY = cardScale.value
+                    alpha = ((cardScale.value - 0.2f) / 0.8f).coerceIn(0f, 1f)
+                },
         ) {
             Column(
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(AppColors.danger.copy(alpha = 0.15f), CircleShape),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = null,
+                        tint = AppColors.danger,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+
+                Spacer(Modifier.height(14.dp))
+
                 Text(
                     text = "Delete preset?",
                     color = Color.White,
-                    fontSize = 17.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                 )

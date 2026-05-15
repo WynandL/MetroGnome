@@ -1,4 +1,4 @@
-package com.example.metrognome.ui.components
+package com.example.metrognome.ui.dialogs
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box

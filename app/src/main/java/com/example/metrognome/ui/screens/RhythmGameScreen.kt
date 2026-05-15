@@ -8,12 +8,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,7 +41,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.StopCircle
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -48,7 +51,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,8 +69,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -209,28 +214,109 @@ private fun IdlePanel(
     var showTolerance by remember { mutableStateOf(false) }
 
     if (pendingStart.value != null) {
-        AlertDialog(
+        val cardScale = remember { Animatable(0.2f) }
+        LaunchedEffect(Unit) {
+            cardScale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow,
+                ),
+            )
+        }
+        Dialog(
             onDismissRequest = { pendingStart.value = null },
-            title = { Text("Metronome is running") },
-            text = { Text("Stop it before starting the game, or let it keep playing in the background?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    onStopMetronome()
-                    pendingStart.value?.invoke()
-                    pendingStart.value = null
-                }) {
-                    Text("Stop & Play")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    pendingStart.value?.invoke()
-                    pendingStart.value = null
-                }) {
-                    Text("Keep Playing")
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = AppColors.surfaceDeep,
+                shadowElevation = 24.dp,
+                modifier = Modifier
+                    .padding(horizontal = 24.dp)
+                    .widthIn(min = 280.dp, max = 360.dp)
+                    .graphicsLayer {
+                        scaleX = cardScale.value
+                        scaleY = cardScale.value
+                        alpha = ((cardScale.value - 0.2f) / 0.8f).coerceIn(0f, 1f)
+                    },
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "Metronome is running",
+                        color = AppColors.gold,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.3).sp,
+                        textAlign = TextAlign.Center,
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Text(
+                        text = "Stop it before starting the game, or let it keep playing in the background?",
+                        color = AppColors.textSecondary,
+                        fontSize = 13.sp,
+                        lineHeight = 19.sp,
+                        textAlign = TextAlign.Center,
+                    )
+
+                    Spacer(Modifier.height(22.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Surface(
+                            onClick = {
+                                pendingStart.value?.invoke()
+                                pendingStart.value = null
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color.Transparent,
+                            border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "Keep Playing",
+                                    color = AppColors.textSecondary,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.width(10.dp))
+
+                        Surface(
+                            onClick = {
+                                onStopMetronome()
+                                pendingStart.value?.invoke()
+                                pendingStart.value = null
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            color = AppColors.gold.copy(alpha = 0.16f),
+                            border = BorderStroke(1.dp, AppColors.gold),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "Stop & Play",
+                                    color = AppColors.gold,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        )
+        }
     }
 
     Column(
