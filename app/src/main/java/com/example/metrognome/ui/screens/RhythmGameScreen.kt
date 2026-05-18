@@ -41,10 +41,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.StopCircle
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -359,9 +356,10 @@ private fun IdlePanel(
         // ── Timing tolerance ─────────────────────────────────────────────────
         Surface(
             onClick = { showTolerance = !showTolerance },
-            color = Color(0x221A1A3A),
+            color = AppColors.surface,
             shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
+            border = BorderStroke(1.dp, AppColors.surfaceVariant),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -386,9 +384,10 @@ private fun IdlePanel(
         if (showTolerance) {
             Spacer(Modifier.height(6.dp))
             Surface(
-                color = Color(0x221A1A3A),
+                color = AppColors.surface,
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
+                border = BorderStroke(1.dp, AppColors.surfaceVariant),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     val perfMs = (50 * tolerance).toInt()
@@ -429,13 +428,8 @@ private fun IdlePanel(
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = if (useMic) AppColors.surfaceActive else AppColors.surfaceDim,
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(
-                    width = 1.5.dp,
-                    color = if (useMic) AppColors.gold else AppColors.borderMuted,
-                    shape = RoundedCornerShape(16.dp)
-                )
+            border = BorderStroke(1.5.dp, if (useMic) AppColors.gold else AppColors.borderMuted),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
@@ -449,7 +443,7 @@ private fun IdlePanel(
                     Icon(
                         imageVector = Icons.Filled.Mic,
                         contentDescription = null,
-                        tint = if (useMic) AppColors.gold else AppColors.textDim,
+                        tint = AppColors.gold,
                         modifier = Modifier
                             .size(36.dp)
                             .padding(end = 14.dp)
@@ -491,8 +485,11 @@ private fun IdlePanel(
 @Composable
 private fun DifficultyCard(difficulty: Difficulty, bestScore: Int, onClick: () -> Unit) {
     Surface(
-        onClick = onClick, shape = RoundedCornerShape(16.dp),
-        color = AppColors.surfaceDim, modifier = Modifier.fillMaxWidth()
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = AppColors.surfaceDim,
+        border = BorderStroke(1.dp, AppColors.surfaceVariant),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
@@ -654,7 +651,7 @@ private fun PlayingPanel(
             Spacer(Modifier.height(4.dp))
 
             // TAP button
-            Button(
+            Surface(
                 onClick = {
                     vm.onScreenTap()
                     scope.launch {
@@ -666,41 +663,53 @@ private fun PlayingPanel(
                     .size(110.dp)
                     .scale(tapScale.value),
                 shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple)
+                color = AppColors.primaryPurple,
+                border = BorderStroke(2.dp, AppColors.mediumPurple),
             ) {
-                Text(
-                    "TAP",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    Text(
+                        "TAP",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                    )
+                }
             }
 
             Spacer(Modifier.height(8.dp))
 
-            OutlinedButton(
+            Surface(
                 onClick = { vm.stopGame() },
+                shape = RoundedCornerShape(23.dp),
+                color = Color.Transparent,
+                border = BorderStroke(1.dp, AppColors.stopRedBorder),
                 modifier = Modifier
                     .fillMaxWidth(0.68f)
                     .height(46.dp),
-                shape = RoundedCornerShape(23.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = AppColors.stopRed
-                ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.stopRedBorder)
             ) {
-                Icon(
-                    imageVector = Icons.Filled.StopCircle,
-                    contentDescription = "Stop game",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "STOP GAME",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    letterSpacing = 1.5.sp
-                )
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.StopCircle,
+                        contentDescription = "Stop game",
+                        tint = AppColors.stopRed,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "STOP GAME",
+                        color = AppColors.stopRed,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        letterSpacing = 1.5.sp,
+                    )
+                }
             }
 
             Spacer(Modifier.height(10.dp))
@@ -1080,7 +1089,8 @@ private fun ResultPanel(
         Surface(
             color = AppColors.surfaceDim,
             shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth()
+            border = BorderStroke(1.dp, AppColors.surfaceVariant),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 ResultRow("Perfect", "${result.perfects}", AppColors.gold)
@@ -1091,24 +1101,33 @@ private fun ResultPanel(
             }
         }
         Spacer(Modifier.height(22.dp))
-        Button(
+        Surface(
             onClick = onDismiss,
-            colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
             shape = RoundedCornerShape(16.dp),
+            color = AppColors.primaryPurple,
+            border = BorderStroke(1.dp, AppColors.mediumPurple),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp)
-        ) { Text("PLAY AGAIN", fontWeight = FontWeight.Bold, letterSpacing = 2.sp) }
+                .height(52.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Text("PLAY AGAIN", color = Color.White, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+            }
+        }
         Spacer(Modifier.height(10.dp))
-        OutlinedButton(
+        Surface(
             onClick = onDismiss,
             shape = RoundedCornerShape(16.dp),
+            color = Color.Transparent,
+            border = BorderStroke(1.dp, AppColors.surfaceVariant),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(46.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.textMuted),
-            border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.surfaceVariant)
-        ) { Text("Done", fontWeight = FontWeight.Medium, letterSpacing = 1.sp) }
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Text("Done", color = AppColors.textMuted, fontWeight = FontWeight.Medium, letterSpacing = 1.sp)
+            }
+        }
         Spacer(Modifier.height(12.dp))
     }
 }

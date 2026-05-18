@@ -25,6 +25,15 @@ sealed class UnlockCondition {
      */
     data class PracticeSessionsCompleted(val required: Int) : UnlockCondition()
 
+    /**
+     * Number of thumbs-up tuner feedback submissions.
+     * Only positive feedback counts — the reward is for helping improve the tuner.
+     */
+    data class TunerFeedbackGiven(val required: Int) : UnlockCondition()
+
+    /** Total cumulative tuner listening time in seconds (mic active). */
+    data class TunerSeconds(val required: Long) : UnlockCondition()
+
     /** Always unlocked — used for developer preview / cheat mode. */
     object Always : UnlockCondition()
 }

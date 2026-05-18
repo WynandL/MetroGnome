@@ -40,7 +40,19 @@
       "Bash(Sort-Object)",
       "Bash(git reset *)",
       "Bash(./gradlew assembleDebug -q)",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(./gradlew compileDebugKotlin --rerun-tasks)",
+      "Bash(./gradlew compileDebugKotlin -q)",
+      "Bash(./gradlew compileDebugKotlin testDebugUnitTest -q)",
+      "Bash(./gradlew testDebugUnitTest --tests \"com.example.metrognome.audio.dsp.*\" --rerun-tasks)",
+      "Bash(xargs grep -h \"testsuite \")",
+      "Bash(./gradlew compileDebugKotlin compileDebugUnitTestKotlin compileDebugAndroidTestKotlin -q)",
+      "Bash(./gradlew testDebugUnitTest --rerun-tasks -q)",
+      "Bash(./gradlew compileDebugKotlin compileDebugAndroidTestKotlin -q)",
+      "Bash(./gradlew test *)",
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "Bash(./gradlew :app:compileDebugAndroidTestKotlin)",
+      "Bash(./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin)"
     ]
   }
 }

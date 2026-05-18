@@ -79,7 +79,10 @@ private val itemOwnedMessages = mapOf(
 )
 
 @Composable
-fun SettingsScreen(vm: MetronomeViewModel) {
+fun SettingsScreen(
+    vm: MetronomeViewModel,
+    onTriggerFeedback: () -> Unit = {},
+) {
     val context = LocalContext.current
     val bpm by vm.bpm.collectAsStateWithLifecycle()
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
@@ -503,6 +506,16 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                     fontWeight = FontWeight.Bold
                 )
             }
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
+                onClick = onTriggerFeedback,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
+            ) {
+                Text("Trigger Feedback Card", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
             } // end DEBUG block
 
             Spacer(Modifier.height(8.dp))
@@ -525,9 +538,11 @@ fun SettingsScreen(vm: MetronomeViewModel) {
                     METRO_ITEM_REGISTRY.sortedBy { entry ->
                         when (val c = entry.condition) {
                             is UnlockCondition.MetronomeSeconds          -> c.required.toDouble()
+                            is UnlockCondition.TunerSeconds              -> c.required.toDouble()
                             is UnlockCondition.RhythmGamesCompleted      -> c.required * 300.0
                             is UnlockCondition.DaysSinceFirstLaunch      -> c.required * 86_400.0
                             is UnlockCondition.PracticeSessionsCompleted -> c.required * 1_200.0
+                            is UnlockCondition.TunerFeedbackGiven        -> c.required * 60.0
                             UnlockCondition.Always                       -> -1.0
                         }
                     }.forEach { entry ->

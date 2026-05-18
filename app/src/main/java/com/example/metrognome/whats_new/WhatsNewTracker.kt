@@ -28,6 +28,14 @@ class WhatsNewTracker(context: Context) {
             }
             legacyPrefs.edit { remove("v3_intro_shown") }
         }
+
+        // Fresh-install guard: if no version has ever been confirmed (including via the
+        // migration above), this is a clean install on the current version.  Pre-mark every
+        // historical version so the user only sees the popup for the latest release.
+        // This ensures new users are never shown a cascade of back-version popups.
+        if (shownVersions().isEmpty()) {
+            AppWhatsNew.ALL.dropLast(1).forEach { markShown(it) }
+        }
     }
 
     private fun shownVersions(): Set<String> =

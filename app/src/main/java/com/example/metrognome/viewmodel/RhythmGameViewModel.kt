@@ -93,6 +93,26 @@ const val MISS_WINDOW_MS = 150L
 /** How long a note travels from spawn to the hit line. */
 const val NOTE_TRAVEL_MS = 2000L
 
+/**
+ * Extra grace before an un-tapped note auto-misses, applied in mic mode only.
+ * A mic onset is delivered up to one audio buffer + a scheduling hop after it
+ * actually occurred; without this grace a valid late-window hit could be
+ * auto-missed before its detection is ever delivered to [RhythmGameViewModel].
+ */
+const val MIC_MISS_GRACE_MS = 120L
+
+/**
+ * Window after a beat in which a mic onset is treated as the metronome click,
+ * used only when the device has no AEC. When AEC is active it cancels the click
+ * at the hardware layer, so no suppression window is needed — adding one would
+ * also suppress legitimate on-beat claps that arrive at the mic ~17 ms after
+ * the onBeat callback fires.
+ */
+const val CLICK_SUPPRESSION_MS = 150L
+
+/** After a hit, extra taps within this window are forgiven as double-tap twitch. */
+const val STRAY_TAP_GRACE_MS = 140L
+
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
 class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
@@ -156,9 +176,6 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     /** Monotonic clock value at game start (SystemClock.elapsedRealtime). */
     private var gameStartElapsedMs = 0L
 
-    /** Wall-clock value at game start (System.currentTimeMillis). Used for mic ts conversion. */
-    private var gameStartWallMs = 0L
-
     private var intervalMs = 750L
     private var totalBeats = 32
     private var maxCombo = 0
@@ -166,6 +183,9 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private var countGood = 0
     private var countBad = 0
     private var countMiss = 0
+
+    /** songTime of the last genuine hit — used to forgive double-tap twitch. */
+    private var lastHitSongTimeMs = Long.MIN_VALUE
 
     /**
      * Tolerance-scaled timing windows, fixed for the duration of a game session.
@@ -187,13 +207,15 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         engine.onBeat = { beat ->
-            viewModelScope.launch {
-                _currentBeat.value = beat
-                // Suppress mic 60 ms after each click to block click-pickup.
-                if (_phase.value == GamePhase.PLAYING && _useMic.value) {
-                    detector.suppressUntilMs = System.currentTimeMillis() + 60L
-                }
+            // Volatile write — safe from the engine thread and immediate (no coroutine hop).
+            // Only suppress when AEC is absent: AEC cancels the click in hardware, so
+            // a suppression window would block legitimate on-beat claps without helping.
+            if (_phase.value == GamePhase.PLAYING && _useMic.value
+                && !detector.echoCancellationActive
+            ) {
+                detector.suppressUntilMs = SystemClock.elapsedRealtime() + CLICK_SUPPRESSION_MS
             }
+            viewModelScope.launch { _currentBeat.value = beat }
         }
     }
 
@@ -294,18 +316,18 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         if (micReady) {
             detector.start()
             micJob = viewModelScope.launch {
-                detector.detections.collect { wallTs ->
+                detector.detections.collect { onsetElapsedMs ->
                     _micDetected.tryEmit(Unit)
                     if (_phase.value == GamePhase.PLAYING) {
-                        processTap(wallTs - gameStartWallMs)
+                        processTap(onsetElapsedMs - gameStartElapsedMs)
                     }
                 }
             }
         }
 
-        // Record game start on the monotonic clock and wall clock simultaneously.
+        // Record game start on the monotonic clock — the single timebase shared
+        // by the game loop, screen taps, and mic detections alike.
         gameStartElapsedMs = SystemClock.elapsedRealtime()
-        gameStartWallMs = System.currentTimeMillis()
         _phase.value = GamePhase.PLAYING
 
         // Delay engine start by NOTE_TRAVEL_MS so the click fires exactly when
@@ -340,6 +362,9 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private fun tick(songT: Long) {
         var remaining = 0
         val renderList = mutableListOf<RenderNote>()
+        // In mic mode a detection arrives slightly after the onset; hold the
+        // auto-miss back so an in-flight valid hit is not missed prematurely.
+        val missGrace = if (_useMic.value) MIC_MISS_GRACE_MS else 0L
 
         for ((i, note) in notes.withIndex()) {
             when (note.state) {
@@ -348,7 +373,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
                 }
 
                 NoteState.ACTIVE -> {
-                    if (songT > note.hitTimeMs + winMiss) {
+                    if (songT > note.hitTimeMs + winMiss + missGrace) {
                         note.state = NoteState.MISSED
                         recordMiss()
                     }
@@ -386,11 +411,14 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         val candidate = notes
             .filter { it.state == NoteState.ACTIVE }
             .minByOrNull { abs(tapSongTimeMs - it.hitTimeMs) }
-            ?: return   // no active note → empty tap, no effect
+
+        if (candidate == null) {            // nothing on screen to hit
+            registerStrayTap(tapSongTimeMs)
+            return
+        }
 
         val delta = tapSongTimeMs - candidate.hitTimeMs   // +late, −early
         val absDelta = abs(delta)
-        _lastHitOffset.value = delta
 
         // Spec §9: hit judgement
         val quality = when {
@@ -400,8 +428,14 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
             else -> HitQuality.NONE  // NOT A HIT — do not assign note
         }
 
-        if (quality == HitQuality.NONE) return   // too far from any note
+        if (quality == HitQuality.NONE) {   // tapped, but no note in range
+            registerStrayTap(tapSongTimeMs)
+            return
+        }
 
+        // Genuine hit — record the offset only now (a stray must not skew the meter).
+        _lastHitOffset.value = delta
+        lastHitSongTimeMs = tapSongTimeMs
         candidate.state = NoteState.HIT   // mark terminal HIT
 
         val newCombo = _combo.value + 1
@@ -426,6 +460,25 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             delay(650)
             if (_lastQuality.value == quality) _lastQuality.value = HitQuality.NONE
+        }
+    }
+
+    /**
+     * A tap that landed on no note — a mistimed input. Breaks the combo so that
+     * mashing cannot farm a full combo, but costs no points and is not counted
+     * as a missed note (the miss counters track notes, not stray taps).
+     *
+     * An extra tap within [STRAY_TAP_GRACE_MS] of a genuine hit is treated as
+     * double-tap twitch and forgiven, so a jittery finger is not punished.
+     */
+    private fun registerStrayTap(tapSongTimeMs: Long) {
+        if (tapSongTimeMs - lastHitSongTimeMs in 0 until STRAY_TAP_GRACE_MS) return
+
+        _combo.value = 0
+        _lastQuality.value = HitQuality.MISS
+        viewModelScope.launch {
+            delay(450)
+            if (_lastQuality.value == HitQuality.MISS) _lastQuality.value = HitQuality.NONE
         }
     }
 
@@ -492,6 +545,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         notes.clear()
         maxCombo = 0
         countPerfect = 0; countGood = 0; countBad = 0; countMiss = 0
+        lastHitSongTimeMs = Long.MIN_VALUE
     }
 
     private fun cancelJobs() {

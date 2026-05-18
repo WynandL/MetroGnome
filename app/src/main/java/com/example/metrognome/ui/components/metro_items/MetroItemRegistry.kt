@@ -11,6 +11,7 @@ import com.example.metrognome.ui.components.metro_items.items.Fireflies
 import com.example.metrognome.ui.components.metro_items.items.MoonAndStars
 import com.example.metrognome.ui.components.metro_items.items.GlissieFairy
 import com.example.metrognome.ui.components.metro_items.items.MusicStand
+import com.example.metrognome.ui.components.metro_items.items.TuningFork
 
 /**
  * Single source of truth for every cosmetic item and its unlock condition.
@@ -53,6 +54,20 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     // ── Practice rewards — require Practice Mode IAP to earn ─────────────────
     // Earn-only (no purchase path): these reward consistent practice, not spending.
     MetroItemEntry(MusicStand, UnlockCondition.PracticeSessionsCompleted(5)),  // 5 sessions
+
+    // ── Tuner feedback reward ─────────────────────────────────────────────────
+    // Earned by submitting a single thumbs-up reading via the tuner feedback card.
+    MetroItemEntry(TuningFork, UnlockCondition.TunerFeedbackGiven(1)),
+
+    // ── Future tuner rewards — TunerSeconds accumulates from v3.3 onwards ─────
+    // Use TunerSeconds for items that reward dedicated tuning practice.
+    // Thresholds (tuner seconds — mic actively open):
+    //   5 min  =     300 s
+    //   15 min =     900 s
+    //   1 h    =   3 600 s
+    //   3 h    =  10 800 s
+    // MetroItemEntry(SomeTunerItem, UnlockCondition.TunerSeconds(300)),    // 5 min
+    // MetroItemEntry(SomeTunerItem, UnlockCondition.TunerSeconds(3_600)),  // 1 h
 
     // ── Future wearables — add entries here as new files are created ──────────
     // MetroItemEntry(ArmBracelet,   UnlockCondition.MetronomeSeconds(7_200)),    // 2 h

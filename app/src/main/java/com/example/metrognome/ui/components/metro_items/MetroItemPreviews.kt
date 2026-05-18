@@ -12,6 +12,7 @@ import com.example.metrognome.ui.components.metro_items.items.GoldEarring
 import com.example.metrognome.ui.components.metro_items.items.LuxuryWatch
 import com.example.metrognome.ui.components.metro_items.items.MoonAndStars
 import com.example.metrognome.ui.components.metro_items.items.TorchPost
+import com.example.metrognome.ui.components.metro_items.items.TuningFork
 import com.example.metrognome.ui.overlays.ItemPreviewCanvas
 
 @Composable
@@ -58,3 +59,7 @@ private fun MoonAndStarsPreview() = ItemPreview(MoonAndStars)
 @Preview(name = "Glissie Fairy")
 @Composable
 private fun GlissieFairyPreview() = ItemPreview(GlissieFairy)
+
+@Preview(name = "Tuning Fork")
+@Composable
+private fun TuningForkPreview() = ItemPreview(TuningFork)

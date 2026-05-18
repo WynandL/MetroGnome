@@ -21,10 +21,12 @@ class MetroItemTracker(context: Context) {
 
     companion object {
         private const val KEY_METRONOME_SECONDS  = "metronome_seconds"
+        private const val KEY_TUNER_SECONDS      = "tuner_seconds"
         private const val KEY_GAMES_COMPLETED    = "games_completed"
         private const val KEY_FIRST_LAUNCH_MS    = "first_launch_ms"
-        private const val KEY_CHEAT_MODE         = "cheat_mode"
-        private const val KEY_FORCE_UNLOCKED_IDS = "force_unlocked_ids"
+        private const val KEY_CHEAT_MODE          = "cheat_mode"
+        private const val KEY_FORCE_UNLOCKED_IDS  = "force_unlocked_ids"
+        private const val KEY_TUNER_FEEDBACK      = "tuner_feedback_count"
 
         // Mirrors PracticeSessionManager key — read-only here, written only by PracticeSessionManager
         private const val KEY_PRACTICE_TOTAL = "total_sessions"
@@ -45,16 +47,30 @@ class MetroItemTracker(context: Context) {
         prefs.edit { putLong(KEY_METRONOME_SECONDS, current + seconds) }
     }
 
+    /** Add [seconds] to the cumulative tuner listening time. */
+    fun addTunerSeconds(seconds: Long) {
+        val current = prefs.getLong(KEY_TUNER_SECONDS, 0L)
+        prefs.edit { putLong(KEY_TUNER_SECONDS, current + seconds) }
+    }
+
     /** Increment the completed-games counter by 1. */
     fun recordGameCompleted() {
         val current = prefs.getInt(KEY_GAMES_COMPLETED, 0)
         prefs.edit { putInt(KEY_GAMES_COMPLETED, current + 1) }
     }
 
+    /** Increment the thumbs-up tuner feedback counter by 1. */
+    fun recordTunerFeedback() {
+        val current = prefs.getInt(KEY_TUNER_FEEDBACK, 0)
+        prefs.edit { putInt(KEY_TUNER_FEEDBACK, current + 1) }
+    }
+
     // ── Readers ───────────────────────────────────────────────────────────────
 
     fun metronomeSeconds(): Long    = prefs.getLong(KEY_METRONOME_SECONDS, 0L)
+    fun tunerSeconds(): Long        = prefs.getLong(KEY_TUNER_SECONDS, 0L)
     fun gamesCompleted(): Int       = prefs.getInt(KEY_GAMES_COMPLETED, 0)
+    fun tunerFeedbackGiven(): Int   = prefs.getInt(KEY_TUNER_FEEDBACK, 0)
     fun practiceSessionsCompleted(): Int = practicePrefs.getInt(KEY_PRACTICE_TOTAL, 0)
     fun daysSinceFirstLaunch(): Int {
         val firstMs = prefs.getLong(KEY_FIRST_LAUNCH_MS, System.currentTimeMillis())
@@ -98,9 +114,11 @@ class MetroItemTracker(context: Context) {
         if (isCheatModeEnabled()) return true
         return when (condition) {
             is UnlockCondition.MetronomeSeconds        -> metronomeSeconds() >= condition.required
+            is UnlockCondition.TunerSeconds            -> tunerSeconds() >= condition.required
             is UnlockCondition.RhythmGamesCompleted    -> gamesCompleted() >= condition.required
             is UnlockCondition.DaysSinceFirstLaunch    -> daysSinceFirstLaunch() >= condition.required
             is UnlockCondition.PracticeSessionsCompleted -> practiceSessionsCompleted() >= condition.required
+            is UnlockCondition.TunerFeedbackGiven      -> tunerFeedbackGiven() >= condition.required
             UnlockCondition.Always                     -> true
         }
     }
@@ -130,9 +148,11 @@ class MetroItemTracker(context: Context) {
     fun resetAllProgress() {
         prefs.edit {
             remove(KEY_METRONOME_SECONDS)
+            remove(KEY_TUNER_SECONDS)
             remove(KEY_GAMES_COMPLETED)
             remove(KEY_FIRST_LAUNCH_MS)
             remove(KEY_CELEBRATED_IDS)
+            remove(KEY_TUNER_FEEDBACK)
             // KEY_FORCE_UNLOCKED_IDS is intentionally preserved — it reflects real purchases
         }
     }

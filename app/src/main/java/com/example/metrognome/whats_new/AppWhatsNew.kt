@@ -11,8 +11,8 @@ package com.example.metrognome.whats_new
  */
 object AppWhatsNew {
     const val V3 = "v3"
-    // const val V4 = "v4"
+    const val V4 = "v4"
 
     /** All version keys, oldest first. The first unconfirmed key is shown to the user. */
-    val ALL: List<String> = listOf(V3)
+    val ALL: List<String> = listOf(V3, V4)
 }

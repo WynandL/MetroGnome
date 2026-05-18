@@ -2,6 +2,7 @@ package com.example.metrognome
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material.icons.Icons
@@ -12,31 +13,33 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.metrognome.ads.InterstitialAdManager
+import com.example.metrognome.ui.components.TunerNeedleIcon
 import com.example.metrognome.ui.screens.MetronomeScreen
 import com.example.metrognome.ui.screens.RhythmGameScreen
 import com.example.metrognome.ui.screens.SettingsScreen
+import com.example.metrognome.ui.screens.TunerScreen
 import com.example.metrognome.ui.theme.MetroGnomeTheme
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.viewmodel.RhythmGameViewModel
-import androidx.activity.compose.LocalActivity
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
-import com.example.metrognome.ads.InterstitialAdManager
+import com.example.metrognome.viewmodel.TunerViewModel
 
-enum class AppTab(val label: String, val icon: ImageVector) {
-    GNOME("Gnome", Icons.Filled.MusicNote),
-    RHYTHM("Rhythm", Icons.Filled.Stars),
-    SETTINGS("Settings", Icons.Filled.Settings),
+enum class AppTab(val label: String) {
+    GNOME("Gnome"),
+    TUNER("Tuner"),
+    RHYTHM("Rhythm"),
+    SETTINGS("Settings"),
 }
 
 class MainActivity : ComponentActivity() {
@@ -57,7 +60,10 @@ fun MetroGnomeApp() {
 
     val metronomeVm: MetronomeViewModel = viewModel()
     val rhythmVm: RhythmGameViewModel = viewModel()
+    val tunerVm: TunerViewModel = viewModel()
     val isAdFree by metronomeVm.isAdFree.collectAsStateWithLifecycle()
+
+    val visibleTabs = AppTab.entries
 
     val context = LocalContext.current
     val activity = LocalActivity.current
@@ -72,9 +78,16 @@ fun MetroGnomeApp() {
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
-            AppTab.entries.forEach { tab ->
+            visibleTabs.forEach { tab ->
                 item(
-                    icon = { Icon(tab.icon, contentDescription = tab.label) },
+                    icon = {
+                        when (tab) {
+                            AppTab.GNOME    -> Icon(Icons.Filled.MusicNote, contentDescription = null)
+                            AppTab.TUNER    -> TunerNeedleIcon()
+                            AppTab.RHYTHM   -> Icon(Icons.Filled.Stars, contentDescription = null)
+                            AppTab.SETTINGS -> Icon(Icons.Filled.Settings, contentDescription = null)
+                        }
+                    },
                     label = { Text(tab.label) },
                     selected = tab == currentTab,
                     onClick = {
@@ -103,7 +116,17 @@ fun MetroGnomeApp() {
                 }
             )
 
-            AppTab.SETTINGS -> SettingsScreen(vm = metronomeVm)
+            AppTab.TUNER -> TunerScreen(
+                vm = tunerVm,
+                keepScreenOn = metronomeVm.keepScreenOn.collectAsState().value,
+                onSetKeepScreenOn = metronomeVm::setKeepScreenOn,
+                isAdFree = isAdFree,
+            )
+
+            AppTab.SETTINGS -> SettingsScreen(
+                vm = metronomeVm,
+                onTriggerFeedback = tunerVm::debugTriggerFeedback,
+            )
         }
     }
 }

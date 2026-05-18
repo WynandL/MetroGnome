@@ -14,6 +14,7 @@ import com.google.firebase.analytics.logEvent
 object AnalyticsTracker {
 
     private var metronomeSessionStartMs = 0L
+    private var tunerSessionStartMs     = 0L
 
     // ── Metronome ─────────────────────────────────────────────────────────────
 
@@ -38,6 +39,24 @@ object AnalyticsTracker {
     fun logSoundChanged(soundType: Int) {
         Firebase.analytics.logEvent("sound_changed") {
             param("sound_type", soundType.toLong())
+        }
+    }
+
+    // ── Tuner ─────────────────────────────────────────────────────────────────
+
+    fun logTunerStarted(referenceHz: Float) {
+        tunerSessionStartMs = System.currentTimeMillis()
+        Firebase.analytics.logEvent("tuner_session_started") {
+            param("reference_hz", referenceHz.toLong())
+        }
+    }
+
+    fun logTunerStopped() {
+        val durationSec = if (tunerSessionStartMs > 0L)
+            (System.currentTimeMillis() - tunerSessionStartMs) / 1000L else 0L
+        tunerSessionStartMs = 0L
+        Firebase.analytics.logEvent("tuner_session_ended") {
+            param("duration_seconds", durationSec)
         }
     }
 
