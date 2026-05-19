@@ -8,9 +8,9 @@ import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.metrognome.audio.MetronomeEngine
+import com.example.metrognome.audio.metronome.MetronomeEngine
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
-import com.example.metrognome.audio.RhythmDetector
+import com.example.metrognome.audio.rhythm.RhythmDetector
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY

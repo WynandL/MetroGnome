@@ -1,4 +1,4 @@
-package com.example.metrognome.whats_new
+package com.example.metrognome.whatsnew
 
 import android.content.Context
 import androidx.core.content.edit

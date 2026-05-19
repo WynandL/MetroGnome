@@ -1,4 +1,4 @@
-package com.example.metrognome.audio
+package com.example.metrognome.audio.metronome
 
 import android.media.AudioAttributes
 import android.media.AudioFormat

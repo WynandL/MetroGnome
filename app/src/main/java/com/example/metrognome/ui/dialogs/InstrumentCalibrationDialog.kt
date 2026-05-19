@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.metrognome.audio.Tuner
+import com.example.metrognome.audio.tuner.Tuner
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.GameColors
 import java.util.Locale

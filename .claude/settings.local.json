@@ -52,7 +52,8 @@
       "Bash(./gradlew test *)",
       "Bash(./gradlew :app:compileDebugKotlin)",
       "Bash(./gradlew :app:compileDebugAndroidTestKotlin)",
-      "Bash(./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin)"
+      "Bash(./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin)",
+      "PowerShell(Get-ChildItem -Recurse \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\" -Force | Where-Object { $_.FullName -notmatch '\\(\\\\.gradle|\\\\.idea|build|\\\\.git\\)' } | Select-Object FullName | Sort-Object FullName | ForEach-Object { $_.FullName } | Select-Object -First 300)"
     ]
   }
 }

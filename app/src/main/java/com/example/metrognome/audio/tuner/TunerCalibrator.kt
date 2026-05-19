@@ -1,4 +1,4 @@
-package com.example.metrognome.audio
+package com.example.metrognome.audio.tuner
 
 import android.Manifest
 import android.media.AudioAttributes

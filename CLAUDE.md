@@ -29,9 +29,13 @@ Audio Engine + Game Logic (Coroutines on Dispatchers.Default)
 
 ### Key Components
 
-**`audio/MetronomeEngine.kt`** — Raw `AudioTrack` in STREAM mode for sample-accurate timing. Pre-generates click buffers (click, hi-hat, woodblock). Runs a blocking write loop on `Dispatchers.Default`. The `onBeat` callback fires **before** the audio write (not after) so the UI callback arrives ~16ms early, keeping Compose animations in sync with sound.
+**Audio engine layout** — each engine lives in its own sub-package under `audio/`:
 
-**`audio/RhythmDetector.kt`** — Mic input via `AudioRecord`. Onset detection requires both an absolute amplitude threshold AND a 2.5× RMS spike vs. the previous frame — this rejects sustained noise. AEC (Acoustic Echo Cancellation) is enabled to strip the metronome click from mic input; NoiseSuppressor is intentionally **disabled** (it would filter claps). A 60ms suppression window after each click prevents auto-scoring.
+- `audio/metronome/MetronomeEngine.kt` — Raw `AudioTrack` in STREAM mode for sample-accurate timing. Pre-generates click buffers (click, hi-hat, woodblock). Runs a blocking write loop on `Dispatchers.Default`. The `onBeat` callback fires **before** the audio write (not after) so the UI callback arrives ~16ms early, keeping Compose animations in sync with sound.
+- `audio/rhythm/RhythmDetector.kt` — Mic input via `AudioRecord`. Onset detection requires both an absolute amplitude threshold AND a 2.5× RMS spike vs. the previous frame — this rejects sustained noise. AEC (Acoustic Echo Cancellation) is enabled to strip the metronome click from mic input; NoiseSuppressor is intentionally **disabled** (it would filter claps). A 60ms suppression window after each click prevents auto-scoring.
+- `audio/tuner/` — Tuner engine: `Tuner.kt` (MPM + FFT pitch detection), `TunerCalibrator.kt` (loopback/reference calibration), `AmbientDetector.kt` (room profiling, speech rejection), `TunerFeedbackConfig.kt` + `TunerFeedbackReporter.kt` (Firestore diagnostic submissions).
+- `audio/dsp/` — Shared DSP building blocks used by the engines: `FFT.kt`, `PitchDetector.kt`, `OnsetDetector.kt`, `BiquadFilter.kt`.
+- `audio/NoteNames.kt` — Shared music-theory utility (note name ↔ frequency mapping); stays at the `audio` root because all three engines may reference it.
 
 **`viewmodel/MetronomeViewModel.kt`** — Manages play state, BPM, time signature, sound type, volume. Tap tempo requires ≥2 taps within 2.5s. Persists settings to SharedPreferences (`metrognome_prefs`).
 

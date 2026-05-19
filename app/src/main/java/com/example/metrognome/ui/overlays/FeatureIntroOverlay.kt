@@ -48,7 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.ui.theme.AppColors
-import com.example.metrognome.whats_new.AppWhatsNew
+import com.example.metrognome.whatsnew.AppWhatsNew
 import kotlinx.coroutines.launch
 
 /**

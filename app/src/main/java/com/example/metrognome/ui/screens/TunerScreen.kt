@@ -88,11 +88,11 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.ads.AdBannerView
-import com.example.metrognome.audio.AmbientLevel
-import com.example.metrognome.audio.AmbientReport
-import com.example.metrognome.audio.ListeningState
+import com.example.metrognome.audio.tuner.AmbientLevel
+import com.example.metrognome.audio.tuner.AmbientReport
+import com.example.metrognome.audio.tuner.ListeningState
 import com.example.metrognome.audio.NoteNames
-import com.example.metrognome.audio.Tuner
+import com.example.metrognome.audio.tuner.Tuner
 import com.example.metrognome.ui.components.TunerFeedbackCard
 import com.example.metrognome.ui.dialogs.CalibrationDialog
 import com.example.metrognome.ui.dialogs.InstrumentCalibrationDialog

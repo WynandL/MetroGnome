@@ -9,7 +9,7 @@ import android.media.AudioManager
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.metrognome.audio.MetronomeEngine
+import com.example.metrognome.audio.metronome.MetronomeEngine
 import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
 import com.example.metrognome.billing.BillingManager
 import com.example.metrognome.practice.PracticeSessionManager
@@ -19,8 +19,8 @@ import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
-import com.example.metrognome.whats_new.AppWhatsNew
-import com.example.metrognome.whats_new.WhatsNewTracker
+import com.example.metrognome.whatsnew.AppWhatsNew
+import com.example.metrognome.whatsnew.WhatsNewTracker
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*

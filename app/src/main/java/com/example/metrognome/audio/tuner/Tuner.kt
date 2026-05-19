@@ -1,10 +1,11 @@
-package com.example.metrognome.audio
+package com.example.metrognome.audio.tuner
 
 import android.Manifest
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import androidx.annotation.RequiresPermission
+import com.example.metrognome.audio.NoteNames
 import com.example.metrognome.audio.dsp.PitchDetector
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

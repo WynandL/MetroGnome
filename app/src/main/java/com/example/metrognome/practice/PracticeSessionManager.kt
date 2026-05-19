@@ -11,7 +11,6 @@ private const val KEY_TOTAL    = "total_sessions"
 class PracticeSessionManager(context: Context) {
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun getCurrentStreak(): Int = prefs.getInt(KEY_STREAK, 0)
     fun getTotalSessions(): Int = prefs.getInt(KEY_TOTAL, 0)
 
     /** Records a completed session. Returns the updated streak count. */

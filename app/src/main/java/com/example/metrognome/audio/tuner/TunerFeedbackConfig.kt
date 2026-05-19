@@ -1,4 +1,4 @@
-package com.example.metrognome.audio
+package com.example.metrognome.audio.tuner
 
 /**
  * Master switch for the tuner feedback feature.
@@ -7,5 +7,5 @@ package com.example.metrognome.audio
  * submission in any build without touching any other code.
  */
 object TunerFeedbackConfig {
-    const val ENABLED = true
+    val ENABLED = true
 }

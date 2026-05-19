@@ -1,4 +1,4 @@
-package com.example.metrognome.audio
+package com.example.metrognome.audio.tuner
 
 import com.example.metrognome.audio.dsp.PitchDetector
 import org.junit.Assert.assertEquals

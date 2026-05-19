@@ -1,4 +1,4 @@
-package com.example.metrognome.whats_new
+package com.example.metrognome.whatsnew
 
 /**
  * Registry of all "What's New" version keys.
