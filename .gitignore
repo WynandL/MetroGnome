@@ -17,3 +17,5 @@ keystore.properties
 *.jks
 *.keystore
 google-services.json
+*.aab
+*.apk
