@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.metrognome.ads.InterstitialAdManager
+import com.example.metrognome.review.AppReviewManager
 import com.example.metrognome.ui.components.TunerNeedleIcon
 import com.example.metrognome.ui.screens.MetronomeScreen
 import com.example.metrognome.ui.screens.RhythmGameScreen
@@ -68,12 +69,15 @@ fun MetroGnomeApp() {
     val context = LocalContext.current
     val activity = LocalActivity.current
     val interstitialManager = remember { InterstitialAdManager(context).also { it.preload() } }
+    val reviewManager = remember { AppReviewManager(context) }
 
     // Re-query Play Store for owned purchases every time the app returns to foreground.
     // This handles: switching devices, purchasing on one device then opening another,
     // and any case where the local cache drifts from Play's source of truth.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         metronomeVm.reconcilePurchases()
+        reviewManager.recordAppOpen()
+        activity?.let { reviewManager.maybeRequestReview(it) }
     }
 
     NavigationSuiteScaffold(

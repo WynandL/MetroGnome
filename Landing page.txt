@@ -1,0 +1,25 @@
+Read seo_context.md.
+ 
+Build a single-page HTML landing page for Metro Gnome.
+Save to landing/index.html
+ 
+Sections:
+1. Hero: headline, subheadline, Play Store download button
+2. Three feature pillars: Metronome / Tuner / Rhythm Game
+3. Who it’s for: guitarists, drummers, teachers, students
+4. FAQ section (naturally uses keywords: free metronome android,
+   bpm counter, tuner app for noisy rooms, tap tempo, music teacher)
+5. Footer with Play Store badge and link
+ 
+SEO requirements:
+- Title: 'Metro Gnome — Free Metronome & Chromatic Tuner for Android'
+- Meta description: 'Free metronome and chromatic tuner app for Android.
+  Tap tempo, rhythm game, and smart tuner built for real musicians.'
+- H1: 'The Metronome App Built for Real Musicians'
+- SoftwareApplication schema markup
+- Mobile-first, no external dependencies, fast load
+ 
+Design: clean, matches Metro’s personality — not corporate.
+Play Store URL: https://play.google.com/store/apps/details?id=com.wynandl.metrognome
+ 
+After building, tell me how to deploy it to GitHub Pages or Vercel for free.

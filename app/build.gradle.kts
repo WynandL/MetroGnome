@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.play.services.ads)
     implementation(libs.billing.ktx)
+    implementation(libs.play.review.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
