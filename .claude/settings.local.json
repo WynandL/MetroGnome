@@ -56,7 +56,8 @@
       "PowerShell(Get-ChildItem -Recurse \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\" -Force | Where-Object { $_.FullName -notmatch '\\(\\\\.gradle|\\\\.idea|build|\\\\.git\\)' } | Select-Object FullName | Sort-Object FullName | ForEach-Object { $_.FullName } | Select-Object -First 300)",
       "Bash(Select-String \"seo_reports|content|aso|code_seo\")",
       "WebSearch",
-      "Bash(npm --version)"
+      "Bash(npm --version)",
+      "WebFetch(domain:www.pleasecallmesa.co.za)"
     ]
   }
 }
