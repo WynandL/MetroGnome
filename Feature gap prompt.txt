@@ -1,0 +1,13 @@
+Read seo_context.md and the current Play Store long description
+in aso/ (or fetch it from the Play Store URL in seo_context.md).
+ 
+Scan the full codebase and list every user-facing feature
+that exists in code but is NOT mentioned in the Play Store description.
+ 
+For each gap found:
+- Name the feature
+- Estimate how many users likely discover it vs miss it
+- Suggest whether it belongs in the Play Store description,
+  a screenshot caption, or just better in-app discoverability
+ 
+Save to aso/feature-gap-scan.md
