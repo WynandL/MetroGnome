@@ -4,6 +4,7 @@
 - Name: Metro Gnome: Metronome & Tuner
 - Package: com.wynandl.metrognome
 - Play Store: https://play.google.com/store/apps/details?id=com.wynandl.metrognome
+- Website: http://www.metrognome.co.za
 - Category: Music & Audio
 - Current installs: 1,000+
 - Last updated: May 18 2026

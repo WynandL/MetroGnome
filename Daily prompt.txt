@@ -10,7 +10,7 @@ Read seo_context.md, then do the following:
 2. CODEBASE CHECK
    Scan the app codebase and identify:
    - Any features that exist in code but aren’t mentioned
-     in seo_context.md or the Play Store description
+     in seo_context.md, the Play Store description, or website
    - Any recent commits that added features worth promoting
    - Any performance issues (crash logs, ANR patterns) that
      could be affecting Play Store ratings
@@ -18,7 +18,7 @@ Read seo_context.md, then do the following:
 3. TODAY’S RECOMMENDATIONS
    Based on findings, give exactly:
    a) One ASO suggestion (only if genuinely better than current)
-   b) One content idea (blog post, Reddit reply, or short video)
+   b) One content idea (blog post on website, Reddit reply, or short video)
    c) One code improvement that would help SEO or user retention
       (performance, onboarding, review prompt timing, etc.)
  
