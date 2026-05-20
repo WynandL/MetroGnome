@@ -1,16 +1,19 @@
 /* ── Reset & base ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Palette mirrors app/src/main/java/.../ui/theme/Color.kt (AppColors) */
 :root {
-  --bg:           #0D0A1E;
-  --surface:      #1A1240;
-  --surface-up:   #241960;
-  --purple:       #7C5CBF;
-  --purple-light: #A47FD4;
-  --gold:         #F5C518;
+  --bg:           #0D0B1E;  /* AppColors.background */
+  --surface:      #1E1B3A;  /* AppColors.surface */
+  --surface-up:   #2A2550;  /* AppColors.surfaceVariant */
+  --surface-deep: #13102A;  /* AppColors.surfaceDeep */
+  --purple:       #7B4DB0;  /* AppColors.mediumPurple */
+  --purple-light: #AB7DE0;  /* AppColors.textAccent / Purple80 */
+  --purple-dark:  #5B2D8A;  /* AppColors.primaryPurple */
+  --gold:         #FFD700;  /* AppColors.gold */
   --gold-light:   #FFE066;
-  --text:         #F0EDF8;
-  --text-muted:   #9D94C0;
+  --text:         #EEEEFF;  /* AppColors.textPrimary */
+  --text-muted:   #8080AA;  /* AppColors.textMuted */
   --radius:       14px;
   --max:          720px;
 }
@@ -36,17 +39,21 @@ img { display: block; max-width: 100%; }
   padding-inline: 1.25rem;
 }
 
-/* ── Site nav ──────────────────────────────────────────────────────── */
+/* ── Site nav (same as landing index.html) ─────────────────────────── */
 .site-nav {
-  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(13, 11, 30, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--surface-up);
-  padding: 0.9rem 0;
 }
 
 .site-nav .inner {
   max-width: 920px;
   margin-inline: auto;
-  padding-inline: 1.25rem;
+  padding: 0.75rem 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -54,23 +61,35 @@ img { display: block; max-width: 100%; }
 }
 
 .site-nav .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   font-weight: 800;
   font-size: 1rem;
+  letter-spacing: -0.01em;
   color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+}
+
+.site-nav .brand img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px var(--gold);
+  background: var(--surface-deep);
 }
 
 .site-nav .nav-links {
   display: flex;
-  gap: 1.5rem;
-  font-size: 0.88rem;
-  color: var(--text-muted);
+  align-items: center;
+  gap: 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
-.site-nav .nav-links a { color: var(--text-muted); }
+.site-nav .nav-links a { color: var(--text-muted); transition: color 0.15s; }
 .site-nav .nav-links a:hover { color: var(--text); }
+.site-nav .nav-links a.blog-nav { color: var(--gold); }
+.site-nav .nav-links a.blog-nav:hover { color: var(--gold-light); }
 
 /* ── Breadcrumb ────────────────────────────────────────────────────── */
 .breadcrumb {
