@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://metro-gnome-gilt.vercel.app/sitemap.xml
