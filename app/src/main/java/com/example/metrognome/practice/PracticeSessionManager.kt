@@ -13,6 +13,13 @@ class PracticeSessionManager(context: Context) {
 
     fun getTotalSessions(): Int = prefs.getInt(KEY_TOTAL, 0)
 
+    /** Returns the current streak, or 0 if the streak has expired (no practice in 2+ days). */
+    fun getCurrentStreak(): Int {
+        val today = todayKey()
+        val lastDay = prefs.getLong(KEY_LAST_DAY, -1L)
+        return if (lastDay >= today - 1L) prefs.getInt(KEY_STREAK, 0) else 0
+    }
+
     /** Records a completed session. Returns the updated streak count. */
     fun recordSession(): Int {
         val today   = todayKey()

@@ -21,7 +21,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.ui.graphics.vector.ImageVector
+import kotlin.math.roundToInt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
@@ -328,6 +332,143 @@ private fun ActionRow(onDismiss: () -> Unit, onRetry: () -> Unit) {
             Box(contentAlignment = Alignment.Center) {
                 Text("Done", color = AppColors.gold, fontSize = 14.sp,
                     fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+// ── Pre-calibration confirmation ─────────────────────────────────────────────
+
+/**
+ * Shown before either calibration method starts, so the user knows what will
+ * happen and can prepare (volume up, quiet room, fork ready).
+ * Dismissible at any time; confirming fires the actual calibration lambda.
+ */
+@Composable
+fun CalibrationConfirmDialog(
+    mode: CalibrationMode,
+    referenceHz: Float,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val iconVector: ImageVector
+    val title: String
+    val body: String
+    when (mode) {
+        CalibrationMode.LOOPBACK -> {
+            iconVector = Icons.Filled.Mic
+            title = "Microphone Calibration"
+            body = "Metro plays test tones through your speaker and listens back through the mic to measure and correct any pitch bias. The whole process takes about 10 seconds.\n\nTurn your phone volume up and find a quiet spot before you start, background noise will skew the result."
+        }
+        CalibrationMode.REFERENCE -> {
+            iconVector = Icons.Filled.MusicNote
+            title = "Tuning Fork"
+            body = "Strike your ${referenceHz.roundToInt()} Hz fork and hold it close to the mic. Metro will lock on to the pitch and store a correction that sharpens accuracy across every note you tune.\n\nCalibration has a bigger impact than most people expect, even a small offset accumulates. A well-calibrated tuner is noticeably more accurate."
+        }
+        CalibrationMode.INSTRUMENT -> return
+    }
+
+    val cardScale = remember { Animatable(0.2f) }
+    LaunchedEffect(Unit) {
+        cardScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+        )
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = AppColors.surfaceDeep,
+            shadowElevation = 24.dp,
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .widthIn(min = 280.dp, max = 360.dp)
+                .graphicsLayer {
+                    scaleX = cardScale.value
+                    scaleY = cardScale.value
+                    alpha = ((cardScale.value - 0.2f) / 0.8f).coerceIn(0f, 1f)
+                },
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(AppColors.gold.copy(alpha = 0.12f), CircleShape),
+                ) {
+                    Icon(
+                        imageVector = iconVector,
+                        contentDescription = null,
+                        tint = AppColors.gold,
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    title,
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    body,
+                    color = AppColors.textSecondary,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 19.sp,
+                )
+                Spacer(Modifier.height(22.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color.Transparent,
+                        border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                "Cancel",
+                                color = AppColors.textSecondary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Surface(
+                        onClick = onConfirm,
+                        shape = RoundedCornerShape(14.dp),
+                        color = AppColors.gold.copy(alpha = 0.10f),
+                        border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.75f)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                "Start",
+                                color = AppColors.gold,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
             }
         }
     }

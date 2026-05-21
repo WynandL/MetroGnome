@@ -119,6 +119,7 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     val isPracticeActive by vm.isPracticeActive.collectAsStateWithLifecycle()
     val practiceSecondsRemaining by vm.practiceSecondsRemaining.collectAsStateWithLifecycle()
     val practiceGoalSeconds by vm.practiceGoalSeconds.collectAsStateWithLifecycle()
+    val practiceStreak by vm.practiceStreak.collectAsStateWithLifecycle()
     val pendingPracticeResult by vm.pendingPracticeResult.collectAsStateWithLifecycle()
 
     var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
@@ -263,6 +264,14 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
                     .fillMaxWidth()
                     .background(AppColors.background)
                     .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 4.dp)
+            )
+        } else if (practiceStreak > 0 && isPracticeModeUnlocked) {
+            StreakBadgeRow(
+                streak = practiceStreak,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppColors.background)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 6.dp)
             )
         }
 
@@ -737,6 +746,41 @@ private fun heartbeatCurve(t: Float): Float {
 }
 
 @Composable
+private fun StreakBadgeRow(
+    streak: Int,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(10.dp)
+    Box(
+        modifier = modifier
+            .height(32.dp)
+            .clip(shape)
+            .background(AppColors.surfaceDim)
+            .border(1.dp, AppColors.primaryPurple.copy(alpha = 0.35f), shape),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(text = "🔥", fontSize = 13.sp)
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text = "Day $streak",
+                color = AppColors.gold,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = " streak",
+                color = AppColors.textMuted,
+                fontSize = 13.sp,
+            )
+        }
+    }
+}
+
+@Composable
 private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit) {
     var selected by remember { mutableIntStateOf(10) }
 
@@ -1142,4 +1186,10 @@ private fun SecondaryControlsRowPreview() {
         onToggleScreenOn = {},
         onPractice = {}
     )
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0D0B1E, widthDp = 360)
+@Composable
+private fun StreakBadgeRowPreview() {
+    StreakBadgeRow(streak = 5)
 }

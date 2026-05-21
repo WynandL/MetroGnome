@@ -57,7 +57,8 @@
       "Bash(Select-String \"seo_reports|content|aso|code_seo\")",
       "WebSearch",
       "Bash(npm --version)",
-      "WebFetch(domain:www.pleasecallmesa.co.za)"
+      "WebFetch(domain:www.pleasecallmesa.co.za)",
+      "Bash(./gradlew :app:compileDebugKotlin -q)"
     ]
   }
 }

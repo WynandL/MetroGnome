@@ -51,6 +51,12 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.ModeNight
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Hearing
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -94,6 +100,7 @@ import com.example.metrognome.audio.tuner.ListeningState
 import com.example.metrognome.audio.NoteNames
 import com.example.metrognome.audio.tuner.Tuner
 import com.example.metrognome.ui.components.TunerFeedbackCard
+import com.example.metrognome.ui.dialogs.CalibrationConfirmDialog
 import com.example.metrognome.ui.dialogs.CalibrationDialog
 import com.example.metrognome.ui.dialogs.InstrumentCalibrationDialog
 import com.example.metrognome.ui.theme.AppColors
@@ -243,6 +250,7 @@ internal fun TunerScreenContent(
     isAdFree: Boolean = false,
 ) {
     val pendingReading = remember { mutableStateOf<Tuner.Reading?>(null) }
+    var pendingConfirm by remember { mutableStateOf<CalibrationMode?>(null) }
 
     Column(
         modifier = Modifier
@@ -310,19 +318,19 @@ internal fun TunerScreenContent(
         AmbientHistogram(ambient)
 
         Spacer(Modifier.height(12.dp))
+        CalibrationCard(
+            info = calibrationInfo,
+            referenceHz = referenceHz,
+            onLoopbackCalibrate = { pendingConfirm = CalibrationMode.LOOPBACK },
+            onReferenceCalibrate = { pendingConfirm = CalibrationMode.REFERENCE },
+            onClear = onClearCalibration,
+        )
+
+        Spacer(Modifier.height(12.dp))
         ReferencePitchCard(
             referenceHz = referenceHz,
             onNudge = onNudgeReference,
             onSet = onSetReferenceHz,
-        )
-
-        Spacer(Modifier.height(12.dp))
-        CalibrationCard(
-            info = calibrationInfo,
-            referenceHz = referenceHz,
-            onLoopbackCalibrate = onLoopbackCalibrate,
-            onReferenceCalibrate = onReferenceCalibrate,
-            onClear = onClearCalibration,
         )
         Spacer(Modifier.height(24.dp))
     }
@@ -345,6 +353,22 @@ internal fun TunerScreenContent(
             reading = r,
             onConfirm = { onCalibrateToNote(r); pendingReading.value = null },
             onDismiss = { pendingReading.value = null },
+        )
+    }
+
+    pendingConfirm?.let { mode ->
+        CalibrationConfirmDialog(
+            mode = mode,
+            referenceHz = referenceHz,
+            onConfirm = {
+                pendingConfirm = null
+                when (mode) {
+                    CalibrationMode.LOOPBACK -> onLoopbackCalibrate()
+                    CalibrationMode.REFERENCE -> onReferenceCalibrate()
+                    CalibrationMode.INSTRUMENT -> {}
+                }
+            },
+            onDismiss = { pendingConfirm = null },
         )
     }
     }
@@ -587,20 +611,7 @@ private fun AmbientHistogram(report: AmbientReport) {
                         indication = null,
                     ) { expanded = !expanded },
             ) {
-                AmbientOrb(color = stateColor)
-                Spacer(Modifier.width(10.dp))
-                // Cross-fade the label text so rapid state flips don't flash
-                AnimatedContent(
-                    targetState = ambientStateLabel(report.state),
-                    transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(400)) },
-                    label = "stateLabel",
-                ) { label ->
-                    Text(
-                        label,
-                        color = stateColor.copy(alpha = 0.85f),
-                        fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp,
-                    )
-                }
+                AmbientStateIcons(state = report.state)
                 Spacer(Modifier.weight(1f))
                 // Fixed-width slot — always reserves 36 dp so the chevron never shifts
                 Box(modifier = Modifier.width(36.dp), contentAlignment = Alignment.CenterEnd) {
@@ -756,6 +767,56 @@ private fun AmbientHistogram(report: AmbientReport) {
     }
 }
 
+private val ambientStateIconEntries = listOf(
+    ListeningState.PROFILING to Icons.Filled.Search,
+    ListeningState.QUIET     to Icons.Filled.Hearing,
+    ListeningState.NOISE     to Icons.Filled.GraphicEq,
+    ListeningState.UNSTABLE  to Icons.Filled.RecordVoiceOver,
+    ListeningState.ACQUIRING to Icons.Filled.MusicNote,
+    ListeningState.LOCKED    to Icons.Filled.Lock,
+)
+
+/**
+ * Always-visible row of six state indicator icons.
+ * The active state lights up in its own [ambientStateColor]; all others are dimmed.
+ * Avoids fast-changing text that is hard to read in a noisy rehearsal environment.
+ */
+@Composable
+private fun AmbientStateIcons(state: ListeningState) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ambientStateIconEntries.forEach { (s, icon) ->
+            val isActive = state == s
+            val activeColor = ambientStateColor(s)
+            val tint by animateColorAsState(
+                targetValue = if (isActive) activeColor else AppColors.textDim.copy(alpha = 0.28f),
+                animationSpec = tween(220),
+                label = "ambientIconTint",
+            )
+            val bgAlpha by animateFloatAsState(
+                targetValue = if (isActive) 0.15f else 0f,
+                animationSpec = tween(220),
+                label = "ambientIconBg",
+            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(26.dp)
+                    .background(activeColor.copy(alpha = bgAlpha), CircleShape),
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier.size(15.dp),
+                )
+            }
+        }
+    }
+}
+
 /** Subtle horizontal reference lines at 25 / 50 / 75 / 100 % of bar height. */
 private fun DrawScope.drawHistogramGrid() {
     val gridColor = AppColors.surfaceVariant.copy(alpha = 0.55f)
@@ -873,31 +934,6 @@ private fun AmbientDetailRow(label: String, indicator: @Composable () -> Unit) {
         Text(label, color = AppColors.textSubtle, fontSize = 10.sp)
         Spacer(Modifier.weight(1f))
         indicator()
-    }
-}
-
-/**
- * A three-layer pulsing orb whose color reflects the current [ListeningState].
- * The outer halo breathes outward; the core brightens at its peak.  The effect is
- * ambient enough to ignore while actively tuning, yet immediately readable at a glance.
- */
-@Composable
-private fun AmbientOrb(color: Color) {
-    val transition = rememberInfiniteTransition(label = "ambientOrb")
-    val pulse by transition.animateFloat(
-        initialValue = 0f,
-        targetValue  = 1f,
-        animationSpec = infiniteRepeatable(
-            animation  = tween(2200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "orbPulse",
-    )
-    Canvas(modifier = Modifier.size(20.dp)) {
-        val r = size.minDimension / 2f
-        drawCircle(color.copy(alpha = 0.07f + pulse * 0.10f), radius = r * (1.2f + pulse * 0.15f))
-        drawCircle(color.copy(alpha = 0.18f + pulse * 0.22f), radius = r * (0.82f + pulse * 0.12f))
-        drawCircle(color.copy(alpha = 0.60f + pulse * 0.40f), radius = r * 0.50f)
     }
 }
 
@@ -1027,13 +1063,9 @@ private fun IdleCalibration(
     onReferenceCalibrate: () -> Unit,
     onClear: () -> Unit,
 ) {
-    if (info.calibrated) {
-        StatusLine(GameColors.good, "Calibrated · ±${fmtCents(info.accuracyCents)}")
-    } else {
-        StatusLine(AppColors.textMuted, "Not calibrated")
-    }
+    CalibrationStatus(info)
 
-    Spacer(Modifier.height(14.dp))
+    Spacer(Modifier.height(12.dp))
     CalibrationOptionButton(
         icon = {
             Icon(
@@ -1169,6 +1201,130 @@ private fun TuningForkIcon(
 
         // Handle (stem)
         drawLine(tint, Offset(cx, prongBot + h * 0.04f), Offset(cx, handleBot), sw, StrokeCap.Round)
+    }
+}
+
+@Composable
+private fun CalibrationStatus(info: CalibrationInfo) {
+    val accent = if (info.calibrated) GameColors.good else AppColors.textDim
+    var showInfo by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(accent.copy(alpha = if (info.calibrated) 0.05f else 0f))
+            .border(1.dp, accent.copy(alpha = if (info.calibrated) 0.28f else 0.16f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(34.dp)
+                    .background(accent.copy(alpha = 0.12f), CircleShape),
+            ) {
+                when {
+                    info.calibrated && info.mode == CalibrationMode.LOOPBACK ->
+                        Icon(Icons.Filled.Mic, null, tint = accent, modifier = Modifier.size(16.dp))
+                    info.calibrated && info.mode == CalibrationMode.REFERENCE ->
+                        TuningForkIcon(Modifier.size(16.dp), tint = accent)
+                    info.calibrated ->
+                        Icon(Icons.Filled.MusicNote, null, tint = accent, modifier = Modifier.size(16.dp))
+                    else ->
+                        Icon(Icons.Filled.MusicNote, null, tint = AppColors.textDim.copy(alpha = 0.30f), modifier = Modifier.size(16.dp))
+                }
+            }
+
+            Spacer(Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                if (info.calibrated) {
+                    val modeLabel = when (info.mode) {
+                        CalibrationMode.LOOPBACK   -> "MICROPHONE"
+                        CalibrationMode.REFERENCE  -> "TUNING FORK"
+                        CalibrationMode.INSTRUMENT -> "INSTRUMENT"
+                        null                       -> "CALIBRATED"
+                    }
+                    Text(
+                        modeLabel,
+                        color = AppColors.textSubtle,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        "±${fmtCents(info.accuracyCents)}",
+                        color = accent,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Not calibrated",
+                            color = AppColors.textMuted,
+                            fontSize = 13.sp,
+                        )
+                        Spacer(Modifier.width(5.dp))
+                        Box(
+                            modifier = Modifier
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                ) { showInfo = !showInfo }
+                                .padding(3.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Info,
+                                contentDescription = "About calibration",
+                                tint = if (showInfo) AppColors.textSecondary
+                                       else AppColors.textDim.copy(alpha = 0.55f),
+                                modifier = Modifier.size(13.dp),
+                            )
+                        }
+                    }
+                }
+            }
+
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(accent),
+            )
+        }
+
+        AnimatedVisibility(
+            visible = !info.calibrated && showInfo,
+            enter = expandVertically() + fadeIn(tween(180)),
+            exit  = shrinkVertically() + fadeOut(tween(180)),
+        ) {
+            Column {
+                Spacer(Modifier.height(10.dp))
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(AppColors.surfaceVariant),
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Calibration fine-tunes Metro's pitch detection for your specific phone and environment. Without it, results are still accurate enough for most practice and performance tuning.",
+                    color = AppColors.textMuted,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "It is not strictly required, but if you want the sharpest possible accuracy, particularly for critical intonation work, running a quick calibration is worth the extra minute.",
+                    color = AppColors.textMuted,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                )
+            }
+        }
     }
 }
 

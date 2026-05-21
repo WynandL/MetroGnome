@@ -67,6 +67,9 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _pendingPracticeResult     = MutableStateFlow<PracticeResult?>(null)
     val pendingPracticeResult: StateFlow<PracticeResult?> = _pendingPracticeResult.asStateFlow()
 
+    private val _practiceStreak            = MutableStateFlow(practiceManager.getCurrentStreak())
+    val practiceStreak: StateFlow<Int>                    = _practiceStreak.asStateFlow()
+
     private var practiceJob: Job? = null
 
     private val _presets = MutableStateFlow(presetsManager.loadPresets())
@@ -174,6 +177,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         billingManager.debugClearPracticeMode()
         practiceManager.debugClear()
         cancelPractice()
+        _practiceStreak.value = 0
     }
 
     private fun startPracticeTimer() {
@@ -196,6 +200,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         val newStreak     = practiceManager.recordSession()
         val totalSessions = practiceManager.getTotalSessions()
         _isPracticeActive.value = false
+        _practiceStreak.value = newStreak
         AnalyticsTracker.logPracticeCompleted(goalMinutes, newStreak, totalSessions)
         _pendingPracticeResult.value = PracticeResult(goalMinutes, newStreak, totalSessions)
         checkForNewUnlocks()
@@ -347,6 +352,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun checkForNewUnlocks() {
+        _practiceStreak.value = practiceManager.getCurrentStreak()
         _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
         val celebrated = itemTracker.celebratedIds()
         _unlockQueue.value = _unlockQueue.value.filter { it.item.id in _activeItemIds.value && it.item.id !in celebrated }
