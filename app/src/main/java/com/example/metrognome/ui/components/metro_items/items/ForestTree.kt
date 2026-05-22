@@ -26,7 +26,6 @@ object ForestTree : MetroItem {
     override val id             = "forest_tree"
     override val displayName    = "Old Oak Tree"
     override val description    = "Metro's forest guardian...a grand old oak that was always there."
-    override val unlockCondition = "Use the app for 30 days"
     override val earnedMessage  = "One whole month! The forest recognises a true musician. Metro's oak has always been there, waiting patiently while he practised. It stands proud beside him now."
     override val isBodyAttached  = false
 

@@ -18,7 +18,6 @@ object ForestFloorFlowers : MetroItem {
     override val id             = "forest_floor_flowers"
     override val displayName    = "Wildflowers"
     override val description    = "A cheerful patch of wildflowers that sprouted beside Metro."
-    override val unlockCondition = "Use the app for 3 days"
     override val earnedMessage  = "You've been with Metro for 3 days! The forest floor is starting to bloom! These little wildflowers sprouted up beside his shoes to welcome you back."
     override val isBodyAttached  = false
 

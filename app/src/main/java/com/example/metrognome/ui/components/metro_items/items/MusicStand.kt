@@ -30,7 +30,6 @@ object MusicStand : MetroItem {
     override val id              = "music_stand"
     override val displayName     = "Music Stand"
     override val description     = "A proper music stand that appeared when Metro got serious about practice. Sheet music never lies."
-    override val unlockCondition = "Complete 5 practice sessions"
     override val earnedMessage   = "Five sessions in! Metro set up his practice stand. It appeared overnight, as if the forest knew dedication deserved a reward."
     override val isBodyAttached  = false
 

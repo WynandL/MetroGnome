@@ -88,6 +88,7 @@ import com.example.metrognome.ads.AdBannerView
 import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.components.GnomeCanvas
 import com.example.metrognome.ui.components.PresetChipsRow
+import com.example.metrognome.ui.components.StreakIcon
 import com.example.metrognome.ui.dialogs.ShowcaseFrame
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.theme.AppColors
@@ -763,7 +764,7 @@ private fun StreakBadgeRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            Text(text = "🔥", fontSize = 13.sp)
+            StreakIcon(Modifier.size(15.dp))
             Spacer(Modifier.width(5.dp))
             Text(
                 text = "Day $streak",

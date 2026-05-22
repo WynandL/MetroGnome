@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
+import com.example.metrognome.ui.components.metro_items.displayText
 import com.example.metrognome.ui.theme.AppColors
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -204,7 +205,7 @@ fun UnlockCelebrationOverlay(
                 Spacer(Modifier.height(6.dp))
 
                 Text(
-                    text = entry.item.unlockCondition,
+                    text = entry.condition.displayText(),
                     color = AppColors.textMutedBlue,
                     fontSize = 12.sp,
                     fontStyle = FontStyle.Italic,

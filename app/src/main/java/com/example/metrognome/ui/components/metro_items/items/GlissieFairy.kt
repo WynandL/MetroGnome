@@ -18,9 +18,14 @@ object GlissieFairy : MetroItem {
     override val id              = "glissie_fairy"
     override val displayName     = "Glissie"
     override val description     = "A musical fairy who dances slow glissandos through Metro's night sky."
-    override val unlockCondition = "Play the metronome for 6 hours total"
     override val earnedMessage   = "Six hours of music, and the forest finally stirred. Glissie has been up there all along, spinning slow glissandos in the dark. Now that you've earned her trust, she dances for you both."
     override val isBodyAttached  = false
+
+    // Tap target: canvas pos ≈ (canvasW*0.22, baseY-6.5u). In body space (subtract cx=canvasW/2,
+    // subtract baseY): x ≈ -0.28*canvasW ≈ -2.2u on a portrait phone (canvasW/canvasH ≈ 0.47).
+    // Radius is generous to catch her mid-float animation (±0.52u lateral drift).
+    override fun hitCenter(u: Float) = Offset(-2.2f * u, -6.5f * u)
+    override fun hitRadius(u: Float) = u * 1.8f
 
     // Upper-left sky — tight zoom captures the full figure comfortably
     override fun previewCenter(canvasW: Float, canvasH: Float, u: Float, baseY: Float) =

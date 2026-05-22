@@ -7,7 +7,9 @@ interface MetroItem {
     val id: String
     val displayName: String
     val description: String
-    val unlockCondition: String
+    // unlockCondition was removed — use entry.condition.displayText() at the call site instead.
+    // Keeping it in MetroItem created two sources of truth that silently diverged when registry
+    // thresholds changed. displayText() is derived directly from the UnlockCondition data.
     val earnedMessage: String       // shown when the user taps the item on Metro
     val isBodyAttached: Boolean     // true = drawn inside the withTransform block; false = background layer
     val isHeadAttached: Boolean get() = false  // true = moves with the head-bob transform

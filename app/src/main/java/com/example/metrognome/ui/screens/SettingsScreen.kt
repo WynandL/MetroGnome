@@ -68,6 +68,7 @@ import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.billing.PurchasableItemDef
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.UnlockCondition
+import com.example.metrognome.ui.components.metro_items.displayText
 import com.example.metrognome.ui.components.OwnedBadge
 import com.example.metrognome.ui.dialogs.ShowcaseFrame
 import com.example.metrognome.ui.theme.AppColors
@@ -553,7 +554,7 @@ fun SettingsScreen(
                             fontSize = 13.sp,
                         )
                         Text(
-                            text = entry.item.unlockCondition,
+                            text = entry.condition.displayText(),
                             fontSize = 12.sp,
                             color = AppColors.textSecondary,
                         )

@@ -33,7 +33,6 @@ object HatFeather : MetroItem {
     override val id              = "hat_feather"
     override val displayName     = "Hat Plume"
     override val description     = "A fine feathered plume for Metro's cap, earned by listening closely with the tuner."
-    override val unlockCondition = "15 minutes of tuner use"
     override val earnedMessage   = "Fifteen minutes of careful listening! For his sharp ear, Metro tucked a bright plume into his cap. He wears it well."
     override val isBodyAttached  = true
     override val isHeadAttached  = true

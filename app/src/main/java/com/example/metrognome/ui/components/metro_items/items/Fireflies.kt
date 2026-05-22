@@ -21,7 +21,6 @@ object Fireflies : MetroItem {
     override val id             = "fireflies"
     override val displayName    = "Fireflies"
     override val description    = "Tiny bioluminescent visitors drawn to Metro's music on long practice nights."
-    override val unlockCondition = "Play the metronome for 3 hours total"
     override val earnedMessage  = "Three whole hours of music! These fireflies were drawn to Metro's rhythmic light. They drift around him at dusk, enchanted by the beat."
     override val isBodyAttached  = false
 

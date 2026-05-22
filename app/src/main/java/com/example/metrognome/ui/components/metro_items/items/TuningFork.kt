@@ -26,7 +26,6 @@ object TuningFork : MetroItem {
     override val id             = "tuning_fork"
     override val displayName    = "Tuning Fork"
     override val description    = "A precision A440 fork. Metro listens to the universe."
-    override val unlockCondition = "Help improve the tuner"
     override val earnedMessage  = "Your feedback shapes how the tuner hears the world. Metro picked up a precision A440 fork to celebrate and to remind himself to stay sharp."
     override val isBodyAttached = true
     override val isHeadAttached = false

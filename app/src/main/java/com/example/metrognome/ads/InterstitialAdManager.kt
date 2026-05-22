@@ -18,6 +18,8 @@ class InterstitialAdManager(private val context: Context) {
 
     private var loadedAd: InterstitialAd? = null
     private var isLoading = false
+    private var gamesPlayed = 0
+    private var lastShownMs = 0L
 
     fun preload() {
         if (isLoading || loadedAd != null) return
@@ -37,14 +39,19 @@ class InterstitialAdManager(private val context: Context) {
             })
     }
 
-    // Shows the ad if ready; calls onDone immediately if no ad is loaded.
+    // Shows the ad every 3rd game and at most once per 5 minutes.
     fun showIfReady(activity: Activity, onDone: () -> Unit) {
+        gamesPlayed++
+        val shouldShow = gamesPlayed % 3 == 0 &&
+                System.currentTimeMillis() - lastShownMs >= 5 * 60_000L
+
         val ad = loadedAd
-        if (ad == null) {
-            preload()
+        if (!shouldShow || ad == null) {
+            if (ad == null) preload()
             onDone()
             return
         }
+        lastShownMs = System.currentTimeMillis()
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 loadedAd = null
