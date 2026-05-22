@@ -1,3 +1,6 @@
 # Default ignored files
 /shelf/
 /workspace.xml
+# Machine-local: emulator selection + timestamp, device list UI sort pref
+/deploymentTargetSelector.xml
+/deviceManager.xml
