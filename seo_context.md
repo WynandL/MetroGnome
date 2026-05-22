@@ -35,6 +35,12 @@
 - Solo developer, South Africa
 - Electronics engineering background
 - Also built: fAIth app and Please Call Me SA (Access Comms developer name)
+- Reddit account: wynand_dev (created 2026-05-22, first active day)
+
+## Reddit Activity (do not re-post to same subreddit same day)
+- r/Guitar or r/guitarlessons — "Unholy Confessions metronome" thread — posted 2026-05-22
+- r/drums — "metronome hi-hat click sound" thread (evergreen) — posted 2026-05-22
+- r/guitarlessons — "can't subdivide the beat" thread — queued for 2026-05-23
 
 ## Competitors
 - Metronome Beats (Stonekick): 26M installs, 4.8 stars — no tuner, ad-heavy

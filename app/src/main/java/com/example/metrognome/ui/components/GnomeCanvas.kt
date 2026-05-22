@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
 import com.example.metrognome.ui.components.metro_items.MetroItem
+import com.example.metrognome.ui.components.metro_items.items.drawSparkle
 import com.example.metrognome.ui.theme.ItemPalette
 import com.example.metrognome.ui.theme.GnomeColors
 import com.example.metrognome.viewmodel.BeatEvent
@@ -405,24 +406,56 @@ private fun DrawScope.drawBaton(u: Float, pendulumAngle: Float) {
         rotate(pendulumAngle * 40f, Offset.Zero)
     }) {
         val batonLen = 4.2f * u
+        val rodW     = 0.18f * u
+
+        // ── Polished gold rod — cross-width sheen (bright left → dark right) ───
         drawLine(
-            color = GnomeColors.batonGold, start = Offset(0f, 0f), end = Offset(0f, batonLen),
-            strokeWidth = 0.18f * u, cap = StrokeCap.Round
+            brush = Brush.linearGradient(
+                colors = listOf(ItemPalette.goldLight, GnomeColors.batonGold, GnomeColors.batonDark),
+                start = Offset(-rodW / 2f, 0f), end = Offset(rodW / 2f, 0f)
+            ),
+            start = Offset(0f, 0f), end = Offset(0f, batonLen),
+            strokeWidth = rodW, cap = StrokeCap.Round
         )
+        // Bright highlight stripe just left of centre
+        drawLine(
+            color = ItemPalette.goldLight.copy(alpha = 0.9f),
+            start = Offset(-rodW * 0.24f, 0.20f * u), end = Offset(-rodW * 0.24f, batonLen - 0.45f * u),
+            strokeWidth = rodW * 0.26f, cap = StrokeCap.Round
+        )
+        // A small glint catching the light partway up the rod
+        drawSparkle(center = Offset(-rodW * 0.18f, 1.30f * u), radius = rodW * 0.5f, color = Color.White.copy(alpha = 0.8f))
+
+        // ── Calibration ticks — engraved (dark cut + light bevel) ─────────────
+        for (i in 0 until 4) {
+            val ty = 0.55f * u + i * 0.22f * u
+            drawLine(GnomeColors.batonDark, Offset(-0.11f * u, ty), Offset(0.11f * u, ty), strokeWidth = 0.06f * u)
+            drawLine(ItemPalette.goldLight.copy(alpha = 0.5f), Offset(-0.11f * u, ty - 0.025f * u), Offset(0.11f * u, ty - 0.025f * u), strokeWidth = 0.02f * u)
+        }
+
+        // ── Bob — polished gold sphere ────────────────────────────────────────
+        val ballR = 0.38f * u
+        // Joint shadow where the rod meets the bob
+        drawCircle(GnomeColors.batonDark.copy(alpha = 0.45f), radius = rodW * 0.55f, center = Offset(0f, batonLen - ballR * 0.92f))
+        // Sphere body — lit from the upper-left (in local space)
         drawCircle(
             brush = Brush.radialGradient(
-                listOf(ItemPalette.goldLight, GnomeColors.batonGold),
-                center = Offset(-0.08f * u, batonLen - 0.1f * u), radius = 0.42f * u
+                colors = listOf(ItemPalette.goldLight, GnomeColors.batonGold, ItemPalette.goldDark),
+                center = Offset(-ballR * 0.35f, batonLen - ballR * 0.35f), radius = ballR * 1.5f
             ),
-            radius = 0.38f * u, center = Offset(0f, batonLen)
+            radius = ballR, center = Offset(0f, batonLen)
         )
-        for (i in 0 until 4) {
-            drawLine(
-                color = GnomeColors.batonDark,
-                start = Offset(-0.11f * u, 0.55f * u + i * 0.22f * u),
-                end = Offset(0.11f * u, 0.55f * u + i * 0.22f * u), strokeWidth = 0.06f * u
-            )
-        }
+        // Faint rim light on the lower-right
+        drawArc(
+            color = ItemPalette.goldLight.copy(alpha = 0.5f),
+            startAngle = 25f, sweepAngle = 75f, useCenter = false,
+            topLeft = Offset(-ballR * 0.85f, batonLen - ballR * 0.85f),
+            size = Size(ballR * 1.7f, ballR * 1.7f),
+            style = Stroke(width = rodW * 0.22f, cap = StrokeCap.Round)
+        )
+        // Specular dot + sparkle
+        drawCircle(Color.White.copy(alpha = 0.7f), radius = ballR * 0.22f, center = Offset(-ballR * 0.38f, batonLen - ballR * 0.40f))
+        drawSparkle(center = Offset(-ballR * 0.32f, batonLen - ballR * 0.34f), radius = ballR * 0.52f, color = Color.White.copy(alpha = 0.85f))
     }
 }
 

@@ -195,5 +195,12 @@ object GoldChain : MetroItem {
             radius = discR * 0.55f,
             center = Offset(mx - discR * 0.28f, my - discR * 0.28f)
         )
+
+        // ── Sparkle glint (premium shine, matches the wearables tier) ─────────
+        drawSparkle(
+            center = Offset(mx - discR * 0.34f, my - discR * 0.34f),
+            radius = discR * 0.34f,
+            color = Color.White.copy(alpha = 0.9f)
+        )
     }
 }

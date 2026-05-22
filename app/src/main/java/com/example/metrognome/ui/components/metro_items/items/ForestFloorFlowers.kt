@@ -1,10 +1,12 @@
 package com.example.metrognome.ui.components.metro_items.items
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.withTransform
 import com.example.metrognome.ui.components.metro_items.MetroItem
 
 /**
@@ -20,77 +22,128 @@ object ForestFloorFlowers : MetroItem {
     override val earnedMessage  = "You've been with Metro for 3 days! The forest floor is starting to bloom! These little wildflowers sprouted up beside his shoes to welcome you back."
     override val isBodyAttached  = false
 
-    // Flowers span 8-44% of screen width — approximation for tap detection
-    override fun hitCenter(u: Float) = Offset(-2.0f * u, -0.5f * u)
-    override fun hitRadius(u: Float) = u * 2.0f
+    // Flowers span ~9-33% of screen width — approximation for tap detection
+    override fun hitCenter(u: Float) = Offset(-2.1f * u, -0.5f * u)
+    override fun hitRadius(u: Float) = u * 1.8f
 
-    // Show 3-4 flowers close-up: centre on the left half of the patch, mid-stem height
+    // Show a few flowers close-up: centre on the left of the patch, mid-stem height
     override fun previewCenter(canvasW: Float, canvasH: Float, u: Float, baseY: Float) =
-        Offset(canvasW * 0.26f, baseY - 0.65f * u)
-    override fun previewRadius(u: Float) = u * 2.2f
+        Offset(canvasW * 0.21f, baseY - 0.6f * u)
+    override fun previewRadius(u: Float) = u * 2.0f
 
-    private val stemGreen  = Color(0xFF4A7C3F)
-    private val yellow     = Color(0xFFFFE066)
-    private val pink       = Color(0xFFFF8FAB)
-    private val white      = Color(0xFFF5F5F5)
-    private val orange     = Color(0xFFFF9900)
+    private val stemGreen   = Color(0xFF4A7C3F)
+    private val yellow      = Color(0xFFFFE066)
+    private val pink        = Color(0xFFFF8FAB)
+    private val white        = Color(0xFFF5F5F5)
+    private val orange      = Color(0xFFFF9900)
     private val lightYellow = Color(0xFFFFFF88)
-    private val leafGreen  = Color(0xFF5E9E52)
+    private val leafGreen   = Color(0xFF5E9E52)
+    private val centerDark  = Color(0xFFCC7000)   // stamen dots
 
     override fun DrawScope.draw(u: Float, cx: Float, baseY: Float) {
-        // Patch starts at the tree base (8%) and spreads across to 44%
-        drawFlower(u, size.width * 0.09f, baseY, white,  orange,      0.42f)
-        drawFlower(u, size.width * 0.13f, baseY, yellow, orange,      0.60f)
-        drawFlower(u, size.width * 0.17f, baseY, pink,   lightYellow, 0.68f)
-        drawFlower(u, size.width * 0.21f, baseY, white,  orange,      0.52f)
-        drawFlower(u, size.width * 0.25f, baseY, yellow, lightYellow, 0.74f)
-        drawFlower(u, size.width * 0.30f, baseY, pink,   orange,      0.62f)
-        drawFlower(u, size.width * 0.34f, baseY, white,  lightYellow, 0.56f)
-        drawFlower(u, size.width * 0.39f, baseY, yellow, orange,      0.50f)
-        drawFlower(u, size.width * 0.43f, baseY, pink,   lightYellow, 0.44f)
-        drawGrassBlades(u, size.width * 0.11f, baseY)
-        drawGrassBlades(u, size.width * 0.19f, baseY)
-        drawGrassBlades(u, size.width * 0.28f, baseY)
-        drawGrassBlades(u, size.width * 0.37f, baseY)
-        drawGrassBlades(u, size.width * 0.44f, baseY)
+        // Grass tufts first (behind flowers). Narrower band: ~9%-33%.
+        drawGrassBlades(u, size.width * 0.10f, baseY)
+        drawGrassBlades(u, size.width * 0.165f, baseY)
+        drawGrassBlades(u, size.width * 0.235f, baseY)
+        drawGrassBlades(u, size.width * 0.30f, baseY)
+        drawGrassBlades(u, size.width * 0.33f, baseY)
+
+        // A couple of buds for variety, tucked among the blooms
+        drawBud(u, size.width * 0.11f, baseY, pink,   0.46f)
+        drawBud(u, size.width * 0.285f, baseY, yellow, 0.42f)
+
+        // Blooms — denser, narrower, slightly shorter than before, with varied petal counts
+        drawFlower(u, size.width * 0.09f,  baseY, white,  orange,      0.42f, 5, -0.04f)
+        drawFlower(u, size.width * 0.125f, baseY, yellow, centerDark,  0.58f, 6,  0.03f)
+        drawFlower(u, size.width * 0.16f,  baseY, pink,   lightYellow, 0.64f, 5, -0.03f)
+        drawFlower(u, size.width * 0.195f, baseY, white,  orange,      0.50f, 6,  0.04f)
+        drawFlower(u, size.width * 0.23f,  baseY, yellow, lightYellow, 0.60f, 5, -0.02f)
+        drawFlower(u, size.width * 0.265f, baseY, pink,   orange,      0.54f, 6,  0.03f)
+        drawFlower(u, size.width * 0.30f,  baseY, white,  lightYellow, 0.46f, 5, -0.03f)
+        drawFlower(u, size.width * 0.33f,  baseY, yellow, orange,      0.42f, 6, -0.04f)
     }
 
     private fun DrawScope.drawFlower(
         u: Float, x: Float, groundY: Float,
-        petalColor: Color, centerColor: Color, scale: Float
+        petalColor: Color, centerColor: Color, scale: Float,
+        petals: Int, lean: Float
     ) {
         val s        = u * scale
-        val stemTopY = groundY - 1.15f * s
+        val topX     = x + lean * s
+        val stemTopY = groundY - 1.05f * s
 
-        // Stem
+        // Stem (gently leaning)
         drawLine(
             color = stemGreen,
             start = Offset(x, groundY),
-            end   = Offset(x + 0.05f * s, stemTopY),
+            end   = Offset(topX, stemTopY),
             strokeWidth = 0.09f * s,
             cap = StrokeCap.Round
         )
 
-        // Small leaf on stem
-        val leafPath = Path().apply {
-            moveTo(x, stemTopY + 0.55f * s)
-            cubicTo(x - 0.35f * s, stemTopY + 0.30f * s, x - 0.40f * s, stemTopY + 0.10f * s, x, stemTopY + 0.35f * s)
+        // Two leaves on the stem
+        leafAt(x - 0.01f * s, groundY - 0.42f * s, s * 0.95f, -1f)
+        leafAt(x + 0.04f * s, groundY - 0.72f * s, s * 0.75f, 1f)
+
+        // Petals — elongated ovals radiating from the bloom centre, with a soft tip sheen
+        val petalW    = 0.18f * s
+        val petalH    = 0.34f * s
+        val petalDist = 0.24f * s
+        val step      = 360f / petals
+        for (i in 0 until petals) {
+            withTransform({ rotate(i * step, pivot = Offset(topX, stemTopY)) }) {
+                val cyP = stemTopY - petalDist
+                drawOval(
+                    color   = petalColor,
+                    topLeft = Offset(topX - petalW / 2f, cyP - petalH / 2f),
+                    size    = Size(petalW, petalH)
+                )
+                drawOval(
+                    color   = white.copy(alpha = 0.35f),
+                    topLeft = Offset(topX - petalW * 0.28f, cyP - petalH * 0.42f),
+                    size    = Size(petalW * 0.56f, petalH * 0.40f)
+                )
+            }
+        }
+
+        // Bloom centre + ring of stamen dots + a small highlight
+        drawCircle(centerColor, radius = 0.16f * s, center = Offset(topX, stemTopY))
+        for (i in 0 until 5) {
+            val a  = Math.toRadians(i * 72.0)
+            val dx = (Math.cos(a) * 0.07f * s).toFloat()
+            val dy = (Math.sin(a) * 0.07f * s).toFloat()
+            drawCircle(centerDark, radius = 0.028f * s, center = Offset(topX + dx, stemTopY + dy))
+        }
+        drawCircle(white.copy(alpha = 0.5f), radius = 0.05f * s, center = Offset(topX - 0.04f * s, stemTopY - 0.04f * s))
+    }
+
+    /** A small leaf on the stem. dir = -1 for left, +1 for right. */
+    private fun DrawScope.leafAt(ax: Float, ay: Float, s: Float, dir: Float) {
+        val leaf = Path().apply {
+            moveTo(ax, ay)
+            cubicTo(ax + dir * 0.30f * s, ay - 0.06f * s, ax + dir * 0.34f * s, ay - 0.24f * s, ax + dir * 0.10f * s, ay - 0.26f * s)
+            cubicTo(ax + dir * 0.06f * s, ay - 0.14f * s, ax + dir * 0.02f * s, ay - 0.05f * s, ax, ay)
             close()
         }
-        drawPath(leafPath, color = leafGreen)
+        drawPath(leaf, color = leafGreen)
+        drawLine(
+            color = stemGreen.copy(alpha = 0.5f),
+            start = Offset(ax, ay),
+            end   = Offset(ax + dir * 0.18f * s, ay - 0.19f * s),
+            strokeWidth = 0.02f * s,
+            cap = StrokeCap.Round
+        )
+    }
 
-        // 5 petals radiating from stem top
-        val petalR    = 0.22f * s
-        val petalDist = 0.26f * s
-        for (i in 0 until 5) {
-            val angle = Math.toRadians(i * 72.0 - 90.0)
-            val px = (x + Math.cos(angle) * petalDist).toFloat()
-            val py = (stemTopY + Math.sin(angle) * petalDist).toFloat()
-            drawCircle(petalColor, radius = petalR, center = Offset(px, py))
-        }
-
-        // Center
-        drawCircle(centerColor, radius = 0.17f * s, center = Offset(x + 0.02f * s, stemTopY))
+    /** A closed flower bud — short stem, green calyx, coloured tip. */
+    private fun DrawScope.drawBud(u: Float, x: Float, groundY: Float, color: Color, scale: Float) {
+        val s    = u * scale
+        val topY = groundY - 0.85f * s
+        drawLine(stemGreen, Offset(x, groundY), Offset(x + 0.03f * s, topY), strokeWidth = 0.08f * s, cap = StrokeCap.Round)
+        leafAt(x, groundY - 0.34f * s, s * 0.8f, -1f)
+        drawOval(leafGreen, topLeft = Offset(x - 0.10f * s, topY - 0.02f * s), size = Size(0.20f * s, 0.22f * s))
+        drawOval(color, topLeft = Offset(x - 0.085f * s, topY - 0.16f * s), size = Size(0.17f * s, 0.22f * s))
+        drawOval(white.copy(alpha = 0.35f), topLeft = Offset(x - 0.05f * s, topY - 0.14f * s), size = Size(0.06f * s, 0.12f * s))
     }
 
     private fun DrawScope.drawGrassBlades(u: Float, x: Float, groundY: Float) {

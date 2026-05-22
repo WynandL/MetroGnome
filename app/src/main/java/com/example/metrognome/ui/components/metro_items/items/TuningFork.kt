@@ -80,6 +80,24 @@ object TuningFork : MetroItem {
             cap = StrokeCap.Round,
         )
 
+        // ── Polished edges on each prong (bright left, dark right) ────────────
+        listOf(fx - halfGap, fx + halfGap).forEach { px ->
+            drawLine(
+                color = highlight.copy(alpha = 0.70f),
+                start = Offset(px - prongW * 0.24f, fy - prongH + prongW * 0.6f),
+                end   = Offset(px - prongW * 0.24f, fy - prongW * 0.3f),
+                strokeWidth = prongW * 0.30f,
+                cap = StrokeCap.Round,
+            )
+            drawLine(
+                color = steelDark.copy(alpha = 0.50f),
+                start = Offset(px + prongW * 0.26f, fy - prongH + prongW * 0.8f),
+                end   = Offset(px + prongW * 0.26f, fy - prongW * 0.3f),
+                strokeWidth = prongW * 0.20f,
+                cap = StrokeCap.Round,
+            )
+        }
+
         // ── U-curve connecting the prong bases ────────────────────────────────
         drawArc(
             color = steel,
@@ -118,16 +136,17 @@ object TuningFork : MetroItem {
             cap = StrokeCap.Round,
         )
 
-        // ── Prong tip glints (vibrating ends) ────────────────────────────────
-        drawCircle(
-            color = highlight,
-            radius = prongW * 0.9f,
-            center = Offset(fx - halfGap, fy - prongH),
-        )
-        drawCircle(
-            color = highlight,
-            radius = prongW * 0.9f,
-            center = Offset(fx + halfGap, fy - prongH),
-        )
+        // ── Glints catching the light along the polished steel ────────────────
+        // Irregular heights down the prongs and handle (never on the tips) so they
+        // read as reflections, not baubles. Fixed positions = no per-frame flicker.
+        listOf(
+            Triple(fx - halfGap, fy - prongH * 0.72f, prongW * 0.95f),
+            Triple(fx - halfGap, fy - prongH * 0.34f, prongW * 0.66f),
+            Triple(fx + halfGap, fy - prongH * 0.55f, prongW * 0.85f),
+            Triple(fx + halfGap, fy - prongH * 0.18f, prongW * 0.60f),
+            Triple(fx - handleW * 0.12f, fy + handleH * 0.34f, handleW * 0.50f),
+        ).forEach { (gx, gy, r) ->
+            drawSparkle(center = Offset(gx, gy), radius = r, color = highlight.copy(alpha = 0.9f))
+        }
     }
 }

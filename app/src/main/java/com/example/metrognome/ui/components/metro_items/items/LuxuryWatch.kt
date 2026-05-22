@@ -146,6 +146,36 @@ object LuxuryWatch : MetroItem {
             size = Size(crownW * 0.3f, crownH * 0.70f),
             cornerRadius = CornerRadius(crownW * 0.15f)
         )
+
+        // ── Sapphire-crystal glare — translucent diagonal streak over the dial ──
+        drawLine(
+            color = Color.White.copy(alpha = 0.22f),
+            start = Offset(wx - dialR * 0.55f, wy + dialR * 0.05f),
+            end   = Offset(wx + dialR * 0.05f, wy - dialR * 0.62f),
+            strokeWidth = u * 0.055f, cap = StrokeCap.Round
+        )
+        drawLine(
+            color = Color.White.copy(alpha = 0.14f),
+            start = Offset(wx - dialR * 0.30f, wy + dialR * 0.18f),
+            end   = Offset(wx + dialR * 0.18f, wy - dialR * 0.45f),
+            strokeWidth = u * 0.030f, cap = StrokeCap.Round
+        )
+
+        // ── Polished bezel highlight (bright arc, upper-left) ───────────────────
+        drawArc(
+            color = ItemPalette.goldLight.copy(alpha = 0.85f),
+            startAngle = 185f, sweepAngle = 95f, useCenter = false,
+            topLeft = Offset(wx - caseR * 0.93f, wy - caseR * 0.93f),
+            size = Size(caseR * 1.86f, caseR * 1.86f),
+            style = Stroke(width = u * 0.018f, cap = StrokeCap.Round)
+        )
+
+        // ── Sparkle glint on the bezel ──────────────────────────────────────────
+        drawSparkle(
+            center = Offset(wx - caseR * 0.66f, wy - caseR * 0.66f),
+            radius = u * 0.06f,
+            color = Color.White.copy(alpha = 0.9f)
+        )
     }
 
     private fun DrawScope.drawStrapSegment(

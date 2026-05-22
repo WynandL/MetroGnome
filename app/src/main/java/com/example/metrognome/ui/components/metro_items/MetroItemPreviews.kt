@@ -9,8 +9,10 @@ import com.example.metrognome.ui.components.metro_items.items.GlissieFairy
 import com.example.metrognome.ui.components.metro_items.items.GlowingMushroom
 import com.example.metrognome.ui.components.metro_items.items.GoldChain
 import com.example.metrognome.ui.components.metro_items.items.GoldEarring
+import com.example.metrognome.ui.components.metro_items.items.HatFeather
 import com.example.metrognome.ui.components.metro_items.items.LuxuryWatch
 import com.example.metrognome.ui.components.metro_items.items.MoonAndStars
+import com.example.metrognome.ui.components.metro_items.items.MusicStand
 import com.example.metrognome.ui.components.metro_items.items.TorchPost
 import com.example.metrognome.ui.components.metro_items.items.TuningFork
 import com.example.metrognome.ui.overlays.ItemPreviewCanvas
@@ -60,6 +62,14 @@ private fun MoonAndStarsPreview() = ItemPreview(MoonAndStars)
 @Composable
 private fun GlissieFairyPreview() = ItemPreview(GlissieFairy)
 
+@Preview(name = "Music Stand")
+@Composable
+private fun MusicStandPreview() = ItemPreview(MusicStand)
+
 @Preview(name = "Tuning Fork")
 @Composable
 private fun TuningForkPreview() = ItemPreview(TuningFork)
+
+@Preview(name = "Hat Plume")
+@Composable
+private fun HatFeatherPreview() = ItemPreview(HatFeather)

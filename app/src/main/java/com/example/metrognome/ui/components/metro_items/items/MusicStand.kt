@@ -43,9 +43,13 @@ object MusicStand : MetroItem {
         Offset(canvasW * 0.32f, baseY - 2.2f * u)
     override fun previewRadius(u: Float) = u * 2.5f
 
-    private val paperWhite = Color(0xFFF8F3E8)
+    private val paperWhite = Color(0xFFFBF6EC)
+    private val paperWarm  = Color(0xFFEADCBE)
     private val paperEdge  = Color(0xFFD4C9A0)
     private val inkColor   = Color(0xFF1C1C1C)
+    private val brassLight = Color(0xFFE8C66A)
+    private val brassMid   = Color(0xFFB8902F)
+    private val shadowCol  = Color(0x33000000)
 
     override fun DrawScope.draw(u: Float, cx: Float, baseY: Float) {
         val px       = size.width * 0.32f
@@ -60,6 +64,13 @@ object MusicStand : MetroItem {
         val lipH     = 0.20f * u
         val deskTopY = postTopY
         val deskBotY = deskTopY + deskH
+
+        // ── Ground contact shadow ────────────────────────────────────────────────
+        drawOval(
+            color = shadowCol,
+            topLeft = Offset(px - 1.05f * u, groundY - 0.12f * u),
+            size = Size(2.0f * u, 0.26f * u)
+        )
 
         // ── Legs ────────────────────────────────────────────────────────────────
         drawLine(ItemPalette.woodBrown, Offset(px, legJoinY), Offset(px - 1.00f * u, groundY), strokeWidth = postW * 1.1f, cap = StrokeCap.Round)
@@ -86,6 +97,27 @@ object MusicStand : MetroItem {
             style  = Stroke(width = postW * 0.7f)
         )
 
+        // Brass adjuster knob with a glint
+        val knobC = Offset(px + postW * 1.4f, groundY - 1.8f * u)
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(brassLight, brassMid),
+                center = Offset(knobC.x - postW * 0.2f, knobC.y - postW * 0.2f),
+                radius = postW * 1.1f
+            ),
+            radius = postW * 0.70f,
+            center = knobC
+        )
+        drawSparkle(center = Offset(knobC.x - postW * 0.15f, knobC.y - postW * 0.15f), radius = postW * 0.5f, color = Color.White.copy(alpha = 0.85f))
+
+        // ── Desk drop shadow ───────────────────────────────────────────────────
+        drawRoundRect(
+            color = shadowCol,
+            topLeft = Offset(px - deskW / 2f + 0.06f * u, deskTopY + 0.07f * u),
+            size = Size(deskW, deskH),
+            cornerRadius = CornerRadius(postW * 0.4f)
+        )
+
         // ── Desk back panel ──────────────────────────────────────────────────────
         drawRoundRect(
             brush = Brush.horizontalGradient(
@@ -98,6 +130,15 @@ object MusicStand : MetroItem {
             cornerRadius = CornerRadius(postW * 0.4f)
         )
 
+        // Top-edge highlight along the desk rim
+        drawLine(
+            color = ItemPalette.woodLight.copy(alpha = 0.7f),
+            start = Offset(px - deskW / 2f + postW * 0.6f, deskTopY + postW * 0.35f),
+            end   = Offset(px + deskW / 2f - postW * 0.6f, deskTopY + postW * 0.35f),
+            strokeWidth = postW * 0.30f,
+            cap = StrokeCap.Round
+        )
+
         // ── Parchment sheet ──────────────────────────────────────────────────────
         val sheetM = 0.11f * u
         val sheetW = deskW - sheetM * 2f
@@ -106,7 +147,11 @@ object MusicStand : MetroItem {
         val sheetY = deskTopY + sheetM
 
         drawRoundRect(
-            color        = paperWhite,
+            brush        = Brush.verticalGradient(
+                colors = listOf(paperWhite, paperWarm),
+                startY = sheetY,
+                endY   = sheetY + sheetH
+            ),
             topLeft      = Offset(sheetX, sheetY),
             size         = Size(sheetW, sheetH),
             cornerRadius = CornerRadius(postW * 0.3f)
@@ -117,6 +162,17 @@ object MusicStand : MetroItem {
             size         = Size(sheetW, sheetH),
             cornerRadius = CornerRadius(postW * 0.3f),
             style        = Stroke(width = postW * 0.25f)
+        )
+        // Soft inner shadow where the page meets the lip
+        drawRoundRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.Transparent, shadowCol),
+                startY = sheetY + sheetH * 0.74f,
+                endY   = sheetY + sheetH
+            ),
+            topLeft = Offset(sheetX, sheetY + sheetH * 0.72f),
+            size    = Size(sheetW, sheetH * 0.28f),
+            cornerRadius = CornerRadius(postW * 0.3f)
         )
 
         // 5-line musical staff
@@ -134,35 +190,37 @@ object MusicStand : MetroItem {
             )
         }
 
-        // Four quarter notes: filled oval head + vertical stem on the right side
-        val noteR   = spacing * 0.38f
+        // 4/4 time signature at the start of the staff
+        drawTimeSignature(sheetX + sheetW * 0.14f, staffTop, spacing)
+
+        // A little phrase: quarter, beamed eighth pair, quarter
+        val noteR   = spacing * 0.36f
         val stemLen = spacing * 2.0f
-        val noteXs  = floatArrayOf(
-            sheetX + sheetW * 0.22f,
-            sheetX + sheetW * 0.40f,
-            sheetX + sheetW * 0.58f,
-            sheetX + sheetW * 0.76f
-        )
-        val noteYs  = floatArrayOf(
-            staffTop + spacing * 1.5f,
-            staffTop + spacing * 2.5f,
-            staffTop + spacing * 1.0f,
-            staffTop + spacing * 3.0f
-        )
+        val nX = floatArrayOf(0.36f, 0.52f, 0.66f, 0.80f).map { sheetX + sheetW * it }
+        val nY = floatArrayOf(3.0f, 2.5f, 1.5f, 2.0f).map { staffTop + spacing * it }
         for (i in 0..3) {
             drawOval(
                 color   = inkColor,
-                topLeft = Offset(noteXs[i] - noteR, noteYs[i] - noteR * 0.72f),
+                topLeft = Offset(nX[i] - noteR, nY[i] - noteR * 0.72f),
                 size    = Size(noteR * 2f, noteR * 1.44f)
             )
+            val sx = nX[i] + noteR * 0.82f
             drawLine(
                 color       = inkColor,
-                start       = Offset(noteXs[i] + noteR * 0.85f, noteYs[i]),
-                end         = Offset(noteXs[i] + noteR * 0.85f, noteYs[i] - stemLen),
+                start       = Offset(sx, nY[i]),
+                end         = Offset(sx, nY[i] - stemLen),
                 strokeWidth = postW * 0.22f,
                 cap         = StrokeCap.Round
             )
         }
+        // Beam joining the eighth-note pair (notes 1 & 2)
+        drawLine(
+            color       = inkColor,
+            start       = Offset(nX[1] + noteR * 0.82f, nY[1] - stemLen),
+            end         = Offset(nX[2] + noteR * 0.82f, nY[2] - stemLen),
+            strokeWidth = spacing * 0.30f,
+            cap         = StrokeCap.Butt
+        )
 
         // ── Desk lip — small ledge to hold the pages ────────────────────────────
         drawRoundRect(
@@ -171,5 +229,20 @@ object MusicStand : MetroItem {
             size         = Size(deskW, lipH),
             cornerRadius = CornerRadius(postW * 0.35f)
         )
+    }
+
+    /** A stacked 4/4 time signature built from simple strokes. */
+    private fun DrawScope.drawTimeSignature(x: Float, staffTop: Float, s: Float) {
+        val w  = s * 0.85f
+        val h  = s * 1.8f
+        val sw = s * 0.22f
+        drawDigit4(x, staffTop + 0.1f * s, w, h, sw)
+        drawDigit4(x, staffTop + 2.1f * s, w, h, sw)
+    }
+
+    private fun DrawScope.drawDigit4(x: Float, top: Float, w: Float, h: Float, sw: Float) {
+        drawLine(inkColor, Offset(x + 0.55f * w, top), Offset(x, top + 0.62f * h), strokeWidth = sw, cap = StrokeCap.Round)
+        drawLine(inkColor, Offset(x, top + 0.62f * h), Offset(x + 0.95f * w, top + 0.62f * h), strokeWidth = sw, cap = StrokeCap.Round)
+        drawLine(inkColor, Offset(x + 0.62f * w, top), Offset(x + 0.62f * w, top + h), strokeWidth = sw, cap = StrokeCap.Round)
     }
 }
