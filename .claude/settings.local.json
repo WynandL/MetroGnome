@@ -81,7 +81,8 @@
       "WebFetch(domain:www.unddit.com)",
       "WebFetch(domain:safereddit.com)",
       "WebFetch(domain:redlib.catsarch.com)",
-      "WebFetch(domain:html.duckduckgo.com)"
+      "WebFetch(domain:html.duckduckgo.com)",
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.example.metrognome.audio.*\" --console=plain)"
     ]
   }
 }

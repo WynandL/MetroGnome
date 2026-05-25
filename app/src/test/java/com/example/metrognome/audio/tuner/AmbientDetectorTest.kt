@@ -117,6 +117,39 @@ class AmbientDetectorTest {
     }
 
     @Test
+    fun reacquiresInstantlyAfterABriefSilence() {
+        // "Muted the string for a second, then played the same note again."
+        val d = detector()
+        d.profileQuiet()
+        repeat(12) { d.tone(220f) }                 // lock on
+        // A short silence, longer than the hold-gap ride-out, drops the lock.
+        var r = d.quiet()
+        repeat(6) { r = d.quiet() }
+        assertFalse("the silence should have dropped the lock", r.locked)
+        // The same note returns inside the re-acquire window: it must snap straight
+        // back to LOCKED on the very first frame, with no fresh ACQUIRING cycle.
+        val back = d.tone(220f)
+        assertEquals("same note should re-lock instantly", ListeningState.LOCKED, back.state)
+    }
+
+    @Test
+    fun lockRidesOutBriefSpeechOverTheNote() {
+        // Someone talks over a still-sounding note: a loud, wandering, wrong pitch.
+        // This is tolerated longer than a plain silent gap (the instrument is still
+        // physically ringing underneath), so the needle must stay put.
+        val d = detector()
+        d.profileQuiet()
+        repeat(12) { d.tone(330f) }                 // lock on
+        // Six disturbed frames — a silent gap would have dropped the lock by frame 5,
+        // so all-LOCKED here proves the longer speech/disturbance tolerance.
+        val states = (0 until 6).map { i -> d.tone(if (i % 2 == 0) 180f else 250f).state }
+        assertTrue(
+            "a brief disturbance over the note must not break the lock",
+            states.all { it == ListeningState.LOCKED },
+        )
+    }
+
+    @Test
     fun steadyRoomToneIsNotMistakenForANote() {
         // A constant hum present from the very start is part of the room, not a note.
         val d = detector()

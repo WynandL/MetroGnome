@@ -13,6 +13,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,6 +64,7 @@ fun MetroGnomeApp() {
     val rhythmVm: RhythmGameViewModel = viewModel()
     val tunerVm: TunerViewModel = viewModel()
     val isAdFree by metronomeVm.isAdFree.collectAsStateWithLifecycle()
+    val isPlaying by metronomeVm.isPlaying.collectAsStateWithLifecycle()
 
     val visibleTabs = AppTab.entries
 
@@ -74,10 +76,22 @@ fun MetroGnomeApp() {
     // Re-query Play Store for owned purchases every time the app returns to foreground.
     // This handles: switching devices, purchasing on one device then opening another,
     // and any case where the local cache drifts from Play's source of truth.
+    // Also count this as a distinct day opened (review eligibility), but do NOT
+    // prompt here: a rating sheet on cold resume is jarring and depresses ratings.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         metronomeVm.reconcilePurchases()
         reviewManager.recordAppOpen()
-        activity?.let { reviewManager.maybeRequestReview(it) }
+    }
+
+    // Ask for the Play Store review at a natural, earned moment: when the user
+    // stops the metronome after playing it. The day-3 once-only gate inside
+    // AppReviewManager still applies, so this is a no-op until eligible.
+    var wasMetronomePlaying by remember { mutableStateOf(false) }
+    LaunchedEffect(isPlaying) {
+        if (wasMetronomePlaying && !isPlaying) {
+            activity?.let { reviewManager.maybeRequestReview(it) }
+        }
+        wasMetronomePlaying = isPlaying
     }
 
     NavigationSuiteScaffold(
@@ -108,7 +122,7 @@ fun MetroGnomeApp() {
             AppTab.GNOME -> MetronomeScreen(vm = metronomeVm)
             AppTab.RHYTHM -> RhythmGameScreen(
                 vm = rhythmVm,
-                isMetronomePlaying = metronomeVm.isPlaying.collectAsState().value,
+                isMetronomePlaying = isPlaying,
                 onStopMetronome = { metronomeVm.stopPlayback() },
                 isAdFree = isAdFree,
                 onBeforeResultDismiss = { onDone ->

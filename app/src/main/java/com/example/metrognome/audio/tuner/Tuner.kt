@@ -124,9 +124,13 @@ class Tuner {
     @Volatile
     var referenceHz: Float = 440f
 
-    /** Half-width of the "in tune" band, in cents. */
+    /**
+     * Half-width of the "in tune" band, in cents. 3.0 reads as precise but is
+     * loose enough that a real (decaying, slightly vibrato) note can actually
+     * hold green — 1.5 was so tight the needle rarely confirmed in tune.
+     */
     @Volatile
-    var inTuneCents: Float = 1.5f
+    var inTuneCents: Float = 3.0f
 
     /**
      * Multiplicative correction applied to every detected frequency — supply the
