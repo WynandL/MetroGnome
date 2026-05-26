@@ -82,7 +82,10 @@
       "WebFetch(domain:safereddit.com)",
       "WebFetch(domain:redlib.catsarch.com)",
       "WebFetch(domain:html.duckduckgo.com)",
-      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.example.metrognome.audio.*\" --console=plain)"
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.example.metrognome.audio.*\" --console=plain)",
+      "Bash(git log *)",
+      "WebFetch(domain:pract.is)",
+      "WebFetch(domain:www.androidauthority.com)"
     ]
   }
 }

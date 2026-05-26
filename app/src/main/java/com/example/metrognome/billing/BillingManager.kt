@@ -204,6 +204,7 @@ class BillingManager(application: Application) {
 
     private fun launchPurchaseFlowFor(activity: Activity, productId: String) {
         if (_isPurchasing.value) return
+        if (!billingClient.isReady) return
         _isPurchasing.value = true
 
         scope.launch {
@@ -217,6 +218,10 @@ class BillingManager(application: Application) {
                     ))
                     .build()
             )
+            if (result.billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                _isPurchasing.value = false
+                return@launch
+            }
             val productDetails = result.productDetailsList?.firstOrNull()
             if (productDetails == null) {
                 _isPurchasing.value = false
