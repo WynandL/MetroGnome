@@ -7,20 +7,21 @@
 - Website: http://www.metrognome.co.za
 - Category: Music & Audio
 - Current installs: 1,000+
-- Last updated: May 18 2026
+- Last updated: May 25 2026 (v4.5 / versionCode 30)
 - Rating: not yet established at scale
 
 ## Core features (all free)
 - Hardware-timed precision metronome (sample-accurate, drift-free)
-- Smart chromatic tuner with ambient noise detection
+- Smart chromatic tuner with ambient noise detection — locks on fast, rejects harmonics
 - Rhythm game (5 difficulty levels, tap or clap input)
+- Practice streak tracker — builds daily habit, shown in MetronomeScreen streak pill
 - Tap tempo
 - Multiple sound styles: click, hi-hat, woodblock, warm, bell (contains purchases for premium sounds)
 - Animated gnome character (Metro) who reacts to play
 - Background play
 
 ## Monetisation
-- Contains ads (removable)
+- Contains ads (removable) — interstitials capped: every 3rd game + max once per 5 minutes
 - One-time purchase to remove ads
 - Optional cosmetic in-app purchases (items for Metro and his world)
 - Core experience is fully free — no subscription, ever
