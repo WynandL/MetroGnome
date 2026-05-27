@@ -213,7 +213,7 @@ fun TunerScreen(
                 Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
             },
             isAdFree = isAdFree,
-            showCalibrationNudge = !nudgeDismissed && !calibrationInfo.calibrated,
+            showCalibrationNudge = micGranted && !nudgeDismissed && !calibrationInfo.calibrated,
             onDismissCalibrationNudge = {
                 nudgeDismissed = true
                 prefs.edit().putBoolean("tuner_calibration_nudge_shown", true).apply()

@@ -85,7 +85,8 @@
       "Bash(./gradlew :app:testDebugUnitTest --tests \"com.example.metrognome.audio.*\" --console=plain)",
       "Bash(git log *)",
       "WebFetch(domain:pract.is)",
-      "WebFetch(domain:www.androidauthority.com)"
+      "WebFetch(domain:www.androidauthority.com)",
+      "WebFetch(domain:www.metrognome.co.za)"
     ]
   }
 }
