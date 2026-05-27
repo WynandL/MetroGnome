@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.screens
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.view.WindowManager
 import android.widget.Toast
@@ -178,6 +179,9 @@ fun TunerScreen(
     val calibrationInfo by vm.calibrationInfo.collectAsStateWithLifecycle()
     val feedbackPrompt by vm.feedbackPrompt.collectAsStateWithLifecycle()
 
+    val prefs = remember { context.getSharedPreferences("metrognome_prefs", Context.MODE_PRIVATE) }
+    var nudgeDismissed by remember { mutableStateOf(prefs.getBoolean("tuner_calibration_nudge_shown", false)) }
+
     val activity = LocalActivity.current
     DisposableEffect(keepScreenOn) {
         if (keepScreenOn) activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -209,6 +213,11 @@ fun TunerScreen(
                 Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
             },
             isAdFree = isAdFree,
+            showCalibrationNudge = !nudgeDismissed && !calibrationInfo.calibrated,
+            onDismissCalibrationNudge = {
+                nudgeDismissed = true
+                prefs.edit().putBoolean("tuner_calibration_nudge_shown", true).apply()
+            },
         )
 
         TunerFeedbackCard(
@@ -248,6 +257,8 @@ internal fun TunerScreenContent(
     onCalibrateToNote: (Tuner.Reading) -> Unit = {},
     onToggleScreenOn: (Boolean) -> Unit = {},
     isAdFree: Boolean = false,
+    showCalibrationNudge: Boolean = false,
+    onDismissCalibrationNudge: () -> Unit = {},
 ) {
     val pendingReading = remember { mutableStateOf<Tuner.Reading?>(null) }
     var pendingConfirm by remember { mutableStateOf<CalibrationMode?>(null) }
@@ -304,6 +315,17 @@ internal fun TunerScreenContent(
         if (!micGranted) {
             MicPermissionPrompt(onRequestMic)
             Spacer(Modifier.height(10.dp))
+        }
+
+        AnimatedVisibility(
+            visible = showCalibrationNudge,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            Column {
+                CalibrationNudgeBanner(onDismiss = onDismissCalibrationNudge)
+                Spacer(Modifier.height(8.dp))
+            }
         }
 
         TunerGauge(reading = reading)
@@ -371,6 +393,54 @@ internal fun TunerScreenContent(
             onDismiss = { pendingConfirm = null },
         )
     }
+    }
+}
+
+// ── Calibration nudge ────────────────────────────────────────────────────────────
+
+/**
+ * One-time dismissible banner shown on the first Tuner tab visit when the device
+ * has not yet been calibrated. Guides new users to the CalibrationCard below.
+ * Dismissed state is persisted in SharedPreferences so it never reappears.
+ */
+@Composable
+private fun CalibrationNudgeBanner(onDismiss: () -> Unit) {
+    Surface(
+        color = AppColors.gold.copy(alpha = 0.08f),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Info,
+                contentDescription = null,
+                tint = AppColors.gold,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                "For best accuracy on this device, scroll down and tap Microphone Calibration.",
+                color = AppColors.textSecondary,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                "Got it",
+                color = AppColors.gold,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) { onDismiss() },
+            )
+        }
     }
 }
 
