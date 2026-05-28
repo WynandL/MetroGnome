@@ -86,7 +86,9 @@
       "Bash(git log *)",
       "WebFetch(domain:pract.is)",
       "WebFetch(domain:www.androidauthority.com)",
-      "WebFetch(domain:www.metrognome.co.za)"
+      "WebFetch(domain:www.metrognome.co.za)",
+      "WebFetch(domain:melodics.com)",
+      "WebFetch(domain:guitaring.net)"
     ]
   }
 }

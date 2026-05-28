@@ -119,6 +119,14 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
     private val _activeItemIds = MutableStateFlow(tracker.unlockedIds(METRO_ITEM_REGISTRY))
     private val _newlyUnlocked = MutableSharedFlow<MetroItemEntry>(extraBufferCapacity = 8)
 
+    /** Flips to true once the user has accumulated [TUNER_REVIEW_THRESHOLD] seconds of
+     *  locked tuner time — the same counter used for item unlocks. Observed by MainActivity
+     *  to trigger the Play Store review prompt at a natural earned moment. */
+    private val _tunerReviewReady = MutableStateFlow(
+        tracker.tunerSeconds() >= TUNER_REVIEW_THRESHOLD
+    )
+    val tunerReviewReady: StateFlow<Boolean> = _tunerReviewReady.asStateFlow()
+
     private var usageTimerJob: Job? = null
 
     /** Whether the screen wants the mic open — survives the calibration pause. */
@@ -158,6 +166,9 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
                 if (ambient.value.locked) {
                     tracker.addTunerSeconds(10)
                     checkForNewUnlocks()
+                    if (!_tunerReviewReady.value && tracker.tunerSeconds() >= TUNER_REVIEW_THRESHOLD) {
+                        _tunerReviewReady.value = true
+                    }
                 }
             }
         }
@@ -464,6 +475,9 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
         private const val KEY_FACTOR = "calibration_factor"
         private const val KEY_ACCURACY = "calibration_accuracy"
         private const val KEY_MODE = "calibration_mode"
+
+        /** Locked tuner seconds required before offering a Play Store review (5 min). */
+        private const val TUNER_REVIEW_THRESHOLD = 300L
 
         // Tune-completion detection
         /** Tuner emits ~11 readings/s (4096-sample hop at 44.1 kHz); 40 frames ≈ 3.7 s. */

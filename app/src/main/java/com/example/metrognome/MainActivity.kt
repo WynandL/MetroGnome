@@ -94,6 +94,15 @@ fun MetroGnomeApp() {
         wasMetronomePlaying = isPlaying
     }
 
+    // Second review trigger: fires when the user has accumulated enough real tuner
+    // usage (locked pitch detection time, same counter as item unlocks). Collected
+    // from TunerViewModel so we reuse the existing tracking rather than wall-clock
+    // tab time, which would count idle screen time rather than actual tuning.
+    val tunerReviewReady by tunerVm.tunerReviewReady.collectAsStateWithLifecycle()
+    LaunchedEffect(tunerReviewReady) {
+        if (tunerReviewReady) activity?.let { reviewManager.maybeRequestReview(it) }
+    }
+
     NavigationSuiteScaffold(
         navigationSuiteItems = {
             visibleTabs.forEach { tab ->
