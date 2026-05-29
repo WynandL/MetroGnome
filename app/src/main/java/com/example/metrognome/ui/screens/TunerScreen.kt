@@ -11,7 +11,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -63,12 +65,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,6 +83,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -279,19 +283,24 @@ internal fun TunerScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
         Spacer(Modifier.height(16.dp))
-        Row(
+        Box(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+            contentAlignment = Alignment.Center,
         ) {
-            Spacer(Modifier.size(36.dp))
             Text(
                 "TUNER", color = AppColors.gold, fontSize = 22.sp,
                 fontWeight = FontWeight.Black, letterSpacing = 3.sp,
             )
+            if (referenceHz != 440f) {
+                ReferencePitchPill(
+                    referenceHz = referenceHz,
+                    modifier = Modifier.align(Alignment.CenterStart),
+                )
+            }
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
+                    .align(Alignment.CenterEnd)
                     .size(36.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (keepScreenOn) AppColors.darkPurple else Color.Transparent)
@@ -751,9 +760,9 @@ private fun AmbientHistogram(report: AmbientReport) {
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "ENVIRONMENT",
+                        "Environment",
                         color = AppColors.textDim,
-                        fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp,
+                        fontSize = 10.sp, fontWeight = FontWeight.Bold,
                     )
                     Spacer(Modifier.height(8.dp))
 
@@ -1009,46 +1018,159 @@ private fun AmbientDetailRow(label: String, indicator: @Composable () -> Unit) {
 
 // ── Reference pitch ──────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ReferencePitchCard(
     referenceHz: Float,
     onNudge: (Float) -> Unit,
     onSet: (Float) -> Unit,
 ) {
+    val isStandard = referenceHz.roundToInt() == 440
+    val fraction = ((referenceHz - TunerViewModel.MIN_REFERENCE) /
+                    (TunerViewModel.MAX_REFERENCE - TunerViewModel.MIN_REFERENCE)).coerceIn(0f, 1f)
+    val standardFraction = (440f - TunerViewModel.MIN_REFERENCE) /
+                           (TunerViewModel.MAX_REFERENCE - TunerViewModel.MIN_REFERENCE)
+
+    // Halo brightens instantly on any value change, springs back to resting glow when idle
+    val haloAlpha = remember { Animatable(0.15f) }
+    LaunchedEffect(referenceHz) {
+        haloAlpha.snapTo(0.45f)
+        haloAlpha.animateTo(
+            targetValue = 0.15f,
+            animationSpec = spring(dampingRatio = 0.7f, stiffness = 80f),
+        )
+    }
+
     Surface(
         color = AppColors.surfaceDim,
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Text(
-                "REFERENCE PITCH", color = AppColors.textSubtle,
-                fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                "A4 = ${referenceHz.roundToInt()} Hz",
-                color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black,
-            )
+        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
 
-            Spacer(Modifier.height(8.dp))
+            // Label + current value on one row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Reference pitch", color = AppColors.textSubtle,
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    "A4 = ${referenceHz.roundToInt()} Hz",
+                    color = if (isStandard) AppColors.textSecondary else AppColors.gold,
+                    fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                )
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            // Slider row
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StepButton("−") { onNudge(-1f) }
+                Spacer(Modifier.width(10.dp))
                 Slider(
                     value = referenceHz,
                     onValueChange = onSet,
                     valueRange = TunerViewModel.MIN_REFERENCE..TunerViewModel.MAX_REFERENCE,
                     steps = (TunerViewModel.MAX_REFERENCE - TunerViewModel.MIN_REFERENCE).toInt() - 1,
-                    colors = SliderDefaults.colors(
-                        thumbColor = AppColors.gold,
-                        activeTrackColor = AppColors.primaryPurple,
-                        inactiveTrackColor = AppColors.surfaceVariant,
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp),
+                    modifier = Modifier.weight(1f),
+                    thumb = {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(24.dp),
+                        ) {
+                            Box(Modifier.size(24.dp).background(AppColors.gold.copy(alpha = haloAlpha.value), CircleShape))
+                            Box(Modifier.size(12.dp).background(AppColors.gold, CircleShape))
+                        }
+                    },
+                    track = { _ ->
+                        Canvas(modifier = Modifier.fillMaxWidth().height(14.dp)) {
+                            val trackH = 2.dp.toPx()
+                            val cy = center.y
+                            val thumbX = size.width * fraction
+
+                            // Inactive rail — full width underneath
+                            drawLine(
+                                color = AppColors.surfaceVariant,
+                                start = Offset(0f, cy),
+                                end = Offset(size.width, cy),
+                                strokeWidth = trackH,
+                                cap = StrokeCap.Round,
+                            )
+
+                            // Active portion — gradient from dim at origin to bright at thumb
+                            if (fraction > 0f) {
+                                drawRoundRect(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(
+                                            AppColors.gold.copy(alpha = 0.25f),
+                                            AppColors.gold.copy(alpha = 0.85f),
+                                        ),
+                                        startX = 0f,
+                                        endX = thumbX,
+                                    ),
+                                    topLeft = Offset(0f, cy - trackH / 2),
+                                    size = Size(thumbX, trackH),
+                                    cornerRadius = CornerRadius(trackH / 2),
+                                )
+
+                                // Radial glow bloom where track meets the thumb
+                                drawCircle(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(
+                                            AppColors.gold.copy(alpha = 0.35f),
+                                            Color.Transparent,
+                                        ),
+                                        center = Offset(thumbX, cy),
+                                        radius = 12.dp.toPx(),
+                                    ),
+                                    radius = 12.dp.toPx(),
+                                    center = Offset(thumbX, cy),
+                                )
+                            }
+
+                            // 440 Hz reference tick — glows gold when at standard pitch
+                            val markerX = size.width * standardFraction
+                            drawLine(
+                                color = if (isStandard) AppColors.gold.copy(alpha = 0.6f)
+                                        else AppColors.textDim.copy(alpha = 0.4f),
+                                start = Offset(markerX, cy - 5.dp.toPx()),
+                                end = Offset(markerX, cy + 5.dp.toPx()),
+                                strokeWidth = 1.5.dp.toPx(),
+                                cap = StrokeCap.Round,
+                            )
+                        }
+                    },
                 )
+                Spacer(Modifier.width(10.dp))
                 StepButton("+") { onNudge(1f) }
+            }
+
+            // Range labels below the slider
+            Spacer(Modifier.height(4.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 38.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "${TunerViewModel.MIN_REFERENCE.toInt()}",
+                    color = AppColors.textDim, fontSize = 9.sp,
+                )
+                Text(
+                    "440",
+                    color = if (isStandard) AppColors.gold.copy(alpha = 0.65f) else AppColors.textDim,
+                    fontSize = 9.sp,
+                    fontWeight = if (isStandard) FontWeight.Bold else FontWeight.Normal,
+                )
+                Text(
+                    "${TunerViewModel.MAX_REFERENCE.toInt()}",
+                    color = AppColors.textDim, fontSize = 9.sp,
+                )
             }
         }
     }
@@ -1056,15 +1178,18 @@ private fun ReferencePitchCard(
 
 @Composable
 private fun StepButton(label: String, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = AppColors.surfaceVariant,
-        modifier = Modifier.size(38.dp),
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(28.dp)
+            .clip(CircleShape)
+            .background(AppColors.surfaceVariant)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) { onClick() },
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(label, color = AppColors.gold, fontSize = 20.sp, fontWeight = FontWeight.Black)
-        }
+        Text(label, color = AppColors.textSecondary, fontSize = 16.sp, fontWeight = FontWeight.Light)
     }
 }
 
@@ -1442,6 +1567,27 @@ private fun MicPermissionPrompt(onRequest: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             GoldButton("Grant Microphone Access", onRequest)
         }
+    }
+}
+
+// ── Reference pitch pill ─────────────────────────────────────────────────────────
+
+/** Informational-only pill shown in the header when reference pitch is not 440 Hz. */
+@Composable
+private fun ReferencePitchPill(referenceHz: Float, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(50.dp),
+        color = AppColors.gold.copy(alpha = 0.10f),
+        border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.40f)),
+        modifier = modifier,
+    ) {
+        Text(
+            "A4 = ${referenceHz.roundToInt()} Hz",
+            color = AppColors.gold,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+        )
     }
 }
 

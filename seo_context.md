@@ -7,7 +7,7 @@
 - Website: http://www.metrognome.co.za
 - Category: Music & Audio
 - Current installs: 1,000+
-- Last updated: May 28 2026 (v4.7 / versionCode 32)
+- Last updated: May 29 2026 (v4.8 / versionCode 33)
 - Rating: not yet established at scale
 
 ## Core features (all free)
