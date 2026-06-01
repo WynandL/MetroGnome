@@ -7,6 +7,9 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -15,14 +18,19 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Stars
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import com.example.metrognome.ui.components.AppFilterChip
@@ -70,6 +78,9 @@ import com.example.metrognome.ui.components.metro_items.UnlockCondition
 import com.example.metrognome.ui.components.metro_items.displayText
 import com.example.metrognome.ui.components.OwnedBadge
 import com.example.metrognome.ui.dialogs.ShowcaseFrame
+import com.example.metrognome.points.PointsManager
+import com.example.metrognome.points.PointsSnapshot
+import com.example.metrognome.ui.dialogs.EarnRulesDialog
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.whatsnew.AppWhatsNew
@@ -114,7 +125,11 @@ fun SettingsScreen(
     val isSpeedTrainerEnabled by vm.isSpeedTrainerEnabled.collectAsStateWithLifecycle()
 
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
+    val pointsSnapshot = remember { PointsManager(context).getSnapshot() }
+    var showEarnRules by remember { mutableStateOf(false) }
+    var showItemCatalog by remember { mutableStateOf(false) }
     var previewIndex by remember { mutableIntStateOf(0) }
+    var testBannerCount by remember { mutableIntStateOf(1) }
     var showUnlockRules by remember { mutableStateOf(false) }
     var dialogSoundDef by remember { mutableStateOf<PremiumSoundDef?>(null) }
     var dialogItemDef  by remember { mutableStateOf<PurchasableItemDef?>(null) }
@@ -150,6 +165,19 @@ fun SettingsScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
             Spacer(Modifier.height(32.dp))
+
+            PointsCard(snapshot = pointsSnapshot, onInfoClick = { showEarnRules = true })
+
+            Spacer(Modifier.height(6.dp))
+
+            CollectionCard(
+                activeItemIds = activeItemIds,
+                onClick       = { showItemCatalog = true },
+            )
+
+            Spacer(Modifier.height(8.dp))
+            HorizontalDivider(color = AppColors.surfaceVariant)
+            Spacer(Modifier.height(8.dp))
 
             SettingsSectionTitle("Tempo & Rhythm")
 
@@ -270,14 +298,6 @@ fun SettingsScreen(
                     onClick = { dialogItemDef = def }
                 )
             }
-
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = AppColors.surfaceVariant)
-            Spacer(Modifier.height(8.dp))
-
-            SettingsSectionTitle("Practice Mode")
-
-            PracticeModeSection(isPracticeEnabled = isPracticeEnabled)
 
             Spacer(Modifier.height(8.dp))
             HorizontalDivider(color = AppColors.surfaceVariant)
@@ -500,6 +520,29 @@ fun SettingsScreen(
             ) {
                 Text("Trigger Feedback Card", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
+
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
+                onClick = {
+                    val limit = 3
+                    com.example.metrognome.points.PointsBannerQueue.postActivity(
+                        "Rhythm Game",
+                        1,
+                        testBannerCount,
+                        limit,
+                    )
+                    testBannerCount = if (testBannerCount >= limit + 1) 1 else testBannerCount + 1
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
+            ) {
+                Text(
+                    "Test Points Banner  ($testBannerCount / 3)",
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold
+                )
+            }
             } // end DEBUG block
 
             Spacer(Modifier.height(8.dp))
@@ -510,6 +553,17 @@ fun SettingsScreen(
         }
     }
 
+    if (showEarnRules) {
+        EarnRulesDialog(onDismiss = { showEarnRules = false })
+    }
+
+    if (showItemCatalog) {
+        com.example.metrognome.ui.dialogs.ItemCatalogDialog(
+            activeItemIds = activeItemIds,
+            onDismiss     = { showItemCatalog = false },
+        )
+    }
+
     if (showUnlockRules) {
         AlertDialog(
             onDismissRequest = { showUnlockRules = false },
@@ -518,7 +572,9 @@ fun SettingsScreen(
             textContentColor = AppColors.textSecondary,
             title = { Text("Unlock Rules", fontWeight = FontWeight.Bold) },
             text = {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Column(modifier = Modifier
+                    .heightIn(max = 380.dp)
+                    .verticalScroll(rememberScrollState())) {
                     METRO_ITEM_REGISTRY.sortedBy { entry ->
                         when (val c = entry.condition) {
                             is UnlockCondition.MetronomeSeconds          -> c.required.toDouble()
@@ -765,29 +821,6 @@ private fun SoundShowcase(soundName: String) {
 }
 
 @Composable
-private fun PracticeModeSection(isPracticeEnabled: Boolean) {
-    Column(modifier = Modifier.padding(bottom = 4.dp)) {
-        Text(
-            "Build a practice habit",
-            color = AppColors.textPrimary,
-            fontWeight = FontWeight.Normal,
-            fontSize = 14.sp,
-            modifier = Modifier.padding(bottom = 4.dp),
-        )
-        if (isPracticeEnabled) {
-            OwnedBadge("A serious musician. Goals, streaks, every session celebrated.")
-        } else {
-            Text(
-                "Set a daily practice goal, track your streak, and celebrate every completed session. Enable from the Home tab.",
-                color = AppColors.textSecondary,
-                fontSize = 13.sp,
-                lineHeight = 19.sp,
-            )
-        }
-    }
-}
-
-@Composable
 private fun RemoveAdsSection(
     isAdFree: Boolean,
     priceText: String?,
@@ -871,6 +904,139 @@ private fun RemoveAdsSection(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CollectionCard(activeItemIds: Set<String>, onClick: () -> Unit) {
+    val total    = METRO_ITEM_REGISTRY.size
+    val unlocked = METRO_ITEM_REGISTRY.count { it.item.id in activeItemIds }
+    val shape    = RoundedCornerShape(16.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, AppColors.gold.copy(alpha = 0.25f), shape)
+            .clip(shape)
+            .clickable(onClick = onClick)
+            .background(AppColors.surfaceDeep)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Row(
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier         = Modifier
+                    .size(36.dp)
+                    .background(AppColors.gold.copy(alpha = 0.14f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector        = Icons.Filled.Stars,
+                    contentDescription = null,
+                    tint               = AppColors.gold,
+                    modifier           = Modifier.size(18.dp),
+                )
+            }
+            Column {
+                Text(
+                    text       = "Metro's Collection",
+                    color      = AppColors.textPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize   = 14.sp,
+                )
+                Text(
+                    text     = "$unlocked of $total items unlocked",
+                    color    = AppColors.textMuted,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 1.dp),
+                )
+            }
+        }
+        Text(
+            text       = "See all  →",
+            color      = AppColors.gold.copy(alpha = 0.65f),
+            fontSize   = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun PointsCard(snapshot: PointsSnapshot, onInfoClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, AppColors.gold.copy(alpha = 0.25f), shape)
+            .clip(shape)
+            .clickable(onClick = onInfoClick)
+            .background(AppColors.surfaceDeep)
+            .padding(horizontal = 20.dp, vertical = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text       = String.format("%,d", snapshot.total),
+            color      = AppColors.gold,
+            fontSize   = 44.sp,
+            fontWeight = FontWeight.ExtraBold,
+            lineHeight = 44.sp,
+            letterSpacing = (-1.5).sp,
+        )
+        Text(
+            text          = com.example.metrognome.points.PointsConfig.CURRENCY_NAME.uppercase(),
+            color         = AppColors.gold.copy(alpha = 0.65f),
+            fontSize      = 10.sp,
+            fontWeight    = FontWeight.Bold,
+            letterSpacing = 2.5.sp,
+            modifier      = Modifier.padding(top = 2.dp),
+        )
+        if (snapshot.contributions.isEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text      = "Start playing to earn your first ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME_SINGULAR}.",
+                color     = AppColors.textMuted,
+                fontSize  = 12.sp,
+                fontStyle = FontStyle.Italic,
+            )
+        } else {
+            Spacer(Modifier.height(14.dp))
+            HorizontalDivider(color = AppColors.surfaceVariant)
+            Spacer(Modifier.height(10.dp))
+            snapshot.contributions.forEach { c ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text     = "${c.label}  ·  ${c.rawValue} ${c.rawUnit}",
+                        color    = AppColors.textMuted,
+                        fontSize = 12.sp,
+                    )
+                    Text(
+                        text       = "+${c.points}",
+                        color      = AppColors.textSecondary,
+                        fontSize   = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.6f))
+        Text(
+            text          = "How to earn  →",
+            color         = AppColors.gold.copy(alpha = 0.55f),
+            fontSize      = 11.sp,
+            fontWeight    = FontWeight.SemiBold,
+            letterSpacing = 0.4.sp,
+            modifier      = Modifier.padding(top = 8.dp),
+        )
     }
 }
 

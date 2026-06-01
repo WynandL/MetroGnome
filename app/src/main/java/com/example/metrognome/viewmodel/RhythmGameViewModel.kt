@@ -122,6 +122,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences("rhythm_highscores", Context.MODE_PRIVATE)
     private val engine = MetronomeEngine()
     private val itemTracker = MetroItemTracker(app)
+    private val dailyLog    = com.example.metrognome.points.DailyActivityLog(app)
     val detector = RhythmDetector()
 
     // ── Public state flows ────────────────────────────────────────────────────
@@ -521,6 +522,25 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
             prefs.edit { putInt("hs_$currentDifficultyName", finalScore) }
         }
         itemTracker.recordGameCompleted()
+        itemTracker.addGameScore(finalScore)
+        run {
+            val divisor = com.example.metrognome.points.PointsConfig.GAME_SCORE_DIVISOR
+            val limit   = com.example.metrognome.points.PointsLimits.RHYTHM_BEATS_PER_DAY
+            val todayScore     = dailyLog.todayActivity(itemTracker).gameScoreToday
+            val prevScore      = (todayScore - finalScore).coerceAtLeast(0)
+            val prevBeats      = (prevScore  / divisor).coerceAtMost(limit)
+            val todayBeats     = (todayScore / divisor).coerceAtMost(limit)
+            val earnedThisGame = (todayBeats - prevBeats).coerceAtLeast(0)
+            com.example.metrognome.points.PointsBannerQueue.post(
+                com.example.metrognome.points.PointsBannerData(
+                    pointsEarned     = earnedThisGame,
+                    activityLabel    = "Rhythm Game",
+                    todayCount       = todayBeats,
+                    dailyLimit       = limit,
+                    limitJustReached = todayBeats == limit,
+                )
+            )
+        }
         checkForNewUnlocks()
         _result.value =
             GameResult(finalScore, maxCombo, countPerfect, countGood, countBad, countMiss, isNew)

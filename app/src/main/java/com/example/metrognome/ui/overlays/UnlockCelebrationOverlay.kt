@@ -246,12 +246,14 @@ fun UnlockCelebrationOverlay(
 // ── Item preview canvas ───────────────────────────────────────────────────────
 
 @Composable
-internal fun ItemPreviewCanvas(entry: MetroItemEntry) {
+internal fun ItemPreviewCanvas(
+    entry: MetroItemEntry,
+    modifier: Modifier = Modifier.size(width = 220.dp, height = 170.dp),
+) {
     val item = entry.item
 
     Box(
-        modifier = Modifier
-            .size(width = 220.dp, height = 170.dp)
+        modifier = modifier
             .clip(RoundedCornerShape(18.dp))
             .background(
                 Brush.verticalGradient(listOf(AppColors.previewBgTop, AppColors.previewBgBottom))

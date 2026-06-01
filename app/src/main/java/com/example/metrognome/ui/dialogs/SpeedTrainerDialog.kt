@@ -550,8 +550,8 @@ private fun MicOptIn(
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            if (enabled) "Metro will advance you when your timing is locked in."
-                            else "Track your timing and auto-advance when you're ready.",
+                            if (enabled) "Metro is listening. Play accurately and earn bonus Gnotes at the end."
+                            else "Metro listens to your timing and awards bonus Gnotes when you play accurately.",
                             color = AppColors.textMuted,
                             fontSize = 10.sp,
                             lineHeight = 13.sp,
@@ -584,7 +584,7 @@ private fun MicOptIn(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
-                            "Auto-advance when within",
+                            "Accuracy window",
                             color = AppColors.textSecondary,
                             fontSize = 11.sp,
                         )

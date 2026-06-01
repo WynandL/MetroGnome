@@ -27,6 +27,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.metrognome.ads.InterstitialAdManager
 import com.example.metrognome.review.AppReviewManager
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import com.example.metrognome.ui.components.PointsEarnedBanner
 import com.example.metrognome.ui.components.TunerNeedleIcon
 import com.example.metrognome.ui.screens.MetronomeScreen
 import com.example.metrognome.ui.screens.RhythmGameScreen
@@ -82,6 +88,8 @@ fun MetroGnomeApp() {
     // prompt here: a rating sheet on cold resume is jarring and depresses ratings.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         metronomeVm.reconcilePurchases()
+        metronomeVm.refreshReward()
+        metronomeVm.recordUsageDay()
         reviewManager.recordAppOpen()
     }
 
@@ -105,6 +113,26 @@ fun MetroGnomeApp() {
         if (tunerReviewReady) activity?.let { reviewManager.maybeRequestReview(it) }
     }
 
+    // Show one interstitial ad after the 2nd practice session of the day.
+    // The overlay has already been dismissed at this point so the ad is the natural break.
+    LaunchedEffect(metronomeVm) {
+        metronomeVm.practiceAdTrigger.collect {
+            activity?.let { act -> interstitialManager.showIfReady(act) {} }
+        }
+    }
+
+    // Notify the user when they earn the daily-maximum Beats reward.
+    LaunchedEffect(metronomeVm) {
+        metronomeVm.rewardGranted.collect {
+            android.widget.Toast.makeText(
+                context,
+                "🎉 ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME} maxed! Ad-free for ${com.example.metrognome.points.rewards.RewardConfig.AD_FREE_DAYS} days - you've earned it.",
+                android.widget.Toast.LENGTH_LONG,
+            ).show()
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     NavigationSuiteScaffold(
         navigationSuiteItems = {
             visibleTabs.forEach { tab ->
@@ -158,4 +186,6 @@ fun MetroGnomeApp() {
             )
         }
     }
+    PointsEarnedBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
+    } // end Box
 }

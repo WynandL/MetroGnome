@@ -36,12 +36,23 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences("metrognome_prefs", Context.MODE_PRIVATE)
     private val engine = MetronomeEngine()
     val itemTracker = MetroItemTracker(app)
+    private val dailyLog    = com.example.metrognome.points.DailyActivityLog(app)
     val billingManager = BillingManager(app)
     private val whatsNewTracker = WhatsNewTracker(app)
     private val presetsManager   = BpmPresetsManager(app)
     private val practiceManager  = PracticeSessionManager(app)
+    private val rewardManager    = com.example.metrognome.points.rewards.RewardManager(app, viewModelScope)
 
-    val isAdFree: StateFlow<Boolean>                    = billingManager.isAdFree
+    val isAdFree: StateFlow<Boolean> = combine(billingManager.isAdFree, rewardManager.isAdFreeActive) { billing, reward -> billing || reward }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, billingManager.isAdFree.value || rewardManager.isAdFreeActive.value)
+    val rewardGranted: SharedFlow<Long> = rewardManager.rewardGranted
+
+    private val usageDayTracker  = com.example.metrognome.points.UsageDayTracker(app)
+    private val pointsManager    = com.example.metrognome.points.PointsManager(app)
+    private val activityLogger   = com.example.metrognome.usage.ActivitySummaryLogger(app)
+    private val _gnoteCount = MutableStateFlow(pointsManager.getSnapshot().total)
+    val gnoteCount: StateFlow<Int> = _gnoteCount.asStateFlow()
+
     val removeAdsPriceText: StateFlow<String?>           = billingManager.priceText
     val isBillingAvailable: StateFlow<Boolean>           = billingManager.isBillingAvailable
     val isPurchasing: StateFlow<Boolean>                 = billingManager.isPurchasing
@@ -68,6 +79,10 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _pendingPracticeResult     = MutableStateFlow<PracticeResult?>(null)
     val pendingPracticeResult: StateFlow<PracticeResult?> = _pendingPracticeResult.asStateFlow()
+
+    private var _pendingPracticeAd = false
+    private val _practiceAdTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val practiceAdTrigger: SharedFlow<Unit> = _practiceAdTrigger.asSharedFlow()
 
     private val _practiceStreak            = MutableStateFlow(practiceManager.getCurrentStreak())
     val practiceStreak: StateFlow<Int>                    = _practiceStreak.asStateFlow()
@@ -115,6 +130,12 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         billingManager.launchItemPurchaseFlow(activity, productId)
     fun restorePurchases() = billingManager.restorePurchases()
     fun reconcilePurchases() { viewModelScope.launch { billingManager.reconcileInBackground() } }
+    fun refreshReward()      { rewardManager.refresh() }
+    fun recordUsageDay() {
+        usageDayTracker.recordDay()
+        _gnoteCount.value = pointsManager.getSnapshot().total
+        activityLogger.log()
+    }
     fun debugClearAdFree() = billingManager.debugClearAdFree()
     fun debugClearPresets() {
         _isPresetsEnabled.value = false
@@ -189,6 +210,10 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dismissPracticeResult() {
         _pendingPracticeResult.value = null
+        if (_pendingPracticeAd) {
+            _pendingPracticeAd = false
+            _practiceAdTrigger.tryEmit(Unit)
+        }
     }
 
     fun debugClearPracticeMode() {
@@ -220,9 +245,39 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun completePractice() {
-        val goalMinutes   = _practiceGoalSeconds.value / 60
+        val goalMinutes = _practiceGoalSeconds.value / 60
+
+        // Snapshot baseline BEFORE writing so day-rollover resets correctly.
+        val activityBefore = dailyLog.todayActivity(itemTracker)
+
         val newStreak     = practiceManager.recordSession()
         val totalSessions = practiceManager.getTotalSessions()
+        itemTracker.addPracticeMinutes(goalMinutes)
+
+        val activityAfter = dailyLog.todayActivity(itemTracker)
+
+        // Points banner: time-based, delta between before/after capped at daily limit.
+        run {
+            val limitMins  = com.example.metrognome.points.PointsLimits.PRACTICE_MINUTES_PER_DAY
+            val rate       = com.example.metrognome.points.PointsConfig.PER_PRACTICE_MINUTE
+            val prevBeats  = (activityBefore.practiceMinutesToday * rate).coerceAtMost(limitMins * rate)
+            val todayBeats = (activityAfter.practiceMinutesToday  * rate).coerceAtMost(limitMins * rate)
+            val earnedNow  = (todayBeats - prevBeats).coerceAtLeast(0)
+            val cappedMins = activityAfter.practiceMinutesToday.coerceAtMost(limitMins)
+            com.example.metrognome.points.PointsBannerQueue.post(
+                com.example.metrognome.points.PointsBannerData(
+                    pointsEarned     = earnedNow,
+                    activityLabel    = "Practice",
+                    todayCount       = cappedMins,
+                    dailyLimit       = limitMins,
+                    limitJustReached = cappedMins == limitMins,
+                )
+            )
+        }
+
+        // Ad: fire after the 2nd practice session of the day (max 1 ad per day).
+        _pendingPracticeAd = activityAfter.practiceSessionsToday == 2
+
         _isPracticeActive.value = false
         _practiceStreak.value = newStreak
         AnalyticsTracker.logPracticeCompleted(goalMinutes, newStreak, totalSessions)
@@ -349,6 +404,12 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         viewModelScope.launch {
+            com.example.metrognome.points.PointsBannerQueue.events.collect { _ ->
+                _gnoteCount.value = pointsManager.getSnapshot().total
+            }
+        }
+
+        viewModelScope.launch {
             billingManager.purchasedItemProductIds.collect { purchasedProductIds ->
                 PURCHASABLE_ITEM_REGISTRY.forEach { def ->
                     if (def.productId in purchasedProductIds) {
@@ -449,7 +510,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         playTimerJob = viewModelScope.launch {
             while (true) {
                 delay(10_000L)
-                itemTracker.addMetronomeSeconds(10)
+                if (!SessionFlags.speedTrainerActive) itemTracker.addMetronomeSeconds(10)
                 _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
                 checkForNewUnlocks()
             }

@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -90,7 +92,8 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE)
     private val tuner = Tuner()
     private val calibrator = TunerCalibrator()
-    private val tracker = MetroItemTracker(app)
+    private val tracker  = MetroItemTracker(app)
+    private val dailyLog = com.example.metrognome.points.DailyActivityLog(app)
 
     // ── Engine state, surfaced straight through ────────────────────────────────
 
@@ -128,6 +131,7 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
     val tunerReviewReady: StateFlow<Boolean> = _tunerReviewReady.asStateFlow()
 
     private var usageTimerJob: Job? = null
+    private var noteLockJob:   Job? = null
 
     /** Whether the screen wants the mic open — survives the calibration pause. */
     @Volatile
@@ -172,6 +176,15 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+        // Fire exactly once each time the tuner transitions to the LOCKED state.
+        // distinctUntilChanged ensures a sustained lock does not double-count.
+        noteLockJob?.cancel()
+        noteLockJob = viewModelScope.launch {
+            ambient
+                .map { it.locked }
+                .distinctUntilChanged()
+                .collect { isLocked -> if (isLocked) tracker.recordTunerNoteLocked() }
+        }
     }
 
     private fun stopUsageTimer() {
@@ -180,6 +193,8 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
             usageTimerJob = null
             AnalyticsTracker.logTunerStopped()
         }
+        noteLockJob?.cancel()
+        noteLockJob = null
     }
 
     private fun checkForNewUnlocks() {
@@ -209,7 +224,14 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun submitFeedback(snapshot: TunerSessionSnapshot, thumbsUp: Boolean, reason: String? = null) {
         viewModelScope.launch {
-            if (thumbsUp) tracker.recordTunerFeedback()
+            if (thumbsUp) {
+                tracker.recordTunerFeedback()
+                val todayFeedback = dailyLog.todayActivity(tracker).tunerFeedbackGiven
+                com.example.metrognome.points.PointsBannerQueue.postActivity(
+                    "Tuner Feedback", com.example.metrognome.points.PointsConfig.PER_TUNER_FEEDBACK,
+                    todayFeedback, com.example.metrognome.points.PointsLimits.TUNER_FEEDBACK_PER_DAY
+                )
+            }
             val given = prefs.getInt(KEY_RESPONSES_GIVEN, 0) + 1
             prefs.edit { putInt(KEY_RESPONSES_GIVEN, given) }
             TunerFeedbackReporter.submit(snapshot, thumbsUp, reason)

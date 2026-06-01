@@ -52,9 +52,14 @@ class WhatsNewTracker(context: Context) {
     }
 
     /**
-     * Returns the first key in [allVersions] that the user hasn't confirmed yet,
-     * or null if all have been seen. Pass [AppWhatsNew.ALL] here.
+     * Returns the most recent unshown version key, silently marking any older
+     * unshown keys as seen first. This prevents a cascade of back-version popups
+     * when a user upgrades across multiple versions in one jump.
      */
-    fun pendingKey(allVersions: List<String>): String? =
-        allVersions.firstOrNull { !isShown(it) }
+    fun pendingKey(allVersions: List<String>): String? {
+        val pending = allVersions.filter { !isShown(it) }
+        if (pending.isEmpty()) return null
+        pending.dropLast(1).forEach { markShown(it) }
+        return pending.last()
+    }
 }

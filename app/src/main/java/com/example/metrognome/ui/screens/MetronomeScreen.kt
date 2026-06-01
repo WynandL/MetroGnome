@@ -133,6 +133,9 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
     val practiceStreak by vm.practiceStreak.collectAsStateWithLifecycle()
     val pendingPracticeResult by vm.pendingPracticeResult.collectAsStateWithLifecycle()
 
+    val gnoteCount by vm.gnoteCount.collectAsStateWithLifecycle()
+    var showGnotesInfo by remember { mutableStateOf(false) }
+
     var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
     val pendingWhatsNew by vm.pendingWhatsNew.collectAsStateWithLifecycle()
@@ -233,6 +236,17 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
                     .align(Alignment.TopCenter)
                     .padding(top = 12.dp)
             )
+
+            if (gnoteCount > 0) {
+                com.example.metrognome.ui.components.GoldPill(
+                    text        = "$gnoteCount ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME}",
+                    leadingIcon = androidx.compose.material.icons.Icons.Filled.Bolt,
+                    onClick     = { showGnotesInfo = true },
+                    modifier    = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 12.dp, top = 12.dp),
+                )
+            }
         }
 
         BpmStepperRow(
@@ -281,13 +295,10 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
                 }
             },
             onTrainer = {
-                if (trainerState is TrainerSessionState.Running ||
-                    trainerState is TrainerSessionState.Countdown) {
-                    showCancelTrainerDialog = true
-                } else if (isSpeedTrainerEnabled) {
-                    showTrainerDialog = true
-                } else {
-                    showEnableTrainerDialog = true
+                if (trainerState !is TrainerSessionState.Running &&
+                    trainerState !is TrainerSessionState.Countdown) {
+                    if (isSpeedTrainerEnabled) showTrainerDialog = true
+                    else showEnableTrainerDialog = true
                 }
             },
             modifier = Modifier
@@ -521,6 +532,13 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
         }
     }
 
+    if (showGnotesInfo) {
+        com.example.metrognome.ui.dialogs.GnotesInfoDialog(
+            gnoteCount = gnoteCount,
+            onDismiss  = { showGnotesInfo = false },
+        )
+    }
+
     } // close outer Box
 }
 
@@ -611,7 +629,7 @@ private fun SecondaryControlsRow(
             icon = Icons.Filled.Bolt,
             contentDescription = "Speed Trainer",
             active = isTrainerActive,
-            accentColor = AppColors.gold,
+            accentColor = AppColors.primaryPurple,
             onClick = onTrainer,
             modifier = Modifier.weight(1f).height(44.dp)
         )
@@ -979,7 +997,7 @@ private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit
                 Spacer(Modifier.height(14.dp))
 
                 Text(
-                    text = "✨ Time spent practicing unlocks new gnome items",
+                    text = "Time spent practicing unlocks new gnome items",
                     color = AppColors.gold.copy(alpha = 0.85f),
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
@@ -1127,7 +1145,7 @@ private fun EnablePresetsDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {
 private fun EnablePracticeDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {
     FeatureEnableDialog(
         title       = "Practice Sessions",
-        description = "Turn loose noodling into real, measurable progress — one focused session at a time.",
+        description = "Turn loose noodling into real, measurable progress - one focused session at a time.",
         onEnable    = onEnable,
         onDismiss   = onDismiss,
         highlights  = listOf(
@@ -1159,7 +1177,7 @@ private fun EnableSpeedTrainerDialog(onEnable: () -> Unit, onDismiss: () -> Unit
         highlights  = listOf(
             "Ramp any tempo to your target, automatically",
             "Configure step size, bars per step, and repeats",
-            "Optional mic-powered auto-advance when locked in",
+            "Optional mic-powered accuracy bonus when playing in time",
             "Tracks your improvement session to session",
         ),
         previewContent = {

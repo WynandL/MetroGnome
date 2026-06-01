@@ -64,6 +64,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
 
     private val prefs = SpeedTrainerPrefs(app)
     private val itemTracker = MetroItemTracker(app)
+    private val dailyLog    = com.example.metrognome.points.DailyActivityLog(app)
 
     private val _config = MutableStateFlow(prefs.loadConfig())
     val config: StateFlow<SpeedTrainerConfig> = _config.asStateFlow()
@@ -89,6 +90,8 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     // Median of these samples becomes the per-session latency bias.
     private val calibrationSamples = mutableListOf<Float>()
     private var latencyBiasMs = 0f
+
+    private var sessionStartMs = 0L
 
     // Per-step hit deviation ring buffer for auto-advance + display
     private val recentDeviations = ArrayDeque<Float>()
@@ -141,6 +144,8 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         stepStats.clear()
         currentStepDeviations.clear()
 
+        sessionStartMs = SystemClock.elapsedRealtime()
+        SessionFlags.speedTrainerActive = true
         _sessionState.value = TrainerSessionState.Countdown(
             config = cfg,
             steps = steps,
@@ -161,6 +166,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun cancelSession() {
+        SessionFlags.speedTrainerActive = false
         stopMic()
         countdownBeatsLeft = 0
         AnalyticsTracker.logSpeedTrainerCancelled(
@@ -298,9 +304,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
                     lastDeviationMs = deviation,
                 )
 
-                if (progress >= AUTO_ADVANCE_THRESHOLD) {
-                    advanceToNextStep()
-                }
+                // Auto-advance removed — mic accuracy earns bonus Gnotes at session end instead.
             }
             else -> {}
         }
@@ -334,8 +338,60 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun completeSession() {
+        SessionFlags.speedTrainerActive = false
         stopMic()
+        val elapsedSeconds = (SystemClock.elapsedRealtime() - sessionStartMs) / 1000L
+
+        val activityBefore = dailyLog.todayActivity(itemTracker)
         itemTracker.recordSpeedTrainingCompleted()
+        itemTracker.addSpeedTrainerSeconds(elapsedSeconds)
+        val activityAfter = dailyLog.todayActivity(itemTracker)
+
+        run {
+            val limitMins  = com.example.metrognome.points.PointsLimits.SPEED_TRAINER_MINUTES_PER_DAY
+            val rate       = com.example.metrognome.points.PointsConfig.PER_SPEED_TRAINER_MINUTE
+            val prevBeats  = ((activityBefore.speedTrainerSecondsToday / 60).coerceAtMost(limitMins.toLong()) * rate).toInt()
+            val todayBeats = ((activityAfter.speedTrainerSecondsToday  / 60).coerceAtMost(limitMins.toLong()) * rate).toInt()
+            val earnedNow  = (todayBeats - prevBeats).coerceAtLeast(0)
+            val cappedMins = (activityAfter.speedTrainerSecondsToday / 60).coerceAtMost(limitMins.toLong()).toInt()
+            if (earnedNow > 0 || cappedMins >= limitMins) {
+                com.example.metrognome.points.PointsBannerQueue.post(
+                    com.example.metrognome.points.PointsBannerData(
+                        pointsEarned     = earnedNow,
+                        activityLabel    = "Speed Trainer",
+                        todayCount       = cappedMins,
+                        dailyLimit       = limitMins,
+                        limitJustReached = cappedMins == limitMins,
+                    )
+                )
+            }
+        }
+
+        // Mic accuracy bonus: award Gnotes if timing was consistently good.
+        val stepsWithHits = stepStats.filter { it.hitCount > 0 && it.avgDeviationMs != null }
+        val totalHits = stepsWithHits.sumOf { it.hitCount }
+        if (totalHits >= MIC_MIN_HITS) {
+            val avgDeviation = stepsWithHits.map { it.avgDeviationMs!! }.average().toFloat()
+            if (avgDeviation <= MIC_ACCURACY_THRESHOLD_MS) {
+                val limit     = com.example.metrognome.points.PointsLimits.MIC_ACCURACY_SESSIONS_PER_DAY
+                val rate      = com.example.metrognome.points.PointsConfig.MIC_ACCURACY_BONUS_PER_SESSION
+                val prevCount = dailyLog.todayActivity(itemTracker).micBonusSessionsToday
+                if (prevCount < limit) {
+                    itemTracker.recordMicBonusSession()
+                    val newCount = dailyLog.todayActivity(itemTracker).micBonusSessionsToday
+                    com.example.metrognome.points.PointsBannerQueue.post(
+                        com.example.metrognome.points.PointsBannerData(
+                            pointsEarned     = rate,
+                            activityLabel    = "Mic Accuracy",
+                            todayCount       = newCount,
+                            dailyLimit       = limit,
+                            limitJustReached = newCount >= limit,
+                        )
+                    )
+                }
+            }
+        }
+
         val cfg = _config.value
         val previousBest = prefs.loadReachedBpm(cfg.startBpm, cfg.targetBpm)
         val reachedBpm = steps.getOrNull(currentStepIndex) ?: cfg.targetBpm
@@ -403,9 +459,10 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     companion object {
-        // Number of recent hits tracked for auto-advance ring fill.
-        // 2 bars of 4/4 = 8 hits feels responsive without being jumpy.
+        // Number of recent hits tracked for the accuracy ring display.
         private const val RING_SIZE = 8
-        private const val AUTO_ADVANCE_THRESHOLD = 1.0f
+        // Mic accuracy bonus thresholds
+        private const val MIC_ACCURACY_THRESHOLD_MS = 80f   // avg absolute deviation to qualify
+        private const val MIC_MIN_HITS = 5                  // minimum mic detections for the result to be meaningful
     }
 }

@@ -26,8 +26,13 @@ class MetroItemTracker(context: Context) {
         private const val KEY_FIRST_LAUNCH_MS    = "first_launch_ms"
         private const val KEY_CHEAT_MODE          = "cheat_mode"
         private const val KEY_FORCE_UNLOCKED_IDS  = "force_unlocked_ids"
+        private const val KEY_TUNER_NOTES_LOCKED      = "tuner_notes_locked"
+        private const val KEY_GAME_SCORE_TOTAL         = "game_score_total"
+        private const val KEY_PRACTICE_MINUTES_TOTAL   = "practice_minutes_total"
         private const val KEY_TUNER_FEEDBACK          = "tuner_feedback_count"
         private const val KEY_SPEED_TRAINING_SESSIONS = "speed_training_sessions"
+        private const val KEY_SPEED_TRAINER_SECONDS   = "speed_trainer_seconds"
+        private const val KEY_MIC_BONUS_SESSIONS      = "mic_bonus_sessions"
 
         // Mirrors PracticeSessionManager key — read-only here, written only by PracticeSessionManager
         private const val KEY_PRACTICE_TOTAL = "total_sessions"
@@ -54,10 +59,28 @@ class MetroItemTracker(context: Context) {
         prefs.edit { putLong(KEY_TUNER_SECONDS, current + seconds) }
     }
 
+    /** Increment the count of individual notes the tuner has locked on to. */
+    fun recordTunerNoteLocked() {
+        val current = prefs.getInt(KEY_TUNER_NOTES_LOCKED, 0)
+        prefs.edit { putInt(KEY_TUNER_NOTES_LOCKED, current + 1) }
+    }
+
     /** Increment the completed-games counter by 1. */
     fun recordGameCompleted() {
         val current = prefs.getInt(KEY_GAMES_COMPLETED, 0)
         prefs.edit { putInt(KEY_GAMES_COMPLETED, current + 1) }
+    }
+
+    /** Accumulate [score] into the lifetime rhythm-game score total (used for Beats points). */
+    fun addGameScore(score: Int) {
+        val current = prefs.getInt(KEY_GAME_SCORE_TOTAL, 0)
+        prefs.edit { putInt(KEY_GAME_SCORE_TOTAL, current + score) }
+    }
+
+    /** Accumulate [minutes] into the lifetime practice time total (used for Beats points). */
+    fun addPracticeMinutes(minutes: Int) {
+        val current = prefs.getInt(KEY_PRACTICE_MINUTES_TOTAL, 0)
+        prefs.edit { putInt(KEY_PRACTICE_MINUTES_TOTAL, current + minutes) }
     }
 
     /** Increment the thumbs-up tuner feedback counter by 1. */
@@ -72,13 +95,30 @@ class MetroItemTracker(context: Context) {
         prefs.edit { putInt(KEY_SPEED_TRAINING_SESSIONS, current + 1) }
     }
 
+    /** Accumulate [seconds] into the lifetime speed trainer time total (used for Beats points). */
+    fun addSpeedTrainerSeconds(seconds: Long) {
+        val current = prefs.getLong(KEY_SPEED_TRAINER_SECONDS, 0L)
+        prefs.edit { putLong(KEY_SPEED_TRAINER_SECONDS, current + seconds) }
+    }
+
+    /** Increment the mic-accuracy bonus sessions counter by 1. */
+    fun recordMicBonusSession() {
+        val current = prefs.getInt(KEY_MIC_BONUS_SESSIONS, 0)
+        prefs.edit { putInt(KEY_MIC_BONUS_SESSIONS, current + 1) }
+    }
+
     // ── Readers ───────────────────────────────────────────────────────────────
 
     fun metronomeSeconds(): Long    = prefs.getLong(KEY_METRONOME_SECONDS, 0L)
     fun tunerSeconds(): Long        = prefs.getLong(KEY_TUNER_SECONDS, 0L)
+    fun tunerNotesLocked(): Int     = prefs.getInt(KEY_TUNER_NOTES_LOCKED, 0)
     fun gamesCompleted(): Int       = prefs.getInt(KEY_GAMES_COMPLETED, 0)
+    fun totalGameScore(): Int       = prefs.getInt(KEY_GAME_SCORE_TOTAL, 0)
+    fun totalPracticeMinutes(): Int = prefs.getInt(KEY_PRACTICE_MINUTES_TOTAL, 0)
     fun tunerFeedbackGiven(): Int           = prefs.getInt(KEY_TUNER_FEEDBACK, 0)
     fun speedTrainingSessionsCompleted(): Int = prefs.getInt(KEY_SPEED_TRAINING_SESSIONS, 0)
+    fun speedTrainerSeconds(): Long           = prefs.getLong(KEY_SPEED_TRAINER_SECONDS, 0L)
+    fun micBonusSessions(): Int              = prefs.getInt(KEY_MIC_BONUS_SESSIONS, 0)
     fun practiceSessionsCompleted(): Int = practicePrefs.getInt(KEY_PRACTICE_TOTAL, 0)
     fun daysSinceFirstLaunch(): Int {
         val firstMs = prefs.getLong(KEY_FIRST_LAUNCH_MS, System.currentTimeMillis())
@@ -158,11 +198,16 @@ class MetroItemTracker(context: Context) {
         prefs.edit {
             remove(KEY_METRONOME_SECONDS)
             remove(KEY_TUNER_SECONDS)
+            remove(KEY_TUNER_NOTES_LOCKED)
             remove(KEY_GAMES_COMPLETED)
+            remove(KEY_GAME_SCORE_TOTAL)
+            remove(KEY_PRACTICE_MINUTES_TOTAL)
             remove(KEY_FIRST_LAUNCH_MS)
             remove(KEY_CELEBRATED_IDS)
             remove(KEY_TUNER_FEEDBACK)
             remove(KEY_SPEED_TRAINING_SESSIONS)
+            remove(KEY_SPEED_TRAINER_SECONDS)
+            remove(KEY_MIC_BONUS_SESSIONS)
             // KEY_FORCE_UNLOCKED_IDS is intentionally preserved — it reflects real purchases
         }
     }
