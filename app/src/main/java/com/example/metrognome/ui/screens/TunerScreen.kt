@@ -2,29 +2,23 @@ package com.example.metrognome.ui.screens
 
 import android.Manifest
 import android.content.Context
+import androidx.core.content.edit
 import android.content.pm.PackageManager
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -61,7 +55,6 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
@@ -104,6 +97,10 @@ import com.example.metrognome.audio.tuner.AmbientReport
 import com.example.metrognome.audio.tuner.ListeningState
 import com.example.metrognome.audio.NoteNames
 import com.example.metrognome.audio.tuner.Tuner
+import com.example.metrognome.ui.components.CircleButton
+import com.example.metrognome.ui.components.GoldPill
+import com.example.metrognome.ui.components.LabelValueBadge
+import com.example.metrognome.ui.components.PrimaryButton
 import com.example.metrognome.ui.components.TunerFeedbackCard
 import com.example.metrognome.ui.dialogs.CalibrationConfirmDialog
 import com.example.metrognome.ui.dialogs.CalibrationDialog
@@ -166,9 +163,18 @@ fun TunerScreen(
                     == PackageManager.PERMISSION_GRANTED
         )
     }
+    var micPermanentlyDenied by remember { mutableStateOf(false) }
+
+    val activity = LocalActivity.current
     val micLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> micGranted = granted }
+    ) { granted ->
+        micGranted = granted
+        if (!granted && activity != null) {
+            micPermanentlyDenied = !androidx.core.app.ActivityCompat
+                .shouldShowRequestPermissionRationale(activity, Manifest.permission.RECORD_AUDIO)
+        }
+    }
 
     DisposableEffect(micGranted) {
         if (micGranted) vm.startListening()
@@ -186,7 +192,6 @@ fun TunerScreen(
     val prefs = remember { context.getSharedPreferences("metrognome_prefs", Context.MODE_PRIVATE) }
     var nudgeDismissed by remember { mutableStateOf(prefs.getBoolean("tuner_calibration_nudge_shown", false)) }
 
-    val activity = LocalActivity.current
     DisposableEffect(keepScreenOn) {
         if (keepScreenOn) activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         else activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -202,8 +207,19 @@ fun TunerScreen(
             calibration = calibration,
             calibrationInfo = calibrationInfo,
             micGranted = micGranted,
+            micPermanentlyDenied = micPermanentlyDenied,
             keepScreenOn = keepScreenOn,
-            onRequestMic = { micLauncher.launch(Manifest.permission.RECORD_AUDIO) },
+            onRequestMic = {
+                if (micPermanentlyDenied) {
+                    context.startActivity(
+                        android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = android.net.Uri.fromParts("package", context.packageName, null)
+                        }
+                    )
+                } else {
+                    micLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            },
             onNudgeReference = vm::nudgeReference,
             onSetReferenceHz = vm::setReferenceHz,
             onLoopbackCalibrate = vm::calibrate,
@@ -220,7 +236,7 @@ fun TunerScreen(
             showCalibrationNudge = micGranted && !nudgeDismissed && !calibrationInfo.calibrated,
             onDismissCalibrationNudge = {
                 nudgeDismissed = true
-                prefs.edit().putBoolean("tuner_calibration_nudge_shown", true).apply()
+                prefs.edit { putBoolean("tuner_calibration_nudge_shown", true) }
             },
         )
 
@@ -250,6 +266,7 @@ internal fun TunerScreenContent(
     calibration: CalibrationState,
     calibrationInfo: CalibrationInfo,
     micGranted: Boolean,
+    micPermanentlyDenied: Boolean = false,
     keepScreenOn: Boolean = false,
     onRequestMic: () -> Unit,
     onNudgeReference: (Float) -> Unit,
@@ -322,7 +339,7 @@ internal fun TunerScreenContent(
         Spacer(Modifier.height(8.dp))
 
         if (!micGranted) {
-            MicPermissionPrompt(onRequestMic)
+            MicPermissionPrompt(onRequestMic, isPermanentlyDenied = micPermanentlyDenied)
             Spacer(Modifier.height(10.dp))
         }
 
@@ -544,9 +561,9 @@ private fun GaugeReadout(reading: Tuner.Reading?, amplitude: Float) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                ReadoutChip("HEARD", String.format(Locale.US, "%.1f Hz", reading.frequency))
+                LabelValueBadge("HEARD", String.format(Locale.US, "%.1f Hz", reading.frequency))
                 Text("→", color = AppColors.textDim, fontSize = 14.sp)
-                ReadoutChip(
+                LabelValueBadge(
                     "${reading.noteName}${reading.octave} SITS AT",
                     String.format(Locale.US, "%.1f Hz", targetHz),
                 )
@@ -623,17 +640,6 @@ private fun DrawScope.drawGauge(cents: Float, accent: Color, hasSignal: Boolean)
     drawLine(needleColor, pivot, tip, strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
     drawCircle(needleColor, 8.dp.toPx(), pivot)
     drawCircle(AppColors.background, 3.5.dp.toPx(), pivot)
-}
-
-@Composable
-private fun ReadoutChip(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            label, color = AppColors.textSubtle, fontSize = 9.sp,
-            fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
-        )
-        Text(value, color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-    }
 }
 
 @Composable
@@ -976,15 +982,6 @@ private fun ambientStateColor(state: ListeningState): Color = when (state) {
     ListeningState.QUIET, ListeningState.PROFILING -> GameColors.rangeBlue
 }
 
-private fun ambientStateLabel(state: ListeningState): String = when (state) {
-    ListeningState.PROFILING -> "learning the room"
-    ListeningState.QUIET     -> "listening"
-    ListeningState.NOISE     -> "background noise"
-    ListeningState.UNSTABLE  -> "voice detected"
-    ListeningState.ACQUIRING -> "note found"
-    ListeningState.LOCKED    -> "signal locked"
-}
-
 private fun noiseColor(level: AmbientLevel): Color = when (level) {
     AmbientLevel.QUIET    -> GameColors.good
     AmbientLevel.MODERATE -> AppColors.gold
@@ -1177,21 +1174,7 @@ private fun ReferencePitchCard(
 }
 
 @Composable
-private fun StepButton(label: String, onClick: () -> Unit) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(28.dp)
-            .clip(CircleShape)
-            .background(AppColors.surfaceVariant)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) { onClick() },
-    ) {
-        Text(label, color = AppColors.textSecondary, fontSize = 16.sp, fontWeight = FontWeight.Light)
-    }
-}
+private fun StepButton(label: String, onClick: () -> Unit) = CircleButton(label, onClick)
 
 // ── Instrument calibration chip ─────────────────────────────────────────────────
 
@@ -1201,27 +1184,11 @@ private fun StepButton(label: String, onClick: () -> Unit) {
  */
 @Composable
 private fun InstrumentCalibrationChip(reading: Tuner.Reading, onClick: () -> Unit) {
-    Surface(
+    GoldPill(
+        text = "My ${reading.noteName}${reading.octave} is in tune",
+        leadingIcon = Icons.Filled.MusicNote,
         onClick = onClick,
-        shape = RoundedCornerShape(50.dp),
-        color = AppColors.gold.copy(alpha = 0.10f),
-        border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.55f)),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Icon(
-                Icons.Filled.MusicNote, contentDescription = null,
-                tint = AppColors.gold, modifier = Modifier.size(13.dp),
-            )
-            Text(
-                "My ${reading.noteName}${reading.octave} is in tune",
-                color = AppColors.gold, fontSize = 12.sp, fontWeight = FontWeight.Medium,
-            )
-        }
-    }
+    )
 }
 
 // ── Calibration ──────────────────────────────────────────────────────────────────
@@ -1343,6 +1310,7 @@ private fun CalibrationOptionButton(
                 Text(
                     instruction, color = AppColors.textMuted,
                     fontSize = 11.sp,
+                    lineHeight = 14.sp,
                 )
             }
         }
@@ -1523,34 +1491,9 @@ private fun CalibrationStatus(info: CalibrationInfo) {
     }
 }
 
-@Composable
-private fun StatusLine(color: Color, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(color),
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(text, color = AppColors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-    }
-}
 
 @Composable
-private fun GoldButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(46.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
-    ) {
-        Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, letterSpacing = 1.sp)
-    }
-}
-
-@Composable
-private fun MicPermissionPrompt(onRequest: () -> Unit) {
+private fun MicPermissionPrompt(onRequest: () -> Unit, isPermanentlyDenied: Boolean = false) {
     Surface(
         color = AppColors.surfaceDim,
         shape = RoundedCornerShape(14.dp),
@@ -1561,11 +1504,17 @@ private fun MicPermissionPrompt(onRequest: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                "Microphone access needed to hear your instrument.",
+                if (isPermanentlyDenied)
+                    "Microphone access was blocked. Enable it in App Settings to use the tuner."
+                else
+                    "Microphone access needed to hear your instrument.",
                 color = AppColors.textSecondary, fontSize = 12.sp, textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(12.dp))
-            GoldButton("Grant Microphone Access", onRequest)
+            PrimaryButton(
+                if (isPermanentlyDenied) "Open App Settings" else "Grant Microphone Access",
+                onRequest,
+            )
         }
     }
 }
@@ -1575,20 +1524,7 @@ private fun MicPermissionPrompt(onRequest: () -> Unit) {
 /** Informational-only pill shown in the header when reference pitch is not 440 Hz. */
 @Composable
 private fun ReferencePitchPill(referenceHz: Float, modifier: Modifier = Modifier) {
-    Surface(
-        shape = RoundedCornerShape(50.dp),
-        color = AppColors.gold.copy(alpha = 0.10f),
-        border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.40f)),
-        modifier = modifier,
-    ) {
-        Text(
-            "A4 = ${referenceHz.roundToInt()} Hz",
-            color = AppColors.gold,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-        )
-    }
+    GoldPill(text = "A4 = ${referenceHz.roundToInt()} Hz", modifier = modifier)
 }
 
 // ── Formatting helpers ───────────────────────────────────────────────────────────

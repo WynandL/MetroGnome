@@ -26,7 +26,8 @@ class MetroItemTracker(context: Context) {
         private const val KEY_FIRST_LAUNCH_MS    = "first_launch_ms"
         private const val KEY_CHEAT_MODE          = "cheat_mode"
         private const val KEY_FORCE_UNLOCKED_IDS  = "force_unlocked_ids"
-        private const val KEY_TUNER_FEEDBACK      = "tuner_feedback_count"
+        private const val KEY_TUNER_FEEDBACK          = "tuner_feedback_count"
+        private const val KEY_SPEED_TRAINING_SESSIONS = "speed_training_sessions"
 
         // Mirrors PracticeSessionManager key — read-only here, written only by PracticeSessionManager
         private const val KEY_PRACTICE_TOTAL = "total_sessions"
@@ -65,12 +66,19 @@ class MetroItemTracker(context: Context) {
         prefs.edit { putInt(KEY_TUNER_FEEDBACK, current + 1) }
     }
 
+    /** Increment the Speed Trainer completed-sessions counter by 1. */
+    fun recordSpeedTrainingCompleted() {
+        val current = prefs.getInt(KEY_SPEED_TRAINING_SESSIONS, 0)
+        prefs.edit { putInt(KEY_SPEED_TRAINING_SESSIONS, current + 1) }
+    }
+
     // ── Readers ───────────────────────────────────────────────────────────────
 
     fun metronomeSeconds(): Long    = prefs.getLong(KEY_METRONOME_SECONDS, 0L)
     fun tunerSeconds(): Long        = prefs.getLong(KEY_TUNER_SECONDS, 0L)
     fun gamesCompleted(): Int       = prefs.getInt(KEY_GAMES_COMPLETED, 0)
-    fun tunerFeedbackGiven(): Int   = prefs.getInt(KEY_TUNER_FEEDBACK, 0)
+    fun tunerFeedbackGiven(): Int           = prefs.getInt(KEY_TUNER_FEEDBACK, 0)
+    fun speedTrainingSessionsCompleted(): Int = prefs.getInt(KEY_SPEED_TRAINING_SESSIONS, 0)
     fun practiceSessionsCompleted(): Int = practicePrefs.getInt(KEY_PRACTICE_TOTAL, 0)
     fun daysSinceFirstLaunch(): Int {
         val firstMs = prefs.getLong(KEY_FIRST_LAUNCH_MS, System.currentTimeMillis())
@@ -118,8 +126,9 @@ class MetroItemTracker(context: Context) {
             is UnlockCondition.RhythmGamesCompleted    -> gamesCompleted() >= condition.required
             is UnlockCondition.DaysSinceFirstLaunch    -> daysSinceFirstLaunch() >= condition.required
             is UnlockCondition.PracticeSessionsCompleted -> practiceSessionsCompleted() >= condition.required
-            is UnlockCondition.TunerFeedbackGiven      -> tunerFeedbackGiven() >= condition.required
-            UnlockCondition.Always                     -> true
+            is UnlockCondition.TunerFeedbackGiven              -> tunerFeedbackGiven() >= condition.required
+            is UnlockCondition.SpeedTrainingSessionsCompleted  -> speedTrainingSessionsCompleted() >= condition.required
+            UnlockCondition.Always                             -> true
         }
     }
 
@@ -153,6 +162,7 @@ class MetroItemTracker(context: Context) {
             remove(KEY_FIRST_LAUNCH_MS)
             remove(KEY_CELEBRATED_IDS)
             remove(KEY_TUNER_FEEDBACK)
+            remove(KEY_SPEED_TRAINING_SESSIONS)
             // KEY_FORCE_UNLOCKED_IDS is intentionally preserved — it reflects real purchases
         }
     }

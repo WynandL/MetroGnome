@@ -35,6 +35,7 @@ import com.example.metrognome.ui.screens.TunerScreen
 import com.example.metrognome.ui.theme.MetroGnomeTheme
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.viewmodel.RhythmGameViewModel
+import com.example.metrognome.viewmodel.SpeedTrainerViewModel
 import com.example.metrognome.viewmodel.TunerViewModel
 
 enum class AppTab(val label: String) {
@@ -63,6 +64,7 @@ fun MetroGnomeApp() {
     val metronomeVm: MetronomeViewModel = viewModel()
     val rhythmVm: RhythmGameViewModel = viewModel()
     val tunerVm: TunerViewModel = viewModel()
+    val speedTrainerVm: SpeedTrainerViewModel = viewModel()
     val isAdFree by metronomeVm.isAdFree.collectAsStateWithLifecycle()
     val isPlaying by metronomeVm.isPlaying.collectAsStateWithLifecycle()
 
@@ -128,7 +130,7 @@ fun MetroGnomeApp() {
         }
     ) {
         when (currentTab) {
-            AppTab.GNOME -> MetronomeScreen(vm = metronomeVm)
+            AppTab.GNOME -> MetronomeScreen(vm = metronomeVm, trainerVm = speedTrainerVm)
             AppTab.RHYTHM -> RhythmGameScreen(
                 vm = rhythmVm,
                 isMetronomePlaying = isPlaying,

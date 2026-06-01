@@ -34,6 +34,12 @@ sealed class UnlockCondition {
     /** Total cumulative tuner listening time in seconds (mic active). */
     data class TunerSeconds(val required: Long) : UnlockCondition()
 
+    /**
+     * Number of Speed Trainer sessions fully completed (reached the result screen).
+     * Monotonically increasing — safe for permanent item unlocks.
+     */
+    data class SpeedTrainingSessionsCompleted(val required: Int) : UnlockCondition()
+
     /** Always unlocked — used for developer preview / cheat mode. */
     object Always : UnlockCondition()
 }
@@ -75,5 +81,7 @@ fun UnlockCondition.displayText(): String = when (this) {
     is UnlockCondition.TunerFeedbackGiven ->
         if (required == 1) "Submit a tuner feedback rating"
         else "Submit $required tuner feedback ratings"
+    is UnlockCondition.SpeedTrainingSessionsCompleted ->
+        "Complete $required speed training session${if (required != 1) "s" else ""}"
     UnlockCondition.Always -> "Always available"
 }

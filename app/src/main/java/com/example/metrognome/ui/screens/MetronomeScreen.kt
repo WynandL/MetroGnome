@@ -17,7 +17,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.foundation.BorderStroke
@@ -31,14 +30,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LightMode
@@ -77,8 +77,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import com.example.metrognome.ui.components.rememberMicPermissionState
+import com.example.metrognome.ui.components.SpeedTrainerCountdownHud
+import com.example.metrognome.ui.components.SpeedTrainerHud
+import com.example.metrognome.ui.dialogs.AppDialog
+import com.example.metrognome.ui.dialogs.SpeedTrainerDialog
+import com.example.metrognome.ui.overlays.SpeedTrainerResultOverlay
+import com.example.metrognome.viewmodel.SpeedTrainerViewModel
+import com.example.metrognome.viewmodel.TrainerSessionState
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -89,14 +96,20 @@ import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.components.GnomeCanvas
 import com.example.metrognome.ui.components.PresetChipsRow
 import com.example.metrognome.ui.components.StreakIcon
+import com.example.metrognome.debug.mic.MicDiagnosticsOverlay
+import com.example.metrognome.dev.DevEasterEgg
+import androidx.compose.ui.platform.LocalContext
+import com.example.metrognome.debug.mic.MicDiagnosticsTrigger
+import com.example.metrognome.ui.dialogs.FeatureEnableDialog
 import com.example.metrognome.ui.dialogs.ShowcaseFrame
+import com.example.metrognome.ui.dialogs.SpeedTrainerRampPreview
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
-fun MetronomeScreen(vm: MetronomeViewModel) {
+fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
     val bpm by vm.bpm.collectAsStateWithLifecycle()
     val isPlaying by vm.isPlaying.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
@@ -110,13 +123,10 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
     val isMuted by vm.isMuted.collectAsStateWithLifecycle()
     val keepScreenOn by vm.keepScreenOn.collectAsStateWithLifecycle()
     val isAdFree by vm.isAdFree.collectAsStateWithLifecycle()
-    val isPresetsUnlocked by vm.isPresetsUnlocked.collectAsStateWithLifecycle()
+    val isPresetsEnabled by vm.isPresetsEnabled.collectAsStateWithLifecycle()
+    val isPracticeEnabled by vm.isPracticeEnabled.collectAsStateWithLifecycle()
+    val isSpeedTrainerEnabled by vm.isSpeedTrainerEnabled.collectAsStateWithLifecycle()
     val presets by vm.presets.collectAsStateWithLifecycle()
-    val presetsPriceText by vm.presetsPriceText.collectAsStateWithLifecycle()
-    val isPurchasing by vm.isPurchasing.collectAsStateWithLifecycle()
-    val isBillingConnecting by vm.isBillingConnecting.collectAsStateWithLifecycle()
-    val isPracticeModeUnlocked by vm.isPracticeModeUnlocked.collectAsStateWithLifecycle()
-    val practiceModePriceText by vm.practiceModePriceText.collectAsStateWithLifecycle()
     val isPracticeActive by vm.isPracticeActive.collectAsStateWithLifecycle()
     val practiceSecondsRemaining by vm.practiceSecondsRemaining.collectAsStateWithLifecycle()
     val practiceGoalSeconds by vm.practiceGoalSeconds.collectAsStateWithLifecycle()
@@ -129,24 +139,44 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
 
     var tapHintShown by remember { mutableStateOf(false) }
     var showSavePresetDialog by remember { mutableStateOf(false) }
-    var showBuyPresetsDialog by remember { mutableStateOf(false) }
-    var showBuyPracticeDialog by remember { mutableStateOf(false) }
+    var showEnablePresetsDialog by remember { mutableStateOf(false) }
+    var showEnablePracticeDialog by remember { mutableStateOf(false) }
+    var showEnableTrainerDialog by remember { mutableStateOf(false) }
     var presetPendingDelete by remember { mutableStateOf<Pair<Int, BpmPreset>?>(null) }
     val presetLongPressHintSeen by vm.presetLongPressHintSeen.collectAsStateWithLifecycle()
     var showPracticeDialog by remember { mutableStateOf(false) }
 
-    // Auto-close the buy dialog and open the save dialog once purchase confirms
-    LaunchedEffect(isPresetsUnlocked) {
-        if (isPresetsUnlocked && showBuyPresetsDialog) {
-            showBuyPresetsDialog = false
-            showSavePresetDialog = true
+    val activity = LocalActivity.current
+
+    // ── Speed Trainer ──────────────────────────────────────────────────────────
+    val trainerConfig by trainerVm.config.collectAsStateWithLifecycle()
+    val trainerState by trainerVm.sessionState.collectAsStateWithLifecycle()
+    var showTrainerDialog by remember { mutableStateOf(false) }
+    var showCancelTrainerDialog by remember { mutableStateOf(false) }
+    var showMicDiagnostics by remember { mutableStateOf(false) }
+
+    val mic = rememberMicPermissionState(onGranted = { trainerVm.updateConfig { copy(micEnabled = true) } })
+
+    // Forward BPM requests from trainer to the metronome engine
+    LaunchedEffect(trainerVm) {
+        trainerVm.bpmRequest.collectLatest { bpm ->
+            vm.setBpm(bpm)
+            if (!vm.isPlaying.value) vm.togglePlay()
         }
     }
 
-    LaunchedEffect(isPracticeModeUnlocked) {
-        if (isPracticeModeUnlocked && showBuyPracticeDialog) {
-            showBuyPracticeDialog = false
-            showPracticeDialog = true
+    // Forward beat events to the trainer for bar counting
+    LaunchedEffect(trainerVm) {
+        vm.beatEvents.collect { event ->
+            trainerVm.onBeat(event.beat)
+        }
+    }
+
+    // Stop metronome and check for newly-earned items when a training session finishes
+    LaunchedEffect(trainerState) {
+        if (trainerState is TrainerSessionState.Complete) {
+            vm.stopPlayback()
+            vm.checkForNewUnlocks()
         }
     }
 
@@ -154,7 +184,6 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
         vm.checkForNewUnlocks()
     }
 
-    val activity = LocalActivity.current
     DisposableEffect(keepScreenOn) {
         if (keepScreenOn) {
             activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -227,11 +256,12 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
         SecondaryControlsRow(
             isMuted = isMuted,
             keepScreenOn = keepScreenOn,
-            isOnSavedPreset = isPresetsUnlocked && presets.any { it.bpm == bpm },
+            isOnSavedPreset = isPresetsEnabled && presets.any { it.bpm == bpm },
             isPracticeActive = isPracticeActive,
+            isTrainerActive = trainerState is TrainerSessionState.Running || trainerState is TrainerSessionState.Countdown,
             onSavePreset = {
-                if (isPresetsUnlocked) showSavePresetDialog = true
-                else showBuyPresetsDialog = true
+                if (isPresetsEnabled) showSavePresetDialog = true
+                else showEnablePresetsDialog = true
             },
             onToggleMute = {
                 vm.toggleMute()
@@ -246,8 +276,18 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             },
             onPractice = {
                 if (!isPracticeActive) {
-                    if (isPracticeModeUnlocked) showPracticeDialog = true
-                    else showBuyPracticeDialog = true
+                    if (isPracticeEnabled) showPracticeDialog = true
+                    else showEnablePracticeDialog = true
+                }
+            },
+            onTrainer = {
+                if (trainerState is TrainerSessionState.Running ||
+                    trainerState is TrainerSessionState.Countdown) {
+                    showCancelTrainerDialog = true
+                } else if (isSpeedTrainerEnabled) {
+                    showTrainerDialog = true
+                } else {
+                    showEnableTrainerDialog = true
                 }
             },
             modifier = Modifier
@@ -256,17 +296,45 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
                 .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
         )
 
-        if (isPracticeActive) {
+        val trainerCounting = trainerState as? TrainerSessionState.Countdown
+        val trainerRunning = trainerState as? TrainerSessionState.Running
+        if (trainerCounting != null || trainerRunning != null) {
+            // Fixed-height container so the countdown and session HUDs occupy
+            // identical vertical space — no layout jump on transition.
+            // heightIn(min) lets it grow with large-font accessibility settings.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppColors.background)
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .heightIn(min = 40.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (trainerCounting != null) {
+                    SpeedTrainerCountdownHud(
+                        state = trainerCounting,
+                        onCancel = { showCancelTrainerDialog = true },
+                    )
+                } else if (trainerRunning != null) {
+                    SpeedTrainerHud(
+                        state = trainerRunning,
+                        onSkip = { trainerVm.skipStep() },
+                        onRetreat = { trainerVm.retreatStep() },
+                        onCancel = { showCancelTrainerDialog = true },
+                    )
+                }
+            }
+        } else if (isPracticeActive) {
             PracticeProgressRow(
                 practiceSecondsRemaining = practiceSecondsRemaining,
                 practiceGoalSeconds = practiceGoalSeconds,
-                onCancelPractice = { vm.cancelPractice() },
+                onCancelPractice = { vm.cancelPractice(); vm.stopPlayback() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(AppColors.background)
                     .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 4.dp)
             )
-        } else if (practiceStreak > 0 && isPracticeModeUnlocked) {
+        } else if (practiceStreak > 0 && isPracticeEnabled) {
             StreakBadgeRow(
                 streak = practiceStreak,
                 modifier = Modifier
@@ -276,7 +344,7 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             )
         }
 
-        if (isPresetsUnlocked && presets.isNotEmpty()) {
+        if (isPresetsEnabled && presets.isNotEmpty()) {
             PresetChipsRow(
                 presets = presets,
                 currentBpm = bpm,
@@ -321,6 +389,41 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
         )
     }
 
+    if (showCancelTrainerDialog) {
+        StopTrainerDialog(
+            onConfirm = {
+                showCancelTrainerDialog = false
+                trainerVm.cancelSession()
+                vm.stopPlayback()
+            },
+            onDismiss = { showCancelTrainerDialog = false },
+        )
+    }
+
+    if (showTrainerDialog) {
+        SpeedTrainerDialog(
+            config = trainerConfig,
+            hasMicPermission = mic.isGranted,
+            isMicPermanentlyDenied = mic.isPermanentlyDenied,
+            onRequestMicPermission = { mic.request() },
+            onConfigChange = { trainerVm.updateConfig(it) },
+            onBeginTraining = {
+                showTrainerDialog = false
+                if (trainerConfig.micEnabled && !mic.isGranted) mic.request()
+                trainerVm.beginSession(timeSig)
+            },
+            onDismiss = { showTrainerDialog = false },
+        )
+    }
+
+    val trainerComplete = trainerState as? TrainerSessionState.Complete
+    if (trainerComplete != null) {
+        SpeedTrainerResultOverlay(
+            state = trainerComplete,
+            onDismiss = { trainerVm.dismissResult() },
+        )
+    }
+
     if (showSavePresetDialog) {
         SavePresetDialog(
             bpm = bpm,
@@ -333,25 +436,36 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
         )
     }
 
-    if (showBuyPresetsDialog) {
-        BuyPresetsDialog(
-            priceText = presetsPriceText,
-            isPurchasing = isPurchasing,
-            isBillingConnecting = isBillingConnecting,
-            onBuy = { activity?.let { vm.purchasePresets(it) } },
-            onRestore = { vm.restorePurchases() },
-            onDismiss = { showBuyPresetsDialog = false }
+    if (showEnablePresetsDialog) {
+        EnablePresetsDialog(
+            onEnable = {
+                vm.enablePresets()
+                showEnablePresetsDialog = false
+                showSavePresetDialog = true
+            },
+            onDismiss = { showEnablePresetsDialog = false },
         )
     }
 
-    if (showBuyPracticeDialog) {
-        BuyPracticeDialog(
-            priceText = practiceModePriceText,
-            isPurchasing = isPurchasing,
-            isBillingConnecting = isBillingConnecting,
-            onBuy = { activity?.let { vm.purchasePracticeMode(it) } },
-            onRestore = { vm.restorePurchases() },
-            onDismiss = { showBuyPracticeDialog = false }
+    if (showEnablePracticeDialog) {
+        EnablePracticeDialog(
+            onEnable = {
+                vm.enablePractice()
+                showEnablePracticeDialog = false
+                showPracticeDialog = true
+            },
+            onDismiss = { showEnablePracticeDialog = false },
+        )
+    }
+
+    if (showEnableTrainerDialog) {
+        EnableSpeedTrainerDialog(
+            onEnable = {
+                vm.enableSpeedTrainer()
+                showEnableTrainerDialog = false
+                showTrainerDialog = true
+            },
+            onDismiss = { showEnableTrainerDialog = false },
         )
     }
 
@@ -392,6 +506,21 @@ fun MetronomeScreen(vm: MetronomeViewModel) {
             onDismiss = { vm.markCelebrated(entry.item.id) },
         )
     }
+    // Dev-mode: mic diagnostics trigger + overlay (debug builds + easter egg dev mode)
+    if (DevEasterEgg.isDevModeActive(LocalContext.current)) {
+        val micSessionActive = trainerConfig.micEnabled &&
+            (trainerState is TrainerSessionState.Running || trainerState is TrainerSessionState.Countdown)
+        MicDiagnosticsTrigger(
+            visible = micSessionActive,
+            overlayOpen = showMicDiagnostics,
+            onToggle = { showMicDiagnostics = !showMicDiagnostics },
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 52.dp, end = 10.dp),
+        )
+        if (showMicDiagnostics) {
+            MicDiagnosticsOverlay(onDismiss = { showMicDiagnostics = false })
+        }
+    }
+
     } // close outer Box
 }
 
@@ -435,10 +564,12 @@ private fun SecondaryControlsRow(
     keepScreenOn: Boolean,
     isOnSavedPreset: Boolean,
     isPracticeActive: Boolean,
+    isTrainerActive: Boolean,
     onSavePreset: () -> Unit,
     onToggleMute: () -> Unit,
     onToggleScreenOn: () -> Unit,
     onPractice: () -> Unit,
+    onTrainer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -446,14 +577,6 @@ private fun SecondaryControlsRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        CompactIconChip(
-            icon = Icons.Filled.Favorite,
-            contentDescription = "Save BPM preset",
-            active = isOnSavedPreset,
-            accentColor = AppColors.gold,
-            onClick = onSavePreset,
-            modifier = Modifier.weight(1f).height(44.dp)
-        )
         CompactIconChip(
             icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
             contentDescription = if (isMuted) "Unmute" else "Mute",
@@ -469,11 +592,27 @@ private fun SecondaryControlsRow(
             modifier = Modifier.weight(1f).height(44.dp)
         )
         CompactIconChip(
+            icon = Icons.Filled.Favorite,
+            contentDescription = "Save BPM preset",
+            active = isOnSavedPreset,
+            accentColor = AppColors.gold,
+            onClick = onSavePreset,
+            modifier = Modifier.weight(1f).height(44.dp)
+        )
+        CompactIconChip(
             icon = Icons.Filled.Timer,
             contentDescription = "Practice session",
             active = isPracticeActive,
             accentColor = AppColors.primaryPurple,
             onClick = onPractice,
+            modifier = Modifier.weight(1f).height(44.dp)
+        )
+        CompactIconChip(
+            icon = Icons.Filled.Bolt,
+            contentDescription = "Speed Trainer",
+            active = isTrainerActive,
+            accentColor = AppColors.gold,
+            onClick = onTrainer,
             modifier = Modifier.weight(1f).height(44.dp)
         )
     }
@@ -785,38 +924,7 @@ private fun StreakBadgeRow(
 private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit) {
     var selected by remember { mutableIntStateOf(10) }
 
-    val cardScale = remember { Animatable(0.2f) }
-    LaunchedEffect(Unit) {
-        cardScale.animateTo(
-            targetValue = 1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMediumLow,
-            ),
-        )
-    }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = AppColors.surfaceDeep,
-            shadowElevation = 24.dp,
-            modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .widthIn(min = 280.dp, max = 360.dp)
-                .graphicsLayer {
-                    scaleX = cardScale.value
-                    scaleY = cardScale.value
-                    alpha = ((cardScale.value - 0.2f) / 0.8f).coerceIn(0f, 1f)
-                },
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
+    AppDialog(onDismiss = onDismiss) {
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Spacer(Modifier.weight(1f))
                     DialogCloseButton(onClick = onDismiss)
@@ -881,36 +989,33 @@ private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit
 
                 Surface(
                     onClick = { onStart(selected) },
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.Transparent,
-                    border = BorderStroke(1.dp, AppColors.gold),
+                    shape = RoundedCornerShape(14.dp),
+                    color = AppColors.primaryPurple,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "Start Practice",
-                            color = AppColors.gold,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.3.sp,
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Timer,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Text(
+                                "START PRACTICE",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.5.sp,
+                            )
+                        }
                     }
                 }
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    text = "Cancel",
-                    color = AppColors.textDim,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .clickable(onClick = onDismiss)
-                        .padding(vertical = 6.dp, horizontal = 12.dp),
-                )
-            }
-        }
     }
 }
 
@@ -918,31 +1023,86 @@ private fun formatPracticeTime(seconds: Int): String =
     "%d:%02d".format(seconds / 60, seconds % 60)
 
 @Composable
-private fun BuyPresetsDialog(
-    priceText: String?,
-    isPurchasing: Boolean,
-    isBillingConnecting: Boolean,
-    onBuy: () -> Unit,
-    onRestore: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    com.example.metrognome.ui.dialogs.PremiumPurchaseDialog(
-        title              = "BPM Presets",
-        description        = "Stop dialing in the same tempos over and over. Save them once, recall them instantly.",
-        actionLabel        = "Unlock Presets",
-        priceText          = priceText,
-        isPurchasing       = isPurchasing,
-        isBillingConnecting = isBillingConnecting,
-        isAvailable        = priceText != null,
-        onPurchase         = onBuy,
-        onRestore          = onRestore,
-        onDismiss          = onDismiss,
-        highlights         = listOf(
+private fun StopTrainerDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AppDialog(onDismiss = onDismiss, minWidth = 260.dp, maxWidth = 340.dp) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(48.dp)
+                .background(AppColors.stopRed.copy(alpha = 0.15f), CircleShape),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Bolt,
+                contentDescription = null,
+                tint = AppColors.stopRed,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        Text(
+            "Stop session?",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            "Your progress this session will be lost.",
+            color = AppColors.textSecondary,
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(Modifier.height(22.dp))
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Surface(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(14.dp),
+                color = Color.Transparent,
+                border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
+                modifier = Modifier.weight(1f).height(44.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("Keep going", color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            Spacer(Modifier.width(10.dp))
+
+            Surface(
+                onClick = onConfirm,
+                shape = RoundedCornerShape(14.dp),
+                color = AppColors.stopRed.copy(alpha = 0.15f),
+                border = BorderStroke(1.dp, AppColors.stopRedBorder),
+                modifier = Modifier.weight(1f).height(44.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("Stop", color = AppColors.stopRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EnablePresetsDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {
+    FeatureEnableDialog(
+        title       = "BPM Presets",
+        description = "Stop dialing in the same tempos over and over. Save them once, recall them instantly.",
+        onEnable    = onEnable,
+        onDismiss   = onDismiss,
+        highlights  = listOf(
             "Save up to 10 song tempos",
             "Switch tempo in a single tap",
-            "One-time unlock - yours forever",
+            "Yours forever, no strings attached",
         ),
-        previewContent     = {
+        previewContent = {
             ShowcaseFrame(caption = "ONE-TAP TEMPO SWITCHING") {
                 PresetChipsRow(
                     presets = remember {
@@ -953,9 +1113,9 @@ private fun BuyPresetsDialog(
                             BpmPreset("Guitar Solo", 168),
                         )
                     },
-                    currentBpm = 110,
+                    currentBpm        = 110,
                     showLongPressHint = false,
-                    onPresetTap = {},
+                    onPresetTap       = {},
                     onPresetLongPress = { _, _ -> },
                 )
             }
@@ -964,32 +1124,19 @@ private fun BuyPresetsDialog(
 }
 
 @Composable
-private fun BuyPracticeDialog(
-    priceText: String?,
-    isPurchasing: Boolean,
-    isBillingConnecting: Boolean,
-    onBuy: () -> Unit,
-    onRestore: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    com.example.metrognome.ui.dialogs.PremiumPurchaseDialog(
-        title              = "Practice Sessions",
-        description        = "Turn loose noodling into real, measurable progress - one focused session at a time.",
-        actionLabel        = "Unlock Practice",
-        priceText          = priceText,
-        isPurchasing       = isPurchasing,
-        isBillingConnecting = isBillingConnecting,
-        isAvailable        = priceText != null,
-        onPurchase         = onBuy,
-        onRestore          = onRestore,
-        onDismiss          = onDismiss,
-        highlights         = listOf(
+private fun EnablePracticeDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {
+    FeatureEnableDialog(
+        title       = "Practice Sessions",
+        description = "Turn loose noodling into real, measurable progress — one focused session at a time.",
+        onEnable    = onEnable,
+        onDismiss   = onDismiss,
+        highlights  = listOf(
             "Set a daily practice goal",
             "Track your day-by-day streak",
             "Every finished session celebrated",
             "Practice unlocks exclusive gnome items",
         ),
-        previewContent     = {
+        previewContent = {
             ShowcaseFrame(caption = "YOUR LIVE PRACTICE TIMER") {
                 PracticeProgressRow(
                     practiceSecondsRemaining = 150,
@@ -997,6 +1144,41 @@ private fun BuyPracticeDialog(
                     onCancelPractice         = {},
                     modifier                 = Modifier.fillMaxWidth(),
                 )
+            }
+        },
+    )
+}
+
+@Composable
+private fun EnableSpeedTrainerDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {
+    FeatureEnableDialog(
+        title       = "Speed Trainer",
+        description = "Systematically build tempo from wherever you are to wherever you want to go.",
+        onEnable    = onEnable,
+        onDismiss   = onDismiss,
+        highlights  = listOf(
+            "Ramp any tempo to your target, automatically",
+            "Configure step size, bars per step, and repeats",
+            "Optional mic-powered auto-advance when locked in",
+            "Tracks your improvement session to session",
+        ),
+        previewContent = {
+            ShowcaseFrame(caption = "YOUR TEMPO RAMP") {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    SpeedTrainerRampPreview(modifier = Modifier.fillMaxWidth())
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("60 BPM", color = AppColors.textMutedBlue, fontSize = 10.sp)
+                        Text("120 BPM", color = AppColors.gold, fontSize = 10.sp)
+                    }
+                }
             }
         },
     )
@@ -1182,10 +1364,12 @@ private fun SecondaryControlsRowPreview() {
         keepScreenOn = true,
         isOnSavedPreset = false,
         isPracticeActive = false,
+        isTrainerActive = false,
         onSavePreset = {},
         onToggleMute = {},
         onToggleScreenOn = {},
-        onPractice = {}
+        onPractice = {},
+        onTrainer = {},
     )
 }
 

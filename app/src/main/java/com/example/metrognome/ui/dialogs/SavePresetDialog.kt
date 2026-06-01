@@ -4,7 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,8 +12,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -154,34 +158,33 @@ fun SavePresetDialog(
 
                 Surface(
                     onClick = { onSave(name) },
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.Transparent,
-                    border = BorderStroke(1.dp, AppColors.gold),
+                    shape = RoundedCornerShape(14.dp),
+                    color = AppColors.primaryPurple,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "Save Preset",
-                            color = AppColors.gold,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.3.sp,
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Favorite,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Text(
+                                "SAVE PRESET",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.5.sp,
+                            )
+                        }
                     }
                 }
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    text = "Cancel",
-                    color = AppColors.textDim,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .clickable(onClick = onDismiss)
-                        .padding(vertical = 6.dp, horizontal = 12.dp),
-                )
             }
         }
     }

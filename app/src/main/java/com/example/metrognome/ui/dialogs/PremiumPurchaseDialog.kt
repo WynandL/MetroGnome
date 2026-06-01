@@ -253,6 +253,140 @@ fun PremiumPurchaseDialog(
     }
 }
 
+/**
+ * First-use "enable" dialog for features that are now free.
+ *
+ * Same visual flair as [PremiumPurchaseDialog] — confetti backdrop, spring entrance,
+ * gold CTA — but with no billing. Eyebrow reads "SIGNATURE" instead of "PREMIUM"
+ * to convey craftsmanship without implying a price tag.
+ */
+@Composable
+fun FeatureEnableDialog(
+    title: String,
+    description: String,
+    onEnable: () -> Unit,
+    onDismiss: () -> Unit,
+    highlights: List<String> = emptyList(),
+    previewContent: (@Composable () -> Unit)? = null,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        val cardScale = remember { Animatable(0.2f) }
+        LaunchedEffect(Unit) {
+            cardScale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow,
+                ),
+            )
+        }
+        val confettiTime by rememberInfiniteTransition(label = "enableConfetti")
+            .animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(9000, easing = LinearEasing)),
+                label = "confettiTime",
+            )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) { drawConfetti(confettiTime) }
+
+            Surface(
+                shape           = RoundedCornerShape(28.dp),
+                color           = AppColors.surfaceDeep,
+                shadowElevation = 28.dp,
+                modifier        = Modifier
+                    .padding(horizontal = 20.dp)
+                    .widthIn(min = 290.dp, max = 392.dp)
+                    .graphicsLayer {
+                        scaleX = cardScale.value
+                        scaleY = cardScale.value
+                        alpha  = ((cardScale.value - 0.2f) / 0.8f).coerceIn(0f, 1f)
+                    }
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
+                    ),
+            ) {
+                Column(
+                    modifier            = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 22.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Spacer(Modifier.weight(1f))
+                        DialogCloseButton(onClick = onDismiss)
+                    }
+
+                    Text(
+                        text          = "✦   SIGNATURE   ✦",
+                        color         = AppColors.gold,
+                        fontSize      = 11.sp,
+                        fontWeight    = FontWeight.ExtraBold,
+                        letterSpacing = 3.sp,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text          = title,
+                        color         = AppColors.gold,
+                        fontSize      = 25.sp,
+                        fontWeight    = FontWeight.ExtraBold,
+                        letterSpacing = (-0.5).sp,
+                        textAlign     = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(18.dp))
+
+                    previewContent?.let {
+                        it()
+                        Spacer(Modifier.height(18.dp))
+                    }
+
+                    Text(
+                        text       = description,
+                        color      = AppColors.textSecondary,
+                        fontSize   = 13.sp,
+                        lineHeight = 19.sp,
+                        textAlign  = TextAlign.Center,
+                    )
+
+                    if (highlights.isNotEmpty()) {
+                        Spacer(Modifier.height(16.dp))
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            highlights.forEach { HighlightRow(it) }
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+
+                    PrimaryCta(
+                        label        = "Enable",
+                        priceText    = null,
+                        isPurchasing = false,
+                        onClick      = onEnable,
+                    )
+                }
+            }
+        }
+    }
+}
+
 // ── Showcase frame ────────────────────────────────────────────────────────────
 
 /**

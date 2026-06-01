@@ -64,4 +64,6 @@
 - jazz metronome app (1,800/mo, diff 19) — uncontested
 - metronome app music teacher (1,200/mo, diff 15) — uncontested
 - rhythm trainer app (1,100/mo, diff 22)
+- tempo trainer app android (est. 1,400/mo, diff ~15) — uncontested for free apps; v5.0 Speed Trainer
+- BPM trainer for musicians (est. 800/mo, diff ~10) — uncontested; v5.0 Speed Trainer
 - chromatic tuner noisy room (480/mo, diff 14) — unique to Metro Gnome

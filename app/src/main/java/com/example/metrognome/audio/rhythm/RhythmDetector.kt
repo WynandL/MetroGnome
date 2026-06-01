@@ -89,6 +89,14 @@ class RhythmDetector {
     @Volatile
     var suppressUntilMs: Long = 0L
 
+    /**
+     * Debug-only callback fired for onsets that were dropped by [suppressUntilMs].
+     * Null in production — set by the caller in debug builds to feed [MicDiagnosticsBuffer].
+     * Delete this property and the [debugOnSuppressed]?.invoke() call below to remove.
+     */
+    @Volatile
+    var debugOnSuppressed: ((onsetMs: Long) -> Unit)? = null
+
     /** Whether hardware echo cancellation is running. When true, suppression is moot. */
     var echoCancellationActive: Boolean = false
         private set
@@ -148,6 +156,8 @@ class RhythmDetector {
                         val onsetMs = clock.onsetMs(onsetIndex)
                         if (onsetMs >= suppressUntilMs) {
                             _detections.tryEmit(onsetMs)
+                        } else {
+                            debugOnSuppressed?.invoke(onsetMs)
                         }
                     }
                 }

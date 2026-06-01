@@ -47,6 +47,10 @@ class WhatsNewTracker(context: Context) {
         prefs.edit { putStringSet(KEY_SHOWN, shownVersions() + versionKey) }
     }
 
+    fun resetShown(versionKey: String) {
+        prefs.edit { putStringSet(KEY_SHOWN, shownVersions() - versionKey) }
+    }
+
     /**
      * Returns the first key in [allVersions] that the user hasn't confirmed yet,
      * or null if all have been seen. Pass [AppWhatsNew.ALL] here.

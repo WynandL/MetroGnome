@@ -15,8 +15,6 @@ class BillingManager(application: Application) {
     companion object {
         // ── Product IDs ───────────────────────────────────────────────────────
         const val PRODUCT_REMOVE_ADS    = "remove_ads"
-        const val PRODUCT_BPM_PRESETS   = "bpm_presets"
-        const val PRODUCT_PRACTICE_MODE = "practice_mode"
 
         // Sounds — add future PRODUCT_SOUND_* constants here, then add to SOUND_PRODUCTS
         const val PRODUCT_SOUND_BELL   = "sound_bell"
@@ -30,8 +28,6 @@ class BillingManager(application: Application) {
         // ── SharedPreferences keys ────────────────────────────────────────────
         private const val PREFS_NAME                     = "billing_state"
         private const val KEY_AD_FREE                    = "ad_free"
-        private const val KEY_PRESETS_UNLOCKED           = "presets_unlocked"
-        private const val KEY_PRACTICE_MODE_UNLOCKED     = "practice_mode_unlocked"
         private const val KEY_PURCHASED_SOUND_IDS        = "purchased_sound_ids"
         private const val KEY_PURCHASED_ITEM_PRODUCT_IDS = "purchased_item_product_ids"
     }
@@ -46,20 +42,6 @@ class BillingManager(application: Application) {
 
     private val _priceText = MutableStateFlow<String?>(null)
     val priceText: StateFlow<String?> = _priceText.asStateFlow()
-
-    // Presets
-    private val _isPresetsUnlocked = MutableStateFlow(prefs.getBoolean(KEY_PRESETS_UNLOCKED, false))
-    val isPresetsUnlocked: StateFlow<Boolean> = _isPresetsUnlocked.asStateFlow()
-
-    private val _presetsPrice = MutableStateFlow<String?>(null)
-    val presetsPrice: StateFlow<String?> = _presetsPrice.asStateFlow()
-
-    // Practice Mode
-    private val _isPracticeModeUnlocked = MutableStateFlow(prefs.getBoolean(KEY_PRACTICE_MODE_UNLOCKED, false))
-    val isPracticeModeUnlocked: StateFlow<Boolean> = _isPracticeModeUnlocked.asStateFlow()
-
-    private val _practiceModePrice = MutableStateFlow<String?>(null)
-    val practiceModePrice: StateFlow<String?> = _practiceModePrice.asStateFlow()
 
     // Sounds
     private val _purchasedSoundIds = MutableStateFlow(loadSet(KEY_PURCHASED_SOUND_IDS))
@@ -147,8 +129,6 @@ class BillingManager(application: Application) {
     private suspend fun queryProductDetails() {
         val allProductIds = buildList {
             add(PRODUCT_REMOVE_ADS)
-            add(PRODUCT_BPM_PRESETS)
-            add(PRODUCT_PRACTICE_MODE)
             addAll(SOUND_PRODUCTS)
             addAll(ITEM_PRODUCTS)
         }
@@ -170,8 +150,6 @@ class BillingManager(application: Application) {
                         _priceText.value = price
                         _isBillingAvailable.value = true
                     }
-                    PRODUCT_BPM_PRESETS   -> _presetsPrice.value = price
-                    PRODUCT_PRACTICE_MODE -> _practiceModePrice.value = price
                     in SOUND_PRODUCTS -> {
                         _soundPrices.value += (details.productId to price)
                         _availableSoundProductIds.value += details.productId
@@ -189,12 +167,6 @@ class BillingManager(application: Application) {
 
     fun launchPurchaseFlow(activity: Activity) =
         launchPurchaseFlowFor(activity, PRODUCT_REMOVE_ADS)
-
-    fun launchPresetsPurchaseFlow(activity: Activity) =
-        launchPurchaseFlowFor(activity, PRODUCT_BPM_PRESETS)
-
-    fun launchPracticePurchaseFlow(activity: Activity) =
-        launchPurchaseFlowFor(activity, PRODUCT_PRACTICE_MODE)
 
     fun launchSoundPurchaseFlow(activity: Activity, productId: String) =
         launchPurchaseFlowFor(activity, productId)
@@ -234,6 +206,13 @@ class BillingManager(application: Application) {
                         .build()
                 ))
                 .build()
+            // Activity may have been finished while the product query was in flight.
+            // Launching against a dead Activity produces a null PendingIntent inside
+            // ProxyBillingActivity and a fatal crash on onCreate.
+            if (activity.isFinishing || activity.isDestroyed) {
+                _isPurchasing.value = false
+                return@launch
+            }
             val billingResult = billingClient.launchBillingFlow(activity, flowParams)
             if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 _isPurchasing.value = false
@@ -280,8 +259,6 @@ class BillingManager(application: Application) {
             .toSet()
 
         setAdFree(PRODUCT_REMOVE_ADS in owned)
-        setPresetsUnlocked(PRODUCT_BPM_PRESETS in owned)
-        setPracticeModeUnlocked(PRODUCT_PRACTICE_MODE in owned)
         setPurchasedSounds(owned.filter { it in SOUND_PRODUCTS }.toSet())
         setPurchasedItems(owned.filter { it in ITEM_PRODUCTS }.toSet())
 
@@ -298,10 +275,6 @@ class BillingManager(application: Application) {
         when {
             purchase.products.contains(PRODUCT_REMOVE_ADS) ->
                 setAdFree(true)
-            purchase.products.contains(PRODUCT_BPM_PRESETS) ->
-                setPresetsUnlocked(true)
-            purchase.products.contains(PRODUCT_PRACTICE_MODE) ->
-                setPracticeModeUnlocked(true)
             purchase.products.any { it in SOUND_PRODUCTS } ->
                 setPurchasedSounds(_purchasedSoundIds.value +
                         purchase.products.filter { it in SOUND_PRODUCTS })
@@ -333,16 +306,6 @@ class BillingManager(application: Application) {
         prefs.edit { putBoolean(KEY_AD_FREE, value) }
     }
 
-    private fun setPresetsUnlocked(value: Boolean) {
-        _isPresetsUnlocked.value = value
-        prefs.edit { putBoolean(KEY_PRESETS_UNLOCKED, value) }
-    }
-
-    private fun setPracticeModeUnlocked(value: Boolean) {
-        _isPracticeModeUnlocked.value = value
-        prefs.edit { putBoolean(KEY_PRACTICE_MODE_UNLOCKED, value) }
-    }
-
     private fun setPurchasedSounds(ids: Set<String>) {
         _purchasedSoundIds.value = ids
         prefs.edit { putStringSet(KEY_PURCHASED_SOUND_IDS, ids) }
@@ -354,8 +317,6 @@ class BillingManager(application: Application) {
     }
 
     fun debugClearAdFree()          { setAdFree(false) }
-    fun debugClearPresets()         { setPresetsUnlocked(false) }
-    fun debugClearPracticeMode()    { setPracticeModeUnlocked(false) }
     fun debugClearSoundPurchases()  { setPurchasedSounds(emptySet()) }
     fun debugClearItemPurchases()   { setPurchasedItems(emptySet()) }
 

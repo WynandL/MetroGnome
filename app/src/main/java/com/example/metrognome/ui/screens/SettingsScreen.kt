@@ -25,8 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import com.example.metrognome.ui.components.AppFilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
@@ -73,6 +72,7 @@ import com.example.metrognome.ui.components.OwnedBadge
 import com.example.metrognome.ui.dialogs.ShowcaseFrame
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
+import com.example.metrognome.whatsnew.AppWhatsNew
 import kotlin.math.roundToInt
 
 private val itemOwnedMessages = mapOf(
@@ -109,9 +109,9 @@ fun SettingsScreen(
     val itemPrices by vm.itemPrices.collectAsStateWithLifecycle()
     val availableItemProductIds by vm.availableItemProductIds.collectAsStateWithLifecycle()
     val activeItemIds by vm.activeItemIds.collectAsStateWithLifecycle()
-    val isPresetsUnlocked by vm.isPresetsUnlocked.collectAsStateWithLifecycle()
-    val isPracticeModeUnlocked by vm.isPracticeModeUnlocked.collectAsStateWithLifecycle()
-    val practiceModePrice by vm.practiceModePriceText.collectAsStateWithLifecycle()
+    val isPresetsEnabled by vm.isPresetsEnabled.collectAsStateWithLifecycle()
+    val isPracticeEnabled by vm.isPracticeEnabled.collectAsStateWithLifecycle()
+    val isSpeedTrainerEnabled by vm.isSpeedTrainerEnabled.collectAsStateWithLifecycle()
 
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
     var previewIndex by remember { mutableIntStateOf(0) }
@@ -166,17 +166,10 @@ fun SettingsScreen(
             SettingsRow(label = "Time Signature") {
                 Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                     listOf(2, 3, 4, 6, 7).forEach { sig ->
-                        FilterChip(
+                        AppFilterChip(
                             selected = sig == timeSig,
                             onClick = { vm.setTimeSig(sig) },
-                            label = { Text("$sig/4") },
-                            modifier = Modifier.padding(end = 6.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = AppColors.primaryPurple,
-                                selectedLabelColor = Color.White,
-                                containerColor = AppColors.surface,
-                                labelColor = AppColors.textSecondary
-                            )
+                            label = "$sig/4",
                         )
                     }
                 }
@@ -192,47 +185,32 @@ fun SettingsScreen(
             SettingsRow(label = "Click Sound") {
                 FlowRow(modifier = Modifier.fillMaxWidth()) {
                     listOf("Classic", "Hi-Hat", "Wood", "Warm").forEachIndexed { index, name ->
-                        FilterChip(
+                        AppFilterChip(
                             selected = index == soundType,
                             onClick = { vm.setSoundType(index) },
-                            label = { Text(name) },
-                            modifier = Modifier.padding(end = 6.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = AppColors.primaryPurple,
-                                selectedLabelColor = Color.White,
-                                containerColor = AppColors.surface,
-                                labelColor = AppColors.textSecondary
-                            )
+                            label = name,
                         )
                     }
                     // Premium sounds — one chip per registry entry
                     PREMIUM_SOUND_REGISTRY.forEach { def ->
                         val owned = def.productId in purchasedSoundIds
-                        FilterChip(
+                        AppFilterChip(
                             selected = soundType == def.soundTypeIndex,
                             onClick = {
                                 if (owned) vm.setSoundType(def.soundTypeIndex)
                                 else dialogSoundDef = def
                             },
-                            label = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(def.displayName)
-                                    Text(
-                                        "  ★",
-                                        color = if (soundType == def.soundTypeIndex) Color.White
-                                                else AppColors.gold,
-                                        fontSize = 9.sp
-                                    )
-                                }
-                            },
-                            modifier = Modifier.padding(end = 6.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = AppColors.primaryPurple,
-                                selectedLabelColor = Color.White,
-                                containerColor = AppColors.surface,
-                                labelColor = AppColors.textSecondary
-                            )
-                        )
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(def.displayName)
+                                Text(
+                                    "  ★",
+                                    color = if (soundType == def.soundTypeIndex) Color.White
+                                            else AppColors.gold,
+                                    fontSize = 9.sp,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -254,30 +232,16 @@ fun SettingsScreen(
 
             SettingsRow(label = "Accent Beat") {
                 Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                    FilterChip(
+                    AppFilterChip(
                         selected = accentBeat == 0,
                         onClick = { vm.setAccentBeat(0) },
-                        label = { Text("None") },
-                        modifier = Modifier.padding(end = 6.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = AppColors.primaryPurple,
-                            selectedLabelColor = Color.White,
-                            containerColor = AppColors.surface,
-                            labelColor = AppColors.textSecondary
-                        )
+                        label = "None",
                     )
                     for (beat in 1..timeSig) {
-                        FilterChip(
+                        AppFilterChip(
                             selected = beat == accentBeat,
                             onClick = { vm.setAccentBeat(beat) },
-                            label = { Text("$beat") },
-                            modifier = Modifier.padding(end = 6.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = AppColors.primaryPurple,
-                                selectedLabelColor = Color.White,
-                                containerColor = AppColors.surface,
-                                labelColor = AppColors.textSecondary
-                            )
+                            label = "$beat",
                         )
                     }
                 }
@@ -313,14 +277,7 @@ fun SettingsScreen(
 
             SettingsSectionTitle("Practice Mode")
 
-            PracticeModeSection(
-                isPracticeModeUnlocked = isPracticeModeUnlocked,
-                priceText = practiceModePrice,
-                isPurchasing = isPurchasing,
-                isBillingConnecting = isBillingConnecting,
-                onPurchase = { activity?.let { vm.purchasePracticeMode(it) } },
-                onRestore  = { vm.restorePurchases() },
-            )
+            PracticeModeSection(isPracticeEnabled = isPracticeEnabled)
 
             Spacer(Modifier.height(8.dp))
             HorizontalDivider(color = AppColors.surfaceVariant)
@@ -487,7 +444,7 @@ fun SettingsScreen(
                 border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
             ) {
                 Text(
-                    if (isPresetsUnlocked) "Clear Presets Unlock + Data" else "Presets Not Unlocked",
+                    if (isPresetsEnabled) "Clear Presets + Data" else "Presets Not Enabled",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -502,11 +459,37 @@ fun SettingsScreen(
                 border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
             ) {
                 Text(
-                    if (isPracticeModeUnlocked) "Clear Practice Mode + Streak" else "Practice Not Unlocked",
+                    if (isPracticeEnabled) "Clear Practice + Streak" else "Practice Not Enabled",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
+                onClick = { vm.debugClearSpeedTrainer() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
+            ) {
+                Text(
+                    if (isSpeedTrainerEnabled) "Clear Speed Trainer Enable" else "Speed Trainer Not Enabled",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
+                onClick = { vm.debugResetWhatsNew() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
+            ) {
+                Text("Show ${AppWhatsNew.ALL.last()} What's New Again", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+
             Spacer(Modifier.height(6.dp))
 
             OutlinedButton(
@@ -543,8 +526,9 @@ fun SettingsScreen(
                             is UnlockCondition.RhythmGamesCompleted      -> c.required * 300.0
                             is UnlockCondition.DaysSinceFirstLaunch      -> c.required * 86_400.0
                             is UnlockCondition.PracticeSessionsCompleted -> c.required * 1_200.0
-                            is UnlockCondition.TunerFeedbackGiven        -> c.required * 60.0
-                            UnlockCondition.Always                       -> -1.0
+                            is UnlockCondition.TunerFeedbackGiven              -> c.required * 60.0
+                            is UnlockCondition.SpeedTrainingSessionsCompleted  -> c.required * 900.0
+                            UnlockCondition.Always                             -> -1.0
                         }
                     }.forEach { entry ->
                         Text(
@@ -781,72 +765,24 @@ private fun SoundShowcase(soundName: String) {
 }
 
 @Composable
-private fun PracticeModeSection(
-    isPracticeModeUnlocked: Boolean,
-    priceText: String?,
-    isPurchasing: Boolean,
-    isBillingConnecting: Boolean,
-    onPurchase: () -> Unit,
-    onRestore: () -> Unit,
-) {
+private fun PracticeModeSection(isPracticeEnabled: Boolean) {
     Column(modifier = Modifier.padding(bottom = 4.dp)) {
         Text(
             "Build a practice habit",
             color = AppColors.textPrimary,
             fontWeight = FontWeight.Normal,
             fontSize = 14.sp,
-            modifier = Modifier.padding(bottom = 4.dp)
+            modifier = Modifier.padding(bottom = 4.dp),
         )
-
-        if (isPracticeModeUnlocked) {
+        if (isPracticeEnabled) {
             OwnedBadge("A serious musician. Goals, streaks, every session celebrated.")
-            return
-        }
-        Text(
-            "Set a daily practice goal, track your streak, and celebrate every completed session - building a habit one day at a time.",
-            color = AppColors.textSecondary,
-            fontSize = 13.sp,
-            lineHeight = 19.sp,
-            modifier = Modifier.padding(bottom = 14.dp)
-        )
-        when {
-            isBillingConnecting -> Text(
-                "Loading…",
-                color = AppColors.textMuted,
+        } else {
+            Text(
+                "Set a daily practice goal, track your streak, and celebrate every completed session. Enable from the Home tab.",
+                color = AppColors.textSecondary,
                 fontSize = 13.sp,
-                fontStyle = FontStyle.Italic
+                lineHeight = 19.sp,
             )
-            priceText == null -> Text(
-                "Unavailable",
-                color = AppColors.textMuted,
-                fontSize = 13.sp,
-                fontStyle = FontStyle.Italic
-            )
-            else -> {
-                val label = if (isPurchasing) "Please wait…" else "Unlock Practice Mode - $priceText"
-                OutlinedButton(
-                    onClick = onPurchase,
-                    enabled = !isPurchasing,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = AppColors.gold,
-                        disabledContentColor = AppColors.textMuted
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (!isPurchasing) AppColors.gold else AppColors.surfaceVariant
-                    )
-                ) {
-                    Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
-                TextButton(onClick = onRestore, enabled = !isPurchasing) {
-                    Text(
-                        "Already purchased? Restore",
-                        color = if (!isPurchasing) AppColors.textDim else Color(0x22FFFFFF),
-                        fontSize = 11.sp
-                    )
-                }
-            }
         }
     }
 }

@@ -126,6 +126,48 @@ object AnalyticsTracker {
         }
     }
 
+    // ── Speed Trainer ─────────────────────────────────────────────────────────
+
+    fun logSpeedTrainerStarted(startBpm: Int, targetBpm: Int, stepCount: Int, micEnabled: Boolean) {
+        Firebase.analytics.logEvent("speed_trainer_started") {
+            param("start_bpm",   startBpm.toLong())
+            param("target_bpm",  targetBpm.toLong())
+            param("step_count",  stepCount.toLong())
+            param("mic_enabled", if (micEnabled) "true" else "false")
+        }
+    }
+
+    fun logSpeedTrainerCompleted(
+        startBpm: Int,
+        targetBpm: Int,
+        reachedBpm: Int,
+        totalSessions: Int,
+        micEnabled: Boolean,
+    ) {
+        Firebase.analytics.logEvent("speed_trainer_completed") {
+            param("start_bpm",      startBpm.toLong())
+            param("target_bpm",     targetBpm.toLong())
+            param("reached_bpm",    reachedBpm.toLong())
+            param("total_sessions", totalSessions.toLong())
+            param("mic_enabled",    if (micEnabled) "true" else "false")
+        }
+    }
+
+    fun logSpeedTrainerCancelled(stepIndex: Int, totalSteps: Int) {
+        Firebase.analytics.logEvent("speed_trainer_cancelled") {
+            param("step_index",  stepIndex.toLong())
+            param("total_steps", totalSteps.toLong())
+        }
+    }
+
+    // ── Free feature enables ──────────────────────────────────────────────────
+
+    fun logFeatureEnabled(feature: String) {
+        Firebase.analytics.logEvent("feature_enabled") {
+            param("feature", feature)
+        }
+    }
+
     // ── Items ─────────────────────────────────────────────────────────────────
 
     fun logItemUnlocked(itemId: String, itemName: String) {

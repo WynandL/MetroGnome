@@ -25,7 +25,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import androidx.core.content.edit
+import com.example.metrognome.BuildConfig
 import com.example.metrognome.analytics.AnalyticsTracker
+import com.example.metrognome.debug.mic.MicDiagnosticsBuffer
 
 // ── Enums ──────────────────────────────────────────────────────────────────────
 
@@ -215,6 +217,10 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
             ) {
                 detector.suppressUntilMs = SystemClock.elapsedRealtime() + CLICK_SUPPRESSION_MS
             }
+            if (BuildConfig.DEBUG && _useMic.value) {
+                val suppressEnd = SystemClock.elapsedRealtime() + CLICK_SUPPRESSION_MS
+                MicDiagnosticsBuffer.logBeat(beat, suppressEnd, SystemClock.elapsedRealtime())
+            }
             viewModelScope.launch { _currentBeat.value = beat }
         }
     }
@@ -261,6 +267,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun stopGame() {
+        if (BuildConfig.DEBUG && _useMic.value) MicDiagnosticsBuffer.endSession()
         cancelJobs()
         engine.stop(); detector.stop()
         _phase.value = GamePhase.IDLE
@@ -315,9 +322,17 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
         if (micReady) {
             detector.start()
+            if (BuildConfig.DEBUG) {
+                MicDiagnosticsBuffer.startSession("RhythmGame", detector.echoCancellationActive)
+                detector.debugOnSuppressed = { onsetMs ->
+                    MicDiagnosticsBuffer.logOnsetSuppressed(onsetMs, detector.suppressUntilMs)
+                }
+                viewModelScope.launch { detector.amplitude.collect { MicDiagnosticsBuffer.updateAmplitude(it) } }
+            }
             micJob = viewModelScope.launch {
                 detector.detections.collect { onsetElapsedMs ->
                     _micDetected.tryEmit(Unit)
+                    if (BuildConfig.DEBUG) MicDiagnosticsBuffer.logOnsetAccepted(onsetElapsedMs, 0f, 0f)
                     if (_phase.value == GamePhase.PLAYING) {
                         processTap(onsetElapsedMs - gameStartElapsedMs)
                     }
@@ -495,6 +510,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun endGame() {
         if (_phase.value == GamePhase.RESULT) return
+        if (BuildConfig.DEBUG && _useMic.value) MicDiagnosticsBuffer.endSession()
         engine.stop(); detector.stop()
         val finalScore = _score.value
         val isNew = currentDifficultyName.isNotEmpty() &&

@@ -90,7 +90,18 @@
       "WebFetch(domain:melodics.com)",
       "WebFetch(domain:guitaring.net)",
       "Bash(git pull *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(Get-ChildItem *)",
+      "Bash(git diff *)",
+      "Bash(git ls-files *)",
+      "Bash(./gradlew lint *)",
+      "Bash(./gradlew compileDebugKotlin --warning-mode all)",
+      "Bash(grep -v \"^\\\\s*$\")",
+      "Bash(del *)",
+      "Bash(adb devices *)",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; if \\(Test-Path $adb\\) { & $adb devices } else { \"adb not found at $adb\" })",
+      "PowerShell($content = Get-Content \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\PSL.txt\" -Raw; $content.Length)"
     ]
   }
 }

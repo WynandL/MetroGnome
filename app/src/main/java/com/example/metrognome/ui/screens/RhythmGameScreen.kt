@@ -1,10 +1,10 @@
 package com.example.metrognome.ui.screens
 
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.core.content.ContextCompat
-import androidx.activity.result.contract.ActivityResultContracts
+import com.example.metrognome.dev.DevEasterEgg
+import androidx.compose.ui.platform.LocalContext
+import com.example.metrognome.debug.mic.MicDiagnosticsOverlay
+import com.example.metrognome.debug.mic.MicDiagnosticsTrigger
+import com.example.metrognome.ui.components.rememberMicPermissionState
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -58,7 +58,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -131,18 +130,7 @@ fun RhythmGameScreen(
         vm.checkForNewUnlocks()
     }
 
-    val context = LocalContext.current
-    var micGranted by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
-                    == PackageManager.PERMISSION_GRANTED
-        )
-    }
-    val micLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            micGranted = granted
-            if (granted) vm.toggleMic(true)
-        }
+    val mic = rememberMicPermissionState(onGranted = { vm.toggleMic(true) })
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier
@@ -154,8 +142,8 @@ fun RhythmGameScreen(
             .fillMaxWidth()) {
             when (phase) {
                 GamePhase.IDLE -> IdlePanel(
-                    vm = vm, useMic = useMic, micGranted = micGranted,
-                    onRequestMic = { micLauncher.launch(Manifest.permission.RECORD_AUDIO) },
+                    vm = vm, useMic = useMic, micGranted = mic.isGranted,
+                    onRequestMic = { mic.request() },
                     tolerance = tolerance,
                     onToleranceChange = { vm.setTolerance(it) },
                     isMetronomePlaying = isMetronomePlaying,
@@ -190,6 +178,21 @@ fun RhythmGameScreen(
             onDismiss = { vm.markCelebrated(entry.item.id) },
         )
     }
+
+    // Dev-mode: mic diagnostics trigger + overlay (debug builds + easter egg dev mode)
+    if (DevEasterEgg.isDevModeActive(LocalContext.current)) {
+        var showMicDiag by remember { mutableStateOf(false) }
+        MicDiagnosticsTrigger(
+            visible = useMic && phase == GamePhase.PLAYING,
+            overlayOpen = showMicDiag,
+            onToggle = { showMicDiag = !showMicDiag },
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 52.dp, end = 10.dp),
+        )
+        if (showMicDiag) {
+            MicDiagnosticsOverlay(onDismiss = { showMicDiag = false })
+        }
+    }
+
     } // close outer Box
 }
 
@@ -323,7 +326,7 @@ private fun IdlePanel(
             .padding(horizontal = 22.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(16.dp))
 
         Text(
             "RHYTHM GAME", color = AppColors.gold, fontSize = 22.sp,
@@ -468,8 +471,11 @@ private fun IdlePanel(
                 Switch(
                     checked = useMic,
                     onCheckedChange = { on ->
-                        vm.toggleMic(on)
-                        if (on && !micGranted) onRequestMic()
+                        if (on && !micGranted) {
+                            onRequestMic()   // onGranted callback handles vm.toggleMic(true)
+                        } else {
+                            vm.toggleMic(on)
+                        }
                     },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = AppColors.gold,

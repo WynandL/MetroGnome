@@ -47,13 +47,15 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     val isPurchasing: StateFlow<Boolean>                 = billingManager.isPurchasing
     val isBillingConnecting: StateFlow<Boolean>          = billingManager.isConnecting
 
-    // Presets
-    val isPresetsUnlocked: StateFlow<Boolean>            = billingManager.isPresetsUnlocked
-    val presetsPriceText: StateFlow<String?>             = billingManager.presetsPrice
+    // Free feature gates — enabled once via first-use dialog, stored locally
+    private val _isPresetsEnabled = MutableStateFlow(prefs.getBoolean("feature_presets_enabled", false))
+    val isPresetsEnabled: StateFlow<Boolean> = _isPresetsEnabled.asStateFlow()
 
-    // Practice Mode
-    val isPracticeModeUnlocked: StateFlow<Boolean>       = billingManager.isPracticeModeUnlocked
-    val practiceModePriceText: StateFlow<String?>        = billingManager.practiceModePrice
+    private val _isPracticeEnabled = MutableStateFlow(prefs.getBoolean("feature_practice_enabled", false))
+    val isPracticeEnabled: StateFlow<Boolean> = _isPracticeEnabled.asStateFlow()
+
+    private val _isSpeedTrainerEnabled = MutableStateFlow(prefs.getBoolean("feature_speed_trainer_enabled", false))
+    val isSpeedTrainerEnabled: StateFlow<Boolean> = _isSpeedTrainerEnabled.asStateFlow()
 
     private val _isPracticeActive          = MutableStateFlow(false)
     val isPracticeActive: StateFlow<Boolean>             = _isPracticeActive.asStateFlow()
@@ -88,8 +90,25 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     val itemPrices: StateFlow<Map<String, String?>>      = billingManager.itemPrices
     val availableItemProductIds: StateFlow<Set<String>>  = billingManager.availableItemProductIds
 
+    fun enablePresets() {
+        _isPresetsEnabled.value = true
+        prefs.edit { putBoolean("feature_presets_enabled", true) }
+        AnalyticsTracker.logFeatureEnabled("presets")
+    }
+
+    fun enablePractice() {
+        _isPracticeEnabled.value = true
+        prefs.edit { putBoolean("feature_practice_enabled", true) }
+        AnalyticsTracker.logFeatureEnabled("practice")
+    }
+
+    fun enableSpeedTrainer() {
+        _isSpeedTrainerEnabled.value = true
+        prefs.edit { putBoolean("feature_speed_trainer_enabled", true) }
+        AnalyticsTracker.logFeatureEnabled("speed_trainer")
+    }
+
     fun purchaseRemoveAds(activity: Activity) = billingManager.launchPurchaseFlow(activity)
-    fun purchasePresets(activity: Activity) = billingManager.launchPresetsPurchaseFlow(activity)
     fun purchaseSound(activity: Activity, productId: String) =
         billingManager.launchSoundPurchaseFlow(activity, productId)
     fun purchaseItem(activity: Activity, productId: String) =
@@ -98,7 +117,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     fun reconcilePurchases() { viewModelScope.launch { billingManager.reconcileInBackground() } }
     fun debugClearAdFree() = billingManager.debugClearAdFree()
     fun debugClearPresets() {
-        billingManager.debugClearPresets()
+        _isPresetsEnabled.value = false
+        prefs.edit { putBoolean("feature_presets_enabled", false) }
         presetsManager.debugClear()
         _presets.value = emptyList()
     }
@@ -140,8 +160,6 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         prefs.edit { putBoolean("preset_long_press_hint_seen", true) }
     }
 
-    fun purchasePracticeMode(activity: Activity) = billingManager.launchPracticePurchaseFlow(activity)
-
     fun startPractice(minutes: Int) {
         if (!_isPlaying.value) {
             if (!requestAudioFocus()) return
@@ -174,10 +192,16 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun debugClearPracticeMode() {
-        billingManager.debugClearPracticeMode()
+        _isPracticeEnabled.value = false
+        prefs.edit { putBoolean("feature_practice_enabled", false) }
         practiceManager.debugClear()
         cancelPractice()
         _practiceStreak.value = 0
+    }
+
+    fun debugClearSpeedTrainer() {
+        _isSpeedTrainerEnabled.value = false
+        prefs.edit { putBoolean("feature_speed_trainer_enabled", false) }
     }
 
     private fun startPracticeTimer() {
@@ -303,6 +327,20 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val tapTimes = ArrayDeque<Long>(8)
 
     init {
+        // One-time migration: users who purchased presets or practice mode in v4.x get
+        // auto-enabled in v5.0 so they never see the Enable dialog for something they paid for.
+        val oldBilling = app.getSharedPreferences("billing_state", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("feature_presets_enabled", false) &&
+            oldBilling.getBoolean("presets_unlocked", false)) {
+            prefs.edit { putBoolean("feature_presets_enabled", true) }
+            _isPresetsEnabled.value = true
+        }
+        if (!prefs.getBoolean("feature_practice_enabled", false) &&
+            oldBilling.getBoolean("practice_mode_unlocked", false)) {
+            prefs.edit { putBoolean("feature_practice_enabled", true) }
+            _isPracticeEnabled.value = true
+        }
+
         val savedType = _soundType.value
         val requiredProduct = PREMIUM_SOUND_REGISTRY.find { it.soundTypeIndex == savedType }?.productId
         if (requiredProduct != null && requiredProduct !in billingManager.purchasedSoundIds.value) {
@@ -334,6 +372,11 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun markWhatsNewShown(versionKey: String) {
         whatsNewTracker.markShown(versionKey)
+        _pendingWhatsNew.value = whatsNewTracker.pendingKey(AppWhatsNew.ALL)
+    }
+
+    fun debugResetWhatsNew() {
+        whatsNewTracker.resetShown(AppWhatsNew.ALL.last())
         _pendingWhatsNew.value = whatsNewTracker.pendingKey(AppWhatsNew.ALL)
     }
 

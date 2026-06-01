@@ -40,6 +40,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.Canvas
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material3.Icon
 import kotlin.math.cos
 import kotlin.math.sin
 import androidx.compose.ui.text.font.FontStyle
@@ -64,6 +67,7 @@ fun WhatsNewOverlayDispatcher(versionKey: String, onDismiss: () -> Unit) {
     when (versionKey) {
         AppWhatsNew.V3 -> V3FeatureIntroOverlay(onDismiss)
         AppWhatsNew.V4 -> V4FeatureIntroOverlay(onDismiss)
+        AppWhatsNew.V5 -> V5FeatureIntroOverlay(onDismiss)
     }
 }
 
@@ -125,6 +129,206 @@ private fun DrawScope.drawMiniTunerGauge() {
     drawLine(tunerGreenInTune, pivot, tip, strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
     drawCircle(tunerGreenInTune, 8.dp.toPx(), pivot)
     drawCircle(Color(0xFF13102A), 3.5.dp.toPx(), pivot)
+}
+
+// ── V5 — "Speed Trainer" ─────────────────────────────────────────────────────
+
+@Composable
+private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
+    val cardScale = remember { Animatable(0.15f) }
+    val overlayAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        launch { overlayAlpha.animateTo(0.88f, tween(280)) }
+        cardScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+        )
+    }
+
+    val shimmer by rememberInfiniteTransition(label = "v5Shimmer")
+        .animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
+            label = "shimmer",
+        )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = overlayAlpha.value)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier
+                .padding(horizontal = 22.dp)
+                .graphicsLayer {
+                    scaleX = cardScale.value
+                    scaleY = cardScale.value
+                    alpha = (cardScale.value - 0.15f) / 0.85f
+                },
+            shape = RoundedCornerShape(28.dp),
+            color = AppColors.surfaceDeep,
+            shadowElevation = 28.dp,
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 24.dp, vertical = 28.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "✦  NEW IN VERSION 5  ✦",
+                    color = AppColors.gold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 2.sp,
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                // Preview: animated speed-trainer progress bar
+                Box(
+                    modifier = Modifier
+                        .size(width = 220.dp, height = 150.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(AppColors.previewBgTop, AppColors.previewBgBottom)
+                            )
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Bolt,
+                            contentDescription = null,
+                            tint = AppColors.gold,
+                            modifier = Modifier.size(40.dp),
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        // Mini speed-trainer bar
+                        val fillFraction = 0.62f
+                        val totalSteps = 8
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(14.dp)
+                                .clip(RoundedCornerShape(7.dp))
+                                .background(Color(0xFF1A1640)),
+                        ) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val w = size.width
+                                val h = size.height
+                                val fillW = w * fillFraction
+                                // Gradient fill
+                                drawRect(
+                                    brush = Brush.horizontalGradient(
+                                        listOf(Color(0xFF2A1F6A), AppColors.gold),
+                                        0f, w,
+                                    ),
+                                    size = Size(fillW, h),
+                                )
+                                // Shimmer
+                                val bh = 40f
+                                val bx = shimmer * (fillW + bh * 2) - bh
+                                if (bx in -bh..(fillW + bh)) {
+                                    drawRect(
+                                        brush = Brush.horizontalGradient(
+                                            listOf(Color.Transparent, Color.White.copy(0.18f), Color.Transparent),
+                                            bx - bh, bx + bh,
+                                        ),
+                                        size = Size(fillW, h),
+                                    )
+                                }
+                                // Leading edge
+                                if (fillW < w - 0.5f) {
+                                    drawLine(
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        start = Offset(fillW, 0f),
+                                        end = Offset(fillW, h),
+                                        strokeWidth = 2f,
+                                    )
+                                }
+                                // Step dividers
+                                for (i in 1 until totalSteps) {
+                                    val x = w * (i.toFloat() / totalSteps)
+                                    val onFill = x <= fillW
+                                    drawLine(
+                                        color = if (onFill) Color.White.copy(0.20f) else Color.White.copy(0.10f),
+                                        start = Offset(x, h * 0.2f),
+                                        end = Offset(x, h * 0.8f),
+                                        strokeWidth = 1f,
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Bar 3 of 4  ·  95 BPM",
+                            color = AppColors.gold.copy(alpha = 0.85f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                Text(
+                    text = "Train Faster. Play Better.",
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
+
+                Spacer(Modifier.height(6.dp))
+
+                Text(
+                    text = "Structured · Precise · Up or Down",
+                    color = AppColors.textMutedBlue,
+                    fontSize = 12.sp,
+                    fontStyle = FontStyle.Italic,
+                    textAlign = TextAlign.Center,
+                )
+
+                Spacer(Modifier.height(14.dp))
+
+                Text(
+                    text = "Speed Trainer brings structured tempo-building to MetroGnome. Set your start and target BPM, choose your step size in fixed BPM or percentage increments, and let Metro ramp you up automatically. Train ascending or descending - one controlled step at a time.",
+                    color = AppColors.textSecondary,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 21.sp,
+                )
+
+                Spacer(Modifier.height(26.dp))
+
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
+                    shape = RoundedCornerShape(22.dp),
+                    modifier = Modifier.fillMaxWidth(0.65f),
+                ) {
+                    Text(
+                        text = "Let's train!",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.White,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
+                }
+            }
+        }
+    }
 }
 
 // ── V3 — "Metro Got a Glow-Up!" ───────────────────────────────────────────────

@@ -13,7 +13,7 @@ playServicesAds = "25.3.0"
 coroutines = "1.11.0"
 billing = "9.0.0"
 reviewKtx = "2.0.2"
-firebaseBom = "34.13.0"
+firebaseBom = "34.14.0"
 googleServices = "4.4.4"
 firebaseCrashlyticsPlugin = "3.0.7"
 

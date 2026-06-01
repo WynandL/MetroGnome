@@ -68,6 +68,13 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     //   3 h    =  10 800 s
     MetroItemEntry(HatFeather, UnlockCondition.TunerSeconds(900)),  // 15 min — head-attached plume
 
+    // ── Speed Trainer rewards — unlocked by completing sessions ───────────────
+    // Earn-only: rewards consistent structured practice. No purchase path.
+    // Thresholds: 1 session = first time, 5 = habit-forming, 10 = dedicated
+    // MetroItemEntry(SpeedRacerBadge, UnlockCondition.SpeedTrainingSessionsCompleted(1)),   // first session ever
+    // MetroItemEntry(SpeedBoots,      UnlockCondition.SpeedTrainingSessionsCompleted(5)),   // 5 sessions
+    // MetroItemEntry(SpeedHalo,       UnlockCondition.SpeedTrainingSessionsCompleted(10)),  // 10 sessions
+
     // ── Future wearables — add entries here as new files are created ──────────
     // MetroItemEntry(ArmBracelet,   UnlockCondition.MetronomeSeconds(7_200)),    // 2 h
     // MetroItemEntry(LapelPin,      UnlockCondition.MetronomeSeconds(10_800)),   // 3 h
