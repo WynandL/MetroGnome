@@ -1,27 +1,80 @@
-Read seo_context.md, then do the following:
- 
-1. MARKET SCAN
-   Search for this week’s activity around:
-   - 'metronome app android' and 'chromatic tuner android'
-   - Any competitor updates (Metronome Beats, Pro Metronome)
-   - Reddit/forum posts where musicians ask about or complain
-     about metronome or tuner apps
- 
-2. CODEBASE CHECK
-   Scan the app codebase and identify:
-   - Any features that exist in code but aren’t mentioned
-     in seo_context.md, the Play Store description, or website
-   - Any recent commits that added features worth promoting
-   - Any performance issues (crash logs, ANR patterns) that
-     could be affecting Play Store ratings
- 
-3. TODAY’S RECOMMENDATIONS
-   Based on findings, give exactly:
-   a) One ASO suggestion (only if genuinely better than current)
-   b) One content idea (blog post on website, Reddit reply, or short video)
-   c) One code improvement that would help SEO or user retention
-      (performance, onboarding, review prompt timing, etc.)
- 
-4. Save full report to seo_reports/YYYY-MM-DD.md
-   with sections: Market Scan | Codebase Findings |
-   Recommendations | Actions Taken
+Read seo_context.md and the last three reports in seo_reports/.
+
+──────────────────────────────────────────
+STEP 1 — WHAT IS ACTUALLY NEW TODAY?
+──────────────────────────────────────────
+
+Before doing anything else, answer this honestly:
+- Did the user provide any real data in this message (GSC numbers, install count,
+  review count, outreach reply)? If yes, go to STEP 2.
+- Has anything changed in the app, the listing, or the website since the last report?
+  If yes, go to STEP 2.
+- Is there a competitor update, a new keyword gap, or a new outreach target that
+  has not already been covered in the last three reports?
+  If yes, go to STEP 2.
+
+If the answer to all three is no: write a single short paragraph acknowledging there
+is no new signal today. Include one specific data request (see DATA REQUESTS below)
+that would give the most useful input right now. Save the report. Stop.
+
+──────────────────────────────────────────
+STEP 2 — DATA REQUESTS (rotating)
+──────────────────────────────────────────
+
+Count the last five reports. If none of them include real external data provided by
+the user, open today's report with a data request BEFORE any recommendations.
+
+Rotate through these in order — do not repeat the same request back-to-back:
+
+A) GSC — "Please open search.google.com/search-console → Performance → Last 28 days.
+   Paste the top 10 queries by impressions, with their click count and CTR."
+   Why: tells us if any blog posts or listing keywords are actually indexing.
+
+B) Play Store — "Please open play.google.com/console → Metro Gnome → Statistics.
+   Paste the current install count, 28-day new installs, and current rating + review count."
+   Why: tells us if growth is accelerating, flat, or dropping.
+
+C) Outreach status — "Any replies from Android Authority or Musician Wave?
+   Any organic mentions, links, or roundup inclusions found recently?"
+   Why: tells us if our outreach is converting at all.
+
+If the user has already answered one of these recently, skip it and use the next one.
+
+──────────────────────────────────────────
+STEP 3 — ACT ON SIGNAL
+──────────────────────────────────────────
+
+If there IS new signal, give exactly ONE recommendation — the highest-leverage action
+given what is actually known today. Be specific:
+- If ASO: write the exact replacement copy, not a description of it.
+- If blog post: only if there is a genuine unranked keyword gap AND no existing post
+  is within one topic of it. Check metrognome.co.za/blog for existing posts first.
+  Write a full draft or a detailed outline — not just a topic suggestion.
+- If outreach: write the actual message.
+- If code: describe exactly what to change and why it helps retention or discovery.
+
+Do not repeat a recommendation from the last two reports unless new evidence
+specifically supports trying it again.
+
+──────────────────────────────────────────
+STEP 4 — EVOLVE THE PROMPT
+──────────────────────────────────────────
+
+After each session, ask: does seo_context.md need updating based on what was learned?
+If yes, update it. Keep it as the single source of truth.
+
+Periodically (roughly every 10 sessions), assess whether the structure of this prompt
+itself is still the right shape for where the app is. If the app has grown significantly,
+if a new growth channel has opened, or if the current approach is clearly not working,
+flag it explicitly in the report and suggest a specific change to this prompt. Do not
+make the change unilaterally — suggest it and let the user decide.
+
+──────────────────────────────────────────
+STEP 5 — SAVE REPORT
+──────────────────────────────────────────
+
+Save to seo_reports/YYYY-MM-DD.md.
+
+Format: Signal | Action or Data Request | What would change the picture most right now.
+
+Keep it short. A three-sentence report on a quiet day is better than a padded one.

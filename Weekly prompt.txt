@@ -1,9 +1,0 @@
-Read all files in seo_reports/ from this week.
- 
-Synthesise:
-1. Top 3 insights from the week
-2. Which content was published and needs performance tracking
-3. Any code changes made for SEO/retention this week
-4. One Play Store listing tweak to test next week
- 
-Save to seo_reports/weekly-YYYY-MM-DD.md
