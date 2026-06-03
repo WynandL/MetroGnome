@@ -31,6 +31,13 @@ object PointsBannerQueue {
     private val _events = MutableSharedFlow<PointsBannerData>(extraBufferCapacity = 3)
     val events: SharedFlow<PointsBannerData> = _events.asSharedFlow()
 
+    private val _milestones = MutableSharedFlow<Int>(extraBufferCapacity = 1)
+    val milestones: SharedFlow<Int> = _milestones.asSharedFlow()
+
+    fun postMilestone(days: Int) {
+        _milestones.tryEmit(days)
+    }
+
     /**
      * Build and post a banner event.
      *

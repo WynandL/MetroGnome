@@ -2,6 +2,9 @@ package com.example.metrognome.ui.components.metro_items
 
 import android.content.Context
 import androidx.core.content.edit
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 /**
@@ -121,9 +124,11 @@ class MetroItemTracker(context: Context) {
     fun micBonusSessions(): Int              = prefs.getInt(KEY_MIC_BONUS_SESSIONS, 0)
     fun practiceSessionsCompleted(): Int = practicePrefs.getInt(KEY_PRACTICE_TOTAL, 0)
     fun daysSinceFirstLaunch(): Int {
-        val firstMs = prefs.getLong(KEY_FIRST_LAUNCH_MS, System.currentTimeMillis())
-        val elapsedMs = System.currentTimeMillis() - firstMs
-        return TimeUnit.MILLISECONDS.toDays(elapsedMs).toInt()
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val firstMs  = prefs.getLong(KEY_FIRST_LAUNCH_MS, System.currentTimeMillis())
+        val firstDay = sdf.parse(sdf.format(Date(firstMs))) ?: return 0
+        val today    = sdf.parse(sdf.format(Date())) ?: return 0
+        return TimeUnit.MILLISECONDS.toDays(today.time - firstDay.time).toInt()
     }
 
     // ── Cheat / developer mode ────────────────────────────────────────────────

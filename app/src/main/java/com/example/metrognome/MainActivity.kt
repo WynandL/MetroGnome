@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.metrognome.ui.components.LoyaltyMilestoneBanner
 import com.example.metrognome.ui.components.PointsEarnedBanner
 import com.example.metrognome.ui.components.TunerNeedleIcon
 import com.example.metrognome.ui.screens.MetronomeScreen
@@ -113,6 +114,16 @@ fun MetroGnomeApp() {
         if (tunerReviewReady) activity?.let { reviewManager.maybeRequestReview(it) }
     }
 
+    // Third review trigger: the 30-day loyalty milestone. A user who has opened the
+    // app on 30 distinct days is the definition of an established user — the best
+    // moment to ask. The banner fires first (a positive moment), then the review prompt
+    // appears naturally as a follow-up. Other milestone days are ignored here.
+    LaunchedEffect(Unit) {
+        com.example.metrognome.points.PointsBannerQueue.milestones.collect { days ->
+            if (days == 30) activity?.let { reviewManager.maybeRequestReview(it) }
+        }
+    }
+
     // Show one interstitial ad after the 2nd practice session of the day.
     // The overlay has already been dismissed at this point so the ad is the natural break.
     LaunchedEffect(metronomeVm) {
@@ -187,5 +198,6 @@ fun MetroGnomeApp() {
         }
     }
     PointsEarnedBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
+    LoyaltyMilestoneBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
     } // end Box
 }

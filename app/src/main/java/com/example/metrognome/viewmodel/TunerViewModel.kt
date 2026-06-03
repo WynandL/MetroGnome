@@ -499,7 +499,7 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
         private const val KEY_MODE = "calibration_mode"
 
         /** Locked tuner seconds required before offering a Play Store review (5 min). */
-        private const val TUNER_REVIEW_THRESHOLD = 300L
+        private const val TUNER_REVIEW_THRESHOLD = 900L  // 15 minutes of real tuner use
 
         // Tune-completion detection
         /** Tuner emits ~11 readings/s (4096-sample hop at 44.1 kHz); 40 frames ≈ 3.7 s. */

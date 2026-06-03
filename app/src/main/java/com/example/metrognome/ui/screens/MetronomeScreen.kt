@@ -20,6 +20,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -940,7 +943,7 @@ private fun StreakBadgeRow(
 
 @Composable
 private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit) {
-    var selected by remember { mutableIntStateOf(10) }
+    var selected by remember { mutableIntStateOf(15) }
 
     AppDialog(onDismiss = onDismiss) {
                 Row(modifier = Modifier.fillMaxWidth()) {
@@ -958,7 +961,6 @@ private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit
 
                 Spacer(Modifier.height(12.dp))
 
-                // Hero: the selected duration, mirroring Save Preset's big BPM number.
                 Text(
                     text = "$selected min",
                     color = Color.White,
@@ -967,32 +969,20 @@ private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit
                     letterSpacing = (-1).sp,
                 )
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(8.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(10, 15, 20, 30).forEach { mins ->
-                        val isSelected = selected == mins
-                        Surface(
-                            onClick = { selected = mins },
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (isSelected) AppColors.primaryPurple else AppColors.surfaceDim,
-                            border = if (isSelected) BorderStroke(1.dp, AppColors.gold) else null,
-                            modifier = Modifier.height(38.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(horizontal = 14.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    "${mins}m",
-                                    color = Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                )
-                            }
-                        }
-                    }
-                }
+                Slider(
+                    value = selected.toFloat(),
+                    onValueChange = { selected = it.roundToInt() },
+                    valueRange = 5f..30f,
+                    steps = 24,
+                    colors = SliderDefaults.colors(
+                        thumbColor = AppColors.gold,
+                        activeTrackColor = AppColors.mediumPurple,
+                        inactiveTrackColor = AppColors.surfaceVariant,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
                 Spacer(Modifier.height(14.dp))
 

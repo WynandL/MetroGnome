@@ -136,6 +136,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         _gnoteCount.value = pointsManager.getSnapshot().total
         activityLogger.log()
     }
+    fun debugResetReview() = com.example.metrognome.review.AppReviewManager(getApplication()).debugReset()
     fun debugClearAdFree() = billingManager.debugClearAdFree()
     fun debugClearPresets() {
         _isPresetsEnabled.value = false

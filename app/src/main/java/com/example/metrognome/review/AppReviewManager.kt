@@ -6,22 +6,30 @@ import androidx.core.content.edit
 import com.google.android.play.core.review.ReviewManagerFactory
 
 private const val PREFS_NAME = "app_review"
-private const val KEY_DISTINCT_DAYS = "distinct_days"
-private const val KEY_REVIEW_REQUESTED = "review_requested"
+private const val KEY_DISTINCT_DAYS    = "distinct_days"
+private const val KEY_REVIEW_REQUESTED = "review_requested" // legacy boolean — kept for migration
+private const val KEY_REQUEST_COUNT    = "request_count"
 
-/** Number of distinct calendar days the app must be opened before the prompt appears. */
-private const val DAYS_THRESHOLD = 3
+private const val DAYS_THRESHOLD_FIRST  = 7   // first ask: one week of real use
+private const val DAYS_THRESHOLD_SECOND = 30  // second ask: one month of real use
+private const val MAX_REQUESTS = 2
 
 /**
  * Manages the Google Play In-App Review prompt.
  *
- * Tracks distinct calendar days the app is foregrounded. Once the user has opened
- * the app on [DAYS_THRESHOLD] or more separate days, the native Play rating sheet
- * is shown once and never again.
+ * Tracks distinct calendar days the app is foregrounded. Two review opportunities:
+ *  1. After [DAYS_THRESHOLD_FIRST] distinct days — early engaged user.
+ *  2. After [DAYS_THRESHOLD_SECOND] distinct days — established daily user.
+ *
+ * The Play Store's own quota manages whether the sheet actually appears after
+ * [launchReviewFlow] is called — calling it twice is safe and expected.
+ *
+ * Migration: users who already have the legacy [KEY_REVIEW_REQUESTED]=true boolean
+ * are treated as having had one request, and remain eligible for the second at day 30.
  *
  * Usage:
- *   1. Call [recordAppOpen] on every foreground entry (Activity.onResume / ON_RESUME).
- *   2. Call [maybeRequestReview] right after — it is a no-op until eligible.
+ *   1. Call [recordAppOpen] on every foreground entry.
+ *   2. Call [maybeRequestReview] at natural earned moments — it is a no-op until eligible.
  */
 class AppReviewManager(context: Context) {
 
@@ -33,7 +41,7 @@ class AppReviewManager(context: Context) {
      * Safe to call multiple times per day — only the first call per day has any effect.
      */
     fun recordAppOpen() {
-        if (hasBeenRequested()) return
+        if (requestCount() >= MAX_REQUESTS) return
         val today = todayKey()
         val days = prefs.getStringSet(KEY_DISTINCT_DAYS, emptySet())!!.toMutableSet()
         if (days.add(today)) {
@@ -45,19 +53,19 @@ class AppReviewManager(context: Context) {
     fun distinctDaysOpened(): Int =
         prefs.getStringSet(KEY_DISTINCT_DAYS, emptySet())!!.size
 
+    /** How many times the review prompt has been requested. Max [MAX_REQUESTS]. */
+    fun requestCount(): Int =
+        if (prefs.getBoolean(KEY_REVIEW_REQUESTED, false))
+            prefs.getInt(KEY_REQUEST_COUNT, 1)
+        else
+            prefs.getInt(KEY_REQUEST_COUNT, 0)
+
     /**
      * Shows the native Play Store in-app rating sheet if the user qualifies.
-     *
-     * Exits immediately when:
-     *  - fewer than [DAYS_THRESHOLD] distinct days have been recorded, or
-     *  - the prompt has already been triggered once.
-     *
-     * All Play Store errors are swallowed so this never causes a crash.
-     * The sheet is shown by the OS; the app cannot force a specific outcome.
+     * No-op when ineligible or when the Play Store quota suppresses the sheet.
      */
     fun maybeRequestReview(activity: Activity) {
         if (!isEligible()) return
-        // Mark immediately — prevents re-triggering if the activity is recreated mid-flow.
         markRequested()
         reviewManager.requestReviewFlow()
             .addOnSuccessListener { reviewInfo ->
@@ -68,23 +76,33 @@ class AppReviewManager(context: Context) {
             }
     }
 
-    private fun isEligible(): Boolean =
-        !hasBeenRequested() && distinctDaysOpened() >= DAYS_THRESHOLD
+    private fun isEligible(): Boolean {
+        val count = requestCount()
+        if (count >= MAX_REQUESTS) return false
+        val days = distinctDaysOpened()
+        return when (count) {
+            0    -> days >= DAYS_THRESHOLD_FIRST
+            1    -> days >= DAYS_THRESHOLD_SECOND
+            else -> false
+        }
+    }
 
-    private fun hasBeenRequested(): Boolean =
-        prefs.getBoolean(KEY_REVIEW_REQUESTED, false)
-
-    private fun markRequested() =
-        prefs.edit { putBoolean(KEY_REVIEW_REQUESTED, true) }
+    private fun markRequested() {
+        prefs.edit {
+            putBoolean(KEY_REVIEW_REQUESTED, true)
+            putInt(KEY_REQUEST_COUNT, requestCount() + 1)
+        }
+    }
 
     /** Days since Unix epoch (UTC) — changes at midnight UTC, suitable for day tracking. */
     private fun todayKey(): String = (System.currentTimeMillis() / 86_400_000L).toString()
 
-    /** Wipes all stored state. For debug use only — call from a dev-tools menu. */
+    /** Wipes all stored state. For debug use only. */
     fun debugReset() {
         prefs.edit {
             remove(KEY_DISTINCT_DAYS)
             remove(KEY_REVIEW_REQUESTED)
+            remove(KEY_REQUEST_COUNT)
         }
     }
 }

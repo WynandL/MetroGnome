@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -69,6 +70,76 @@ fun PointsEarnedBanner(modifier: Modifier = Modifier) {
     ) {
         bannerData?.let { BannerPill(it) }
     }
+}
+
+@Composable
+fun LoyaltyMilestoneBanner(modifier: Modifier = Modifier) {
+    var days by remember { mutableStateOf(0) }
+    var show by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        PointsBannerQueue.milestones.collect { d ->
+            if (show) {
+                show = false
+                delay(280)
+            }
+            days = d
+            show = true
+            delay(3500)
+            show = false
+        }
+    }
+
+    AnimatedVisibility(
+        visible  = show,
+        enter    = slideInVertically(tween(220)) { -it } + fadeIn(tween(220)),
+        exit     = slideOutVertically(tween(280)) { -it } + fadeOut(tween(280)),
+        modifier = modifier,
+    ) {
+        MilestonePill(days)
+    }
+}
+
+@Composable
+private fun MilestonePill(days: Int) {
+    val shape = RoundedCornerShape(50.dp)
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 20.dp, vertical = 10.dp)
+            .background(AppColors.surfaceDeep, shape)
+            .border(1.dp, AppColors.primaryPurple.copy(alpha = 0.55f), shape)
+            .padding(horizontal = 16.dp, vertical = 9.dp),
+        verticalAlignment    = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Icon(
+            imageVector        = Icons.Filled.Stars,
+            contentDescription = null,
+            tint               = AppColors.primaryPurple,
+            modifier           = Modifier.size(13.dp),
+        )
+        Text(
+            text       = "$days days",
+            color      = AppColors.primaryPurple,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize   = 14.sp,
+        )
+        Text("·", color = AppColors.textMuted, fontSize = 13.sp)
+        Text(
+            text     = milestoneLabel(days),
+            color    = AppColors.textMuted,
+            fontSize = 12.sp,
+        )
+    }
+}
+
+private fun milestoneLabel(days: Int) = when (days) {
+    7    -> "One week with Metro"
+    30   -> "One month strong"
+    60   -> "Two months in"
+    100  -> "100 days. Legend."
+    365  -> "One full year"
+    else -> "$days-day milestone"
 }
 
 @Composable

@@ -25,18 +25,25 @@ class UsageDayTracker(context: Context) {
     fun recordDay() {
         val today = dateFormat.format(Date())
         if (prefs.getString(KEY_LAST_DATE, null) == today) return
+        val newCount   = prefs.getInt(KEY_COUNT, 0) + 1
+        val announced  = prefs.getStringSet(KEY_MILESTONES_ANNOUNCED, emptySet()) ?: emptySet()
+        val isMilestone = newCount in MILESTONES && newCount.toString() !in announced
         prefs.edit {
             putString(KEY_LAST_DATE, today)
-            putInt(KEY_COUNT, prefs.getInt(KEY_COUNT, 0) + 1)
+            putInt(KEY_COUNT, newCount)
+            if (isMilestone) putStringSet(KEY_MILESTONES_ANNOUNCED, announced + newCount.toString())
         }
+        if (isMilestone) PointsBannerQueue.postMilestone(newCount)
     }
 
     /** Total number of distinct calendar days the app has been opened. */
     fun distinctDaysCount(): Int = prefs.getInt(KEY_COUNT, 0)
 
     companion object {
-        private const val PREFS_NAME    = "usage_days"
-        private const val KEY_LAST_DATE = "last_date"
-        private const val KEY_COUNT     = "count"
+        private const val PREFS_NAME               = "usage_days"
+        private const val KEY_LAST_DATE            = "last_date"
+        private const val KEY_COUNT                = "count"
+        private const val KEY_MILESTONES_ANNOUNCED = "milestones_announced"
+        private val MILESTONES = setOf(7, 30, 60, 100, 365)
     }
 }

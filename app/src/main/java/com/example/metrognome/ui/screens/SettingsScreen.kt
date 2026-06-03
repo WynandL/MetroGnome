@@ -87,7 +87,7 @@ import com.example.metrognome.whatsnew.AppWhatsNew
 import kotlin.math.roundToInt
 
 private val itemOwnedMessages = mapOf(
-    "glissie_fairy" to "Glissie's in your collection. She knows how to make an entrance.",
+    "glissie_fairy" to "Glissie is in your collection. She knows how to make an entrance.",
 )
 
 @Composable
@@ -513,6 +513,17 @@ fun SettingsScreen(
             Spacer(Modifier.height(6.dp))
 
             OutlinedButton(
+                onClick = { vm.debugResetReview() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
+            ) {
+                Text("Reset Review Prompt State", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
                 onClick = onTriggerFeedback,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
@@ -540,6 +551,26 @@ fun SettingsScreen(
             ) {
                 Text(
                     "Test Points Banner  ($testBannerCount / 3)",
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold
+                )
+            }
+
+            val milestoneDays = listOf(7, 30, 60, 100, 365)
+            var testMilestoneIndex by remember { mutableIntStateOf(0) }
+            Spacer(Modifier.height(6.dp))
+            OutlinedButton(
+                onClick = {
+                    com.example.metrognome.points.PointsBannerQueue.postMilestone(
+                        milestoneDays[testMilestoneIndex]
+                    )
+                    testMilestoneIndex = (testMilestoneIndex + 1) % milestoneDays.size
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
+            ) {
+                Text(
+                    "Test Loyalty Banner  (${milestoneDays[testMilestoneIndex]} days)",
                     fontSize = 12.sp, fontWeight = FontWeight.Bold
                 )
             }
@@ -840,7 +871,7 @@ private fun RemoveAdsSection(
         )
 
         if (isAdFree) {
-            OwnedBadge("Pure Metro - no ads, no interruptions. Just you and the music.")
+            OwnedBadge("You have the ad-free version. Metro plays without interruptions.")
             return
         }
         Text(
@@ -957,7 +988,7 @@ private fun CollectionCard(activeItemIds: Set<String>, onClick: () -> Unit) {
         }
         Text(
             text       = "See all  →",
-            color      = AppColors.gold.copy(alpha = 0.65f),
+            color      = AppColors.gold.copy(alpha = 0.55f),
             fontSize   = 11.sp,
             fontWeight = FontWeight.SemiBold,
         )
@@ -1030,12 +1061,11 @@ private fun PointsCard(snapshot: PointsSnapshot, onInfoClick: () -> Unit) {
         Spacer(Modifier.height(12.dp))
         HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.6f))
         Text(
-            text          = "How to earn  →",
-            color         = AppColors.gold.copy(alpha = 0.55f),
-            fontSize      = 11.sp,
-            fontWeight    = FontWeight.SemiBold,
-            letterSpacing = 0.4.sp,
-            modifier      = Modifier.padding(top = 8.dp),
+            text       = "How to earn  →",
+            color      = AppColors.gold.copy(alpha = 0.55f),
+            fontSize   = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier   = Modifier.padding(top = 8.dp),
         )
     }
 }
