@@ -1,5 +1,13 @@
 # Metro Gnome — SEO & Growth Context
 
+## Website Indexing Status (as of 2026-06-03)
+- metrognome.co.za: 0 impressions in GSC, 8 pages "Discovered - currently not indexed"
+- metro-gnome-gilt.vercel.app: 10 impressions in 28 days, top query: "gnome metronome" (navigational)
+- Canonical tag: correct (points to metrognome.co.za) — confirmed on master branch
+- Fix applied: GSC Request Indexing submitted for all 8 pages on 2026-06-03
+- Blocker: no external backlinks → Google deprioritises new domain for crawling
+- Next GSC check: 2026-06-17 — see if pages moved from "Discovered" to "Indexed"
+
 ## App
 - Name: Metro Gnome: Metronome & Tuner
 - Package: com.wynandl.metrognome

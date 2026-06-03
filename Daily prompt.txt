@@ -1,80 +1,70 @@
 Read seo_context.md and the last three reports in seo_reports/.
 
 ──────────────────────────────────────────
-STEP 1 — WHAT IS ACTUALLY NEW TODAY?
+STEP 1 — DID THE USER BRING DATA?
 ──────────────────────────────────────────
 
-Before doing anything else, answer this honestly:
-- Did the user provide any real data in this message (GSC numbers, install count,
-  review count, outreach reply)? If yes, go to STEP 2.
-- Has anything changed in the app, the listing, or the website since the last report?
-  If yes, go to STEP 2.
-- Is there a competitor update, a new keyword gap, or a new outreach target that
-  has not already been covered in the last three reports?
-  If yes, go to STEP 2.
-
-If the answer to all three is no: write a single short paragraph acknowledging there
-is no new signal today. Include one specific data request (see DATA REQUESTS below)
-that would give the most useful input right now. Save the report. Stop.
+Check whether the user's message contains pasted stats (GSC queries,
+install numbers, review count, or outreach reply). If yes, jump to STEP 2.
+If no, skip to STEP 3.
 
 ──────────────────────────────────────────
-STEP 2 — DATA REQUESTS (rotating)
+STEP 2 — ANALYSE THE DATA (only if stats were provided)
 ──────────────────────────────────────────
 
-Count the last five reports. If none of them include real external data provided by
-the user, open today's report with a data request BEFORE any recommendations.
+Analyse what the numbers actually say. Be specific:
+- Which keywords are getting impressions but no clicks? (CTR problem)
+- Which pages are indexed vs not? (coverage gap)
+- Is install growth accelerating, flat, or dropping?
+- Did any outreach convert?
 
-Rotate through these in order — do not repeat the same request back-to-back:
-
-A) GSC — "Please open search.google.com/search-console → Performance → Last 28 days.
-   Paste the top 10 queries by impressions, with their click count and CTR."
-   Why: tells us if any blog posts or listing keywords are actually indexing.
-
-B) Play Store — "Please open play.google.com/console → Metro Gnome → Statistics.
-   Paste the current install count, 28-day new installs, and current rating + review count."
-   Why: tells us if growth is accelerating, flat, or dropping.
-
-C) Outreach status — "Any replies from Android Authority or Musician Wave?
-   Any organic mentions, links, or roundup inclusions found recently?"
-   Why: tells us if our outreach is converting at all.
-
-If the user has already answered one of these recently, skip it and use the next one.
+Give ONE concrete recommendation that follows directly from the data.
+Save the report and stop — skip STEP 3 and STEP 4.
 
 ──────────────────────────────────────────
-STEP 3 — ACT ON SIGNAL
+STEP 3 — RESEARCH (when no data was provided)
 ──────────────────────────────────────────
 
-If there IS new signal, give exactly ONE recommendation — the highest-leverage action
-given what is actually known today. Be specific:
-- If ASO: write the exact replacement copy, not a description of it.
-- If blog post: only if there is a genuine unranked keyword gap AND no existing post
-  is within one topic of it. Check metrognome.co.za/blog for existing posts first.
-  Write a full draft or a detailed outline — not just a topic suggestion.
-- If outreach: write the actual message.
-- If code: describe exactly what to change and why it helps retention or discovery.
+Do a focused scan. Only flag things that have genuinely changed since
+the last report:
+- Any competitor update not already in seo_context.md?
+- Any new roundup or mention found?
+- Any keyword gap in the listing or website not previously identified?
+- Any recent app changes (check git log) worth surfacing in SEO?
 
-Do not repeat a recommendation from the last two reports unless new evidence
-specifically supports trying it again.
+If nothing has changed: say so in one sentence. Do not restate things
+already in seo_context.md as if they are new findings.
+
+If something has changed: give ONE specific recommendation, fully written
+out (exact copy, exact post text, exact outreach message) — not described.
 
 ──────────────────────────────────────────
-STEP 4 — EVOLVE THE PROMPT
+STEP 4 — DATA REQUEST (end of every session)
 ──────────────────────────────────────────
 
-After each session, ask: does seo_context.md need updating based on what was learned?
-If yes, update it. Keep it as the single source of truth.
+Every session ends with a data request under the heading "For next time:"
 
-Periodically (roughly every 10 sessions), assess whether the structure of this prompt
-itself is still the right shape for where the app is. If the app has grown significantly,
-if a new growth channel has opened, or if the current approach is clearly not working,
-flag it explicitly in the report and suggest a specific change to this prompt. Do not
-make the change unilaterally — suggest it and let the user decide.
+Check the last five reports and pick whichever request below has gone
+the longest without being answered. The user will fetch it before the
+next session and paste it in.
+
+A) GSC queries — "Go to search.google.com/search-console → Performance →
+   Last 28 days → Queries tab. Paste the top 10 queries by impressions
+   with click count and CTR."
+
+B) GSC indexing — "Go to search.google.com/search-console → Indexing →
+   Pages. How many pages are now indexed? Has anything moved out of
+   'Discovered - currently not indexed'?"
+
+C) Play Store — "Go to play.google.com/console → Metro Gnome → Statistics.
+   Paste the current install count, 28-day new installs, and rating + review count."
+
+Do not ask for the same one two sessions in a row.
 
 ──────────────────────────────────────────
 STEP 5 — SAVE REPORT
 ──────────────────────────────────────────
 
 Save to seo_reports/YYYY-MM-DD.md.
-
-Format: Signal | Action or Data Request | What would change the picture most right now.
-
-Keep it short. A three-sentence report on a quiet day is better than a padded one.
+Update seo_context.md only if something genuinely changed.
+Keep it short. A quiet day should be a short report.
