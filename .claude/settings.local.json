@@ -102,7 +102,11 @@
       "Bash(adb devices *)",
       "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; if \\(Test-Path $adb\\) { & $adb devices } else { \"adb not found at $adb\" })",
       "PowerShell($content = Get-Content \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\\\\PSL.txt\" -Raw; $content.Length)",
-      "Bash(not exist *)"
+      "Bash(not exist *)",
+      "Bash(grep -v \"\\\\.kt:[0-9]*:.*//\\\\|\\\\.kt:[0-9]*:.*\\\\*\")",
+      "Bash(grep -v \"^.*\\\\.kt:[0-9]*:.*//\\\\|^.*\\\\.kt:[0-9]*: *\\\\*\")",
+      "Bash(ls landing/blog/)",
+      "Bash(ls landing/blog)"
     ]
   }
 }
