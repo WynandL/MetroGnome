@@ -1,5 +1,21 @@
 # Metro Gnome — SEO & Growth Context
 
+## Open Action Items
+
+| Item | Priority | Due / Status |
+|---|---|---|
+| Musician Wave "8 Best Rhythm Training Apps" outreach | High | Send 2026-06-05 — email drafted in 2026-06-04.md |
+| BeatIt.tv "Top 5 Metronome Apps" follow-up | Low | Sent 2026-06-04 — allow until 2026-06-18 |
+| r/WeAreTheMusicMakers Gnotes dev post | Medium | Never posted |
+| Code: Surface installed-days loyalty bonus to users | Medium | Not done |
+| r/drums re-entry | Medium | Eligible (13+ days clear since 2026-05-22) |
+| r/learnmusic first post | Medium | Never posted |
+| Musician Wave "10 Best Metronome Apps" follow-up | Low | Allow until 2026-06-12 |
+| Android Authority follow-up | Low | Allow until 2026-06-16 |
+| GSC indexing re-check | Scheduled | Check ~2026-06-17 |
+
+---
+
 ## Website Indexing Status (as of 2026-06-03)
 - metrognome.co.za: 0 impressions in GSC, 8 pages "Discovered - currently not indexed"
 - metro-gnome-gilt.vercel.app: 10 impressions in 28 days, top query: "gnome metronome" (navigational)
@@ -63,10 +79,11 @@
 - Android Authority "Best Metronome Apps for Android" — emailed joseph.hindy@androidauthority.com — 2026-06-02 — awaiting response (allow until 2026-06-16 before follow-up)
 - Melodics "Best Metronome Apps for Drummers" — DO NOT contact — they have their own built-in metronome; they are a competitor, not an independent reviewer
 - Practis Blog (pract.is) — DO NOT contact — Practis is a competitor app ("Music Practice Tracker, Timer & Metronome"); their roundup articles drive traffic to their own product, not independent reviews
+- BeatIt.tv "Top 5 Metronome Apps" — drummer-focused editorial site, independent reviewer. Metro Gnome absent. Outreach sent 2026-06-04 to info@beatit.tv — allow until 2026-06-18 before follow-up
 
 ## Competitors
-- Metronome Beats (Stonekick): 26M installs, 4.8 stars — no tuner, ad-heavy, has a free speed trainer (BPM ramp, v7.1.2) — confirmed NOT uncontested; Metro Gnome differentiates on structured steps + descending ramp + mic accuracy (coming) + all-in-one free app; requires sign-in for sync
-- Pro Metronome (EUMLab): 7.3M installs, 4.2 stars — angry users over subscription bait-and-switch, outdated Android port, no Android update since Jan 2025; tempo trainer is paywalled and buggy
+- Metronome Beats (Stonekick): 26M installs, 4.8 stars — no tuner, ad-heavy, has a free speed trainer (BPM ramp, v7.1.3 May 2026, added MIDI control) — NOT uncontested; Metro Gnome differentiates on structured steps + descending ramp + mic accuracy (coming) + all-in-one free app; requires sign-in for sync
+- Pro Metronome (EUMLab): 7.3M installs, 3.84 stars — angry users over subscription bait-and-switch, outdated Android port, last Android update Jan 12, 2026 (stagnant 5+ months); tempo trainer is paywalled and buggy
 - Music Tempo Trainer (musicutils): dedicated tempo training app, no tuner, no rhythm game, updated March 2026. Modes: Constant, Increase/Decrease, Step Training (80–160 BPM), session tracking.
 - Soundbrenner: 10M+ installs, updated April 2026 — now has paid practice tracking (~$6/mo Premium). Metro Gnome's practice tools (streak, Gnotes, timer) are entirely free — direct differentiator.
 

@@ -1,70 +1,68 @@
-Read seo_context.md and the last three reports in seo_reports/.
+You are running Metro Gnome's daily SEO and growth session.
+
+Read seo_context.md and the last two reports in seo_reports/ before doing anything else.
 
 ──────────────────────────────────────────
-STEP 1 — DID THE USER BRING DATA?
+STEP 1 — RESEARCH (you do this, not the user)
 ──────────────────────────────────────────
 
-Check whether the user's message contains pasted stats (GSC queries,
-install numbers, review count, or outreach reply). If yes, jump to STEP 2.
-If no, skip to STEP 3.
+Run all of these. Do not skip any.
+
+a) git log --oneline -10
+   What shipped since the last report? Any new features worth surfacing in SEO?
+
+b) Web search each competitor in seo_context.md for updates.
+   Search: "[app name] android update 2026" or check their Play Store page.
+   Only flag genuinely new information — not things already in seo_context.md.
+
+c) Web search for new roundup coverage.
+   Search: "best metronome app android [current year]" and "best tuner app android [current year]"
+   Any new articles not already in seo_context.md? Is Metro Gnome mentioned anywhere new?
+
+d) Web search for active Reddit threads.
+   Search: site:reddit.com "metronome app" OR "tuner app" — last 30 days.
+   Any thread where a genuine Metro Gnome mention or reply would add value?
+
+e) Check Open Action Items in seo_context.md.
+   What is overdue? What is newly due based on today's date?
 
 ──────────────────────────────────────────
-STEP 2 — ANALYSE THE DATA (only if stats were provided)
+STEP 2 — FULL ANALYSIS
 ──────────────────────────────────────────
 
-Analyse what the numbers actually say. Be specific:
-- Which keywords are getting impressions but no clicks? (CTR problem)
-- Which pages are indexed vs not? (coverage gap)
-- Is install growth accelerating, flat, or dropping?
-- Did any outreach convert?
+Write the day's findings:
+- What changed since the last report (app, competitors, web presence)
+- Status of open action items — mark anything newly completed or overdue
+- ONE recommendation, fully written out. Not described — actually written:
+  - If it's an email: write the full email (subject + body)
+  - If it's a Reddit post/reply: write the full text
+  - If it's a listing change: write the before and after
+  - If it's a code/content change: specify file, line, exact change
 
-Give ONE concrete recommendation that follows directly from the data.
-Save the report and stop — skip STEP 3 and STEP 4.
-
-──────────────────────────────────────────
-STEP 3 — RESEARCH (when no data was provided)
-──────────────────────────────────────────
-
-Do a focused scan. Only flag things that have genuinely changed since
-the last report:
-- Any competitor update not already in seo_context.md?
-- Any new roundup or mention found?
-- Any keyword gap in the listing or website not previously identified?
-- Any recent app changes (check git log) worth surfacing in SEO?
-
-If nothing has changed: say so in one sentence. Do not restate things
-already in seo_context.md as if they are new findings.
-
-If something has changed: give ONE specific recommendation, fully written
-out (exact copy, exact post text, exact outreach message) — not described.
+If nothing material has changed: say so in one sentence. Do not pad.
 
 ──────────────────────────────────────────
-STEP 4 — DATA REQUEST (end of every session)
+STEP 3 — DATA REQUEST (only if needed)
 ──────────────────────────────────────────
 
-Every session ends with a data request under the heading "For next time:"
+Ask the user for data ONLY if your research identified a specific gap that
+real data would resolve. Examples of valid asks:
+- "The Speed Trainer blog post is live but I can't see whether it's getting
+  impressions — fetch GSC data for metrognome.co.za/blog/speed-trainer"
+- "I found a new roundup but can't tell if Metro Gnome's rating would qualify —
+  paste the current Play Store rating and review count"
 
-Check the last five reports and pick whichever request below has gone
-the longest without being answered. The user will fetch it before the
-next session and paste it in.
-
-A) GSC queries — "Go to search.google.com/search-console → Performance →
-   Last 28 days → Queries tab. Paste the top 10 queries by impressions
-   with click count and CTR."
-
-B) GSC indexing — "Go to search.google.com/search-console → Indexing →
-   Pages. How many pages are now indexed? Has anything moved out of
-   'Discovered - currently not indexed'?"
-
-C) Play Store — "Go to play.google.com/console → Metro Gnome → Statistics.
-   Paste the current install count, 28-day new installs, and rating + review count."
-
-Do not ask for the same one two sessions in a row.
+Do NOT make a generic rotating data request if no specific gap was found.
+Do NOT ask for data you could find yourself via web search.
 
 ──────────────────────────────────────────
-STEP 5 — SAVE REPORT
+STEP 4 — SAVE & UPDATE
 ──────────────────────────────────────────
 
-Save to seo_reports/YYYY-MM-DD.md.
-Update seo_context.md only if something genuinely changed.
-Keep it short. A quiet day should be a short report.
+Save report to seo_reports/YYYY-MM-DD.md.
+
+Update seo_context.md:
+- Mark completed action items as done (with date)
+- Add any newly discovered outreach targets, competitors, or keyword findings
+- Remove stale entries (old action items that are done or cancelled)
+- Keep it accurate — it is the single source of truth read at the start of every session
