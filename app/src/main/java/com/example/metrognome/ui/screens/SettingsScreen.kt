@@ -1,15 +1,28 @@
 package com.example.metrognome.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -21,18 +34,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import com.example.metrognome.ui.components.AppFilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
@@ -56,7 +72,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
 import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -66,7 +84,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.BuildConfig
 import com.example.metrognome.dev.DevEasterEgg
 import com.example.metrognome.dev.DevTapTarget
-import com.example.metrognome.ads.AdBannerView
+import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.billing.PremiumSoundDef
 import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
@@ -76,7 +94,10 @@ import com.example.metrognome.billing.PurchasableItemDef
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.UnlockCondition
 import com.example.metrognome.ui.components.metro_items.displayText
+import com.example.metrognome.ui.components.LoyaltyMilestonePath
 import com.example.metrognome.ui.components.OwnedBadge
+import com.example.metrognome.ui.components.StreakWeekCard
+import com.example.metrognome.points.UsageDayTracker
 import com.example.metrognome.ui.dialogs.ShowcaseFrame
 import com.example.metrognome.points.PointsManager
 import com.example.metrognome.points.PointsSnapshot
@@ -94,6 +115,7 @@ private val itemOwnedMessages = mapOf(
 fun SettingsScreen(
     vm: MetronomeViewModel,
     onTriggerFeedback: () -> Unit = {},
+    onWatchRewardedAd: (onDone: () -> Unit) -> Unit = { it() },
 ) {
     val context = LocalContext.current
     val bpm by vm.bpm.collectAsStateWithLifecycle()
@@ -123,14 +145,22 @@ fun SettingsScreen(
     val isPresetsEnabled by vm.isPresetsEnabled.collectAsStateWithLifecycle()
     val isPracticeEnabled by vm.isPracticeEnabled.collectAsStateWithLifecycle()
     val isSpeedTrainerEnabled by vm.isSpeedTrainerEnabled.collectAsStateWithLifecycle()
+    val practiceStreak by vm.practiceStreak.collectAsStateWithLifecycle()
+    val bestStreak by vm.bestStreak.collectAsStateWithLifecycle()
+    val practicedEpochDays by vm.practicedEpochDays.collectAsStateWithLifecycle()
 
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
-    val pointsSnapshot = remember { PointsManager(context).getSnapshot() }
+    val gnoteCount by vm.gnoteCount.collectAsStateWithLifecycle()
+    val adLoaded   by vm.rewardedAdLoaded.collectAsStateWithLifecycle()
+    val pointsSnapshot = remember(gnoteCount) { PointsManager(context, vm.rewardedAdManager).getSnapshot() }
+    val loyaltyDays    = remember { UsageDayTracker(context).distinctDaysCount() }
     var showEarnRules by remember { mutableStateOf(false) }
+    var showWatchAdDialog by remember { mutableStateOf(false) }
     var showItemCatalog by remember { mutableStateOf(false) }
     var previewIndex by remember { mutableIntStateOf(0) }
     var testBannerCount by remember { mutableIntStateOf(1) }
     var showUnlockRules by remember { mutableStateOf(false) }
+    var showAdPolicy    by remember { mutableStateOf(false) }
     var dialogSoundDef by remember { mutableStateOf<PremiumSoundDef?>(null) }
     var dialogItemDef  by remember { mutableStateOf<PurchasableItemDef?>(null) }
 
@@ -166,9 +196,33 @@ fun SettingsScreen(
         ) {
             Spacer(Modifier.height(32.dp))
 
-            PointsCard(snapshot = pointsSnapshot, onInfoClick = { showEarnRules = true })
+            PointsCard(
+                snapshot       = pointsSnapshot,
+                onInfoClick    = { showEarnRules = true },
+                canWatchToday  = remember(gnoteCount) { vm.rewardedAdManager.canWatch() },
+                adReady        = adLoaded,
+                remainingToday = remember(gnoteCount) { vm.rewardedAdManager.remainingToday() },
+                onWatchAdClick = { showWatchAdDialog = true },
+            )
 
             Spacer(Modifier.height(6.dp))
+
+            LoyaltyCard(
+                currentDays = loyaltyDays,
+                modifier    = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            if (isPracticeEnabled || (isSpeedTrainerEnabled && practiceStreak > 0)) {
+                PracticeStreakCard(
+                    streak             = practiceStreak,
+                    bestStreak         = bestStreak,
+                    practicedEpochDays = practicedEpochDays,
+                    modifier           = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(6.dp))
+            }
 
             CollectionCard(
                 activeItemIds = activeItemIds,
@@ -402,6 +456,17 @@ fun SettingsScreen(
             Spacer(Modifier.height(6.dp))
 
             OutlinedButton(
+                onClick = { showAdPolicy = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
+            ) {
+                Text("Show Ad Policy", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            OutlinedButton(
                 onClick = { vm.resetAllProgress() },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
@@ -484,6 +549,15 @@ fun SettingsScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
+
+            if (isPracticeEnabled) {
+                Spacer(Modifier.height(6.dp))
+                StreakSimulator(
+                    currentStreak = practiceStreak,
+                    onApply       = { vm.debugSimulateStreak(it) },
+                    onReset       = { vm.debugClearStreakSim() },
+                )
+            }
             Spacer(Modifier.height(6.dp))
 
             OutlinedButton(
@@ -493,7 +567,7 @@ fun SettingsScreen(
                 border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
             ) {
                 Text(
-                    if (isSpeedTrainerEnabled) "Clear Speed Trainer Enable" else "Speed Trainer Not Enabled",
+                    if (isSpeedTrainerEnabled) "Clear Speed Trainer Unlock" else "Speed Trainer Not Enabled",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -518,7 +592,7 @@ fun SettingsScreen(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
                 border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
             ) {
-                Text("Reset Review Prompt State", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("Reset Review Prompt", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
 
             Spacer(Modifier.height(6.dp))
@@ -529,7 +603,7 @@ fun SettingsScreen(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
                 border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
             ) {
-                Text("Trigger Feedback Card", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("Trigger Tuner Feedback Card", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
 
             Spacer(Modifier.height(6.dp))
@@ -550,7 +624,7 @@ fun SettingsScreen(
                 border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
             ) {
                 Text(
-                    "Test Points Banner  ($testBannerCount / 3)",
+                    "Test Gnotes Banner  ($testBannerCount / 3)",
                     fontSize = 12.sp, fontWeight = FontWeight.Bold
                 )
             }
@@ -588,9 +662,70 @@ fun SettingsScreen(
         EarnRulesDialog(onDismiss = { showEarnRules = false })
     }
 
+    if (showWatchAdDialog) {
+        val remaining = vm.rewardedAdManager.remainingToday()
+        val earn = minOf(com.example.metrognome.points.PointsConfig.REWARDED_GNOTES_PER_WATCH, remaining)
+        AlertDialog(
+            onDismissRequest  = { showWatchAdDialog = false },
+            containerColor    = AppColors.surfaceDeep,
+            titleContentColor = AppColors.gold,
+            textContentColor  = AppColors.textSecondary,
+            title = { Text("Metro's Daily Bonus", fontWeight = FontWeight.Bold) },
+            text  = {
+                Text(
+                    text = "Watch a short clip and Metro rewards you with $earn ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME}. " +
+                           "Two clips per day. Come back tomorrow for more.",
+                    fontSize   = 13.sp,
+                    lineHeight = 19.sp,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showWatchAdDialog = false
+                    onWatchRewardedAd {}
+                }) {
+                    Text("Claim Reward", color = AppColors.primaryPurple, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWatchAdDialog = false }) {
+                    Text("Not now", color = AppColors.textMuted)
+                }
+            },
+        )
+    }
+
+    if (showAdPolicy) {
+        AlertDialog(
+            onDismissRequest = { showAdPolicy = false },
+            containerColor   = AppColors.surfaceDeep,
+            titleContentColor = AppColors.gold,
+            textContentColor  = AppColors.textSecondary,
+            title = { Text("Ad Policy", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(modifier = Modifier
+                    .heightIn(max = 400.dp)
+                    .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = com.example.metrognome.ads.buildAdPolicySummary(),
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAdPolicy = false }) {
+                    Text("OK", color = AppColors.textAccent, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
     if (showItemCatalog) {
         com.example.metrognome.ui.dialogs.ItemCatalogDialog(
             activeItemIds = activeItemIds,
+            tracker       = vm.itemTracker,
             onDismiss     = { showItemCatalog = false },
         )
     }
@@ -709,26 +844,34 @@ private fun PurchasableItemRow(
         )
         if (alreadyUnlocked) {
             OwnedBadge(ownedMessage)
-        } else {
-            val buttonLabel = when {
-                isBillingConnecting -> "Loading…"
-                priceText != null   -> "Get ${def.displayName} - $priceText"
-                else                -> "Get ${def.displayName}"
-            }
-            OutlinedButton(
-                onClick = onClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (!isBillingConnecting && isAvailable) AppColors.gold
-                                   else AppColors.textMuted
-                ),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (!isBillingConnecting && isAvailable) AppColors.gold
-                    else AppColors.surfaceVariant
+        } else when {
+            isBillingConnecting -> {
+                Text(
+                    text = "Loading…",
+                    color = AppColors.textMuted,
+                    fontSize = 13.sp,
+                    fontStyle = FontStyle.Italic,
                 )
-            ) {
-                Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+            !isAvailable -> {
+                Text(
+                    text = "Unavailable",
+                    color = AppColors.textMuted,
+                    fontSize = 13.sp,
+                    fontStyle = FontStyle.Italic,
+                )
+            }
+            else -> {
+                val buttonLabel = if (priceText != null) "Get ${def.displayName} - $priceText"
+                                  else "Get ${def.displayName}"
+                OutlinedButton(
+                    onClick = onClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.gold)
+                ) {
+                    Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
             }
         }
     }
@@ -759,7 +902,7 @@ private fun PurchasableItemDialog(
         onPurchase         = onPurchase,
         onRestore          = onRestore,
         onDismiss          = onDismiss,
-        previewContent     = { ItemPreviewCanvas(entry = entry) },
+        previewContent     = { ItemPreviewCanvas(entry = entry, modifier = Modifier.size(width = 220.dp, height = 170.dp)) },
     )
 }
 
@@ -965,7 +1108,7 @@ private fun CollectionCard(activeItemIds: Set<String>, onClick: () -> Unit) {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector        = Icons.Filled.Stars,
+                    imageVector        = Icons.Filled.MusicNote,
                     contentDescription = null,
                     tint               = AppColors.gold,
                     modifier           = Modifier.size(18.dp),
@@ -995,78 +1138,414 @@ private fun CollectionCard(activeItemIds: Set<String>, onClick: () -> Unit) {
     }
 }
 
+// Persists for the app session (resets on process death) — intentional.
+// The count-up animation plays once per session, then on a 90-second cooldown.
+private var gnotesBannerLastPlayedMs = 0L
+
 @Composable
-private fun PointsCard(snapshot: PointsSnapshot, onInfoClick: () -> Unit) {
+private fun PointsCard(
+    snapshot: PointsSnapshot,
+    onInfoClick: () -> Unit,
+    canWatchToday: Boolean = false,
+    adReady: Boolean = false,
+    remainingToday: Int = 0,
+    onWatchAdClick: () -> Unit = {},
+) {
+    val animatedCount = remember { Animatable(snapshot.total.toFloat()) }
+    val scale         = remember { Animatable(1f) }
+    var expanded      by remember { mutableStateOf(false) }
+    val chevronAngle  by animateFloatAsState(
+        targetValue   = if (expanded) 180f else 0f,
+        animationSpec = tween(220),
+        label         = "gnotes_chevron",
+    )
+
+    LaunchedEffect(snapshot.total) {
+        val now = System.currentTimeMillis()
+        if (now - gnotesBannerLastPlayedMs >= 90_000L) {
+            gnotesBannerLastPlayedMs = now
+            animatedCount.snapTo(0f)
+            animatedCount.animateTo(
+                targetValue   = snapshot.total.toFloat(),
+                animationSpec = tween(durationMillis = 1600, easing = LinearOutSlowInEasing),
+            )
+            scale.animateTo(1.08f, tween(110))
+            scale.animateTo(
+                targetValue   = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness    = Spring.StiffnessMedium,
+                ),
+            )
+        } else {
+            animatedCount.snapTo(snapshot.total.toFloat())
+        }
+    }
+
     val shape = RoundedCornerShape(16.dp)
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .border(1.dp, AppColors.gold.copy(alpha = 0.25f), shape)
             .clip(shape)
-            .clickable(onClick = onInfoClick)
             .background(AppColors.surfaceDeep)
             .padding(horizontal = 20.dp, vertical = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text       = String.format("%,d", snapshot.total),
-            color      = AppColors.gold,
-            fontSize   = 44.sp,
-            fontWeight = FontWeight.ExtraBold,
-            lineHeight = 44.sp,
-            letterSpacing = (-1.5).sp,
-        )
-        Text(
-            text          = com.example.metrognome.points.PointsConfig.CURRENCY_NAME.uppercase(),
-            color         = AppColors.gold.copy(alpha = 0.65f),
-            fontSize      = 10.sp,
-            fontWeight    = FontWeight.Bold,
-            letterSpacing = 2.5.sp,
-            modifier      = Modifier.padding(top = 2.dp),
-        )
-        if (snapshot.contributions.isEmpty()) {
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text      = "Start playing to earn your first ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME_SINGULAR}.",
-                color     = AppColors.textMuted,
-                fontSize  = 12.sp,
-                fontStyle = FontStyle.Italic,
+        // ── Tappable header: number + GNOTES + chevron ───────────────────────
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication        = null,
+                ) { expanded = !expanded },
+        ) {
+            Column(
+                modifier            = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { scaleX = scale.value; scaleY = scale.value },
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text          = String.format(LocalConfiguration.current.locales[0], "%,d", animatedCount.value.toInt()),
+                    color         = AppColors.gold,
+                    fontSize      = 44.sp,
+                    fontWeight    = FontWeight.ExtraBold,
+                    lineHeight    = 44.sp,
+                    letterSpacing = (-1.5).sp,
+                )
+                Text(
+                    text          = com.example.metrognome.points.PointsConfig.CURRENCY_NAME.uppercase(),
+                    color         = AppColors.gold.copy(alpha = 0.65f),
+                    fontSize      = 10.sp,
+                    fontWeight    = FontWeight.Bold,
+                    letterSpacing = 2.5.sp,
+                    modifier      = Modifier.padding(top = 2.dp),
+                )
+            }
+            Icon(
+                imageVector        = Icons.Filled.ExpandMore,
+                contentDescription = if (expanded) "Collapse" else "Expand",
+                tint               = AppColors.textSubtle,
+                modifier           = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(20.dp)
+                    .rotate(chevronAngle),
             )
-        } else {
-            Spacer(Modifier.height(14.dp))
-            HorizontalDivider(color = AppColors.surfaceVariant)
-            Spacer(Modifier.height(10.dp))
-            snapshot.contributions.forEach { c ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically,
-                ) {
+        }
+
+        // ── Daily bonus teaser ────────────────────────────────────────────────
+        // Three states: tappable (cap not hit AND a clip is loaded), cueing up
+        // (cap not hit but no ad ready yet), and done for the day (cap hit).
+        val canTap = canWatchToday && adReady
+        Spacer(Modifier.height(6.dp))
+        HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.5f))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (canTap) Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication        = null,
+                        onClick           = onWatchAdClick,
+                    ) else Modifier
+                )
+                .padding(top = 10.dp, bottom = 2.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                Icon(
+                    imageVector        = Icons.Filled.MusicNote,
+                    contentDescription = null,
+                    tint               = if (canTap) AppColors.mediumPurple.copy(alpha = 0.75f) else AppColors.textSubtle,
+                    modifier           = Modifier.size(12.dp),
+                )
+                Text(
+                    text  = "Metro's daily bonus",
+                    color = if (canTap) AppColors.textSecondary else AppColors.textSubtle,
+                    fontSize = 12.sp,
+                )
+            }
+            val earn = minOf(com.example.metrognome.points.PointsConfig.REWARDED_GNOTES_PER_WATCH, remainingToday)
+            Text(
+                text       = when {
+                    canTap         -> "+$earn  →"
+                    canWatchToday  -> "+$earn"        // available, clip still cueing up
+                    else           -> "✓  Today"
+                },
+                color      = if (canTap) AppColors.mediumPurple.copy(alpha = 0.8f) else AppColors.textSubtle,
+                fontSize   = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+
+        // ── Expandable body: contributions + How to earn ─────────────────────
+        AnimatedVisibility(
+            visible = expanded,
+            enter   = expandVertically() + fadeIn(tween(180)),
+            exit    = shrinkVertically() + fadeOut(tween(180)),
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (snapshot.contributions.isEmpty()) {
+                    Spacer(Modifier.height(10.dp))
                     Text(
-                        text     = "${c.label}  ·  ${c.rawValue} ${c.rawUnit}",
-                        color    = AppColors.textMuted,
-                        fontSize = 12.sp,
+                        text      = "Start playing to earn your first ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME_SINGULAR}.",
+                        color     = AppColors.textMuted,
+                        fontSize  = 12.sp,
+                        fontStyle = FontStyle.Italic,
                     )
+                } else {
+                    Spacer(Modifier.height(8.dp))
+                    HorizontalDivider(color = AppColors.surfaceVariant)
+                    Spacer(Modifier.height(10.dp))
+                    snapshot.contributions.forEach { c ->
+                        Row(
+                            modifier              = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment     = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text     = "${c.label}  ·  ${c.rawValue} ${c.rawUnit}",
+                                color    = AppColors.textMuted,
+                                fontSize = 12.sp,
+                            )
+                            Text(
+                                text       = "+${c.points}",
+                                color      = AppColors.textSecondary,
+                                fontSize   = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.6f))
+                Text(
+                    text       = "How to earn  →",
+                    color      = AppColors.gold.copy(alpha = 0.55f),
+                    fontSize   = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier   = Modifier
+                        .clickable(onClick = onInfoClick)
+                        .padding(top = 8.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoyaltyCard(
+    currentDays: Int,
+    modifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(16.dp)
+    val nextMilestone = com.example.metrognome.ui.components.LOYALTY_MILESTONES
+        .firstOrNull { currentDays < it.days }
+
+    Column(
+        modifier = modifier
+            .border(1.dp, AppColors.gold.copy(alpha = 0.20f), shape)
+            .clip(shape)
+            .background(AppColors.surfaceDeep)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+    ) {
+        // Header — matches StreakWeekCard header style exactly
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector        = Icons.Filled.EmojiEvents,
+                contentDescription = null,
+                tint               = AppColors.gold,
+                modifier           = Modifier.size(15.dp),
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text       = "Day $currentDays",
+                color      = AppColors.gold,
+                fontWeight = FontWeight.Bold,
+                fontSize   = 13.sp,
+            )
+            Text(
+                text     = " loyalty",
+                color    = AppColors.textMuted,
+                fontSize = 13.sp,
+            )
+            if (nextMilestone != null) {
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text     = "${nextMilestone.days - currentDays}d to ${nextMilestone.name}",
+                    color    = AppColors.textSubtle,
+                    fontSize = 11.sp,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        LoyaltyMilestonePath(
+            currentDays = currentDays,
+            modifier    = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun PracticeStreakCard(
+    streak: Int,
+    bestStreak: Int,
+    practicedEpochDays: Set<Long>,
+    modifier: Modifier = Modifier,
+) {
+    var showInfo by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(16.dp)
+
+    Column(
+        modifier = modifier
+            .border(1.dp, AppColors.gold.copy(alpha = 0.20f), shape)
+            .clip(shape)
+            .background(AppColors.surfaceDeep)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+    ) {
+        StreakWeekCard(
+            streak             = streak,
+            bestStreak         = bestStreak,
+            practicedEpochDays = practicedEpochDays,
+            modifier           = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(12.dp))
+        HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.5f))
+        Spacer(Modifier.height(8.dp))
+
+        // ── "How streaks work" label + (i) toggle ───────────────────────────
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text          = "How streaks work",
+                color         = AppColors.textSubtle,
+                fontSize      = 11.sp,
+                fontWeight    = FontWeight.SemiBold,
+                letterSpacing = 0.3.sp,
+                modifier      = Modifier.weight(1f),
+            )
+            Box(
+                modifier = Modifier
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication        = null,
+                    ) { showInfo = !showInfo }
+                    .padding(4.dp),
+            ) {
+                Icon(
+                    imageVector        = Icons.Filled.Info,
+                    contentDescription = "How streaks work",
+                    tint               = if (showInfo) AppColors.textSecondary
+                                         else AppColors.textDim.copy(alpha = 0.55f),
+                    modifier           = Modifier.size(13.dp),
+                )
+            }
+        }
+
+        // ── Expandable rules ─────────────────────────────────────────────────
+        AnimatedVisibility(
+            visible = showInfo,
+            enter   = expandVertically() + fadeIn(tween(180)),
+            exit    = shrinkVertically() + fadeOut(tween(180)),
+        ) {
+            Column {
+                Spacer(Modifier.height(8.dp))
+                listOf(
+                    "Finish a Practice session or a Speed Trainer session to count today.",
+                    "Come back tomorrow to keep your streak going.",
+                ).forEach { rule ->
                     Text(
-                        text       = "+${c.points}",
-                        color      = AppColors.textSecondary,
+                        text       = rule,
+                        color      = AppColors.textMuted,
                         fontSize   = 12.sp,
-                        fontWeight = FontWeight.Bold,
+                        lineHeight = 17.sp,
+                        modifier   = Modifier.padding(vertical = 2.dp),
                     )
                 }
             }
         }
-        Spacer(Modifier.height(12.dp))
-        HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.6f))
-        Text(
-            text       = "How to earn  →",
-            color      = AppColors.gold.copy(alpha = 0.55f),
-            fontSize   = 11.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier   = Modifier.padding(top = 8.dp),
-        )
+    }
+}
+
+@Composable
+private fun StreakSimulator(
+    currentStreak: Int,
+    onApply: (Int) -> Unit,
+    onReset: () -> Unit,
+) {
+    var days by remember(currentStreak) { mutableIntStateOf(currentStreak) }
+    val shape = RoundedCornerShape(10.dp)
+    val btnPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text       = "Simulate streak",
+                color      = AppColors.devGrey,
+                fontSize   = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier   = Modifier.weight(1f),
+                maxLines   = 1,
+            )
+            OutlinedButton(
+                onClick        = { if (days > 0) days-- },
+                modifier       = Modifier.size(36.dp),
+                shape          = shape,
+                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
+                border         = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devDarkBorder),
+                contentPadding = btnPadding,
+            ) { Text("−", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
+
+            Text(
+                text       = "$days",
+                color      = AppColors.gold,
+                fontSize   = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier   = Modifier.width(30.dp),
+                textAlign  = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+
+            OutlinedButton(
+                onClick        = { days++ },
+                modifier       = Modifier.size(36.dp),
+                shape          = shape,
+                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
+                border         = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devDarkBorder),
+                contentPadding = btnPadding,
+            ) { Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
+
+            OutlinedButton(
+                onClick        = { onApply(days) },
+                modifier       = Modifier.height(36.dp),
+                shape          = shape,
+                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border         = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
+            ) { Text("Apply", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+
+            OutlinedButton(
+                onClick        = onReset,
+                modifier       = Modifier.height(36.dp),
+                shape          = shape,
+                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
+                border         = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devDarkBorder),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
+            ) { Text("Reset", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 package com.example.metrognome.points
 
 import android.content.Context
+import com.example.metrognome.ads.RewardedAdManager
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 
 /**
@@ -15,7 +16,7 @@ import com.example.metrognome.ui.components.metro_items.MetroItemTracker
  * local prefs with a remote counter document before calculating, maintaining
  * the same contract without touching the calculator or UI layer.
  */
-class PointsManager(context: Context) {
+class PointsManager(context: Context, private val rewardedAds: RewardedAdManager? = null) {
 
     private val tracker   = MetroItemTracker(context)
     private val dailyLog  = DailyActivityLog(context)
@@ -29,8 +30,9 @@ class PointsManager(context: Context) {
         speedTrainerSeconds  = tracker.speedTrainerSeconds(),
         tunerFeedbackGiven   = tracker.tunerFeedbackGiven(),
         micBonusSessions     = tracker.micBonusSessions(),
-        daysSinceFirstLaunch = usageDays.distinctDaysCount(),
-        installedDays        = tracker.daysSinceFirstLaunch(),
+        loyaltyActiveDays = usageDays.distinctDaysCount(),
+        installedDays     = tracker.daysSinceFirstLaunch(),
         today                = dailyLog.todayActivity(tracker),
+        rewardedAdGnotes     = rewardedAds?.lifetimeGnotes() ?: 0,
     )
 }

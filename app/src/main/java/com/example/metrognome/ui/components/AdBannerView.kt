@@ -1,4 +1,4 @@
-package com.example.metrognome.ads
+package com.example.metrognome.ui.components
 
 import android.content.Context
 import androidx.compose.runtime.Composable

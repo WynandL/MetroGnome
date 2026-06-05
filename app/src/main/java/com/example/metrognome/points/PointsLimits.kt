@@ -27,4 +27,6 @@ object PointsLimits {
     /** Speed Trainer mic-accuracy bonus sessions that count per day. 3 × 10 pts = 30 pts max. */
     const val MIC_ACCURACY_SESSIONS_PER_DAY: Int      = 3
     // Loyalty is inherently one point per calendar day — no cap needed.
+    /** Maximum Gnotes earnable from rewarded ads per day. 100 / 50 = 2 watches. */
+    const val REWARDED_GNOTES_PER_DAY: Int            = 100
 }

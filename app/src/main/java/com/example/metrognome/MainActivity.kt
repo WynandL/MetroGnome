@@ -25,13 +25,18 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.metrognome.ads.InterstitialAdManager
+import com.example.metrognome.ads.AdManager
+import com.example.metrognome.ads.AdPlacement
+import com.example.metrognome.haptics.HapticEngine
+import com.example.metrognome.haptics.LocalHaptics
+import androidx.compose.runtime.CompositionLocalProvider
 import com.example.metrognome.review.AppReviewManager
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.metrognome.ui.components.AdBreakBanner
 import com.example.metrognome.ui.components.LoyaltyMilestoneBanner
 import com.example.metrognome.ui.components.PointsEarnedBanner
 import com.example.metrognome.ui.components.TunerNeedleIcon
@@ -79,8 +84,9 @@ fun MetroGnomeApp() {
 
     val context = LocalContext.current
     val activity = LocalActivity.current
-    val interstitialManager = remember { InterstitialAdManager(context).also { it.preload() } }
+    val adManager     = remember { AdManager(context).also { it.preload() } }
     val reviewManager = remember { AppReviewManager(context) }
+    val hapticEngine  = remember { HapticEngine(context) }
 
     // Re-query Play Store for owned purchases every time the app returns to foreground.
     // This handles: switching devices, purchasing on one device then opening another,
@@ -124,14 +130,6 @@ fun MetroGnomeApp() {
         }
     }
 
-    // Show one interstitial ad after the 2nd practice session of the day.
-    // The overlay has already been dismissed at this point so the ad is the natural break.
-    LaunchedEffect(metronomeVm) {
-        metronomeVm.practiceAdTrigger.collect {
-            activity?.let { act -> interstitialManager.showIfReady(act) {} }
-        }
-    }
-
     // Notify the user when they earn the daily-maximum Beats reward.
     LaunchedEffect(metronomeVm) {
         metronomeVm.rewardGranted.collect {
@@ -143,6 +141,7 @@ fun MetroGnomeApp() {
         }
     }
 
+    CompositionLocalProvider(LocalHaptics provides hapticEngine) {
     Box(modifier = Modifier.fillMaxSize()) {
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -169,18 +168,26 @@ fun MetroGnomeApp() {
         }
     ) {
         when (currentTab) {
-            AppTab.GNOME -> MetronomeScreen(vm = metronomeVm, trainerVm = speedTrainerVm)
+            AppTab.GNOME -> MetronomeScreen(
+                vm = metronomeVm,
+                trainerVm = speedTrainerVm,
+                onBeforePracticeResultDismiss = { onDone ->
+                    if (isAdFree) onDone()
+                    else activity?.let { adManager.maybeShow(AdPlacement.PRACTICE_COMPLETE, it, isAdFree, onDone) } ?: onDone()
+                },
+                onBeforeTrainerResultDismiss = { onDone ->
+                    if (isAdFree) onDone()
+                    else activity?.let { adManager.maybeShow(AdPlacement.SPEED_TRAINER_RESULT, it, isAdFree, onDone) } ?: onDone()
+                },
+            )
             AppTab.RHYTHM -> RhythmGameScreen(
                 vm = rhythmVm,
                 isMetronomePlaying = isPlaying,
                 onStopMetronome = { metronomeVm.stopPlayback() },
                 isAdFree = isAdFree,
                 onBeforeResultDismiss = { onDone ->
-                    if (isAdFree) {
-                        onDone()
-                    } else {
-                        activity?.let { interstitialManager.showIfReady(it, onDone) } ?: onDone()
-                    }
+                    if (isAdFree) onDone()
+                    else activity?.let { adManager.maybeShow(AdPlacement.RHYTHM_RESULT, it, isAdFree, onDone) } ?: onDone()
                 }
             )
 
@@ -194,10 +201,15 @@ fun MetroGnomeApp() {
             AppTab.SETTINGS -> SettingsScreen(
                 vm = metronomeVm,
                 onTriggerFeedback = tunerVm::debugTriggerFeedback,
+                onWatchRewardedAd = { onDone ->
+                    activity?.let { metronomeVm.rewardedAdManager.show(it, onDone) } ?: onDone()
+                },
             )
         }
     }
     PointsEarnedBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
     LoyaltyMilestoneBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
+    AdBreakBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
     } // end Box
+    } // end CompositionLocalProvider
 }

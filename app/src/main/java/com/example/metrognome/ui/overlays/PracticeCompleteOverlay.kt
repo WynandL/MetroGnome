@@ -12,11 +12,14 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.metrognome.ui.components.StreakIcon
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.PracticeResult
 import kotlinx.coroutines.launch
@@ -115,22 +119,19 @@ fun PracticeCompleteOverlay(
                     modifier  = Modifier.padding(top = 0.dp, bottom = 16.dp),
                 )
 
-                Text(
-                    text       = "🔥  Day ${result.streak} streak",
-                    color      = AppColors.gold,
-                    fontSize   = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign  = TextAlign.Center,
-                )
-
-                Spacer(Modifier.height(6.dp))
-
-                Text(
-                    text      = "Session ${result.totalSessions} overall",
-                    color     = AppColors.textMuted,
-                    fontSize  = 13.sp,
-                    textAlign = TextAlign.Center,
-                )
+                Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                ) {
+                    StreakIcon(Modifier.size(20.dp))
+                    Spacer(Modifier.width(7.dp))
+                    Text(
+                        text       = "Day ${result.streak} streak",
+                        color      = AppColors.gold,
+                        fontSize   = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
 
                 Spacer(Modifier.height(28.dp))
 
@@ -141,7 +142,7 @@ fun PracticeCompleteOverlay(
                     modifier = Modifier.fillMaxWidth(0.65f),
                 ) {
                     Text(
-                        text       = "Keep it up!",
+                        text       = "Sweet!",
                         fontWeight = FontWeight.Bold,
                         fontSize   = 16.sp,
                         color      = Color.White,

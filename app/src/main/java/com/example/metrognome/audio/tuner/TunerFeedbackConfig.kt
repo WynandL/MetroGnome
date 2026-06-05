@@ -7,5 +7,5 @@ package com.example.metrognome.audio.tuner
  * submission in any build without touching any other code.
  */
 object TunerFeedbackConfig {
-    val ENABLED = true
+    const val ENABLED = true
 }

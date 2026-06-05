@@ -27,7 +27,7 @@ import com.example.metrognome.ui.overlays.ItemPreviewCanvas
 
 @Composable
 private fun ItemPreview(item: MetroItem) {
-    ItemPreviewCanvas(MetroItemEntry(item, UnlockCondition.Always))
+    ItemPreviewCanvas(MetroItemEntry(item, UnlockCondition.Always), modifier = Modifier.size(width = 220.dp, height = 170.dp))
 }
 
 @Preview(name = "Gold Hoop Earring")

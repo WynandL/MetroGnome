@@ -6,6 +6,7 @@ import android.media.AudioTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
@@ -194,7 +195,7 @@ class MetronomeEngine {
                 }
             }
             val remainingMs = (buffer.size - offset).toLong() * 1000L / sampleRate
-            delay(remainingMs + 300L)
+            delay((remainingMs + 300L).milliseconds)
             previewTrack?.stop()
             previewTrack?.release()
             previewTrack = null

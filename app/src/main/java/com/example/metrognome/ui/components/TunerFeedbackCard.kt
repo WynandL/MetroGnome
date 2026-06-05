@@ -52,6 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.audio.tuner.TunerSessionSnapshot
 import com.example.metrognome.ui.theme.AppColors
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 
 // Distinct background — darker purple-black so the card clearly pops against the tuner screen.
@@ -94,13 +96,13 @@ fun TunerFeedbackCard(
 
         LaunchedEffect(step) {
             when (step) {
-                CardStep.RATING   -> { delay(20_000); onDismiss() }
+                CardStep.RATING   -> { delay(20.seconds); onDismiss() }
                 CardStep.REASON   -> {
-                    delay(10_000)
+                    delay(10.seconds)
                     onThumbsDown(snapshot, null)
                     step = CardStep.THANKING
                 }
-                CardStep.THANKING -> { delay(1_800); onDismiss() }
+                CardStep.THANKING -> { delay(1_800.milliseconds); onDismiss() }
             }
         }
 

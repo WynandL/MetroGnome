@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.content.ContextCompat
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.seconds
 import kotlin.math.log2
 import kotlin.math.pow
 import kotlin.random.Random
@@ -166,7 +167,7 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
         AnalyticsTracker.logTunerStarted(_referenceHz.value)
         usageTimerJob = viewModelScope.launch {
             while (true) {
-                delay(10_000L)
+                delay(10.seconds)
                 if (ambient.value.locked) {
                     tracker.addTunerSeconds(10)
                     checkForNewUnlocks()

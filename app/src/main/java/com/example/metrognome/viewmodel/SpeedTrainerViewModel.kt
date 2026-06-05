@@ -62,9 +62,10 @@ sealed class TrainerSessionState {
 
 class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val prefs = SpeedTrainerPrefs(app)
-    private val itemTracker = MetroItemTracker(app)
-    private val dailyLog    = com.example.metrognome.points.DailyActivityLog(app)
+    private val prefs           = SpeedTrainerPrefs(app)
+    private val itemTracker     = MetroItemTracker(app)
+    private val dailyLog        = com.example.metrognome.points.DailyActivityLog(app)
+    private val practiceManager = com.example.metrognome.practice.PracticeSessionManager(app)
 
     private val _config = MutableStateFlow(prefs.loadConfig())
     val config: StateFlow<SpeedTrainerConfig> = _config.asStateFlow()
@@ -341,6 +342,9 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         SessionFlags.speedTrainerActive = false
         stopMic()
         val elapsedSeconds = (SystemClock.elapsedRealtime() - sessionStartMs) / 1000L
+
+        // A completed Speed Trainer session counts as a practice day for the streak.
+        practiceManager.recordSession()
 
         val activityBefore = dailyLog.todayActivity(itemTracker)
         itemTracker.recordSpeedTrainingCompleted()

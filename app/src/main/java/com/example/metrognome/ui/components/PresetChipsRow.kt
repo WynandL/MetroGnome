@@ -24,6 +24,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.metrognome.haptics.HapticPattern
+import com.example.metrognome.haptics.LocalHaptics
 import com.example.metrognome.presets.BpmPreset
 import com.example.metrognome.ui.theme.AppColors
 
@@ -43,6 +45,7 @@ fun PresetChipsRow(
     onPresetLongPress: (index: Int, preset: BpmPreset) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val haptics = LocalHaptics.current
     val shape = RoundedCornerShape(20.dp)
     val scrollState = rememberScrollState()
     Column(modifier = modifier) {
@@ -68,7 +71,10 @@ fun PresetChipsRow(
                             .pointerInput(index, preset.bpm) {
                                 detectTapGestures(
                                     onTap = { onPresetTap(preset) },
-                                    onLongPress = { onPresetLongPress(index, preset) },
+                                    onLongPress = {
+                                        haptics.fire(HapticPattern.LONG_PRESS)
+                                        onPresetLongPress(index, preset)
+                                    },
                                 )
                             }
                             .padding(horizontal = 12.dp),

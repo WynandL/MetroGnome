@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.core.content.edit
+import kotlin.time.Duration.Companion.seconds
 
 class BillingManager(application: Application) {
 
@@ -117,7 +118,7 @@ class BillingManager(application: Application) {
             override fun onBillingServiceDisconnected() {
                 _isBillingAvailable.value = false
                 scope.launch {
-                    delay(3_000L)
+                    delay(3.seconds)
                     if (!billingClient.isReady) connect()
                 }
             }

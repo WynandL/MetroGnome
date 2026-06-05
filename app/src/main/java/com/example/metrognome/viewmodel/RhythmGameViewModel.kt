@@ -12,6 +12,8 @@ import com.example.metrognome.audio.metronome.MetronomeEngine
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.audio.rhythm.RhythmDetector
 import kotlinx.coroutines.Job
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
@@ -250,7 +252,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         countdownJob = viewModelScope.launch {
             for (i in 3 downTo 1) {
                 _countDown.value = i
-                delay(1000L)
+                delay(1.seconds)
             }
             beginPlay()
         }
@@ -349,7 +351,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         // Delay engine start by NOTE_TRAVEL_MS so the click fires exactly when
         // each note reaches the hit line — metronome and visuals stay in sync.
         engineStartJob = viewModelScope.launch {
-            delay(NOTE_TRAVEL_MS)
+            delay(NOTE_TRAVEL_MS.milliseconds)
             engine.start()
         }
 
@@ -364,7 +366,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
                     endGame()
                     break
                 }
-                delay(16L)   // ~60 fps; wall-clock, not frame count
+                delay(16.milliseconds)   // ~60 fps; wall-clock, not frame count
             }
         }
     }
@@ -474,7 +476,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         viewModelScope.launch {
-            delay(650)
+            delay(650.milliseconds)
             if (_lastQuality.value == quality) _lastQuality.value = HitQuality.NONE
         }
     }
@@ -493,7 +495,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         _combo.value = 0
         _lastQuality.value = HitQuality.MISS
         viewModelScope.launch {
-            delay(450)
+            delay(450.milliseconds)
             if (_lastQuality.value == HitQuality.MISS) _lastQuality.value = HitQuality.NONE
         }
     }
@@ -504,7 +506,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         _combo.value = 0
         _lastQuality.value = HitQuality.MISS
         viewModelScope.launch {
-            delay(600)
+            delay(600.milliseconds)
             if (_lastQuality.value == HitQuality.MISS) _lastQuality.value = HitQuality.NONE
         }
     }

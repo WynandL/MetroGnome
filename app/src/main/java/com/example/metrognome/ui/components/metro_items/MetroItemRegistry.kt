@@ -49,7 +49,7 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
 
     // ── Sky / atmosphere — long play-time (draw order: back → front) ─────────
     MetroItemEntry(Fireflies,          UnlockCondition.MetronomeSeconds(10_800)),   // 3 h  — farthest back
-    MetroItemEntry(MoonAndStars,       UnlockCondition.MetronomeSeconds(36_000)),   // 10 h
+    MetroItemEntry(MoonAndStars,       UnlockCondition.MetronomeSeconds(14_400)),   // 4 h
     MetroItemEntry(GlissieFairy,        UnlockCondition.MetronomeSeconds(21_600)),   // 6 h — drawn last, floats closest
 
     // ── Practice rewards — require Practice Mode IAP to earn ─────────────────
@@ -83,7 +83,6 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     // MetroItemEntry(DiamondShades, UnlockCondition.MetronomeSeconds(54_000)),   // 15 h
     // MetroItemEntry(WristTattoo,   UnlockCondition.MetronomeSeconds(72_000)),   // 20 h
     // MetroItemEntry(WalkingCane,   UnlockCondition.MetronomeSeconds(108_000)),  // 30 h
-    // MetroItemEntry(HatFeather,    UnlockCondition.MetronomeSeconds(144_000)),  // 40 h
     // ── Future forest / companions ────────────────────────────────────────────
     // MetroItemEntry(Bambi,         UnlockCondition.DaysSinceFirstLaunch(7)),    // 1 week
     // MetroItemEntry(Butterfly,     UnlockCondition.DaysSinceFirstLaunch(14)),

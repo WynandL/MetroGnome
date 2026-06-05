@@ -128,7 +128,7 @@ class MetroItemTracker(context: Context) {
         val firstMs  = prefs.getLong(KEY_FIRST_LAUNCH_MS, System.currentTimeMillis())
         val firstDay = sdf.parse(sdf.format(Date(firstMs))) ?: return 0
         val today    = sdf.parse(sdf.format(Date())) ?: return 0
-        return TimeUnit.MILLISECONDS.toDays(today.time - firstDay.time).toInt()
+        return TimeUnit.MILLISECONDS.toDays(today.time - firstDay.time).toInt() + 1
     }
 
     // ── Cheat / developer mode ────────────────────────────────────────────────

@@ -90,7 +90,6 @@ class DailyActivityLog(context: Context) {
         private const val KEY_BASE_GAME_SCORE       = "base_game_score"
         private const val KEY_BASE_PRACTICE_MINUTES  = "base_practice_min"
         private const val KEY_BASE_PRACTICE_SESSIONS = "base_practice_sessions"
-        private const val KEY_BASE_PRACTICE     = "base_practice"
         private const val KEY_BASE_SPEED_TRAINER         = "base_speed_trainer"
         private const val KEY_BASE_SPEED_TRAINER_SECONDS = "base_speed_trainer_sec"
         private const val KEY_BASE_FEEDBACK     = "base_feedback"

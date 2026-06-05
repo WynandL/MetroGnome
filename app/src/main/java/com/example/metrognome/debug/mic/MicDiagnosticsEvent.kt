@@ -19,7 +19,7 @@ sealed class MicDiagnosticsEvent {
         override val timestampMs: Long,
     ) : MicDiagnosticsEvent()
 
-    /** Fires when [lastBeatMs] is stamped — BEFORE the audio write. */
+    /** Fires when lastBeatMs is stamped — BEFORE the audio write. */
     data class BeatFired(
         override val timestampMs: Long,
         val beat: Int,
@@ -34,7 +34,7 @@ sealed class MicDiagnosticsEvent {
         val calibratedDeviationMs: Float,
     ) : MicDiagnosticsEvent()
 
-    /** Onset arrived inside the suppression window — dropped by [RhythmDetector]. */
+    /** Onset arrived inside the suppression window — dropped by RhythmDetector. */
     data class OnsetSuppressed(
         override val timestampMs: Long,
         val suppressUntilMs: Long,

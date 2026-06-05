@@ -16,6 +16,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.dp
 import com.example.metrognome.ui.theme.AppColors
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 
 /**
@@ -38,7 +39,7 @@ fun FadingHorizontalScrollbar(
 
     LaunchedEffect(Unit) {
         alpha.snapTo(1f)
-        delay(initialHoldMs)
+        delay(initialHoldMs.milliseconds)
         alpha.animateTo(0f, tween(600))
     }
 
@@ -46,7 +47,7 @@ fun FadingHorizontalScrollbar(
         if (scrollState.isScrollInProgress) {
             alpha.snapTo(1f)
         } else {
-            delay(fadeAfterScrollMs)
+            delay(fadeAfterScrollMs.milliseconds)
             alpha.animateTo(0f, tween(500))
         }
     }

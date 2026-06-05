@@ -15,12 +15,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Stars
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -33,6 +34,7 @@ import com.example.metrognome.points.PointsBannerData
 import com.example.metrognome.points.PointsBannerQueue
 import com.example.metrognome.points.PointsConfig
 import com.example.metrognome.ui.theme.AppColors
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 
 /**
@@ -53,11 +55,11 @@ fun PointsEarnedBanner(modifier: Modifier = Modifier) {
         PointsBannerQueue.events.collect { data ->
             if (show) {
                 show = false
-                delay(280)
+                delay(280.milliseconds)
             }
             bannerData = data
             show = true
-            delay(2800)
+            delay(2800.milliseconds)
             show = false
         }
     }
@@ -74,18 +76,18 @@ fun PointsEarnedBanner(modifier: Modifier = Modifier) {
 
 @Composable
 fun LoyaltyMilestoneBanner(modifier: Modifier = Modifier) {
-    var days by remember { mutableStateOf(0) }
+    var days by remember { mutableIntStateOf(0) }
     var show by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         PointsBannerQueue.milestones.collect { d ->
             if (show) {
                 show = false
-                delay(280)
+                delay(280.milliseconds)
             }
             days = d
             show = true
-            delay(3500)
+            delay(3500.milliseconds)
             show = false
         }
     }
@@ -113,7 +115,7 @@ private fun MilestonePill(days: Int) {
         horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         Icon(
-            imageVector        = Icons.Filled.Stars,
+            imageVector        = Icons.Filled.EmojiEvents,
             contentDescription = null,
             tint               = AppColors.primaryPurple,
             modifier           = Modifier.size(13.dp),

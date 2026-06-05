@@ -73,7 +73,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.metrognome.ads.AdBannerView
+import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.GameColors
@@ -917,7 +917,7 @@ private fun NoteHighway(
             val railX1 = cx - noteR * 1.6f
             val railX2 = cx + noteR * 1.6f
 
-            // Lane guide lines
+            // Lane guidelines
             drawLine(AppColors.surfaceDim, Offset(railX1, 0f), Offset(railX1, laneH), lineW * 0.5f)
             drawLine(AppColors.surfaceDim, Offset(railX2, 0f), Offset(railX2, laneH), lineW * 0.5f)
 

@@ -3,6 +3,8 @@ package com.example.metrognome.ui.screens
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -74,6 +76,7 @@ import com.example.metrognome.ui.overlays.WhatsNewOverlayDispatcher
 import com.example.metrognome.ui.components.metro_items.MetroItem
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -94,11 +97,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import com.example.metrognome.presets.BpmPreset
-import com.example.metrognome.ads.AdBannerView
+import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.dialogs.DialogCloseButton
+import com.example.metrognome.ui.components.CollapsibleStreakCard
 import com.example.metrognome.ui.components.GnomeCanvas
 import com.example.metrognome.ui.components.PresetChipsRow
-import com.example.metrognome.ui.components.StreakIcon
 import com.example.metrognome.debug.mic.MicDiagnosticsOverlay
 import com.example.metrognome.dev.DevEasterEgg
 import androidx.compose.ui.platform.LocalContext
@@ -112,7 +115,12 @@ import com.example.metrognome.viewmodel.MetronomeViewModel
 import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
-fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
+fun MetronomeScreen(
+    vm: MetronomeViewModel,
+    trainerVm: SpeedTrainerViewModel,
+    onBeforePracticeResultDismiss: (onDone: () -> Unit) -> Unit = { it() },
+    onBeforeTrainerResultDismiss: (onDone: () -> Unit) -> Unit = { it() },
+) {
     val bpm by vm.bpm.collectAsStateWithLifecycle()
     val isPlaying by vm.isPlaying.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
@@ -134,6 +142,9 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
     val practiceSecondsRemaining by vm.practiceSecondsRemaining.collectAsStateWithLifecycle()
     val practiceGoalSeconds by vm.practiceGoalSeconds.collectAsStateWithLifecycle()
     val practiceStreak by vm.practiceStreak.collectAsStateWithLifecycle()
+    val bestStreak by vm.bestStreak.collectAsStateWithLifecycle()
+    val practicedEpochDays by vm.practicedEpochDays.collectAsStateWithLifecycle()
+    val streakCardExpanded by vm.streakCardExpanded.collectAsStateWithLifecycle()
     val pendingPracticeResult by vm.pendingPracticeResult.collectAsStateWithLifecycle()
 
     val gnoteCount by vm.gnoteCount.collectAsStateWithLifecycle()
@@ -158,7 +169,8 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
     val trainerConfig by trainerVm.config.collectAsStateWithLifecycle()
     val trainerState by trainerVm.sessionState.collectAsStateWithLifecycle()
     var showTrainerDialog by remember { mutableStateOf(false) }
-    var showCancelTrainerDialog by remember { mutableStateOf(false) }
+    var showCancelTrainerDialog  by remember { mutableStateOf(false) }
+    var showCancelPracticeDialog by remember { mutableStateOf(false) }
     var showMicDiagnostics by remember { mutableStateOf(false) }
 
     val mic = rememberMicPermissionState(onGranted = { trainerVm.updateConfig { copy(micEnabled = true) } })
@@ -184,6 +196,11 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
             vm.stopPlayback()
             vm.checkForNewUnlocks()
         }
+    }
+
+    // Stop metronome when a practice session completes
+    LaunchedEffect(pendingPracticeResult) {
+        if (pendingPracticeResult != null) vm.stopPlayback()
     }
 
     LaunchedEffect(Unit) {
@@ -243,7 +260,7 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
             if (gnoteCount > 0) {
                 com.example.metrognome.ui.components.GoldPill(
                     text        = "$gnoteCount ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME}",
-                    leadingIcon = androidx.compose.material.icons.Icons.Filled.Bolt,
+                    leadingIcon = Icons.Filled.Bolt,
                     onClick     = { showGnotesInfo = true },
                     modifier    = Modifier
                         .align(Alignment.TopStart)
@@ -292,16 +309,25 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
                 Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
             },
             onPractice = {
+                val trainerBusy = trainerState is TrainerSessionState.Running ||
+                                  trainerState is TrainerSessionState.Countdown
                 if (!isPracticeActive) {
-                    if (isPracticeEnabled) showPracticeDialog = true
-                    else showEnablePracticeDialog = true
+                    when {
+                        trainerBusy  -> Toast.makeText(activity, "Stop the Speed Trainer first", Toast.LENGTH_SHORT).show()
+                        isPracticeEnabled -> showPracticeDialog = true
+                        else         -> showEnablePracticeDialog = true
+                    }
                 }
             },
             onTrainer = {
-                if (trainerState !is TrainerSessionState.Running &&
-                    trainerState !is TrainerSessionState.Countdown) {
-                    if (isSpeedTrainerEnabled) showTrainerDialog = true
-                    else showEnableTrainerDialog = true
+                val trainerIdle = trainerState !is TrainerSessionState.Running &&
+                                  trainerState !is TrainerSessionState.Countdown
+                if (trainerIdle) {
+                    when {
+                        isPracticeActive      -> Toast.makeText(activity, "Stop the Practice session first", Toast.LENGTH_SHORT).show()
+                        isSpeedTrainerEnabled -> showTrainerDialog = true
+                        else                  -> showEnableTrainerDialog = true
+                    }
                 }
             },
             modifier = Modifier
@@ -342,19 +368,23 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
             PracticeProgressRow(
                 practiceSecondsRemaining = practiceSecondsRemaining,
                 practiceGoalSeconds = practiceGoalSeconds,
-                onCancelPractice = { vm.cancelPractice(); vm.stopPlayback() },
+                onCancelPractice = { showCancelPracticeDialog = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(AppColors.background)
                     .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 4.dp)
             )
-        } else if (practiceStreak > 0 && isPracticeEnabled) {
-            StreakBadgeRow(
-                streak = practiceStreak,
-                modifier = Modifier
+        } else if (isPracticeEnabled || (isSpeedTrainerEnabled && practiceStreak > 0)) {
+            CollapsibleStreakCard(
+                streak             = practiceStreak,
+                bestStreak         = bestStreak,
+                practicedEpochDays = practicedEpochDays,
+                expanded           = streakCardExpanded,
+                onToggle           = { vm.toggleStreakCard() },
+                modifier           = Modifier
                     .fillMaxWidth()
                     .background(AppColors.background)
-                    .padding(start = 16.dp, end = 16.dp, bottom = 6.dp)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 6.dp),
             )
         }
 
@@ -414,6 +444,17 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
         )
     }
 
+    if (showCancelPracticeDialog) {
+        StopTrainerDialog(
+            onConfirm = {
+                showCancelPracticeDialog = false
+                vm.cancelPractice()
+                vm.stopPlayback()
+            },
+            onDismiss = { showCancelPracticeDialog = false },
+        )
+    }
+
     if (showTrainerDialog) {
         SpeedTrainerDialog(
             config = trainerConfig,
@@ -434,7 +475,7 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
     if (trainerComplete != null) {
         SpeedTrainerResultOverlay(
             state = trainerComplete,
-            onDismiss = { trainerVm.dismissResult() },
+            onDismiss = { onBeforeTrainerResultDismiss { trainerVm.dismissResult() } },
         )
     }
 
@@ -507,7 +548,7 @@ fun MetronomeScreen(vm: MetronomeViewModel, trainerVm: SpeedTrainerViewModel) {
     pendingPracticeResult?.let { result ->
         PracticeCompleteOverlay(
             result = result,
-            onDismiss = { vm.dismissPracticeResult() }
+            onDismiss = { onBeforePracticeResultDismiss { vm.dismissPracticeResult() } }
         )
     } ?: pendingWhatsNew?.let { key ->
         WhatsNewOverlayDispatcher(
@@ -906,40 +947,6 @@ private fun heartbeatCurve(t: Float): Float {
     return (lub + dub).coerceIn(0f, 1f)
 }
 
-@Composable
-private fun StreakBadgeRow(
-    streak: Int,
-    modifier: Modifier = Modifier
-) {
-    val shape = RoundedCornerShape(10.dp)
-    Box(
-        modifier = modifier
-            .height(32.dp)
-            .clip(shape)
-            .background(AppColors.surfaceDim)
-            .border(1.dp, AppColors.primaryPurple.copy(alpha = 0.35f), shape),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            StreakIcon(Modifier.size(15.dp))
-            Spacer(Modifier.width(5.dp))
-            Text(
-                text = "Day $streak",
-                color = AppColors.gold,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = " streak",
-                color = AppColors.textMuted,
-                fontSize = 13.sp,
-            )
-        }
-    }
-}
 
 @Composable
 private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit) {
@@ -1210,23 +1217,63 @@ private fun BeatIndicatorRow(
         for (i in 0 until timeSig) {
             val isActive = isPlaying && i == currentBeat
             val isAccent = accentBeat > 0 && i == accentBeat - 1
-            val dotColor by animateColorAsState(
-                targetValue = when {
-                    isActive && isAccent -> AppColors.gold
-                    isActive -> AppColors.textAccent
-                    isAccent -> Color(0x66FFD700)
-                    else -> Color(0x33FFFFFF)
-                },
-                animationSpec = tween(80),
-                label = "dotColor"
+
+            val dotSize by animateDpAsState(
+                targetValue   = if (isActive) 16.dp else 12.dp,
+                animationSpec = tween(120),
+                label         = "dotSize$i",
             )
+            val glowAlpha by animateFloatAsState(
+                targetValue   = if (isActive) 1f else 0f,
+                animationSpec = tween(150),
+                label         = "glow$i",
+            )
+            val flatColor by animateColorAsState(
+                targetValue   = if (isAccent) Color(0x66FFD700) else Color(0x33FFFFFF),
+                animationSpec = tween(80),
+                label         = "flat$i",
+            )
+
+            val glowColor      = if (isAccent) AppColors.gold else AppColors.textAccent
+            val gradientColors = if (isAccent)
+                listOf(Color(0xFFFDE68A), AppColors.gold)
+            else
+                listOf(Color(0xFFE0C8F8), AppColors.textAccent)
+
             Box(
                 modifier = Modifier
-                    .size(if (isActive) 16.dp else 12.dp)
-                    .clip(CircleShape)
-                    .background(dotColor)
-            )
-            if (i < timeSig - 1) Spacer(modifier = Modifier.width(10.dp))
+                    .size(20.dp)
+                    .drawBehind {
+                        if (glowAlpha > 0f) {
+                            val c = Offset(size.width / 2f, size.height / 2f)
+                            val r = 8.dp.toPx() * 1.4f
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(glowColor.copy(alpha = 0.35f * glowAlpha), Color.Transparent),
+                                    center = c,
+                                    radius = r,
+                                ),
+                                radius = r,
+                                center = c,
+                            )
+                        }
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = if (isActive)
+                        Modifier
+                            .size(dotSize)
+                            .background(Brush.radialGradient(gradientColors), CircleShape)
+                    else
+                        Modifier
+                            .size(dotSize)
+                            .clip(CircleShape)
+                            .background(flatColor),
+                )
+            }
+
+            if (i < timeSig - 1) Spacer(modifier = Modifier.width(2.dp))
         }
     }
 }
@@ -1381,8 +1428,3 @@ private fun SecondaryControlsRowPreview() {
     )
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFF0D0B1E, widthDp = 360)
-@Composable
-private fun StreakBadgeRowPreview() {
-    StreakBadgeRow(streak = 5)
-}

@@ -107,7 +107,14 @@
       "Bash(grep -v \"^.*\\\\.kt:[0-9]*:.*//\\\\|^.*\\\\.kt:[0-9]*: *\\\\*\")",
       "Bash(ls landing/blog/)",
       "Bash(ls landing/blog)",
-      "WebFetch(domain:en.beatit.tv)"
+      "WebFetch(domain:en.beatit.tv)",
+      "Bash(./gradlew assembleDebug --stacktrace)",
+      "PowerShell(Get-ChildItem *)",
+      "Bash(./gradlew :app:dependencies --configuration debugRuntimeClasspath)",
+      "Bash(grep -v \"^\\\\-\\\\-$\")",
+      "PowerShell(cd \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\"; .\\\\gradlew compileDebugKotlin 2>&1 | Where-Object { $_ -match \"error:\" -or $_ -match \"^e:\" } | Select-Object -First 10)",
+      "Bash(Remove-Item *)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

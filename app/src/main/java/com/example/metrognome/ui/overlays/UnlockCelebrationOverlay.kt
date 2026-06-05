@@ -190,7 +190,7 @@ fun UnlockCelebrationOverlay(
 
                 Spacer(Modifier.height(20.dp))
 
-                ItemPreviewCanvas(entry = entry)
+                ItemPreviewCanvas(entry = entry, modifier = Modifier.size(width = 220.dp, height = 170.dp))
 
                 Spacer(Modifier.height(20.dp))
 
@@ -248,7 +248,7 @@ fun UnlockCelebrationOverlay(
 @Composable
 internal fun ItemPreviewCanvas(
     entry: MetroItemEntry,
-    modifier: Modifier = Modifier.size(width = 220.dp, height = 170.dp),
+    modifier: Modifier = Modifier,
 ) {
     val item = entry.item
 

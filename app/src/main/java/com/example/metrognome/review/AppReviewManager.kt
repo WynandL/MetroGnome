@@ -22,7 +22,7 @@ private const val MAX_REQUESTS = 2
  *  2. After [DAYS_THRESHOLD_SECOND] distinct days — established daily user.
  *
  * The Play Store's own quota manages whether the sheet actually appears after
- * [launchReviewFlow] is called — calling it twice is safe and expected.
+ * launchReviewFlow is called — calling it twice is safe and expected.
  *
  * Migration: users who already have the legacy [KEY_REVIEW_REQUESTED]=true boolean
  * are treated as having had one request, and remain eligible for the second at day 30.
@@ -94,8 +94,13 @@ class AppReviewManager(context: Context) {
         }
     }
 
-    /** Days since Unix epoch (UTC) — changes at midnight UTC, suitable for day tracking. */
-    private fun todayKey(): String = (System.currentTimeMillis() / 86_400_000L).toString()
+    // Local-midnight epoch day — matches the day boundary used by the Gnotes caps,
+    // loyalty, and ad caps. ("3 distinct days" is an accounting check, so it uses the
+    // conventional midnight boundary, not the streak's forgiving 2 AM rollover.)
+    private fun todayKey(): String {
+        val now = System.currentTimeMillis()
+        return ((now + java.util.TimeZone.getDefault().getOffset(now)) / 86_400_000L).toString()
+    }
 
     /** Wipes all stored state. For debug use only. */
     fun debugReset() {

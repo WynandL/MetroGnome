@@ -22,6 +22,7 @@ import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.whatsnew.AppWhatsNew
 import com.example.metrognome.whatsnew.WhatsNewTracker
 import kotlinx.coroutines.Job
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -48,10 +49,12 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     val rewardGranted: SharedFlow<Long> = rewardManager.rewardGranted
 
     private val usageDayTracker  = com.example.metrognome.points.UsageDayTracker(app)
-    private val pointsManager    = com.example.metrognome.points.PointsManager(app)
+    val rewardedAdManager = com.example.metrognome.ads.RewardedAdManager(app).also { it.preload() }
+    private val pointsManager    = com.example.metrognome.points.PointsManager(app, rewardedAdManager)
     private val activityLogger   = com.example.metrognome.usage.ActivitySummaryLogger(app)
     private val _gnoteCount = MutableStateFlow(pointsManager.getSnapshot().total)
     val gnoteCount: StateFlow<Int> = _gnoteCount.asStateFlow()
+    val rewardedAdLoaded: StateFlow<Boolean> = rewardedAdManager.adLoaded
 
     val removeAdsPriceText: StateFlow<String?>           = billingManager.priceText
     val isBillingAvailable: StateFlow<Boolean>           = billingManager.isBillingAvailable
@@ -80,12 +83,23 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _pendingPracticeResult     = MutableStateFlow<PracticeResult?>(null)
     val pendingPracticeResult: StateFlow<PracticeResult?> = _pendingPracticeResult.asStateFlow()
 
-    private var _pendingPracticeAd = false
-    private val _practiceAdTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val practiceAdTrigger: SharedFlow<Unit> = _practiceAdTrigger.asSharedFlow()
+    private val _practiceStreak = MutableStateFlow(practiceManager.getCurrentStreak())
+    val practiceStreak: StateFlow<Int> = _practiceStreak.asStateFlow()
 
-    private val _practiceStreak            = MutableStateFlow(practiceManager.getCurrentStreak())
-    val practiceStreak: StateFlow<Int>                    = _practiceStreak.asStateFlow()
+    private val _bestStreak = MutableStateFlow(practiceManager.getBestStreak())
+    val bestStreak: StateFlow<Int> = _bestStreak.asStateFlow()
+
+    private val _practicedEpochDays = MutableStateFlow(practiceManager.getPracticedEpochDays())
+    val practicedEpochDays: StateFlow<Set<Long>> = _practicedEpochDays.asStateFlow()
+
+    private val _streakCardExpanded = MutableStateFlow(prefs.getBoolean("streak_card_expanded", false))
+    val streakCardExpanded: StateFlow<Boolean> = _streakCardExpanded.asStateFlow()
+
+    fun toggleStreakCard() {
+        val next = !_streakCardExpanded.value
+        _streakCardExpanded.value = next
+        prefs.edit { putBoolean("streak_card_expanded", next) }
+    }
 
     private var practiceJob: Job? = null
 
@@ -211,10 +225,20 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dismissPracticeResult() {
         _pendingPracticeResult.value = null
-        if (_pendingPracticeAd) {
-            _pendingPracticeAd = false
-            _practiceAdTrigger.tryEmit(Unit)
-        }
+    }
+
+    // In-memory only — SharedPrefs untouched, real data survives app restart.
+    fun debugSimulateStreak(days: Int) {
+        _practiceStreak.value = days
+        _bestStreak.value = maxOf(_bestStreak.value, days)
+        val today = com.example.metrognome.practice.PracticeSessionManager.currentEpochDay()
+        _practicedEpochDays.value = (0 until days).map { today - it }.toSet()
+    }
+
+    fun debugClearStreakSim() {
+        _practiceStreak.value = practiceManager.getCurrentStreak()
+        _bestStreak.value = practiceManager.getBestStreak()
+        _practicedEpochDays.value = practiceManager.getPracticedEpochDays()
     }
 
     fun debugClearPracticeMode() {
@@ -223,6 +247,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         practiceManager.debugClear()
         cancelPractice()
         _practiceStreak.value = 0
+        _bestStreak.value = 0
+        _practicedEpochDays.value = emptySet()
     }
 
     fun debugClearSpeedTrainer() {
@@ -234,7 +260,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         practiceJob?.cancel()
         practiceJob = viewModelScope.launch {
             while (_practiceSecondsRemaining.value > 0 && _isPracticeActive.value) {
-                delay(1_000L)
+                delay(1.seconds)
                 if (_isPlaying.value && _isPracticeActive.value) {
                     _practiceSecondsRemaining.value -= 1
                 }
@@ -276,11 +302,10 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
 
-        // Ad: fire after the 2nd practice session of the day (max 1 ad per day).
-        _pendingPracticeAd = activityAfter.practiceSessionsToday == 2
-
         _isPracticeActive.value = false
         _practiceStreak.value = newStreak
+        _bestStreak.value = practiceManager.getBestStreak()
+        _practicedEpochDays.value = practiceManager.getPracticedEpochDays()
         AnalyticsTracker.logPracticeCompleted(goalMinutes, newStreak, totalSessions)
         _pendingPracticeResult.value = PracticeResult(goalMinutes, newStreak, totalSessions)
         checkForNewUnlocks()
@@ -458,6 +483,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun checkForNewUnlocks() {
         _practiceStreak.value = practiceManager.getCurrentStreak()
+        _bestStreak.value = practiceManager.getBestStreak()
+        _practicedEpochDays.value = practiceManager.getPracticedEpochDays()
         _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
         val celebrated = itemTracker.celebratedIds()
         _unlockQueue.value = _unlockQueue.value.filter { it.item.id in _activeItemIds.value && it.item.id !in celebrated }
@@ -510,7 +537,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         playTimerJob?.cancel()
         playTimerJob = viewModelScope.launch {
             while (true) {
-                delay(10_000L)
+                delay(10.seconds)
                 if (!SessionFlags.speedTrainerActive) itemTracker.addMetronomeSeconds(10)
                 _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
                 checkForNewUnlocks()

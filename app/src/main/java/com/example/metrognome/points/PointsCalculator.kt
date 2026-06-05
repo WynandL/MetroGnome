@@ -29,9 +29,13 @@ object PointsCalculator {
         speedTrainerSeconds: Long,
         tunerFeedbackGiven: Int,
         micBonusSessions: Int,
-        daysSinceFirstLaunch: Int,
+        /** Distinct days the user actually opened the app → "Loyalty" contribution. */
+        loyaltyActiveDays: Int,
+        /** Calendar days since first launch (whether opened or not) → "Installed" contribution. */
         installedDays: Int,
         today: DailyActivity? = null,
+        /** Already daily-capped at earn time by RewardedAdManager; pass through directly. */
+        rewardedAdGnotes: Int = 0,
     ): PointsSnapshot {
 
         // Effective counted minutes for a time-based activity.
@@ -150,12 +154,12 @@ object PointsCalculator {
                     points   = micBonus * PointsConfig.MIC_ACCURACY_BONUS_PER_SESSION,
                 )
             )
-            if (daysSinceFirstLaunch > 0) add(
+            if (loyaltyActiveDays > 0) add(
                 PointsContribution(
                     label    = "Loyalty",
-                    rawValue = daysSinceFirstLaunch.toLong(),
-                    rawUnit  = if (daysSinceFirstLaunch == 1) "day" else "days",
-                    points   = daysSinceFirstLaunch * PointsConfig.LOYALTY_PER_DAY,
+                    rawValue = loyaltyActiveDays.toLong(),
+                    rawUnit  = if (loyaltyActiveDays == 1) "day" else "days",
+                    points   = loyaltyActiveDays * PointsConfig.LOYALTY_PER_DAY,
                 )
             )
             if (installedDays > 0) add(
@@ -164,6 +168,14 @@ object PointsCalculator {
                     rawValue = installedDays.toLong(),
                     rawUnit  = if (installedDays == 1) "day" else "days",
                     points   = installedDays * PointsConfig.INSTALLED_DAY_BONUS,
+                )
+            )
+            if (rewardedAdGnotes > 0) add(
+                PointsContribution(
+                    label    = "Ad Bonus",
+                    rawValue = rewardedAdGnotes.toLong(),
+                    rawUnit  = "pts",
+                    points   = rewardedAdGnotes,
                 )
             )
         }

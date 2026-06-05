@@ -4,7 +4,8 @@
 
 | Item | Priority | Due / Status |
 |---|---|---|
-| Musician Wave "8 Best Rhythm Training Apps" outreach | High | Send 2026-06-05 — email drafted in 2026-06-04.md |
+| Musician Wave "8 Best Rhythm Training Apps" outreach | Low | Sent 2026-06-05 — allow until 2026-06-19 before follow-up |
+| Orchestra Central "5 Best Tuner Apps" follow-up | Low | Sent 2026-06-05 to bobbyfisco@gmail.com — allow until 2026-06-19 |
 | BeatIt.tv "Top 5 Metronome Apps" follow-up | Low | Sent 2026-06-04 — allow until 2026-06-18 |
 | r/WeAreTheMusicMakers Gnotes dev post | Medium | Never posted |
 | Code: Surface installed-days loyalty bonus to users | Medium | Not done |
@@ -32,7 +33,7 @@
 - Category: Music & Audio
 - Current installs: 1,000+
 - Last updated: June 1 2026 (v5.1 / versionCode 38)
-- seo_context last updated: 2026-06-03
+- seo_context last updated: 2026-06-05
 - Rating: not yet established at scale
 
 ## Core features (all free)
@@ -80,6 +81,7 @@
 - Melodics "Best Metronome Apps for Drummers" — DO NOT contact — they have their own built-in metronome; they are a competitor, not an independent reviewer
 - Practis Blog (pract.is) — DO NOT contact — Practis is a competitor app ("Music Practice Tracker, Timer & Metronome"); their roundup articles drive traffic to their own product, not independent reviews
 - BeatIt.tv "Top 5 Metronome Apps" — drummer-focused editorial site, independent reviewer. Metro Gnome absent. Outreach sent 2026-06-04 to info@beatit.tv — allow until 2026-06-18 before follow-up
+- Orchestra Central "5 Best Tuner Apps in 2026" (orchestracentral.com/best-tuner-apps/) — author Bobby Fisco (bobbyfisco@gmail.com). Independent site, covers iPhone and Android. Audience: strings, brass, woodwinds. Apps listed: TonalEnergy ($3.99), iStroboSoft ($9.99), Tunable ($3.99), BOSS Tuner (free), Pano Tuner (free). Metro Gnome absent. Outreach sent 2026-06-05 — lead angles: ambient noise detection (unique in his list), reference pitch 415–466Hz (period tuning), free. Allow until 2026-06-19 before follow-up.
 
 ## Competitors
 - Metronome Beats (Stonekick): 26M installs, 4.8 stars — no tuner, ad-heavy, has a free speed trainer (BPM ramp, v7.1.3 May 2026, added MIDI control) — NOT uncontested; Metro Gnome differentiates on structured steps + descending ramp + mic accuracy (coming) + all-in-one free app; requires sign-in for sync

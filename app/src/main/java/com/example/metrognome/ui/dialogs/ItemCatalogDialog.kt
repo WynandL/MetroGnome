@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -39,10 +39,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.metrognome.points.pointsDisplayText
 import com.example.metrognome.points.pointsEquivalent
+import com.example.metrognome.ui.components.ItemProgressBar
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
+import com.example.metrognome.ui.components.metro_items.MetroItemTracker
+import com.example.metrognome.ui.components.metro_items.progressLabel
+import com.example.metrognome.ui.components.metro_items.unlockProgress
 import com.example.metrognome.ui.overlays.ItemPreviewCanvas
 import com.example.metrognome.ui.theme.AppColors
 
@@ -59,6 +62,7 @@ import com.example.metrognome.ui.theme.AppColors
 @Composable
 fun ItemCatalogDialog(
     activeItemIds: Set<String>,
+    tracker: MetroItemTracker,
     onDismiss: () -> Unit,
 ) {
     val sorted = remember(activeItemIds) {
@@ -68,6 +72,19 @@ fun ItemCatalogDialog(
                 { it.condition.pointsEquivalent() },
             )
         )
+    }
+
+    // Compute progress for every locked item once — SharedPrefs reads are fast
+    // but there's no point repeating them on every recomposition of the grid.
+    val progressMap = remember(activeItemIds) {
+        METRO_ITEM_REGISTRY
+            .filter { it.item.id !in activeItemIds }
+            .associate { entry ->
+                entry.item.id to Pair(
+                    entry.condition.unlockProgress(tracker),
+                    entry.condition.progressLabel(tracker),
+                )
+            }
     }
     val unlockedCount = sorted.count { it.item.id in activeItemIds }
     val totalCount    = sorted.size
@@ -150,9 +167,12 @@ fun ItemCatalogDialog(
                         items = sorted,
                         key   = { it.item.id },
                     ) { entry ->
+                        val (prog, label) = progressMap[entry.item.id] ?: Pair(1f, "")
                         ItemCard(
                             entry      = entry,
                             isUnlocked = entry.item.id in activeItemIds,
+                            progress   = prog,
+                            progressLabel = label,
                         )
                     }
                 }
@@ -178,7 +198,12 @@ fun ItemCatalogDialog(
 }
 
 @Composable
-private fun ItemCard(entry: MetroItemEntry, isUnlocked: Boolean) {
+private fun ItemCard(
+    entry: MetroItemEntry,
+    isUnlocked: Boolean,
+    progress: Float = 1f,
+    progressLabel: String = "",
+) {
     val shape = RoundedCornerShape(12.dp)
     Surface(
         color    = AppColors.surface,
@@ -249,12 +274,18 @@ private fun ItemCard(entry: MetroItemEntry, isUnlocked: Boolean) {
                     )
                 } else {
                     Text(
-                        text       = entry.condition.pointsDisplayText(),
-                        color      = AppColors.textMuted,
-                        fontSize   = 10.sp,
-                        lineHeight = 13.sp,
-                        maxLines   = 2,
-                        overflow   = TextOverflow.Ellipsis,
+                        text      = progressLabel,
+                        color     = AppColors.textMuted,
+                        fontSize  = 10.sp,
+                        maxLines  = 1,
+                        overflow  = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(5.dp))
+                    ItemProgressBar(
+                        progress = progress,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp),
                     )
                 }
             }

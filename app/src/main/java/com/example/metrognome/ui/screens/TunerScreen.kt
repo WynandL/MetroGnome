@@ -91,7 +91,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.metrognome.ads.AdBannerView
+import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.audio.tuner.AmbientLevel
 import com.example.metrognome.audio.tuner.AmbientReport
 import com.example.metrognome.audio.tuner.ListeningState
