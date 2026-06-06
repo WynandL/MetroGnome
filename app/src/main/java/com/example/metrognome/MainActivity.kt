@@ -8,7 +8,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
@@ -39,6 +38,7 @@ import androidx.compose.ui.Modifier
 import com.example.metrognome.ui.components.AdBreakBanner
 import com.example.metrognome.ui.components.LoyaltyMilestoneBanner
 import com.example.metrognome.ui.components.PointsEarnedBanner
+import com.example.metrognome.ui.components.RhythmPulseIcon
 import com.example.metrognome.ui.components.TunerNeedleIcon
 import com.example.metrognome.ui.screens.MetronomeScreen
 import com.example.metrognome.ui.screens.RhythmGameScreen
@@ -151,7 +151,7 @@ fun MetroGnomeApp() {
                         when (tab) {
                             AppTab.GNOME    -> Icon(Icons.Filled.MusicNote, contentDescription = null)
                             AppTab.TUNER    -> TunerNeedleIcon()
-                            AppTab.RHYTHM   -> Icon(Icons.Filled.Stars, contentDescription = null)
+                            AppTab.RHYTHM   -> RhythmPulseIcon()
                             AppTab.SETTINGS -> Icon(Icons.Filled.Settings, contentDescription = null)
                         }
                     },
@@ -173,22 +173,26 @@ fun MetroGnomeApp() {
                 trainerVm = speedTrainerVm,
                 onBeforePracticeResultDismiss = { onDone ->
                     if (isAdFree) onDone()
-                    else activity?.let { adManager.maybeShow(AdPlacement.PRACTICE_COMPLETE, it, isAdFree, onDone) } ?: onDone()
+                    else activity?.let { adManager.maybeShow(AdPlacement.PRACTICE_COMPLETE, it, false, onDone) } ?: onDone()
                 },
                 onBeforeTrainerResultDismiss = { onDone ->
                     if (isAdFree) onDone()
-                    else activity?.let { adManager.maybeShow(AdPlacement.SPEED_TRAINER_RESULT, it, isAdFree, onDone) } ?: onDone()
+                    else activity?.let { adManager.maybeShow(AdPlacement.SPEED_TRAINER_RESULT, it, false, onDone) } ?: onDone()
                 },
             )
             AppTab.RHYTHM -> RhythmGameScreen(
                 vm = rhythmVm,
+                metronomeVm = metronomeVm,
                 isMetronomePlaying = isPlaying,
                 onStopMetronome = { metronomeVm.stopPlayback() },
                 isAdFree = isAdFree,
                 onBeforeResultDismiss = { onDone ->
                     if (isAdFree) onDone()
-                    else activity?.let { adManager.maybeShow(AdPlacement.RHYTHM_RESULT, it, isAdFree, onDone) } ?: onDone()
-                }
+                    else activity?.let { adManager.maybeShow(AdPlacement.RHYTHM_RESULT, it, false, onDone) } ?: onDone()
+                },
+                onWatchRewardedAd = { onDone ->
+                    activity?.let { metronomeVm.rewardedAdManager.show(it, onDone) } ?: onDone()
+                },
             )
 
             AppTab.TUNER -> TunerScreen(
@@ -201,9 +205,6 @@ fun MetroGnomeApp() {
             AppTab.SETTINGS -> SettingsScreen(
                 vm = metronomeVm,
                 onTriggerFeedback = tunerVm::debugTriggerFeedback,
-                onWatchRewardedAd = { onDone ->
-                    activity?.let { metronomeVm.rewardedAdManager.show(it, onDone) } ?: onDone()
-                },
             )
         }
     }

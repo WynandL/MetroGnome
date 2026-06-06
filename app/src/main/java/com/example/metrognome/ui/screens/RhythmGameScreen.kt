@@ -8,18 +8,24 @@ import com.example.metrognome.ui.components.rememberMicPermissionState
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,15 +45,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material.icons.filled.StopCircle
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,6 +71,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -66,20 +79,33 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.metrognome.points.PointsConfig
+import com.example.metrognome.points.PointsManager
+import com.example.metrognome.points.PointsSnapshot
+import com.example.metrognome.points.UsageDayTracker
 import com.example.metrognome.ui.components.AdBannerView
+import com.example.metrognome.ui.components.LOYALTY_MILESTONES
+import com.example.metrognome.ui.components.LoyaltyMilestonePath
+import com.example.metrognome.ui.components.StreakWeekCard
+import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
+import com.example.metrognome.ui.dialogs.EarnRulesDialog
+import com.example.metrognome.ui.dialogs.ItemCatalogDialog
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.GameColors
-import androidx.compose.ui.tooling.preview.Preview
 import com.example.metrognome.viewmodel.GamePhase
 import com.example.metrognome.viewmodel.HitQuality
+import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.viewmodel.NoteState
 import com.example.metrognome.viewmodel.RenderNote
 import com.example.metrognome.viewmodel.RhythmGameViewModel
@@ -88,14 +114,14 @@ import kotlinx.coroutines.launch
 
 // ── Difficulty definitions ─────────────────────────────────────────────────────
 
-private data class Difficulty(val name: String, val bpm: Int, val beats: Int, val desc: String)
+private data class Difficulty(val name: String, val short: String, val bpm: Int, val beats: Int, val desc: String)
 
 private val difficulties = listOf(
-    Difficulty("Beginner", 60, 16, "60 BPM · 16 beats · slow & steady"),
-    Difficulty("Easy", 80, 24, "80 BPM · 24 beats · getting into the groove"),
-    Difficulty("Medium", 100, 32, "100 BPM · 32 beats · the classic challenge"),
-    Difficulty("Hard", 130, 32, "130 BPM · 32 beats · quick reflexes needed"),
-    Difficulty("Expert", 160, 48, "160 BPM · 48 beats · for seasoned rhythmists"),
+    Difficulty("Beginner", "BEG",  60,  16, "60 BPM · 16 beats · slow & steady"),
+    Difficulty("Easy",     "EASY", 80,  24, "80 BPM · 24 beats · getting into the groove"),
+    Difficulty("Medium",   "MED",  100, 32, "100 BPM · 32 beats · the classic challenge"),
+    Difficulty("Hard",     "HARD", 130, 32, "130 BPM · 32 beats · quick reflexes needed"),
+    Difficulty("Expert",   "EXP",  160, 48, "160 BPM · 48 beats · for seasoned rhythmists"),
 )
 
 // ── Root screen ────────────────────────────────────────────────────────────────
@@ -103,10 +129,12 @@ private val difficulties = listOf(
 @Composable
 fun RhythmGameScreen(
     vm: RhythmGameViewModel,
+    metronomeVm: MetronomeViewModel,
     isMetronomePlaying: Boolean = false,
     onStopMetronome: () -> Unit = {},
     isAdFree: Boolean = false,
     onBeforeResultDismiss: (() -> Unit) -> Unit = { it() },
+    onWatchRewardedAd: (onDone: () -> Unit) -> Unit = { it() },
 ) {
     val phase by vm.phase.collectAsStateWithLifecycle()
     val score by vm.score.collectAsStateWithLifecycle()
@@ -119,7 +147,6 @@ fun RhythmGameScreen(
     val useMic by vm.useMic.collectAsStateWithLifecycle()
     val lastHitOffset by vm.lastHitOffset.collectAsStateWithLifecycle()
     val beatsRemaining by vm.beatsRemaining.collectAsStateWithLifecycle()
-    val tolerance by vm.tolerance.collectAsStateWithLifecycle()
     val highScores by vm.highScores.collectAsStateWithLifecycle()
     val visibleNotes by vm.visibleNotes.collectAsStateWithLifecycle()
 
@@ -141,14 +168,16 @@ fun RhythmGameScreen(
             .weight(1f)
             .fillMaxWidth()) {
             when (phase) {
-                GamePhase.IDLE -> IdlePanel(
-                    vm = vm, useMic = useMic, micGranted = mic.isGranted,
+                GamePhase.IDLE -> RhythmDashboard(
+                    rhythmVm = vm,
+                    metronomeVm = metronomeVm,
+                    useMic = useMic,
+                    micGranted = mic.isGranted,
                     onRequestMic = { mic.request() },
-                    tolerance = tolerance,
-                    onToleranceChange = { vm.setTolerance(it) },
                     isMetronomePlaying = isMetronomePlaying,
                     onStopMetronome = onStopMetronome,
-                    highScores = highScores
+                    onWatchRewardedAd = onWatchRewardedAd,
+                    highScores = highScores,
                 )
 
                 GamePhase.COUNTDOWN -> CountdownPanel(countDown)
@@ -196,22 +225,153 @@ fun RhythmGameScreen(
     } // close outer Box
 }
 
-// ── Idle — difficulty picker + tolerance settings ─────────────────────────────
+// ── Rhythm dashboard — stats + game card ──────────────────────────────────────
 
 @Composable
-private fun IdlePanel(
+private fun RhythmDashboard(
+    rhythmVm: RhythmGameViewModel,
+    metronomeVm: MetronomeViewModel,
+    useMic: Boolean,
+    micGranted: Boolean,
+    onRequestMic: () -> Unit,
+    isMetronomePlaying: Boolean,
+    onStopMetronome: () -> Unit,
+    onWatchRewardedAd: (onDone: () -> Unit) -> Unit,
+    highScores: Map<String, Int> = emptyMap(),
+) {
+    val context = LocalContext.current
+
+    val gnoteCount      by metronomeVm.gnoteCount.collectAsStateWithLifecycle()
+    val adLoaded        by metronomeVm.rewardedAdLoaded.collectAsStateWithLifecycle()
+    val isPracticeEnabled     by metronomeVm.isPracticeEnabled.collectAsStateWithLifecycle()
+    val isSpeedTrainerEnabled by metronomeVm.isSpeedTrainerEnabled.collectAsStateWithLifecycle()
+    val practiceStreak  by metronomeVm.practiceStreak.collectAsStateWithLifecycle()
+    val bestStreak      by metronomeVm.bestStreak.collectAsStateWithLifecycle()
+    val practicedEpochDays by metronomeVm.practicedEpochDays.collectAsStateWithLifecycle()
+    val activeItemIds   by metronomeVm.activeItemIds.collectAsStateWithLifecycle()
+
+    val pointsSnapshot = remember(gnoteCount) { PointsManager(context, metronomeVm.rewardedAdManager).getSnapshot() }
+    val loyaltyDays    = remember { UsageDayTracker(context).distinctDaysCount() }
+
+    var showEarnRules    by remember { mutableStateOf(false) }
+    var showWatchAdDialog by remember { mutableStateOf(false) }
+    var showItemCatalog  by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp),
+    ) {
+        Spacer(Modifier.height(20.dp))
+
+        PointsCard(
+            snapshot       = pointsSnapshot,
+            onInfoClick    = { showEarnRules = true },
+            canWatchToday  = remember(gnoteCount) { metronomeVm.rewardedAdManager.canWatch() },
+            adReady        = adLoaded,
+            remainingToday = remember(gnoteCount) { metronomeVm.rewardedAdManager.remainingToday() },
+            onWatchAdClick = { showWatchAdDialog = true },
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        LoyaltyCard(
+            currentDays = loyaltyDays,
+            modifier    = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        if (isPracticeEnabled || (isSpeedTrainerEnabled && practiceStreak > 0)) {
+            PracticeStreakCard(
+                streak             = practiceStreak,
+                bestStreak         = bestStreak,
+                practicedEpochDays = practicedEpochDays,
+                modifier           = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(6.dp))
+        }
+
+        CollectionCard(
+            activeItemIds = activeItemIds,
+            onClick       = { showItemCatalog = true },
+        )
+
+        Spacer(Modifier.height(10.dp))
+
+        GameCard(
+            vm = rhythmVm,
+            useMic = useMic,
+            micGranted = micGranted,
+            onRequestMic = onRequestMic,
+            isMetronomePlaying = isMetronomePlaying,
+            onStopMetronome = onStopMetronome,
+            highScores = highScores,
+        )
+
+        Spacer(Modifier.height(24.dp))
+    }
+
+    if (showEarnRules) {
+        EarnRulesDialog(onDismiss = { showEarnRules = false })
+    }
+
+    if (showWatchAdDialog) {
+        val remaining = metronomeVm.rewardedAdManager.remainingToday()
+        val earn = minOf(PointsConfig.REWARDED_GNOTES_PER_WATCH, remaining)
+        AlertDialog(
+            onDismissRequest  = { showWatchAdDialog = false },
+            containerColor    = AppColors.surfaceDeep,
+            titleContentColor = AppColors.gold,
+            textContentColor  = AppColors.textSecondary,
+            title = { Text("Metro's Daily Bonus", fontWeight = FontWeight.Bold) },
+            text  = {
+                Text(
+                    text = "Watch a short clip and Metro rewards you with $earn ${PointsConfig.CURRENCY_NAME}. " +
+                           "Two clips per day. Come back tomorrow for more.",
+                    fontSize   = 13.sp,
+                    lineHeight = 19.sp,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showWatchAdDialog = false
+                    onWatchRewardedAd {}
+                }) {
+                    Text("Claim Reward", color = AppColors.primaryPurple, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWatchAdDialog = false }) {
+                    Text("Not now", color = AppColors.textMuted)
+                }
+            },
+        )
+    }
+
+    if (showItemCatalog) {
+        ItemCatalogDialog(
+            activeItemIds = activeItemIds,
+            tracker       = metronomeVm.itemTracker,
+            onDismiss     = { showItemCatalog = false },
+        )
+    }
+}
+
+// ── Game card — compact difficulty chips + mic toggle ─────────────────────────
+
+@Composable
+private fun GameCard(
     vm: RhythmGameViewModel,
     useMic: Boolean,
     micGranted: Boolean,
     onRequestMic: () -> Unit,
-    tolerance: Float,
-    onToleranceChange: (Float) -> Unit,
     isMetronomePlaying: Boolean,
     onStopMetronome: () -> Unit,
-    highScores: Map<String, Int> = emptyMap()
+    highScores: Map<String, Int> = emptyMap(),
 ) {
     val pendingStart = remember { mutableStateOf<(() -> Unit)?>(null) }
-    var showTolerance by remember { mutableStateOf(false) }
 
     if (pendingStart.value != null) {
         val cardScale = remember { Animatable(0.2f) }
@@ -253,9 +413,7 @@ private fun IdlePanel(
                         letterSpacing = (-0.3).sp,
                         textAlign = TextAlign.Center,
                     )
-
                     Spacer(Modifier.height(8.dp))
-
                     Text(
                         text = "Stop it before starting the game, or let it keep playing in the background?",
                         color = AppColors.textSecondary,
@@ -263,54 +421,29 @@ private fun IdlePanel(
                         lineHeight = 19.sp,
                         textAlign = TextAlign.Center,
                     )
-
                     Spacer(Modifier.height(22.dp))
-
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Surface(
-                            onClick = {
-                                pendingStart.value?.invoke()
-                                pendingStart.value = null
-                            },
+                            onClick = { pendingStart.value?.invoke(); pendingStart.value = null },
                             shape = RoundedCornerShape(14.dp),
                             color = Color.Transparent,
                             border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp),
+                            modifier = Modifier.weight(1f).height(46.dp),
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "Keep Playing",
-                                    color = AppColors.textSecondary,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                )
+                                Text("Keep Playing", color = AppColors.textSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                             }
                         }
-
                         Spacer(Modifier.width(10.dp))
-
                         Surface(
-                            onClick = {
-                                onStopMetronome()
-                                pendingStart.value?.invoke()
-                                pendingStart.value = null
-                            },
+                            onClick = { onStopMetronome(); pendingStart.value?.invoke(); pendingStart.value = null },
                             shape = RoundedCornerShape(14.dp),
                             color = AppColors.gold.copy(alpha = 0.16f),
                             border = BorderStroke(1.dp, AppColors.gold),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp),
+                            modifier = Modifier.weight(1f).height(46.dp),
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "Stop & Play",
-                                    color = AppColors.gold,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                )
+                                Text("Stop & Play", color = AppColors.gold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -319,243 +452,122 @@ private fun IdlePanel(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 22.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Surface(
+        color = AppColors.surfaceDeep,
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Spacer(Modifier.height(16.dp))
-
-        Text(
-            "RHYTHM GAME", color = AppColors.gold, fontSize = 22.sp,
-            fontWeight = FontWeight.Black, letterSpacing = 3.sp
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            "Notes fall from the top · tap when they hit the line!",
-            color = AppColors.textSubtle, fontSize = 13.sp, textAlign = TextAlign.Center
-        )
-
-        Spacer(Modifier.height(22.dp))
-
-        difficulties.forEach { d ->
-            DifficultyCard(
-                difficulty = d,
-                bestScore = highScores[d.name] ?: 0,
-                onClick = {
-                    val start = { vm.setDifficulty(d.bpm, d.beats, d.name); vm.startGame() }
-                    if (isMetronomePlaying) {
-                        pendingStart.value = start
-                    } else start()
-                }
-            )
-            Spacer(Modifier.height(10.dp))
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        // ── Timing tolerance ─────────────────────────────────────────────────
-        Surface(
-            onClick = { showTolerance = !showTolerance },
-            color = AppColors.surface,
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, AppColors.surfaceVariant),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
+        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+            // ── Header ────────────────────────────────────────────────────────
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        "Difficulty", color = AppColors.textSecondary,
-                        fontWeight = FontWeight.Medium, fontSize = 14.sp
-                    )
-                    Text(
-                        toleranceLabel(tolerance),
-                        color = toleranceLabelColor(tolerance),
-                        fontSize = 12.sp
-                    )
-                }
-                Text(if (showTolerance) "▲" else "▼", color = AppColors.textMuted, fontSize = 12.sp)
-            }
-        }
-
-        if (showTolerance) {
-            Spacer(Modifier.height(6.dp))
-            Surface(
-                color = AppColors.surface,
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, AppColors.surfaceVariant),
                 modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    val perfMs = (50 * tolerance).toInt()
-                    val goodMs = (100 * tolerance).toInt()
-                    val almostMs = (150 * tolerance).toInt()
-                    Text(
-                        "How forgiving the game is when judging your taps.",
-                        color = AppColors.textSubtle, fontSize = 12.sp
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.Stars,
+                        contentDescription = null,
+                        tint = AppColors.gold,
+                        modifier = Modifier.size(13.dp),
                     )
-                    Spacer(Modifier.height(10.dp))
-                    Slider(
-                        value = tolerance,
-                        onValueChange = onToleranceChange,
-                        valueRange = 0.5f..2.5f,
-                        colors = SliderDefaults.colors(
-                            thumbColor = AppColors.gold,
-                            activeTrackColor = AppColors.primaryPurple,
-                            inactiveTrackColor = Color(0x44FFFFFF)
-                        )
-                    )
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Strict", color = GameColors.rangeBlue, fontSize = 11.sp)
-                        Text("Very Easy", color = GameColors.rangeBlue, fontSize = 11.sp)
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                        WindowBadge("PERFECT", "±${perfMs}ms", AppColors.gold)
-                        WindowBadge("GOOD", "±${goodMs}ms", GameColors.good)
-                        WindowBadge("ALMOST", "±${almostMs}ms", GameColors.almost)
+                    Spacer(Modifier.width(5.dp))
+                    Text("RHYTHM", color = AppColors.gold, fontSize = 13.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                    Text(" GAME", color = AppColors.textMuted, fontSize = 13.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                }
+                Text("notes fall · tap the line", color = AppColors.textSubtle, fontSize = 11.sp)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // ── Difficulty chips ──────────────────────────────────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                difficulties.forEach { d ->
+                    val best = highScores[d.name] ?: 0
+                    val played = best > 0
+                    Surface(
+                        onClick = {
+                            val start = { vm.setDifficulty(d.bpm, d.beats, d.name); vm.startGame() }
+                            if (isMetronomePlaying) pendingStart.value = start else start()
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (played) AppColors.gold.copy(alpha = 0.10f) else AppColors.surface,
+                        border = BorderStroke(1.dp, if (played) AppColors.gold.copy(alpha = 0.35f) else AppColors.surfaceVariant),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = d.short,
+                                color = if (played) AppColors.gold else AppColors.textMuted,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.5.sp,
+                            )
+                            Spacer(Modifier.height(3.dp))
+                            Text(
+                                text = if (played) "$best" else "—",
+                                color = if (played) AppColors.gold else AppColors.textDim,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.5f))
+            Spacer(Modifier.height(10.dp))
 
-        // ── Mic mode ─────────────────────────────────────────────────────────
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = if (useMic) AppColors.surfaceActive else AppColors.surfaceDim,
-            border = BorderStroke(1.5.dp, if (useMic) AppColors.gold else AppColors.borderMuted),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
+            // ── Compact mic row ───────────────────────────────────────────────
             Row(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.Mic,
                         contentDescription = null,
-                        tint = AppColors.gold,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .padding(end = 14.dp)
+                        tint = if (useMic) AppColors.gold else AppColors.textMuted,
+                        modifier = Modifier.size(16.dp),
                     )
+                    Spacer(Modifier.width(8.dp))
                     Column {
                         Text(
-                            "Play With Sound (Beta)",
-                            color = if (useMic) AppColors.gold else Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
+                            "Play with sound",
+                            color = if (useMic) Color.White else AppColors.textSecondary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
                         )
-                        Spacer(Modifier.height(3.dp))
                         Text(
-                            "Clap, tap a surface, or play your instrument. The mic detects the beat so you don't need to touch the screen.",
-                            color = AppColors.textMuted,
-                            fontSize = 12.sp,
-                            lineHeight = 17.sp
+                            "clap or tap to score",
+                            color = AppColors.textDim,
+                            fontSize = 11.sp,
                         )
                     }
                 }
-                Spacer(Modifier.width(12.dp))
                 Switch(
                     checked = useMic,
                     onCheckedChange = { on ->
-                        if (on && !micGranted) {
-                            onRequestMic()   // onGranted callback handles vm.toggleMic(true)
-                        } else {
-                            vm.toggleMic(on)
-                        }
+                        if (on && !micGranted) onRequestMic()
+                        else vm.toggleMic(on)
                     },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = AppColors.gold,
-                        checkedTrackColor = AppColors.primaryPurple
-                    )
+                        checkedTrackColor = AppColors.primaryPurple,
+                    ),
                 )
             }
         }
-        Spacer(Modifier.height(24.dp))
     }
-}
-
-@Composable
-private fun DifficultyCard(difficulty: Difficulty, bestScore: Int, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = AppColors.surfaceDim,
-        border = BorderStroke(1.dp, AppColors.surfaceVariant),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    difficulty.name,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Text(difficulty.desc, color = AppColors.textSubtle, fontSize = 12.sp)
-            }
-            if (bestScore > 0) {
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    modifier = Modifier.padding(end = 12.dp)
-                ) {
-                    Text(
-                        "BEST", color = AppColors.textDim, fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold, letterSpacing = 1.sp
-                    )
-                    Text(
-                        "$bestScore", color = AppColors.gold, fontSize = 18.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-            }
-            Text("▶", color = AppColors.gold, fontSize = 18.sp)
-        }
-    }
-}
-
-@Composable
-private fun WindowBadge(label: String, value: String, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            label,
-            color = color,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp
-        )
-        Text(value, color = AppColors.textSecondary, fontSize = 12.sp)
-    }
-}
-
-private fun toleranceLabel(t: Float) = when {
-    t < 0.8f -> "Strict (Pro)"
-    t < 1.2f -> "Normal"
-    t < 1.8f -> "Easy (default)"
-    else -> "Very Easy"
-}
-
-private fun toleranceLabelColor(t: Float): Color = when {
-    t < 0.8f -> GameColors.miss
-    t < 1.2f -> GameColors.almost
-    t < 1.8f -> GameColors.good
-    else -> AppColors.gold
 }
 
 // ── Countdown ─────────────────────────────────────────────────────────────────
@@ -1151,17 +1163,399 @@ private fun ResultRow(label: String, value: String, color: Color) {
     }
 }
 
-// ── Previews ──────────────────────────────────────────────────────────────────
+// ── Moved from SettingsScreen: Gnotes, Loyalty, Streak, Collection ────────────
 
-@Preview(showBackground = true, backgroundColor = 0xFF0D0D1A, widthDp = 360)
+// Persists for the app session (resets on process death) — intentional.
+// The count-up animation plays once per session, then on a 90-second cooldown.
+private var gnotesBannerLastPlayedMs = 0L
+
 @Composable
-private fun DifficultyCardPreview() {
-    DifficultyCard(
-        difficulty = Difficulty("Medium", 100, 32, "100 BPM · 32 beats · the classic challenge"),
-        bestScore = 850,
-        onClick = {}
+private fun PointsCard(
+    snapshot: PointsSnapshot,
+    onInfoClick: () -> Unit,
+    canWatchToday: Boolean = false,
+    adReady: Boolean = false,
+    remainingToday: Int = 0,
+    onWatchAdClick: () -> Unit = {},
+) {
+    val animatedCount = remember { Animatable(snapshot.total.toFloat()) }
+    val scale         = remember { Animatable(1f) }
+    var expanded      by remember { mutableStateOf(false) }
+    val chevronAngle  by animateFloatAsState(
+        targetValue   = if (expanded) 180f else 0f,
+        animationSpec = tween(220),
+        label         = "gnotes_chevron",
     )
+
+    LaunchedEffect(snapshot.total) {
+        val now = System.currentTimeMillis()
+        if (now - gnotesBannerLastPlayedMs >= 90_000L) {
+            gnotesBannerLastPlayedMs = now
+            animatedCount.snapTo(0f)
+            animatedCount.animateTo(
+                targetValue   = snapshot.total.toFloat(),
+                animationSpec = tween(durationMillis = 1600, easing = LinearOutSlowInEasing),
+            )
+            scale.animateTo(1.08f, tween(110))
+            scale.animateTo(
+                targetValue   = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness    = Spring.StiffnessMedium,
+                ),
+            )
+        } else {
+            animatedCount.snapTo(snapshot.total.toFloat())
+        }
+    }
+
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, AppColors.gold.copy(alpha = 0.25f), shape)
+            .clip(shape)
+            .background(AppColors.surfaceDeep)
+            .padding(horizontal = 20.dp, vertical = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // ── Tappable header: number + GNOTES + chevron ───────────────────────
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication        = null,
+                ) { expanded = !expanded },
+        ) {
+            Column(
+                modifier            = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { scaleX = scale.value; scaleY = scale.value },
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text          = String.format(LocalConfiguration.current.locales[0], "%,d", animatedCount.value.toInt()),
+                    color         = AppColors.gold,
+                    fontSize      = 44.sp,
+                    fontWeight    = FontWeight.ExtraBold,
+                    lineHeight    = 44.sp,
+                    letterSpacing = (-1.5).sp,
+                )
+                Text(
+                    text          = PointsConfig.CURRENCY_NAME.uppercase(),
+                    color         = AppColors.gold.copy(alpha = 0.65f),
+                    fontSize      = 10.sp,
+                    fontWeight    = FontWeight.Bold,
+                    letterSpacing = 2.5.sp,
+                    modifier      = Modifier.padding(top = 2.dp),
+                )
+            }
+            Icon(
+                imageVector        = Icons.Filled.ExpandMore,
+                contentDescription = if (expanded) "Collapse" else "Expand",
+                tint               = AppColors.textSubtle,
+                modifier           = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(20.dp)
+                    .rotate(chevronAngle),
+            )
+        }
+
+        // ── Daily bonus teaser ────────────────────────────────────────────────
+        val canTap = canWatchToday && adReady
+        Spacer(Modifier.height(6.dp))
+        HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.5f))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (canTap) Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication        = null,
+                        onClick           = onWatchAdClick,
+                    ) else Modifier
+                )
+                .padding(top = 10.dp, bottom = 2.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                Icon(
+                    imageVector        = Icons.Filled.MusicNote,
+                    contentDescription = null,
+                    tint               = if (canTap) AppColors.mediumPurple.copy(alpha = 0.75f) else AppColors.textSubtle,
+                    modifier           = Modifier.size(12.dp),
+                )
+                Text(
+                    text  = "Metro's daily bonus",
+                    color = if (canTap) AppColors.textSecondary else AppColors.textSubtle,
+                    fontSize = 12.sp,
+                )
+            }
+            val earn = minOf(PointsConfig.REWARDED_GNOTES_PER_WATCH, remainingToday)
+            Text(
+                text       = when {
+                    canTap         -> "+$earn  →"
+                    canWatchToday  -> "+$earn"
+                    else           -> "✓  Today"
+                },
+                color      = if (canTap) AppColors.mediumPurple.copy(alpha = 0.8f) else AppColors.textSubtle,
+                fontSize   = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+
+        // ── Expandable body: contributions + How to earn ─────────────────────
+        AnimatedVisibility(
+            visible = expanded,
+            enter   = expandVertically() + fadeIn(tween(180)),
+            exit    = shrinkVertically() + fadeOut(tween(180)),
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (snapshot.contributions.isEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text      = "Start playing to earn your first ${PointsConfig.CURRENCY_NAME_SINGULAR}.",
+                        color     = AppColors.textMuted,
+                        fontSize  = 12.sp,
+                        fontStyle = FontStyle.Italic,
+                    )
+                } else {
+                    Spacer(Modifier.height(8.dp))
+                    HorizontalDivider(color = AppColors.surfaceVariant)
+                    Spacer(Modifier.height(10.dp))
+                    snapshot.contributions.forEach { c ->
+                        Row(
+                            modifier              = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment     = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text     = "${c.label}  ·  ${c.rawValue} ${c.rawUnit}",
+                                color    = AppColors.textMuted,
+                                fontSize = 12.sp,
+                            )
+                            Text(
+                                text       = "+${c.points}",
+                                color      = AppColors.textSecondary,
+                                fontSize   = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.6f))
+                Text(
+                    text       = "How to earn  →",
+                    color      = AppColors.gold.copy(alpha = 0.55f),
+                    fontSize   = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier   = Modifier
+                        .clickable(onClick = onInfoClick)
+                        .padding(top = 8.dp),
+                )
+            }
+        }
+    }
 }
+
+@Composable
+private fun LoyaltyCard(
+    currentDays: Int,
+    modifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(16.dp)
+    val nextMilestone = LOYALTY_MILESTONES.firstOrNull { currentDays < it.days }
+
+    Column(
+        modifier = modifier
+            .border(1.dp, AppColors.gold.copy(alpha = 0.20f), shape)
+            .clip(shape)
+            .background(AppColors.surfaceDeep)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector        = Icons.Filled.EmojiEvents,
+                contentDescription = null,
+                tint               = AppColors.gold,
+                modifier           = Modifier.size(15.dp),
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text       = "Day $currentDays",
+                color      = AppColors.gold,
+                fontWeight = FontWeight.Bold,
+                fontSize   = 13.sp,
+            )
+            Text(
+                text     = " loyalty",
+                color    = AppColors.textMuted,
+                fontSize = 13.sp,
+            )
+            if (nextMilestone != null) {
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text     = "${nextMilestone.days - currentDays}d to ${nextMilestone.name}",
+                    color    = AppColors.textSubtle,
+                    fontSize = 11.sp,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        LoyaltyMilestonePath(
+            currentDays = currentDays,
+            modifier    = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun PracticeStreakCard(
+    streak: Int,
+    bestStreak: Int,
+    practicedEpochDays: Set<Long>,
+    modifier: Modifier = Modifier,
+) {
+    var showInfo by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(16.dp)
+
+    Column(
+        modifier = modifier
+            .border(1.dp, AppColors.gold.copy(alpha = 0.20f), shape)
+            .clip(shape)
+            .background(AppColors.surfaceDeep)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+    ) {
+        StreakWeekCard(
+            streak             = streak,
+            bestStreak         = bestStreak,
+            practicedEpochDays = practicedEpochDays,
+            modifier           = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(12.dp))
+        HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.5f))
+        Spacer(Modifier.height(8.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text          = "How streaks work",
+                color         = AppColors.textSubtle,
+                fontSize      = 11.sp,
+                fontWeight    = FontWeight.SemiBold,
+                letterSpacing = 0.3.sp,
+                modifier      = Modifier.weight(1f),
+            )
+            Box(
+                modifier = Modifier
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication        = null,
+                    ) { showInfo = !showInfo }
+                    .padding(4.dp),
+            ) {
+                Icon(
+                    imageVector        = Icons.Filled.Info,
+                    contentDescription = "How streaks work",
+                    tint               = if (showInfo) AppColors.textSecondary
+                                         else AppColors.textDim.copy(alpha = 0.55f),
+                    modifier           = Modifier.size(13.dp),
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showInfo,
+            enter   = expandVertically() + fadeIn(tween(180)),
+            exit    = shrinkVertically() + fadeOut(tween(180)),
+        ) {
+            Column {
+                Spacer(Modifier.height(8.dp))
+                listOf(
+                    "Finish a Practice session or a Speed Trainer session to count today.",
+                    "Come back tomorrow to keep your streak going.",
+                ).forEach { rule ->
+                    Text(
+                        text       = rule,
+                        color      = AppColors.textMuted,
+                        fontSize   = 12.sp,
+                        lineHeight = 17.sp,
+                        modifier   = Modifier.padding(vertical = 2.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CollectionCard(activeItemIds: Set<String>, onClick: () -> Unit) {
+    val total    = METRO_ITEM_REGISTRY.size
+    val unlocked = METRO_ITEM_REGISTRY.count { it.item.id in activeItemIds }
+    val shape    = RoundedCornerShape(16.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, AppColors.gold.copy(alpha = 0.25f), shape)
+            .clip(shape)
+            .clickable(onClick = onClick)
+            .background(AppColors.surfaceDeep)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Row(
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier         = Modifier
+                    .size(36.dp)
+                    .background(AppColors.gold.copy(alpha = 0.14f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector        = Icons.Filled.MusicNote,
+                    contentDescription = null,
+                    tint               = AppColors.gold,
+                    modifier           = Modifier.size(18.dp),
+                )
+            }
+            Column {
+                Text(
+                    text       = "Metro's Collection",
+                    color      = AppColors.textPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize   = 14.sp,
+                )
+                Text(
+                    text     = "$unlocked of $total items unlocked",
+                    color    = AppColors.textMuted,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 1.dp),
+                )
+            }
+        }
+        Text(
+            text       = "See all  →",
+            color      = AppColors.gold.copy(alpha = 0.55f),
+            fontSize   = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, backgroundColor = 0xFF0D0D1A, widthDp = 360, heightDp = 400)
 @Composable

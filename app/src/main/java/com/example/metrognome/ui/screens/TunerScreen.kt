@@ -306,10 +306,6 @@ internal fun TunerScreenContent(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                "TUNER", color = AppColors.gold, fontSize = 22.sp,
-                fontWeight = FontWeight.Black, letterSpacing = 3.sp,
-            )
             if (referenceHz != 440f) {
                 ReferencePitchPill(
                     referenceHz = referenceHz,
@@ -782,9 +778,10 @@ private fun AmbientHistogram(report: AmbientReport) {
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "Environment",
+                        "ENVIRONMENT",
                         color = AppColors.textDim,
                         fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
                     )
                     Spacer(Modifier.height(8.dp))
 
@@ -1067,8 +1064,9 @@ private fun ReferencePitchCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "Reference pitch", color = AppColors.textSubtle,
+                    "REFERENCE PITCH", color = AppColors.textSubtle,
                     fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
                 )
                 Spacer(Modifier.weight(1f))
                 Text(
@@ -1224,7 +1222,7 @@ private fun CalibrationCard(
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Text(
-                "Calibration", color = AppColors.gold, fontSize = 12.sp,
+                "CALIBRATION", color = AppColors.gold, fontSize = 12.sp,
                 fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
             )
             Spacer(Modifier.height(14.dp))
