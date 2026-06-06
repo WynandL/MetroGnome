@@ -13,6 +13,7 @@ import com.example.metrognome.ui.components.metro_items.items.GlissieFairy
 import com.example.metrognome.ui.components.metro_items.items.MusicStand
 import com.example.metrognome.ui.components.metro_items.items.TuningFork
 import com.example.metrognome.ui.components.metro_items.items.HatFeather
+import com.example.metrognome.ui.components.metro_items.items.LapelPin
 
 /**
  * Single source of truth for every cosmetic item and its unlock condition.
@@ -51,6 +52,12 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     MetroItemEntry(Fireflies,          UnlockCondition.MetronomeSeconds(10_800)),   // 3 h  — farthest back
     MetroItemEntry(MoonAndStars,       UnlockCondition.MetronomeSeconds(14_400)),   // 4 h
     MetroItemEntry(GlissieFairy,        UnlockCondition.MetronomeSeconds(21_600)),   // 6 h — drawn last, floats closest
+
+    // ── Loyalty wearable — earned by sticking with Metro, not by play-time ───
+    // First wearable tied to calendar days rather than usage. Drawn after GoldChain
+    // so the pin sits on top of the lapel when both are worn. Fills the day-based
+    // gap between ForestFloorFlowers (3 d) and ForestTree (30 d).
+    MetroItemEntry(LapelPin, UnlockCondition.LoyaltyDays(7)),   // 7 distinct days opened
 
     // ── Practice rewards — require Practice Mode IAP to earn ─────────────────
     // Earn-only (no purchase path): these reward consistent practice, not spending.

@@ -2,6 +2,7 @@ package com.example.metrognome.ui.components.metro_items
 
 import android.content.Context
 import androidx.core.content.edit
+import com.example.metrognome.points.UsageDayTracker
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -21,6 +22,7 @@ class MetroItemTracker(context: Context) {
 
     private val prefs         = context.getSharedPreferences("metro_cosmetics", Context.MODE_PRIVATE)
     private val practicePrefs = context.getSharedPreferences("practice_sessions", Context.MODE_PRIVATE)
+    private val usageDayTracker = UsageDayTracker(context)
 
     companion object {
         private const val KEY_METRONOME_SECONDS  = "metronome_seconds"
@@ -123,6 +125,9 @@ class MetroItemTracker(context: Context) {
     fun speedTrainerSeconds(): Long           = prefs.getLong(KEY_SPEED_TRAINER_SECONDS, 0L)
     fun micBonusSessions(): Int              = prefs.getInt(KEY_MIC_BONUS_SESSIONS, 0)
     fun practiceSessionsCompleted(): Int = practicePrefs.getInt(KEY_PRACTICE_TOTAL, 0)
+    /** Distinct calendar days on which the user has opened the app. */
+    fun loyaltyDays(): Int = usageDayTracker.distinctDaysCount()
+
     fun daysSinceFirstLaunch(): Int {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val firstMs  = prefs.getLong(KEY_FIRST_LAUNCH_MS, System.currentTimeMillis())
@@ -170,6 +175,7 @@ class MetroItemTracker(context: Context) {
             is UnlockCondition.TunerSeconds            -> tunerSeconds() >= condition.required
             is UnlockCondition.RhythmGamesCompleted    -> gamesCompleted() >= condition.required
             is UnlockCondition.DaysSinceFirstLaunch    -> daysSinceFirstLaunch() >= condition.required
+            is UnlockCondition.LoyaltyDays             -> loyaltyDays() >= condition.required
             is UnlockCondition.PracticeSessionsCompleted -> practiceSessionsCompleted() >= condition.required
             is UnlockCondition.TunerFeedbackGiven              -> tunerFeedbackGiven() >= condition.required
             is UnlockCondition.SpeedTrainingSessionsCompleted  -> speedTrainingSessionsCompleted() >= condition.required

@@ -18,6 +18,9 @@ sealed class UnlockCondition {
     /** Calendar days elapsed since the very first app launch. */
     data class DaysSinceFirstLaunch(val required: Int) : UnlockCondition()
 
+    /** Distinct calendar days on which the user actually opened the app (loyalty days). */
+    data class LoyaltyDays(val required: Int) : UnlockCondition()
+
     /**
      * Total number of practice sessions ever completed (requires Practice Mode purchased).
      * Monotonically increasing — safe for permanent item unlocks.
@@ -76,6 +79,8 @@ fun UnlockCondition.displayText(): String = when (this) {
         "Complete $required rhythm game${if (required != 1) "s" else ""}"
     is UnlockCondition.DaysSinceFirstLaunch ->
         "Use the app for $required day${if (required != 1) "s" else ""}"
+    is UnlockCondition.LoyaltyDays ->
+        "Open the app on $required different day${if (required != 1) "s" else ""}"
     is UnlockCondition.PracticeSessionsCompleted ->
         "Complete $required practice session${if (required != 1) "s" else ""}"
     is UnlockCondition.TunerFeedbackGiven ->

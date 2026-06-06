@@ -7,7 +7,7 @@
 | Musician Wave "8 Best Rhythm Training Apps" outreach | Low | Sent 2026-06-05 — allow until 2026-06-19 before follow-up |
 | Orchestra Central "5 Best Tuner Apps" follow-up | Low | Sent 2026-06-05 to bobbyfisco@gmail.com — allow until 2026-06-19 |
 | BeatIt.tv "Top 5 Metronome Apps" follow-up | Low | Sent 2026-06-04 — allow until 2026-06-18 |
-| r/WeAreTheMusicMakers Gnotes dev post | Medium | Never posted |
+| r/WeAreTheMusicMakers Gnotes dev post | Medium | Never posted — post drafted 2026-06-06 |
 | Code: Surface installed-days loyalty bonus to users | Medium | Not done |
 | r/drums re-entry | Medium | Eligible (13+ days clear since 2026-05-22) |
 | r/learnmusic first post | Medium | Never posted |
@@ -33,7 +33,7 @@
 - Category: Music & Audio
 - Current installs: 1,000+
 - Last updated: June 1 2026 (v5.1 / versionCode 38)
-- seo_context last updated: 2026-06-05
+- seo_context last updated: 2026-06-06
 - Rating: not yet established at scale
 
 ## Core features (all free)
@@ -82,12 +82,13 @@
 - Practis Blog (pract.is) — DO NOT contact — Practis is a competitor app ("Music Practice Tracker, Timer & Metronome"); their roundup articles drive traffic to their own product, not independent reviews
 - BeatIt.tv "Top 5 Metronome Apps" — drummer-focused editorial site, independent reviewer. Metro Gnome absent. Outreach sent 2026-06-04 to info@beatit.tv — allow until 2026-06-18 before follow-up
 - Orchestra Central "5 Best Tuner Apps in 2026" (orchestracentral.com/best-tuner-apps/) — author Bobby Fisco (bobbyfisco@gmail.com). Independent site, covers iPhone and Android. Audience: strings, brass, woodwinds. Apps listed: TonalEnergy ($3.99), iStroboSoft ($9.99), Tunable ($3.99), BOSS Tuner (free), Pano Tuner (free). Metro Gnome absent. Outreach sent 2026-06-05 — lead angles: ambient noise detection (unique in his list), reference pitch 415–466Hz (period tuning), free. Allow until 2026-06-19 before follow-up.
+- American Songwriter "The Best Guitar Tuner Apps, Tested and Reviewed [2026]" (americansongwriter.com/best-guitar-tuner-apps/) — author Nick Stockton. Covers Android. Apps listed: GuitarTuna, Simply Tune, Fender Tune, BOSS Tuner, Positive Grid Bias FX 2, Pitched Tuner, Chordify. Metro Gnome absent. No direct author email on page — check americansongwriter.com/contact before outreach. Lower priority than Orchestra Central.
 
 ## Competitors
-- Metronome Beats (Stonekick): 26M installs, 4.8 stars — no tuner, ad-heavy, has a free speed trainer (BPM ramp, v7.1.3 May 2026, added MIDI control) — NOT uncontested; Metro Gnome differentiates on structured steps + descending ramp + mic accuracy (coming) + all-in-one free app; requires sign-in for sync
+- Metronome Beats (Stonekick): 26M installs, 4.8 stars — no tuner, ad-heavy, has a free speed trainer (BPM ramp, v7.1.4 June 3 2026, added MIDI control + preset backup/sync via sign-in) — NOT uncontested; Metro Gnome differentiates on structured steps + descending ramp + mic accuracy (coming) + all-in-one free app + no account/sign-in required
 - Pro Metronome (EUMLab): 7.3M installs, 3.84 stars — angry users over subscription bait-and-switch, outdated Android port, last Android update Jan 12, 2026 (stagnant 5+ months); tempo trainer is paywalled and buggy
 - Music Tempo Trainer (musicutils): dedicated tempo training app, no tuner, no rhythm game, updated March 2026. Modes: Constant, Increase/Decrease, Step Training (80–160 BPM), session tracking.
-- Soundbrenner: 10M+ installs, updated April 2026 — now has paid practice tracking (~$6/mo Premium). Metro Gnome's practice tools (streak, Gnotes, timer) are entirely free — direct differentiator.
+- Soundbrenner: 10M+ installs, updated June 3 2026 — added playback counter (auto-pause after N bars or duration). Now has paid practice tracking (~$6/mo Premium). Metro Gnome's practice tools (streak, Gnotes, timer) are entirely free — direct differentiator.
 
 ## SEO decisions already made (do not revisit)
 - App name stays as-is (30 char limit, already maxed)

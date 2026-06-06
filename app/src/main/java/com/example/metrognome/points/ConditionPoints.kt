@@ -30,6 +30,9 @@ fun UnlockCondition.pointsEquivalent(): Int = when (this) {
     is UnlockCondition.DaysSinceFirstLaunch ->
         required * PointsConfig.LOYALTY_PER_DAY
 
+    is UnlockCondition.LoyaltyDays ->
+        required * PointsConfig.LOYALTY_PER_DAY
+
     is UnlockCondition.PracticeSessionsCompleted ->
         required * (PointsConfig.PRACTICE_MINUTES_AVG_PER_SESSION * PointsConfig.PER_PRACTICE_MINUTE)
 
@@ -62,6 +65,9 @@ fun UnlockCondition.pointsDisplayText(): String {
             "Earn $pts $name from Rhythm Game"
 
         is UnlockCondition.DaysSinceFirstLaunch ->
+            "Earn $pts $name from Loyalty"
+
+        is UnlockCondition.LoyaltyDays ->
             "Earn $pts $name from Loyalty"
 
         is UnlockCondition.PracticeSessionsCompleted ->

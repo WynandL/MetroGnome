@@ -29,6 +29,9 @@ fun UnlockCondition.unlockProgress(tracker: MetroItemTracker): Float = when (thi
     is UnlockCondition.DaysSinceFirstLaunch ->
         (tracker.daysSinceFirstLaunch().toFloat() / required).coerceIn(0f, 1f)
 
+    is UnlockCondition.LoyaltyDays ->
+        (tracker.loyaltyDays().toFloat() / required).coerceIn(0f, 1f)
+
     is UnlockCondition.PracticeSessionsCompleted ->
         (tracker.practiceSessionsCompleted().toFloat() / required).coerceIn(0f, 1f)
 
@@ -87,6 +90,11 @@ fun UnlockCondition.progressLabel(tracker: MetroItemTracker): String = when (thi
     is UnlockCondition.DaysSinceFirstLaunch -> {
         val cur = tracker.daysSinceFirstLaunch()
         "Day $cur of $required since install"
+    }
+
+    is UnlockCondition.LoyaltyDays -> {
+        val cur = tracker.loyaltyDays()
+        "$cur / $required day${if (required != 1) "s" else ""} opened"
     }
 
     is UnlockCondition.PracticeSessionsCompleted -> {

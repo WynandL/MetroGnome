@@ -104,6 +104,7 @@ import com.example.metrognome.ui.components.PrimaryButton
 import com.example.metrognome.ui.components.TunerFeedbackCard
 import com.example.metrognome.ui.dialogs.CalibrationConfirmDialog
 import com.example.metrognome.ui.dialogs.CalibrationDialog
+import com.example.metrognome.ui.dialogs.ConfirmDestructiveDialog
 import com.example.metrognome.ui.dialogs.InstrumentCalibrationDialog
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.GameColors
@@ -283,6 +284,7 @@ internal fun TunerScreenContent(
 ) {
     val pendingReading = remember { mutableStateOf<Tuner.Reading?>(null) }
     var pendingConfirm by remember { mutableStateOf<CalibrationMode?>(null) }
+    var showClearCalibrationDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -371,7 +373,7 @@ internal fun TunerScreenContent(
             referenceHz = referenceHz,
             onLoopbackCalibrate = { pendingConfirm = CalibrationMode.LOOPBACK },
             onReferenceCalibrate = { pendingConfirm = CalibrationMode.REFERENCE },
-            onClear = onClearCalibration,
+            onClear = { showClearCalibrationDialog = true },
         )
 
         Spacer(Modifier.height(12.dp))
@@ -393,6 +395,20 @@ internal fun TunerScreenContent(
             onDismiss = onDismissCalibration,
             onRetryLoopback = onLoopbackCalibrate,
             onRetryReference = onReferenceCalibrate,
+        )
+    }
+
+    if (showClearCalibrationDialog) {
+        ConfirmDestructiveDialog(
+            title        = "Clear calibration?",
+            body         = "Your saved calibration will be removed and the tuner will return to default accuracy.",
+            dismissLabel = "Keep it",
+            confirmLabel = "Clear",
+            onConfirm = {
+                showClearCalibrationDialog = false
+                onClearCalibration()
+            },
+            onDismiss = { showClearCalibrationDialog = false },
         )
     }
 

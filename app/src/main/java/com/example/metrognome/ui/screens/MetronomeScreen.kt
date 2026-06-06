@@ -87,6 +87,7 @@ import com.example.metrognome.ui.components.rememberMicPermissionState
 import com.example.metrognome.ui.components.SpeedTrainerCountdownHud
 import com.example.metrognome.ui.components.SpeedTrainerHud
 import com.example.metrognome.ui.dialogs.AppDialog
+import com.example.metrognome.ui.dialogs.ConfirmDestructiveDialog
 import com.example.metrognome.ui.dialogs.SpeedTrainerDialog
 import com.example.metrognome.ui.overlays.SpeedTrainerResultOverlay
 import com.example.metrognome.viewmodel.SpeedTrainerViewModel
@@ -434,7 +435,11 @@ fun MetronomeScreen(
     }
 
     if (showCancelTrainerDialog) {
-        StopTrainerDialog(
+        ConfirmDestructiveDialog(
+            title        = "Stop session?",
+            body         = "Your progress this session will be lost.",
+            dismissLabel = "Keep going",
+            confirmLabel = "Stop",
             onConfirm = {
                 showCancelTrainerDialog = false
                 trainerVm.cancelSession()
@@ -445,7 +450,11 @@ fun MetronomeScreen(
     }
 
     if (showCancelPracticeDialog) {
-        StopTrainerDialog(
+        ConfirmDestructiveDialog(
+            title        = "Stop session?",
+            body         = "Your progress this session will be lost.",
+            dismissLabel = "Keep going",
+            confirmLabel = "Stop",
             onConfirm = {
                 showCancelPracticeDialog = false
                 vm.cancelPractice()
@@ -1036,74 +1045,6 @@ private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit
 
 private fun formatPracticeTime(seconds: Int): String =
     "%d:%02d".format(seconds / 60, seconds % 60)
-
-@Composable
-private fun StopTrainerDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    AppDialog(onDismiss = onDismiss, minWidth = 260.dp, maxWidth = 340.dp) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(48.dp)
-                .background(AppColors.stopRed.copy(alpha = 0.15f), CircleShape),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Bolt,
-                contentDescription = null,
-                tint = AppColors.stopRed,
-                modifier = Modifier.size(24.dp),
-            )
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        Text(
-            "Stop session?",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            "Your progress this session will be lost.",
-            color = AppColors.textSecondary,
-            fontSize = 13.sp,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(22.dp))
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Surface(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(14.dp),
-                color = Color.Transparent,
-                border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
-                modifier = Modifier.weight(1f).height(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text("Keep going", color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                }
-            }
-
-            Spacer(Modifier.width(10.dp))
-
-            Surface(
-                onClick = onConfirm,
-                shape = RoundedCornerShape(14.dp),
-                color = AppColors.stopRed.copy(alpha = 0.15f),
-                border = BorderStroke(1.dp, AppColors.stopRedBorder),
-                modifier = Modifier.weight(1f).height(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text("Stop", color = AppColors.stopRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun EnablePresetsDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {

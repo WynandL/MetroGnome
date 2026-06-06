@@ -18,6 +18,7 @@ import com.example.metrognome.ui.components.metro_items.items.GlowingMushroom
 import com.example.metrognome.ui.components.metro_items.items.GoldChain
 import com.example.metrognome.ui.components.metro_items.items.GoldEarring
 import com.example.metrognome.ui.components.metro_items.items.HatFeather
+import com.example.metrognome.ui.components.metro_items.items.LapelPin
 import com.example.metrognome.ui.components.metro_items.items.LuxuryWatch
 import com.example.metrognome.ui.components.metro_items.items.MoonAndStars
 import com.example.metrognome.ui.components.metro_items.items.MusicStand
@@ -81,6 +82,10 @@ private fun TuningForkPreview() = ItemPreview(TuningFork)
 @Preview(name = "Hat Plume")
 @Composable
 private fun HatFeatherPreview() = ItemPreview(HatFeather)
+
+@Preview(name = "Metronome Lapel Pin")
+@Composable
+private fun LapelPinPreview() = ItemPreview(LapelPin)
 
 @Preview(name = "Streak Icon - large")
 @Composable

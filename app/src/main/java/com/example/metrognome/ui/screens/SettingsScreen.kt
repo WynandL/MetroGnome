@@ -747,6 +747,7 @@ fun SettingsScreen(
                             is UnlockCondition.TunerSeconds              -> c.required.toDouble()
                             is UnlockCondition.RhythmGamesCompleted      -> c.required * 300.0
                             is UnlockCondition.DaysSinceFirstLaunch      -> c.required * 86_400.0
+                            is UnlockCondition.LoyaltyDays               -> c.required * 86_400.0
                             is UnlockCondition.PracticeSessionsCompleted -> c.required * 1_200.0
                             is UnlockCondition.TunerFeedbackGiven              -> c.required * 60.0
                             is UnlockCondition.SpeedTrainingSessionsCompleted  -> c.required * 900.0
