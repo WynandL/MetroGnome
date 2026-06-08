@@ -7,23 +7,22 @@
 | Musician Wave "8 Best Rhythm Training Apps" outreach | Low | Sent 2026-06-05 — allow until 2026-06-19 before follow-up |
 | Orchestra Central "5 Best Tuner Apps" follow-up | Low | Sent 2026-06-05 to bobbyfisco@gmail.com — allow until 2026-06-19 |
 | BeatIt.tv "Top 5 Metronome Apps" follow-up | Low | Sent 2026-06-04 — allow until 2026-06-18 |
-| r/WeAreTheMusicMakers Gnotes dev post | Medium | Never posted — post drafted 2026-06-06 |
+| Reddit: find correct subreddit for Gnotes/app post | Medium | r/WeAreTheMusicMakers ruled out — no products/services allowed at all. Draft ready. Candidates: r/androidapps, r/androiddev, r/musicproduction (rules TBC) |
 | Code: Surface installed-days loyalty bonus to users | Medium | Not done |
 | r/drums re-entry | Medium | Eligible (13+ days clear since 2026-05-22) |
 | r/learnmusic first post | Medium | Never posted |
 | Musician Wave "10 Best Metronome Apps" follow-up | Low | Allow until 2026-06-12 |
 | Android Authority follow-up | Low | Allow until 2026-06-16 |
-| GSC indexing re-check | Scheduled | Check ~2026-06-17 |
+| GSC: pull impression/query data from Search Console | High | Indexing confirmed June 6 — pull data now to see which queries are ranking |
 
 ---
 
-## Website Indexing Status (as of 2026-06-03)
-- metrognome.co.za: 0 impressions in GSC, 8 pages "Discovered - currently not indexed"
-- metro-gnome-gilt.vercel.app: 10 impressions in 28 days, top query: "gnome metronome" (navigational)
+## Website Indexing Status (as of 2026-06-08)
+- metrognome.co.za: **INDEXED** — Google email confirmed impressions started June 6, 2026
+- metro-gnome-gilt.vercel.app: 10 impressions in 28 days (last check), top query: "gnome metronome" (navigational)
 - Canonical tag: correct (points to metrognome.co.za) — confirmed on master branch
-- Fix applied: GSC Request Indexing submitted for all 8 pages on 2026-06-03
-- Blocker: no external backlinks → Google deprioritises new domain for crawling
-- Next GSC check: 2026-06-17 — see if pages moved from "Discovered" to "Indexed"
+- Fix applied: GSC Request Indexing submitted for all 8 pages on 2026-06-03 — worked within 3 days
+- Next step: fetch GSC data to see which queries + pages are generating impressions, and whether ranking positions are improving
 
 ## App
 - Name: Metro Gnome: Metronome & Tuner
@@ -70,12 +69,13 @@
 - Reddit account: wynand_dev (created 2026-05-22, first active day)
 
 ## Reddit Activity (do not re-post to same subreddit same day)
+- r/WeAreTheMusicMakers — DO NOT post — no products, services, or self-promotion allowed in posts or comments, ever
 - r/Guitar or r/guitarlessons — "Unholy Confessions metronome" thread — posted 2026-05-22
 - r/drums — "metronome hi-hat click sound" thread (evergreen) — posted 2026-05-22
 - r/guitarlessons — "can't subdivide the beat" thread — queued for 2026-05-23
 
 ## Roundup Outreach Log
-- Musician Wave "10 Best Metronome Apps" — emailed hello@musicianwave.com — 2026-05-29 — awaiting response (allow until 2026-06-12 before follow-up)
+- Musician Wave "10 Best Metronome Apps" — emailed hello@musicianwave.com — 2026-05-29 — awaiting response (allow until 2026-06-12 before follow-up). Note: article last updated July 6, 2023 — very stale; follow-up should acknowledge article age
 - Musician Wave "8 Best Rhythm Training Apps" — outreach planned for 2026-06-05 (Friday)
 - Android Authority "Best Metronome Apps for Android" — emailed joseph.hindy@androidauthority.com — 2026-06-02 — awaiting response (allow until 2026-06-16 before follow-up)
 - Melodics "Best Metronome Apps for Drummers" — DO NOT contact — they have their own built-in metronome; they are a competitor, not an independent reviewer
@@ -86,7 +86,7 @@
 
 ## Competitors
 - Metronome Beats (Stonekick): 26M installs, 4.8 stars — no tuner, ad-heavy, has a free speed trainer (BPM ramp, v7.1.4 June 3 2026, added MIDI control + preset backup/sync via sign-in) — NOT uncontested; Metro Gnome differentiates on structured steps + descending ramp + mic accuracy (coming) + all-in-one free app + no account/sign-in required
-- Pro Metronome (EUMLab): 7.3M installs, 3.84 stars — angry users over subscription bait-and-switch, outdated Android port, last Android update Jan 12, 2026 (stagnant 5+ months); tempo trainer is paywalled and buggy
+- Pro Metronome (EUMLab): 7.3M installs, 3.84 stars — angry users over subscription bait-and-switch, outdated Android port, last Android updates: Jan 12, 2026 and April 14, 2026 (bug fixes: Stage mode scroll + Android 15 compat — no new features); tempo trainer is paywalled and buggy
 - Music Tempo Trainer (musicutils): dedicated tempo training app, no tuner, no rhythm game, updated March 2026. Modes: Constant, Increase/Decrease, Step Training (80–160 BPM), session tracking.
 - Soundbrenner: 10M+ installs, updated June 3 2026 — added playback counter (auto-pause after N bars or duration). Now has paid practice tracking (~$6/mo Premium). Metro Gnome's practice tools (streak, Gnotes, timer) are entirely free — direct differentiator.
 
