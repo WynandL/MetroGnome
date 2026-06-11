@@ -14,6 +14,8 @@
 | Musician Wave "10 Best Metronome Apps" follow-up | Low | Allow until 2026-06-12 |
 | Android Authority follow-up | Low | Allow until 2026-06-16 |
 | GSC: pull impression/query data from Search Console | High | Indexing confirmed June 6 — pull data now to see which queries are ranking |
+| Content: flip "How to Improve Your Timing" blog from "coming soon" to "now available" | Medium | Post published 2026-06-11 (master). Do this WHEN v5.6 reaches Play Store production: change the "coming in v5.6 this week" wording to present tense in landing/blog/how-to-improve-your-timing.html. |
+| Vercel: confirm 2026-06-11 master deploy landed | Medium | Blog commit 1556ad2 + nudge commit fdb057c pushed to master; production was stuck at 9a38eed (webhook miss). Verify the new post is live at metrognome.co.za/blog/how-to-improve-your-timing.html; if not, check Vercel→Settings→Git integration. |
 
 ---
 
@@ -31,15 +33,17 @@
 - Website: http://www.metrognome.co.za
 - Category: Music & Audio
 - Current installs: 1,000+
-- Last updated: June 1 2026 (v5.1 / versionCode 38)
-- seo_context last updated: 2026-06-06
+- Last updated (production / Play Store): June 1 2026 (v5.1 / versionCode 38)
+- NEXT RELEASE: v5.6 - shipping this week (committed to v5.0 branch, NOT yet on Play Store). Headline feature: Groove Check (see Core features). Blog teaser already published 2026-06-11.
+- seo_context last updated: 2026-06-11
 - Rating: not yet established at scale
 
 ## Core features (all free)
 - Hardware-timed precision metronome (sample-accurate, drift-free)
 - Smart chromatic tuner with ambient noise detection — locks on fast, rejects harmonics
 - Rhythm game (5 difficulty levels, tap or clap input)
-- Speed Trainer — structured BPM progression (set start/target/step, ascending or descending, fixed or % increment, bars per step, repeat count, live progress bar, swap button); mic accuracy feedback per step is in code (hidden=true), NOT yet public
+- Speed Trainer — structured BPM progression (set start/target/step, ascending or descending, fixed or % increment, bars per step, repeat count, live progress bar, swap button)
+- Groove Check (NEW, shipping v5.6, NOT yet in production) — opt-in microphone timing feedback for Practice and Speed Trainer. The app listens to your claps/playing, separates them from the click by frequency (spectral, not loudness), corrects for device audio latency with a one-time check, and scores how closely you land on the beat, rewarding good timing with a graded "Timing Bonus" in Gnotes. A very accurate clap also triggers a celebratory firework behind Metro. Runs entirely on-device, private, no account. The rhythm game uses the same listening engine to score clapping. This is the public face of what was the hidden "mic accuracy" code.
 - Gnotes practice currency — earned by metronome play, tuner note locks, rhythm game score, speed trainer, practice sessions, daily streaks, loyalty (daily open), installed-days bonus (1pt/day per install day)
 - Ad-free reward — hitting the daily Gnote goal grants 3 days ad-free automatically, no purchase needed
 - Item catalog — all cosmetic items browsable with real-time Gnote unlock requirements
@@ -106,6 +110,7 @@
 - jazz metronome app (1,800/mo, diff 19) — uncontested
 - metronome app music teacher (1,200/mo, diff 15) — uncontested
 - rhythm trainer app (1,100/mo, diff 22)
-- tempo trainer app android (est. 1,400/mo, diff ~15) — NOT uncontested (Metronome Beats has free BPM ramp); Metro Gnome differentiates on structured steps (fixed bars per tempo, configurable step size, ascending+descending swap) + all-in-one free app + mic accuracy hook (coming); do NOT claim "only free"
-- BPM trainer for musicians (est. 800/mo, diff ~10) — low competition; hook: structured step training + deceleration angle; mic accuracy hook deferred until public
+- tempo trainer app android (est. 1,400/mo, diff ~15) — NOT uncontested (Metronome Beats has free BPM ramp); Metro Gnome differentiates on structured steps (fixed bars per tempo, configurable step size, ascending+descending swap) + all-in-one free app + Groove Check timing feedback (shipping v5.6); do NOT claim "only free"
+- BPM trainer for musicians (est. 800/mo, diff ~10) — low competition; hook: structured step training + deceleration angle; Groove Check mic timing feedback now public-facing in v5.6
+- improve your timing / how to improve timing (est. 1,000/mo, diff ~18) — NEW angle. Blog post LIVE: how-to-improve-your-timing.html (objective mic timing feedback, knowledge-of-results loop, Groove Check teaser). Complements the tempo-trainer cluster and cross-links the increasing-BPM + metronome-accuracy posts. Do NOT propose a duplicate post on this topic.
 - chromatic tuner noisy room (480/mo, diff 14) — unique to Metro Gnome
