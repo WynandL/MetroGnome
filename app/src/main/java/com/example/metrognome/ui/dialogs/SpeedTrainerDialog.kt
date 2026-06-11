@@ -15,16 +15,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,22 +37,21 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.metrognome.dev.DevEasterEgg
 import com.example.metrognome.speedtrainer.SpeedTrainerConfig
 import com.example.metrognome.ui.components.CircleButton
+import com.example.metrognome.ui.components.MicTimingNudge
 import com.example.metrognome.ui.theme.AppColors
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import androidx.compose.ui.platform.LocalContext
+import kotlin.math.roundToInt
 
 @Composable
 fun SpeedTrainerDialog(
     config: SpeedTrainerConfig,
-    hasMicPermission: Boolean,
-    isMicPermanentlyDenied: Boolean = false,
-    onRequestMicPermission: () -> Unit,
+    timeSig: Int,
     onConfigChange: (SpeedTrainerConfig.() -> SpeedTrainerConfig) -> Unit,
     onBeginTraining: () -> Unit,
     onDismiss: () -> Unit,
@@ -255,27 +250,21 @@ fun SpeedTrainerDialog(
             )
         }
 
-        // ── Mic opt-in (debug builds only — not ready for production) ────────
-        if (DevEasterEgg.isDevModeActive(LocalContext.current)) {
+        // Mic mode is now a single app-wide toggle in Settings (no per-feature opt-in).
 
         Spacer(Modifier.height(14.dp))
 
-        MicOptIn(
-            enabled = config.micEnabled,
-            hasMicPermission = hasMicPermission,
-            isPermanentlyDenied = isMicPermanentlyDenied,
-            autoAdvanceWindowMs = config.autoAdvanceWindowMs,
-            onToggle = { onConfigChange { copy(micEnabled = !micEnabled) } },
-            onRequestPermission = onRequestMicPermission,
-            onWindowDecrement = {
-                onConfigChange { copy(autoAdvanceWindowMs = (autoAdvanceWindowMs - 5).coerceAtLeast(10)) }
-            },
-            onWindowIncrement = {
-                onConfigChange { copy(autoAdvanceWindowMs = (autoAdvanceWindowMs + 5).coerceAtMost(100)) }
-            },
+        Text(
+            text = "Training session will be approximately ${
+                formatTrainerDuration(config.estimatedDurationSeconds(timeSig))
+            }.",
+            color = AppColors.textMuted,
+            fontSize = 11.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
         )
 
-        } // end dev-only mic block
+        MicTimingNudge()
 
         Spacer(Modifier.height(16.dp))
 
@@ -309,6 +298,15 @@ fun SpeedTrainerDialog(
                 }
             }
         }
+    }
+}
+
+/** "45 seconds" under a minute, otherwise rounded whole minutes ("1 minute" / "5 minutes"). */
+private fun formatTrainerDuration(seconds: Int): String = when {
+    seconds < 60 -> "$seconds seconds"
+    else -> {
+        val minutes = (seconds / 60f).roundToInt().coerceAtLeast(1)
+        "$minutes ${if (minutes == 1) "minute" else "minutes"}"
     }
 }
 
@@ -496,127 +494,4 @@ private fun IncrementModeToggle(
     }
 }
 
-// ── Mic opt-in section ────────────────────────────────────────────────────────
-
-@Composable
-private fun MicOptIn(
-    enabled: Boolean,
-    hasMicPermission: Boolean,
-    isPermanentlyDenied: Boolean = false,
-    autoAdvanceWindowMs: Int,
-    onToggle: () -> Unit,
-    onRequestPermission: () -> Unit,
-    onWindowDecrement: () -> Unit,
-    onWindowIncrement: () -> Unit,
-) {
-    val borderColor by animateColorAsState(
-        if (enabled) AppColors.gold.copy(alpha = 0.4f) else AppColors.surfaceVariant,
-        animationSpec = tween(300),
-        label = "micBorder",
-    )
-    Surface(
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, borderColor),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        // Outer Row spans the full card height so the icon centres against
-        // everything — the text rows AND the optional auto-advance row below.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                Icons.Filled.Mic,
-                contentDescription = null,
-                tint = AppColors.gold,
-                modifier = Modifier.size(16.dp),
-            )
-            Spacer(Modifier.width(8.dp))
-
-            // Content: text+switch row, optional auto-advance row, optional permission note
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Let Metro listen (Beta)",
-                            color = if (enabled) AppColors.gold else AppColors.textSecondary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            if (enabled) "Metro is listening. Play accurately and earn bonus Gnotes at the end."
-                            else "Metro listens to your timing and awards bonus Gnotes when you play accurately.",
-                            color = AppColors.textMuted,
-                            fontSize = 10.sp,
-                            lineHeight = 13.sp,
-                        )
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Switch(
-                        checked = enabled,
-                        onCheckedChange = {
-                            if (!hasMicPermission && !enabled) {
-                                onRequestPermission()
-                            } else {
-                                onToggle()
-                            }
-                        },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = AppColors.gold,
-                            checkedTrackColor = AppColors.gold.copy(alpha = 0.25f),
-                            uncheckedThumbColor = AppColors.textDim,
-                            uncheckedTrackColor = AppColors.surfaceVariant,
-                        ),
-                    )
-                }
-
-                if (enabled) {
-                    Spacer(Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            "Accuracy window",
-                            color = AppColors.textSecondary,
-                            fontSize = 11.sp,
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            CircleButton("−", onWindowDecrement, size = 22.dp, fontSize = 13.sp)
-                            Text(
-                                "±${autoAdvanceWindowMs}ms",
-                                color = AppColors.gold,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            CircleButton("+", onWindowIncrement, size = 22.dp, fontSize = 13.sp)
-                        }
-                    }
-                }
-
-                if (!hasMicPermission && !enabled) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        if (isPermanentlyDenied)
-                            "Permission blocked. Tap the switch to open App Settings."
-                        else
-                            "Microphone permission required",
-                        color = if (isPermanentlyDenied) AppColors.gold.copy(alpha = 0.8f)
-                                else AppColors.textSubtle,
-                        fontSize = 9.sp,
-                    )
-                }
-            }
-        }
-    }
-}
+// MicOptIn moved to ui/components/MicOptIn.kt — shared by Speed Trainer + Practice.

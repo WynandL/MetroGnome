@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetroGnome - Engine Architecture Map</title>
+<style>
+  :root{
+    --bg:#15102b;
+    --bg2:#1d1640;
+    --card:#241a4d;
+    --card2:#2c2160;
+    --line:#3a2d75;
+    --purple:#8b6cff;
+    --purple-soft:#b9a6ff;
+    --gold:#f5c542;
+    --gold-soft:#ffe39a;
+    --green:#5fd49a;
+    --red:#ff7a8a;
+    --text:#ece8ff;
+    --muted:#a79fce;
+    --dim:#7d76a3;
+    --shadow:0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 700px at 20% -10%,#2a1f5e 0%,var(--bg) 55%) fixed,var(--bg);
+    color:var(--text);
+    line-height:1.55;
+    padding:0 0 80px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 26px}
+
+  header.hero{
+    padding:54px 26px 40px;
+    text-align:center;
+    background:linear-gradient(180deg,rgba(139,108,255,.15),transparent);
+    border-bottom:1px solid var(--line);
+  }
+  .hero h1{
+    font-size:40px;letter-spacing:.5px;
+    background:linear-gradient(90deg,var(--gold),var(--purple-soft));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;
+  }
+  .hero p{color:var(--muted);margin-top:10px;font-size:16px}
+  .hero .stamp{margin-top:14px;font-size:13px;color:var(--dim)}
+  .hero .stamp b{color:var(--gold-soft)}
+
+  h2.section{
+    font-size:13px;letter-spacing:2.5px;text-transform:uppercase;
+    color:var(--gold);margin:48px 0 18px;font-weight:700;
+    display:flex;align-items:center;gap:12px;
+  }
+  h2.section::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+  .lead{color:var(--muted);font-size:15.5px;max-width:860px;margin-bottom:8px}
+  .lead b{color:var(--text)}
+
+  /* legend */
+  .legend{display:flex;flex-wrap:wrap;gap:18px;margin:6px 0 4px;font-size:13.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .dot{width:13px;height:13px;border-radius:4px;display:inline-block}
+  .dot.eng{background:var(--purple)}
+  .dot.mic{background:var(--gold)}
+  .dot.dsp{background:#4fb4e6}
+  .dot.cfg{background:var(--green)}
+  .dot.dead{background:#5a5278}
+
+  /* matrix */
+  .matrix{
+    width:100%;border-collapse:separate;border-spacing:0;
+    margin-top:8px;font-size:14px;border-radius:16px;overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  .matrix th,.matrix td{padding:13px 12px;text-align:center;border-bottom:1px solid var(--line)}
+  .matrix thead th{
+    background:var(--bg2);color:var(--purple-soft);font-size:12px;
+    text-transform:uppercase;letter-spacing:.8px;position:sticky;top:0;
+  }
+  .matrix tbody th{
+    background:var(--card);text-align:left;color:var(--text);font-weight:700;
+    white-space:nowrap;padding-left:18px;
+  }
+  .matrix tbody tr td{background:rgba(36,26,77,.4)}
+  .matrix tbody tr:nth-child(even) td{background:rgba(44,33,96,.4)}
+  .matrix .feat-emoji{font-size:16px;margin-right:8px}
+  .yes{color:var(--green);font-weight:800;font-size:16px}
+  .no{color:#5a5278;font-size:16px}
+  .partial{color:var(--gold);font-weight:700;font-size:13px}
+  .cellnote{display:block;color:var(--dim);font-size:11px;margin-top:3px;line-height:1.3}
+
+  /* flow diagram cards */
+  .flows{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px}
+  .flow{
+    background:linear-gradient(165deg,var(--card),var(--bg2));
+    border:1px solid var(--line);border-radius:18px;padding:20px 20px 22px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  .flow::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;
+    background:linear-gradient(90deg,var(--purple),var(--gold))}
+  .flow.tuner::before{background:linear-gradient(90deg,#4fb4e6,#5fd49a)}
+  .flow h3{font-size:19px;display:flex;align-items:center;gap:10px}
+  .flow .sub{color:var(--dim);font-size:12.5px;margin:3px 0 16px;font-family:'Cascadia Code',Consolas,monospace}
+  .chain{display:flex;flex-direction:column;gap:9px}
+  .node{
+    display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:11px;
+    background:var(--card2);border:1px solid var(--line);font-size:13.5px;
+  }
+  .node .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:15px;flex-shrink:0}
+  .node .lab{font-weight:700}
+  .node .meta{display:block;color:var(--muted);font-size:11.5px;font-weight:400;font-family:monospace}
+  .ic.eng{background:rgba(139,108,255,.22);color:var(--purple-soft)}
+  .ic.mic{background:rgba(245,197,66,.18);color:var(--gold)}
+  .ic.dsp{background:rgba(79,180,230,.18);color:#9bd6f4}
+  .ic.cfg{background:rgba(95,212,154,.16);color:var(--green)}
+  .ic.score{background:rgba(255,122,138,.16);color:var(--red)}
+  .arrow{align-self:center;color:var(--dim);font-size:16px;line-height:.6}
+  .tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;margin-left:auto;font-weight:700;letter-spacing:.4px}
+  .tag.classic{background:rgba(245,197,66,.15);color:var(--gold)}
+  .tag.own{background:rgba(139,108,255,.2);color:var(--purple-soft)}
+  .tag.shared{background:rgba(95,212,154,.14);color:var(--green)}
+
+  /* engine reference cards */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
+  .ecard{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;
+    box-shadow:var(--shadow);
+  }
+  .ecard h4{font-size:16px;display:flex;align-items:center;gap:9px;margin-bottom:4px}
+  .ecard .path{font-family:monospace;font-size:11.5px;color:var(--purple-soft);margin-bottom:10px;word-break:break-all}
+  .ecard p{color:var(--muted);font-size:13px}
+  .ecard .used{margin-top:11px;font-size:12px;color:var(--dim)}
+  .ecard .used b{color:var(--gold-soft)}
+  .pill{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:20px;
+    padding:3px 10px;font-size:11px;margin:4px 4px 0 0;color:var(--muted)}
+
+  /* callouts */
+  .callouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+  .call{border-radius:14px;padding:16px 18px;font-size:13.5px;border:1px solid var(--line);background:var(--card)}
+  .call.win{border-left:4px solid var(--green)}
+  .call.warn{border-left:4px solid var(--gold)}
+  .call.dead{border-left:4px solid #5a5278}
+  .call h5{font-size:14px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .call p{color:var(--muted)}
+  .call code{background:var(--bg);padding:1px 6px;border-radius:5px;font-size:12px;color:var(--gold-soft)}
+
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:54px}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>MetroGnome Engine Architecture</h1>
+  <p>Which feature uses which audio engine, and how the signals flow.</p>
+  <div class="stamp">Snapshot: <b>v5.0 (uncommitted)</b> &middot; 2026-06-11 &middot; reflects the mic-mode "force Classic + spectral classifyClaps" work</div>
+</header>
+
+<div class="wrap">
+
+  <!-- OVERVIEW -->
+  <h2 class="section">The big picture</h2>
+  <p class="lead">
+    The app has <b>two independent audio worlds</b>. The <b>metronome world</b> (a click producer plus an optional
+    mic listener) powers the plain Metronome, Practice, Speed Trainer, and the Rhythm Game. The <b>tuner world</b>
+    is fully separate: its own recorder and pitch stack, sharing nothing with the rest. A third piece, the
+    <b>Mic Self-Test</b>, is not a runtime feature but the <b>calibration source</b> that the whole mic-timing system reads from.
+  </p>
+  <div class="legend">
+    <span><i class="dot eng"></i> Click producer (MetronomeEngine)</span>
+    <span><i class="dot mic"></i> Mic listener (RhythmDetector)</span>
+    <span><i class="dot dsp"></i> Shared DSP (audio/dsp)</span>
+    <span><i class="dot cfg"></i> Calibration / config</span>
+    <span><i class="dot dead"></i> Dead in production</span>
+  </div>
+
+  <!-- MATRIX -->
+  <h2 class="section">Engine usage matrix</h2>
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th style="text-align:left;padding-left:18px">Feature</th>
+        <th>MetronomeEngine<br><span style="font-weight:400;text-transform:none">click producer</span></th>
+        <th>RhythmDetector<br><span style="font-weight:400;text-transform:none">mic listener</span></th>
+        <th>ClapDetector<br><span style="font-weight:400;text-transform:none">spectral</span></th>
+        <th>PerformanceBonus<br><span style="font-weight:400;text-transform:none">scoring</span></th>
+        <th>Tuner stack</th>
+        <th>MicCalibration<br><span style="font-weight:400;text-transform:none">config</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th><span class="feat-emoji">&#127807;</span>Plain Metronome</th>
+        <td><span class="yes">&#10003;</span><span class="cellnote">shared, user's sound</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="no">&#10007;</span></td>
+      </tr>
+      <tr>
+        <th><span class="feat-emoji">&#9201;</span>Practice</th>
+        <td><span class="yes">&#10003;</span><span class="cellnote">shared &middot; forced Classic when mic on</span></td>
+        <td><span class="yes">&#10003;</span><span class="cellnote">classifyClaps=true</span></td>
+        <td><span class="yes">&#10003;</span></td>
+        <td><span class="yes">&#10003;</span><span class="cellnote">Gnotes timing bonus</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="yes">&#10003;</span><span class="cellnote">reads isActive + latency</span></td>
+      </tr>
+      <tr>
+        <th><span class="feat-emoji">&#128640;</span>Speed Trainer</th>
+        <td><span class="partial">&#10003; via bridge</span><span class="cellnote">drives SHARED engine &middot; forced Classic when mic on</span></td>
+        <td><span class="yes">&#10003;</span><span class="cellnote">own instance, classifyClaps=true</span></td>
+        <td><span class="yes">&#10003;</span></td>
+        <td><span class="yes">&#10003;</span><span class="cellnote">Gnotes timing bonus</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="yes">&#10003;</span><span class="cellnote">reads isActive + latency</span></td>
+      </tr>
+      <tr>
+        <th><span class="feat-emoji">&#127925;</span>Rhythm Game</th>
+        <td><span class="yes">&#10003;</span><span class="cellnote">OWN engine &middot; always Classic (soundType=0)</span></td>
+        <td><span class="yes">&#10003;</span><span class="cellnote">own instance, classifyClaps=true</span></td>
+        <td><span class="yes">&#10003;</span></td>
+        <td><span class="no">&#10007;</span><span class="cellnote">uses PERFECT/GOOD/ALMOST windows</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="yes">&#10003;</span><span class="cellnote">reads isActive + latency</span></td>
+      </tr>
+      <tr>
+        <th><span class="feat-emoji">&#127932;</span>Tuner</th>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="yes">&#10003;</span><span class="cellnote">Tuner + TunerCalibrator + AmbientDetector</span></td>
+        <td><span class="no">&#10007;</span><span class="cellnote">separate calibration</span></td>
+      </tr>
+      <tr>
+        <th><span class="feat-emoji">&#128295;</span>Mic Self-Test <span style="font-weight:400;color:var(--dim);font-size:12px">(dev)</span></th>
+        <td><span class="partial">plays click</span><span class="cellnote">own AudioTrack click + AudioRecord</span></td>
+        <td><span class="no">&#10007;</span><span class="cellnote">own capture loop</span></td>
+        <td><span class="yes">&#10003;</span><span class="cellnote">discrimination test</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="no">&#10007;</span></td>
+        <td><span class="partial">WRITES it</span><span class="cellnote">produces latency + grade</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- FLOW DIAGRAMS -->
+  <h2 class="section">Signal flow, per feature</h2>
+  <div class="flows">
+
+    <!-- Practice -->
+    <div class="flow">
+      <h3>&#9201; Practice</h3>
+      <div class="sub">MetronomeViewModel (shared engine + startPracticeMic)</div>
+      <div class="chain">
+        <div class="node"><span class="ic eng">&#9835;</span><span><span class="lab">MetronomeEngine</span><span class="meta">shared instance</span></span><span class="tag classic">Classic when mic on</span></div>
+        <div class="arrow">&#8595; click in the air</div>
+        <div class="node"><span class="ic mic">&#127908;</span><span><span class="lab">RhythmDetector</span><span class="meta">classifyClaps = true</span></span></div>
+        <div class="arrow">&#8595;</div>
+        <div class="node"><span class="ic dsp">&#9209;</span><span><span class="lab">ClapDetector</span><span class="meta">rejects click, emits claps</span></span></div>
+        <div class="arrow">&#8595; deviation vs beat</div>
+        <div class="node"><span class="ic score">&#127942;</span><span><span class="lab">PerformanceBonus</span><span class="meta">to Gnotes timing bonus</span></span></div>
+      </div>
+    </div>
+
+    <!-- Speed Trainer -->
+    <div class="flow">
+      <h3>&#128640; Speed Trainer</h3>
+      <div class="sub">SpeedTrainerViewModel -> bpmRequest bridge -> shared engine</div>
+      <div class="chain">
+        <div class="node"><span class="ic eng">&#9835;</span><span><span class="lab">MetronomeEngine</span><span class="meta">SHARED, driven via MetronomeScreen</span></span><span class="tag classic">Classic when mic on</span></div>
+        <div class="arrow">&#8595; click in the air</div>
+        <div class="node"><span class="ic mic">&#127908;</span><span><span class="lab">RhythmDetector</span><span class="meta">own instance, classifyClaps = true</span></span></div>
+        <div class="arrow">&#8595;</div>
+        <div class="node"><span class="ic dsp">&#9209;</span><span><span class="lab">ClapDetector</span><span class="meta">rejects click, emits claps</span></span></div>
+        <div class="arrow">&#8595; deviation vs beat</div>
+        <div class="node"><span class="ic score">&#127942;</span><span><span class="lab">PerformanceBonus</span><span class="meta">to Gnotes timing bonus</span></span></div>
+      </div>
+    </div>
+
+    <!-- Rhythm Game -->
+    <div class="flow">
+      <h3>&#127925; Rhythm Game</h3>
+      <div class="sub">RhythmGameViewModel (its own engine instance)</div>
+      <div class="chain">
+        <div class="node"><span class="ic eng">&#9835;</span><span><span class="lab">MetronomeEngine</span><span class="meta">private instance</span></span><span class="tag own">always Classic</span></div>
+        <div class="arrow">&#8595; click in the air</div>
+        <div class="node"><span class="ic mic">&#127908;</span><span><span class="lab">RhythmDetector</span><span class="meta">own instance, classifyClaps = true</span></span></div>
+        <div class="arrow">&#8595;</div>
+        <div class="node"><span class="ic dsp">&#9209;</span><span><span class="lab">ClapDetector</span><span class="meta">rejects click, emits claps</span></span></div>
+        <div class="arrow">&#8595; hit timing</div>
+        <div class="node"><span class="ic score">&#127919;</span><span><span class="lab">Hit windows</span><span class="meta">PERFECT / GOOD / ALMOST -> score</span></span></div>
+      </div>
+    </div>
+
+    <!-- Tuner -->
+    <div class="flow tuner">
+      <h3>&#127932; Tuner <span style="font-size:12px;color:var(--dim)">(separate world)</span></h3>
+      <div class="sub">TunerViewModel (Tuner + TunerCalibrator)</div>
+      <div class="chain">
+        <div class="node"><span class="ic mic">&#127908;</span><span><span class="lab">Tuner</span><span class="meta">own AudioRecord</span></span><span class="tag shared">no metronome</span></div>
+        <div class="arrow">&#8595;</div>
+        <div class="node"><span class="ic dsp">&#9881;</span><span><span class="lab">PitchDetector + FFT</span><span class="meta">MPM + FFT (audio/dsp)</span></span></div>
+        <div class="arrow">&#8595;</div>
+        <div class="node"><span class="ic dsp">&#127968;</span><span><span class="lab">AmbientDetector</span><span class="meta">room profiling, speech reject</span></span></div>
+        <div class="arrow">&#8595;</div>
+        <div class="node"><span class="ic cfg">&#127919;</span><span><span class="lab">TunerCalibrator</span><span class="meta">loopback / reference correction</span></span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CALIBRATION SOURCE -->
+  <h2 class="section">The calibration backbone</h2>
+  <p class="lead">
+    Everything in the metronome-mic world reads one shared config object. The Mic Self-Test produces it; the three
+    mic features consume it. There is no per-feature mic toggle.
+  </p>
+  <div class="flow" style="max-width:760px">
+    <div class="chain">
+      <div class="node"><span class="ic dsp">&#128295;</span><span><span class="lab">MicSelfTest</span><span class="meta">audio/selftest &middot; AudioTrack click + AudioRecord + ClapDetector</span></span><span class="tag classic">acoustic loopback</span></div>
+      <div class="arrow">&#8595; writes latency + GOOD_FIT/USABLE/NOT_FIT grade</div>
+      <div class="node"><span class="ic cfg">&#9881;</span><span><span class="lab">MicCalibration / SelfTestCalibrationStore</span><span class="meta">isActive = user opt-in AND eligible device</span></span></div>
+      <div class="arrow">&#8595; read by</div>
+      <div class="node" style="background:rgba(95,212,154,.08)">
+        <span class="ic cfg">&#128229;</span>
+        <span><span class="lab">Practice &middot; Speed Trainer &middot; Rhythm Game &middot; MicTimingNudge</span>
+        <span class="meta">latency bias for scoring &middot; isActive gate to run the mic at all</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENGINE REFERENCE -->
+  <h2 class="section">Engine reference</h2>
+  <div class="cards">
+    <div class="ecard">
+      <h4><i class="dot eng"></i> MetronomeEngine</h4>
+      <div class="path">audio/metronome/MetronomeEngine.kt</div>
+      <p>Raw AudioTrack in STREAM mode, sample-accurate. Pre-generated click buffers. onBeat fires ~16ms before the audio write to keep visuals in sync.</p>
+      <div class="used"><b>Two live instances:</b> shared (Metronome/Practice/Speed Trainer) and the Rhythm Game's private one.</div>
+    </div>
+    <div class="ecard">
+      <h4><i class="dot mic"></i> RhythmDetector</h4>
+      <div class="path">audio/rhythm/RhythmDetector.kt</div>
+      <p>Mic capture wrapper (AudioRecord + AEC + FrameClock). Two modes via <code style="color:var(--gold-soft)">classifyClaps</code>: spectral (ClapDetector) or the legacy amplitude path.</p>
+      <div class="used"><b>3 instances, all classifyClaps=true.</b> Legacy mode now unused.</div>
+    </div>
+    <div class="ecard">
+      <h4><i class="dot dsp"></i> ClapDetector</h4>
+      <div class="path">audio/dsp/ClapDetector.kt</div>
+      <p>Tells the 1100Hz Classic click from a broadband clap via two band followers + integrated ratio. The reason mic mode locks the click to Classic.</p>
+      <div class="used">Used by <b>all 3 RhythmDetectors</b> and the <b>Mic Self-Test</b>.</div>
+    </div>
+    <div class="ecard">
+      <h4><i class="dot dead"></i> OnsetDetector</h4>
+      <div class="path">audio/dsp/OnsetDetector.kt</div>
+      <p>Amplitude/flux onset with a single refractory. The old time-suppression partner. Replaced everywhere by the spectral path.</p>
+      <div class="used"><b>Dead in production</b> (only reachable via classifyClaps=false, which nothing sets). Left in place.</div>
+    </div>
+    <div class="ecard">
+      <h4><i class="dot cfg"></i> MicCalibration</h4>
+      <div class="path">audio/selftest/MicCalibration.kt</div>
+      <p>Read-only view over the self-test result. <code>isActive</code> = user opt-in AND eligible device. Carries device latency.</p>
+      <div class="used">Single source of truth for <b>all mic features</b>.</div>
+    </div>
+    <div class="ecard">
+      <h4><i class="dot dsp"></i> Tuner stack</h4>
+      <div class="path">audio/tuner/ + audio/dsp/{FFT,PitchDetector,BiquadFilter}</div>
+      <p>Tuner (MPM+FFT), TunerCalibrator (loopback/reference), AmbientDetector (room profiling). Own AudioRecord.</p>
+      <div class="used"><b>Isolated.</b> Shares only generic DSP helpers (FFT, BiquadFilter), no metronome/mic-timing code.</div>
+    </div>
+    <div class="ecard">
+      <h4><i class="dot score" style="background:var(--red)"></i> PerformanceBonus</h4>
+      <div class="path">points/PerformanceBonus.kt</div>
+      <p>Per-hit credit curve (TIGHT/LOOSE ms), outlier-robust session score, MIN_HITS gate. Maps timing to bonus Gnotes.</p>
+      <div class="used">Used by <b>Practice + Speed Trainer</b> only. The Rhythm Game scores differently.</div>
+    </div>
+    <div class="ecard">
+      <h4><i class="dot dsp" style="background:#4fb4e6"></i> Shared DSP (audio/dsp)</h4>
+      <div class="path">FFT &middot; PitchDetector &middot; BiquadFilter &middot; OnsetDetector &middot; ClapDetector</div>
+      <p>Pure, deterministic, unit-testable building blocks. BiquadFilter is shared by ClapDetector and the Tuner.</p>
+      <div class="used">The one place the two audio worlds touch (generic filters only).</div>
+    </div>
+  </div>
+
+  <!-- CALLOUTS -->
+  <h2 class="section">Key facts &amp; gotchas</h2>
+  <div class="callouts">
+    <div class="call win">
+      <h5>&#9989; All 3 mic features are now spectral</h5>
+      <p>Practice, Speed Trainer, and the Rhythm Game all run <code>classifyClaps=true</code>. The click is rejected by frequency, so an on-beat hit still scores (the old time window dropped those).</p>
+    </div>
+    <div class="call win">
+      <h5>&#127911; Classic click is forced when mic is on</h5>
+      <p>Practice + Speed Trainer override the engine to Classic via <code>setMicSoundOverride</code> (saved sound untouched, restored in <code>stopInternal</code>). The Rhythm Game was already always Classic. ClapDetector is tuned to that click.</p>
+    </div>
+    <div class="call warn">
+      <h5>&#9888; Speed Trainer has no engine of its own</h5>
+      <p>It drives the shared MetronomeEngine through the <code>bpmRequest</code> collector in MetronomeScreen. So changes to the shared engine path affect both the plain metronome and Speed Trainer.</p>
+    </div>
+    <div class="call warn">
+      <h5>&#9888; Two scoring systems, not one</h5>
+      <p>Practice/Speed Trainer feed deviations into PerformanceBonus (Gnotes). The Rhythm Game uses its own PERFECT/GOOD/ALMOST hit windows. Do not assume a shared scorer.</p>
+    </div>
+    <div class="call dead">
+      <h5>&#9866; OnsetDetector path is dead</h5>
+      <p>Nothing constructs <code>RhythmDetector()</code> without <code>classifyClaps=true</code> anymore, so the amplitude + <code>suppressUntilMs</code> branch is unreachable in production. Candidate for future cleanup.</p>
+    </div>
+    <div class="call win">
+      <h5>&#128202; Dev visibility: Mic Timing Log</h5>
+      <p>All 3 features (Practice now included) log to MicDiagnosticsBuffer in dev mode. The <b>CLICKS</b> chip counts spectral rejections with band ratios = direct proof the filter is firing.</p>
+    </div>
+  </div>
+
+  <footer>
+    MetroGnome engine map &middot; edit this file as the architecture evolves &middot; lives at project root
+  </footer>
+
+</div>
+</body>
+</html>

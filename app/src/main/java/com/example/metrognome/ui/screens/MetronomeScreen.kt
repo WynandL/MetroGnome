@@ -21,7 +21,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import kotlin.math.roundToInt
@@ -83,7 +82,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import com.example.metrognome.ui.components.rememberMicPermissionState
+import com.example.metrognome.ui.components.MicTimingNudge
 import com.example.metrognome.ui.components.SpeedTrainerCountdownHud
 import com.example.metrognome.ui.components.SpeedTrainerHud
 import com.example.metrognome.ui.dialogs.AppDialog
@@ -103,10 +102,6 @@ import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.components.CollapsibleStreakCard
 import com.example.metrognome.ui.components.GnomeCanvas
 import com.example.metrognome.ui.components.PresetChipsRow
-import com.example.metrognome.debug.mic.MicDiagnosticsOverlay
-import com.example.metrognome.dev.DevEasterEgg
-import androidx.compose.ui.platform.LocalContext
-import com.example.metrognome.debug.mic.MicDiagnosticsTrigger
 import com.example.metrognome.ui.dialogs.FeatureEnableDialog
 import com.example.metrognome.ui.dialogs.ShowcaseFrame
 import com.example.metrognome.ui.dialogs.SpeedTrainerRampPreview
@@ -172,13 +167,16 @@ fun MetronomeScreen(
     var showTrainerDialog by remember { mutableStateOf(false) }
     var showCancelTrainerDialog  by remember { mutableStateOf(false) }
     var showCancelPracticeDialog by remember { mutableStateOf(false) }
-    var showMicDiagnostics by remember { mutableStateOf(false) }
 
-    val mic = rememberMicPermissionState(onGranted = { trainerVm.updateConfig { copy(micEnabled = true) } })
+    // Mic mode is a single app-wide toggle in Settings; features read the calibration
+    // result and run the mic automatically, so no per-feature permission flow here.
 
     // Forward BPM requests from trainer to the metronome engine
     LaunchedEffect(trainerVm) {
         trainerVm.bpmRequest.collectLatest { bpm ->
+            // Force the classic click for the mic detector before playback starts (no-op if mic
+            // off). stopPlayback on session end/cancel lifts it.
+            vm.setMicSoundOverride(true)
             vm.setBpm(bpm)
             if (!vm.isPlaying.value) vm.togglePlay()
         }
@@ -467,13 +465,10 @@ fun MetronomeScreen(
     if (showTrainerDialog) {
         SpeedTrainerDialog(
             config = trainerConfig,
-            hasMicPermission = mic.isGranted,
-            isMicPermanentlyDenied = mic.isPermanentlyDenied,
-            onRequestMicPermission = { mic.request() },
+            timeSig = timeSig,
             onConfigChange = { trainerVm.updateConfig(it) },
             onBeginTraining = {
                 showTrainerDialog = false
-                if (trainerConfig.micEnabled && !mic.isGranted) mic.request()
                 trainerVm.beginSession(timeSig)
             },
             onDismiss = { showTrainerDialog = false },
@@ -570,20 +565,7 @@ fun MetronomeScreen(
             onDismiss = { vm.markCelebrated(entry.item.id) },
         )
     }
-    // Dev-mode: mic diagnostics trigger + overlay (debug builds + easter egg dev mode)
-    if (DevEasterEgg.isDevModeActive(LocalContext.current)) {
-        val micSessionActive = trainerConfig.micEnabled &&
-            (trainerState is TrainerSessionState.Running || trainerState is TrainerSessionState.Countdown)
-        MicDiagnosticsTrigger(
-            visible = micSessionActive,
-            overlayOpen = showMicDiagnostics,
-            onToggle = { showMicDiagnostics = !showMicDiagnostics },
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 52.dp, end = 10.dp),
-        )
-        if (showMicDiagnostics) {
-            MicDiagnosticsOverlay(onDismiss = { showMicDiagnostics = false })
-        }
-    }
+    // Mic self-test now lives in Settings (dev tools) as the single canonical launcher.
 
     if (showGnotesInfo) {
         com.example.metrognome.ui.dialogs.GnotesInfoDialog(
@@ -958,7 +940,10 @@ private fun heartbeatCurve(t: Float): Float {
 
 
 @Composable
-private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit) {
+private fun PracticeDurationDialog(
+    onStart: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
     var selected by remember { mutableIntStateOf(15) }
 
     AppDialog(onDismiss = onDismiss) {
@@ -1008,6 +993,8 @@ private fun PracticeDurationDialog(onStart: (Int) -> Unit, onDismiss: () -> Unit
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
                 )
+
+                MicTimingNudge()
 
                 Spacer(Modifier.height(20.dp))
 

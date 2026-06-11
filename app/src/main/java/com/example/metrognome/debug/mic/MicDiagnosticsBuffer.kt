@@ -91,6 +91,10 @@ object MicDiagnosticsBuffer {
         append(MicDiagnosticsEvent.OnsetRejected(onsetMs, rawDev))
     }
 
+    fun logClickRejected(onsetMs: Long, lowRms: Double, highRms: Double, peakRatio: Double) {
+        append(MicDiagnosticsEvent.ClickRejected(onsetMs, lowRms, highRms, peakRatio))
+    }
+
     fun logCalibrationSample(rawDev: Float, sampleIndex: Int) {
         _calibrationSampleCount.value = sampleIndex + 1
         append(MicDiagnosticsEvent.CalibrationSample(SystemClock.elapsedRealtime(), rawDev, sampleIndex))

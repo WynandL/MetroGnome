@@ -56,11 +56,6 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 
-// Distinct background — darker purple-black so the card clearly pops against the tuner screen.
-private val CARD_BG     = Color(0xFF180F2E)
-private val CARD_BORDER = Color(0xFF6040B0)
-private val ACCENT_BAR  = AppColors.primaryPurple
-
 private enum class CardStep { RATING, REASON, THANKING }
 
 /**
@@ -110,10 +105,10 @@ fun TunerFeedbackCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
-                .background(CARD_BG)
+                .background(AppColors.surfaceDeep)
                 .border(
                     width = 1.dp,
-                    color = CARD_BORDER,
+                    color = AppColors.mediumPurple,
                     shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
                 ),
         ) {
@@ -124,7 +119,7 @@ fun TunerFeedbackCard(
                     .matchParentSize()
                     .width(3.dp)
                     .background(
-                        ACCENT_BAR,
+                        AppColors.primaryPurple,
                         RoundedCornerShape(topStart = 18.dp, bottomEnd = 2.dp),
                     ),
             )

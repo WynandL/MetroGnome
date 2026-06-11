@@ -21,9 +21,10 @@ data class DailyActivity(
     val speedTrainerSecondsToday: Long,
     val tunerFeedbackGiven: Int,
     val micBonusSessionsToday: Int,
+    val performanceBonusToday: Int,
 ) {
     companion object {
-        val EMPTY = DailyActivity(0L, 0, 0, 0, 0, 0, 0L, 0, 0)
+        val EMPTY = DailyActivity(0L, 0, 0, 0, 0, 0, 0L, 0, 0, 0)
     }
 }
 
@@ -63,6 +64,7 @@ class DailyActivityLog(context: Context) {
             putLong(KEY_BASE_SPEED_TRAINER_SECONDS, tracker.speedTrainerSeconds())
             putInt(KEY_BASE_FEEDBACK,       tracker.tunerFeedbackGiven())
             putInt(KEY_BASE_MIC_BONUS,      tracker.micBonusSessions())
+            putInt(KEY_BASE_PERFORMANCE_BONUS, tracker.performanceBonusPoints())
         }
     }
 
@@ -79,6 +81,7 @@ class DailyActivityLog(context: Context) {
             speedTrainerSecondsToday      = (tracker.speedTrainerSeconds()             - prefs.getLong(KEY_BASE_SPEED_TRAINER_SECONDS, 0L)).coerceAtLeast(0L),
             tunerFeedbackGiven            = (tracker.tunerFeedbackGiven()             - prefs.getInt(KEY_BASE_FEEDBACK,      0)).coerceAtLeast(0),
             micBonusSessionsToday         = (tracker.micBonusSessions()              - prefs.getInt(KEY_BASE_MIC_BONUS,     0)).coerceAtLeast(0),
+            performanceBonusToday         = (tracker.performanceBonusPoints()        - prefs.getInt(KEY_BASE_PERFORMANCE_BONUS, 0)).coerceAtLeast(0),
         )
     }
 
@@ -94,5 +97,6 @@ class DailyActivityLog(context: Context) {
         private const val KEY_BASE_SPEED_TRAINER_SECONDS = "base_speed_trainer_sec"
         private const val KEY_BASE_FEEDBACK     = "base_feedback"
         private const val KEY_BASE_MIC_BONUS    = "base_mic_bonus"
+        private const val KEY_BASE_PERFORMANCE_BONUS = "base_performance_bonus"
     }
 }

@@ -5,7 +5,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * A second-order IIR (biquad) filter — Transposed Direct Form II.
+ * A second-order IIR (biquad) filter - Transposed Direct Form II.
  *
  * A small, reusable DSP primitive. Coefficients follow the Audio EQ Cookbook
  * (Robert Bristow-Johnson). Construct one via a factory ([highPass]), then
@@ -33,7 +33,7 @@ class BiquadFilter private constructor(
         return y
     }
 
-    /** Clear the delay line — call before reusing the filter on a fresh signal. */
+    /** Clear the delay line - call before reusing the filter on a fresh signal. */
     fun reset() {
         s1 = 0f
         s2 = 0f
@@ -44,7 +44,7 @@ class BiquadFilter private constructor(
          * A high-pass filter passing frequencies above [cutoffHz].
          *
          * [q] sets the resonance at the cutoff; 0.707 gives a maximally flat
-         * (Butterworth) passband — the right default for clean transient work.
+         * (Butterworth) passband - the right default for clean transient work.
          */
         fun highPass(sampleRate: Int, cutoffHz: Float, q: Float = 0.707f): BiquadFilter {
             val w0 = 2.0 * PI * cutoffHz / sampleRate
@@ -67,5 +67,34 @@ class BiquadFilter private constructor(
             )
         }
 
+        /**
+         * A band-pass filter centred on [centerHz] with constant 0 dB peak gain.
+         *
+         * [q] sets the bandwidth: higher Q = narrower band. The constant-peak-gain
+         * (not constant-skirt) form is used so the passband output level is directly
+         * comparable between two band-pass filters tuned to different centres, which
+         * is exactly what the click-vs-clap energy-ratio test relies on.
+         */
+        fun bandPass(sampleRate: Int, centerHz: Float, q: Float = 0.707f): BiquadFilter {
+            val w0 = 2.0 * PI * centerHz / sampleRate
+            val cosW0 = cos(w0)
+            val alpha = sin(w0) / (2.0 * q)
+
+            // RBJ "BPF (constant 0 dB peak gain)".
+            val b0 = alpha
+            val b1 = 0.0
+            val b2 = -alpha
+            val a0 = 1.0 + alpha
+            val a1 = -2.0 * cosW0
+            val a2 = 1.0 - alpha
+
+            return BiquadFilter(
+                b0 = (b0 / a0).toFloat(),
+                b1 = (b1 / a0).toFloat(),
+                b2 = (b2 / a0).toFloat(),
+                a1 = (a1 / a0).toFloat(),
+                a2 = (a2 / a0).toFloat(),
+            )
+        }
     }
 }

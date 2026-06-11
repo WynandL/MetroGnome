@@ -1,19 +1,36 @@
 package com.example.metrognome.usage
 
 /**
- * Immutable snapshot of all raw usage counters for a single device installation.
+ * A complete, portable snapshot of one user's local profile: every counter, record,
+ * unlock and earned reward that represents their progress in the app.
  *
- * Design rule: only append-only counters live here — no derived scores, no booleans
- * that can flip. The score ([gnoteTotal]) is included as a convenience but is always
- * re-derivable from the counters alone, matching the event-sourcing model used by
- * [com.example.metrognome.points.PointsCalculator].
+ * Design rules that keep this snapshot safe to capture and restore as a single unit:
  *
- * Every field maps 1-to-1 to a SharedPreferences key owned by one of the tracker
- * classes. When a new tracking counter is added anywhere in the app, add it here too.
+ *  - **Append-only or monotonic.** Counters only ever grow; records only ever rise;
+ *    sets only ever gain members. Nothing here is a value that can flip back and
+ *    forth, so two snapshots of the same profile always reconcile to "the larger /
+ *    the union" with no ambiguity.
+ *  - **Inputs, not outputs.** Everything needed to re-derive the user's Gnotes score
+ *    is present as a raw counter; [gnoteTotal] is stored only for convenience and is
+ *    always recomputable from the fields here (see [com.example.metrognome.points.PointsCalculator]).
+ *  - **Profile state only.** Device-specific things that must NOT travel with a profile
+ *    (microphone latency calibration, the audio route, dev toggles, ad-frequency
+ *    counters, review-prompt state) are deliberately excluded.
  *
- * Future: this class is the payload for cross-device sync. When a remote store is
- * introduced, [ActivitySummaryLogger.collect] becomes the read path and a new writer
- * handles the upload. Nothing in the points or unlock systems needs to change.
+ * When a new piece of user progress is tracked anywhere in the app, add it here too,
+ * and keep [ActivitySummaryLogger.collect] as the single place that gathers it.
+ *
+ * KNOWN GAP - DAILY CAPS / CROSS-DEVICE CHEAT (must address before profiles ship):
+ * This snapshot carries only *lifetime* counters, not today's per-activity breakdown
+ * (that lives in DailyActivityLog and is not synced). The lifetime counters merge by
+ * "take the larger", which is correct for total progress but means a user active on
+ * two devices on the SAME day gets a fresh daily Gnotes allowance on each - the daily
+ * caps in PointsLimits are enforced per device, not per profile. With a real backend
+ * this becomes an exploitable way to farm Gnotes past the intended daily limit (run
+ * the cap on phone A, run it again on phone B, merge). Closing it means syncing
+ * today's DailyActivity (keyed by calendar day) alongside the lifetime counters and
+ * capping against the merged per-day totals, not the local ones. Do NOT forget this
+ * when wiring profile sync.
  */
 data class ActivitySummary(
 
@@ -23,9 +40,9 @@ data class ActivitySummary(
     /** Unix ms of the very first app launch on this device. */
     val firstLaunchMs: Long,
 
-    // ── Time-based counters ───────────────────────────────────────────────────
+    // ── Time-based counters (seconds; merge = take the larger) ─────────────────
 
-    /** Calendar days the app was actually opened (foregrounded), per [com.example.metrognome.points.UsageDayTracker]. */
+    /** Calendar days the app was actually opened, per [com.example.metrognome.points.UsageDayTracker]. */
     val distinctUsageDays: Int,
 
     /** Raw calendar days since first install — used for item unlock conditions, not loyalty points. */
@@ -40,7 +57,7 @@ data class ActivitySummary(
     /** Cumulative seconds spent in Speed Trainer sessions. */
     val speedTrainerSeconds: Long,
 
-    // ── Event counters ────────────────────────────────────────────────────────
+    // ── Event counters (merge = take the larger) ───────────────────────────────
 
     /** Number of individual notes the tuner has successfully locked on to. */
     val tunerNotesLocked: Int,
@@ -66,11 +83,47 @@ data class ActivitySummary(
     /** Number of Speed Trainer sessions where mic accuracy earned a bonus. */
     val micBonusSessions: Int,
 
-    // ── Derived ───────────────────────────────────────────────────────────────
+    /** Lifetime graded timing-bonus points (raw input to the "Timing Bonus" Gnotes). */
+    val performanceBonusPoints: Int,
 
-    /** Current Gnote total — derived from counters above, included for convenience. */
+    /** Lifetime Gnotes earned from rewarded ads, already daily-capped at earn time
+     *  (raw input to the "Ad Bonus" Gnotes). */
+    val rewardedAdGnotes: Int,
+
+    // ── Streak & personal records (merge = take the larger / the union) ────────
+
+    /** All-time best practice streak. Monotonically non-decreasing. */
+    val bestPracticeStreak: Int,
+
+    /** Practice-day epoch days (2 AM local rollover), last 14 days. The current streak
+     *  is re-derivable from this, so it is not stored separately. */
+    val practicedEpochDays: Set<Long>,
+
+    /** Rhythm game high score per difficulty name. Merge = max per key. */
+    val rhythmHighScores: Map<String, Int>,
+
+    /** Speed Trainer reached-BPM personal best per "start_target" range. Merge = max per key. */
+    val speedTrainerRecords: Map<String, Int>,
+
+    // ── Items (merge = the union) ──────────────────────────────────────────────
+
+    /** Exact set of currently-unlocked cosmetic item IDs (earned OR purchased). */
+    val unlockedItemIds: Set<String>,
+
+    /** Item IDs whose unlock celebration popup has already been dismissed, so a
+     *  restored profile never re-shows a reward the user has already seen. */
+    val celebratedItemIds: Set<String>,
+
+    // ── Earned rewards (merge = take the larger) ───────────────────────────────
+
+    /** Unix ms until which the earned ad-free reward is active (0 = none). */
+    val adFreeRewardUntilMs: Long,
+
+    // ── Derived convenience (always recomputable from the counters above) ──────
+
+    /** Current Gnote total — derived, included for convenience only. */
     val gnoteTotal: Int,
-
-    /** Number of Metro cosmetic items currently unlocked. */
-    val unlockedItemCount: Int,
-)
+) {
+    /** Number of cosmetic items currently unlocked. */
+    val unlockedItemCount: Int get() = unlockedItemIds.size
+}

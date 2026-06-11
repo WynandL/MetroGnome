@@ -1,7 +1,7 @@
 package com.example.metrognome.points
 
 /**
- * One line item in the Beats ledger.
+ * One line item in the Gnotes ledger.
  * [rawValue] and [rawUnit] are for display only ("45 min", "8 games").
  */
 data class PointsContribution(
@@ -12,7 +12,7 @@ data class PointsContribution(
 )
 
 /**
- * Immutable snapshot of a user's current Beats score.
+ * Immutable snapshot of a user's current Gnotes score.
  *
  * [total] is always derived from [contributions] — never stored independently.
  * This mirrors the event-sourcing pattern used by banking-grade ledgers:

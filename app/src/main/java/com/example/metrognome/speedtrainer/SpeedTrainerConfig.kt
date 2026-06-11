@@ -9,7 +9,6 @@ data class SpeedTrainerConfig(
     val incrementMode: IncrementMode = IncrementMode.FIXED,
     val barsPerStep: Int = 4,
     val repeatsPerStep: Int = 1,
-    val micEnabled: Boolean = false,
     val autoAdvanceWindowMs: Int = 30,
 ) {
     enum class IncrementMode { FIXED, PERCENT }
@@ -44,5 +43,22 @@ data class SpeedTrainerConfig(
     fun stepSizeLabel(): String = when (incrementMode) {
         IncrementMode.FIXED -> "+${stepSize.roundToInt()} BPM"
         IncrementMode.PERCENT -> "+${stepSize}%"
+    }
+
+    /**
+     * Rough wall-clock length of the whole session for [timeSig], in seconds.
+     *
+     * Both increment modes share this: [stepsSequence] has already resolved FIXED vs
+     * PERCENT into the concrete list of tempos, so the duration is just the sum of each
+     * step's bars at that step's tempo, plus the count-in. A bar at B BPM in t/4 lasts
+     * t * 60 / B seconds; each step plays [totalBarsPerStep] bars.
+     */
+    fun estimatedDurationSeconds(timeSig: Int): Int {
+        val steps = stepsSequence()
+        if (steps.isEmpty()) return 0
+        val playing = steps.sumOf { bpm -> totalBarsPerStep * timeSig * 60.0 / bpm }
+        // Count-in before the first step: timeSig * 2 + 1 beats (matches beginSession).
+        val countIn = (timeSig * 2 + 1) * 60.0 / steps.first()
+        return (playing + countIn).roundToInt()
     }
 }

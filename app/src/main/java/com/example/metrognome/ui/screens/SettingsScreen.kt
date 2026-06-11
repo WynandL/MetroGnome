@@ -7,8 +7,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -17,14 +15,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
@@ -40,7 +36,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,27 +52,28 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.BuildConfig
 import com.example.metrognome.dev.DevEasterEgg
+import com.example.metrognome.debug.settings.DevToolsSection
 import com.example.metrognome.dev.DevTapTarget
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.billing.PremiumSoundDef
 import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
 import com.example.metrognome.ui.overlays.ItemPreviewCanvas
+import com.example.metrognome.ui.overlays.MicCheckOverlay
+import com.example.metrognome.ui.components.MicOptIn
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.billing.PurchasableItemDef
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
-import com.example.metrognome.ui.components.metro_items.UnlockCondition
-import com.example.metrognome.ui.components.metro_items.displayText
 import com.example.metrognome.ui.components.OwnedBadge
 import com.example.metrognome.ui.dialogs.ShowcaseFrame
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
-import com.example.metrognome.whatsnew.AppWhatsNew
 import kotlin.math.roundToInt
 
 private val itemOwnedMessages = mapOf(
@@ -96,8 +92,13 @@ fun SettingsScreen(
     val soundType by vm.soundType.collectAsStateWithLifecycle()
     val volume by vm.volume.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
-    val cheatModeEnabled by vm.cheatModeEnabled.collectAsStateWithLifecycle()
     var isDevMode by remember { mutableStateOf(DevEasterEgg.isDevModeActive(context)) }
+    var showMicCheck by remember { mutableStateOf(false) }
+    // Bumped when the mic check closes (or is reset) so the toggle re-reads engine state.
+    var micCheckRefresh by remember { mutableIntStateOf(0) }
+    val micCal = remember(micCheckRefresh) {
+        com.example.metrognome.audio.selftest.MicCalibration.read(context)
+    }
 
     val isAdFree by vm.isAdFree.collectAsStateWithLifecycle()
     val removeAdsPriceText by vm.removeAdsPriceText.collectAsStateWithLifecycle()
@@ -114,16 +115,8 @@ fun SettingsScreen(
     val itemPrices by vm.itemPrices.collectAsStateWithLifecycle()
     val availableItemProductIds by vm.availableItemProductIds.collectAsStateWithLifecycle()
     val activeItemIds by vm.activeItemIds.collectAsStateWithLifecycle()
-    val isPresetsEnabled by vm.isPresetsEnabled.collectAsStateWithLifecycle()
-    val isPracticeEnabled by vm.isPracticeEnabled.collectAsStateWithLifecycle()
-    val isSpeedTrainerEnabled by vm.isSpeedTrainerEnabled.collectAsStateWithLifecycle()
-    val practiceStreak by vm.practiceStreak.collectAsStateWithLifecycle()
 
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
-    var previewIndex by remember { mutableIntStateOf(0) }
-    var testBannerCount by remember { mutableIntStateOf(1) }
-    var showUnlockRules by remember { mutableStateOf(false) }
-    var showAdPolicy    by remember { mutableStateOf(false) }
     var dialogSoundDef by remember { mutableStateOf<PremiumSoundDef?>(null) }
     var dialogItemDef  by remember { mutableStateOf<PurchasableItemDef?>(null) }
 
@@ -222,14 +215,51 @@ fun SettingsScreen(
                 }
             }
 
+            // When mic timing is on, the practice features force the Classic click so the
+            // detector hears your hits cleanly. The chosen sound above still applies to the
+            // plain metronome.
+            if (micCal.isActive) {
+                Text(
+                    text = "Mic timing is on, so Practice, Speed Trainer, and the Rhythm " +
+                            "Game play the Classic click for accurate hit detection. Your " +
+                            "chosen sound still applies to the regular metronome.",
+                    color = AppColors.textMuted,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    modifier = Modifier.padding(top = 6.dp, bottom = 4.dp),
+                )
+            }
+
             // Volume slider
             SettingsSliderRow(
                 label = "Click Volume",
                 value = volume,
                 valueText = "${(volume * 100).roundToInt()}%",
                 range = 0f..1f,
-                onValueChange = { vm.setVolume(it) }
+                onValueChange = { vm.setVolume(it) },
             )
+
+            // The single, app-wide mic-mode toggle. Speed Trainer, Practice, and the
+            // Rhythm Game all use the result; there is no per-feature toggle. Turning it on
+            // requires a passing self-test — if the device is not calibrated yet, the check
+            // runs first and the toggle reflects the outcome (so the X / a fail leaves it
+            // off). Gated to dev mode (not just debug) so it can be exercised end-to-end on
+            // the Internal Test track via the easter egg, while ordinary testers don't see it.
+            if (isDevMode) {
+                MicOptIn(
+                    enabled = micCal.isActive,
+                    hasMicPermission = true,   // the check dialog handles permission itself
+                    onToggle = {
+                        val store = com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context)
+                        when {
+                            micCal.isActive    -> { store.micModeEnabled = false; micCheckRefresh++ }
+                            micCal.isCalibrated -> { store.micModeEnabled = true; micCheckRefresh++ }
+                            else                -> showMicCheck = true
+                        }
+                    },
+                    onRequestPermission = {},
+                )
+            }
 
             Spacer(Modifier.height(8.dp))
             HorizontalDivider(color = AppColors.surfaceVariant)
@@ -324,256 +354,24 @@ fun SettingsScreen(
             Spacer(Modifier.height(16.dp))
 
             if (isDevMode) {
-            // ── DEV ONLY ──────────────────────────────────────────────────────────
-            OutlinedButton(
-                onClick = { vm.toggleCheatMode() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (cheatModeEnabled) AppColors.gold else AppColors.devGrey
-                ),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (cheatModeEnabled) AppColors.gold else AppColors.devDarkBorder
-                )
-            ) {
-                Text(
-                    if (cheatModeEnabled) "All Items ON" else "All Items OFF",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
+                DevToolsSection(
+                    vm = vm,
+                    micCal = micCal,
+                    onTriggerFeedback = onTriggerFeedback,
+                    onMicStateChanged = { micCheckRefresh++ },
                 )
             }
 
-            Spacer(Modifier.height(6.dp))
-
-            Row(modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
-                    onClick = { vm.previewUnlockCelebration(previewIndex) },
-                    modifier = Modifier.weight(1f).padding(end = 4.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.mediumPurple),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.deepPurple)
-                ) {
-                    Text("Preview Popup", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-                OutlinedButton(
-                    onClick = { if (METRO_ITEM_REGISTRY.isNotEmpty()) previewIndex = (previewIndex + 1) % METRO_ITEM_REGISTRY.size },
-                    modifier = Modifier.padding(start = 4.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.surfaceVariant)
-                ) {
-                    Text(
-                        "#${previewIndex + 1}/${METRO_ITEM_REGISTRY.size}",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+            if (showMicCheck) {
+                MicCheckOverlay(onDismiss = {
+                    showMicCheck = false
+                    // Enable the toggle iff the check left a passing calibration; an X or a
+                    // fail leaves it off ("read from the engine").
+                    val store = com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context)
+                    if (store.isCalibrated) store.micModeEnabled = true
+                    micCheckRefresh++
+                })
             }
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = { showUnlockRules = true },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
-            ) {
-                Text("Show Unlock Rules", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = { showAdPolicy = true },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
-            ) {
-                Text("Show Ad Policy", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = { vm.resetAllProgress() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
-            ) {
-                Text("Reset All Progress", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = { vm.debugClearAdFree() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
-            ) {
-                Text(
-                    if (isAdFree) "Clear Ad-Free State" else "Ad-Free Already Cleared",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = { vm.debugClearSoundPurchases() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
-            ) {
-                Text(
-                    if (purchasedSoundIds.isNotEmpty()) "Clear Sound Purchases" else "No Sound Purchases to Clear",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = { vm.debugClearItemPurchases() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
-            ) {
-                Text(
-                    if (purchasedItemProductIds.isNotEmpty()) "Clear Item Purchases" else "No Item Purchases to Clear",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = { vm.debugClearPresets() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
-            ) {
-                Text(
-                    if (isPresetsEnabled) "Clear Presets + Data" else "Presets Not Enabled",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = { vm.debugClearPracticeMode() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
-            ) {
-                Text(
-                    if (isPracticeEnabled) "Clear Practice + Streak" else "Practice Not Enabled",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            if (isPracticeEnabled) {
-                Spacer(Modifier.height(6.dp))
-                StreakSimulator(
-                    currentStreak = practiceStreak,
-                    onApply       = { vm.debugSimulateStreak(it) },
-                    onReset       = { vm.debugClearStreakSim() },
-                )
-            }
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = { vm.debugClearSpeedTrainer() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devRedBorder)
-            ) {
-                Text(
-                    if (isSpeedTrainerEnabled) "Clear Speed Trainer Unlock" else "Speed Trainer Not Enabled",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = { vm.debugResetWhatsNew() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
-            ) {
-                Text("Show ${AppWhatsNew.ALL.last()} What's New Again", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = { vm.debugResetReview() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
-            ) {
-                Text("Reset Review Prompt", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = onTriggerFeedback,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
-            ) {
-                Text("Trigger Tuner Feedback Card", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = {
-                    val limit = 3
-                    com.example.metrognome.points.PointsBannerQueue.postActivity(
-                        "Rhythm Game",
-                        1,
-                        testBannerCount,
-                        limit,
-                    )
-                    testBannerCount = if (testBannerCount >= limit + 1) 1 else testBannerCount + 1
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
-            ) {
-                Text(
-                    "Test Gnotes Banner  ($testBannerCount / 3)",
-                    fontSize = 12.sp, fontWeight = FontWeight.Bold
-                )
-            }
-
-            val milestoneDays = listOf(7, 30, 60, 100, 365)
-            var testMilestoneIndex by remember { mutableIntStateOf(0) }
-            Spacer(Modifier.height(6.dp))
-            OutlinedButton(
-                onClick = {
-                    com.example.metrognome.points.PointsBannerQueue.postMilestone(
-                        milestoneDays[testMilestoneIndex]
-                    )
-                    testMilestoneIndex = (testMilestoneIndex + 1) % milestoneDays.size
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder)
-            ) {
-                Text(
-                    "Test Loyalty Banner  (${milestoneDays[testMilestoneIndex]} days)",
-                    fontSize = 12.sp, fontWeight = FontWeight.Bold
-                )
-            }
-            } // end DEBUG block
 
             Spacer(Modifier.height(8.dp))
         }
@@ -581,80 +379,6 @@ fun SettingsScreen(
         if (!isAdFree) {
             AdBannerView(modifier = Modifier.fillMaxWidth())
         }
-    }
-
-    if (showAdPolicy) {
-        AlertDialog(
-            onDismissRequest = { showAdPolicy = false },
-            containerColor   = AppColors.surfaceDeep,
-            titleContentColor = AppColors.gold,
-            textContentColor  = AppColors.textSecondary,
-            title = { Text("Ad Policy", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(modifier = Modifier
-                    .heightIn(max = 400.dp)
-                    .verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        text = com.example.metrognome.ads.buildAdPolicySummary(),
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp,
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showAdPolicy = false }) {
-                    Text("OK", color = AppColors.textAccent, fontWeight = FontWeight.Bold)
-                }
-            }
-        )
-    }
-
-    if (showUnlockRules) {
-        AlertDialog(
-            onDismissRequest = { showUnlockRules = false },
-            containerColor = AppColors.surfaceDeep,
-            titleContentColor = AppColors.gold,
-            textContentColor = AppColors.textSecondary,
-            title = { Text("Unlock Rules", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(modifier = Modifier
-                    .heightIn(max = 380.dp)
-                    .verticalScroll(rememberScrollState())) {
-                    METRO_ITEM_REGISTRY.sortedBy { entry ->
-                        when (val c = entry.condition) {
-                            is UnlockCondition.MetronomeSeconds          -> c.required.toDouble()
-                            is UnlockCondition.TunerSeconds              -> c.required.toDouble()
-                            is UnlockCondition.RhythmGamesCompleted      -> c.required * 300.0
-                            is UnlockCondition.DaysSinceFirstLaunch      -> c.required * 86_400.0
-                            is UnlockCondition.LoyaltyDays               -> c.required * 86_400.0
-                            is UnlockCondition.PracticeSessionsCompleted -> c.required * 1_200.0
-                            is UnlockCondition.TunerFeedbackGiven              -> c.required * 60.0
-                            is UnlockCondition.SpeedTrainingSessionsCompleted  -> c.required * 900.0
-                            UnlockCondition.Always                             -> -1.0
-                        }
-                    }.forEach { entry ->
-                        Text(
-                            text = entry.item.displayName,
-                            color = AppColors.textAccent,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                        )
-                        Text(
-                            text = entry.condition.displayText(),
-                            fontSize = 12.sp,
-                            color = AppColors.textSecondary,
-                        )
-                        Spacer(Modifier.height(10.dp))
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showUnlockRules = false }) {
-                    Text("OK", color = AppColors.textAccent, fontWeight = FontWeight.Bold)
-                }
-            }
-        )
     }
 
     dialogItemDef?.let { def ->
@@ -957,78 +681,6 @@ private fun RemoveAdsSection(
 }
 
 @Composable
-private fun StreakSimulator(
-    currentStreak: Int,
-    onApply: (Int) -> Unit,
-    onReset: () -> Unit,
-) {
-    var days by remember(currentStreak) { mutableIntStateOf(currentStreak) }
-    val shape = RoundedCornerShape(10.dp)
-    val btnPadding = PaddingValues(0.dp)
-
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(
-            modifier              = Modifier.fillMaxWidth(),
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text       = "Simulate streak",
-                color      = AppColors.devGrey,
-                fontSize   = 12.sp,
-                fontWeight = FontWeight.Bold,
-                modifier   = Modifier.weight(1f),
-                maxLines   = 1,
-            )
-            OutlinedButton(
-                onClick        = { if (days > 0) days-- },
-                modifier       = Modifier.size(36.dp),
-                shape          = shape,
-                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
-                border         = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devDarkBorder),
-                contentPadding = btnPadding,
-            ) { Text("−", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
-
-            Text(
-                text       = "$days",
-                color      = AppColors.gold,
-                fontSize   = 14.sp,
-                fontWeight = FontWeight.Bold,
-                modifier   = Modifier.width(30.dp),
-                textAlign  = androidx.compose.ui.text.style.TextAlign.Center,
-            )
-
-            OutlinedButton(
-                onClick        = { days++ },
-                modifier       = Modifier.size(36.dp),
-                shape          = shape,
-                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
-                border         = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devDarkBorder),
-                contentPadding = btnPadding,
-            ) { Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
-
-            OutlinedButton(
-                onClick        = { onApply(days) },
-                modifier       = Modifier.height(36.dp),
-                shape          = shape,
-                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border         = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devBlueBorder),
-                contentPadding = PaddingValues(horizontal = 10.dp),
-            ) { Text("Apply", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
-
-            OutlinedButton(
-                onClick        = onReset,
-                modifier       = Modifier.height(36.dp),
-                shape          = shape,
-                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
-                border         = androidx.compose.foundation.BorderStroke(1.dp, AppColors.devDarkBorder),
-                contentPadding = PaddingValues(horizontal = 10.dp),
-            ) { Text("Reset", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
-        }
-    }
-}
-
-@Composable
 private fun SettingsSectionTitle(title: String) {
     Text(
         text = title.uppercase(),
@@ -1046,14 +698,16 @@ private fun SettingsSliderRow(
     value: Float,
     valueText: String,
     range: ClosedFloatingPointRange<Float>,
-    onValueChange: (Float) -> Unit
+    onValueChange: (Float) -> Unit,
+    bottomPadding: Dp = 16.dp,
 ) {
-    Column(modifier = Modifier.padding(bottom = 16.dp)) {
+    Column(modifier = Modifier.padding(bottom = bottomPadding)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label, color = AppColors.textPrimary, modifier = Modifier.weight(1f))
+            Text(label, color = AppColors.textPrimary, fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f))
             Text(
                 valueText,
                 color = AppColors.textAccent,
@@ -1077,7 +731,8 @@ private fun SettingsSliderRow(
 @Composable
 private fun SettingsRow(label: String, content: @Composable () -> Unit) {
     Column(modifier = Modifier.padding(bottom = 14.dp)) {
-        Text(label, color = AppColors.textPrimary, modifier = Modifier.padding(bottom = 8.dp))
+        Text(label, color = AppColors.textPrimary, fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(bottom = 8.dp))
         content()
     }
 }
@@ -1097,6 +752,7 @@ private fun SettingsSwitchRow(
             Text("Flash on Beat", color = AppColors.textPrimary, fontWeight = FontWeight.Medium)
             Text("Golden screen flash on each beat", color = AppColors.textMuted, fontSize = 12.sp)
         }
+        Spacer(Modifier.width(12.dp))
         Switch(
             checked = checked,
             onCheckedChange = onChecked,

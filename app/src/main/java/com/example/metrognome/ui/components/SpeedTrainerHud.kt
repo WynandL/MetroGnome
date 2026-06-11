@@ -49,7 +49,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.ui.theme.AppColors
-import kotlin.math.abs
 import com.example.metrognome.viewmodel.TrainerSessionState
 
 /**
@@ -99,19 +98,8 @@ fun SpeedTrainerHud(
     val fillEnd = AppColors.gold
     val edgeColor = lerp(AppColors.gold, Color.White, 0.45f)
 
-    val deviation = state.lastDeviationMs
-    val windowMs = state.config.autoAdvanceWindowMs
-    val deviationText = if (state.config.micEnabled) deviation?.let { d ->
-        val sign = if (d >= 0) "+" else "-"
-        "$sign${abs(d).toInt()}ms"
-    } else null
-    val deviationColor = deviation?.let { d ->
-        when {
-            abs(d) <= windowMs -> AppColors.gold
-            abs(d) <= windowMs * 2f -> AppColors.textSecondary
-            else -> AppColors.textMuted
-        }
-    }
+    // No live timing numbers are shown to the player: the mic measures quietly in the
+    // background and the only feedback is the Gnotes bonus at the end of the session.
 
     Box(
         modifier = modifier
@@ -241,15 +229,6 @@ fun SpeedTrainerHud(
                     lineHeight = 9.sp,
                 )
             }
-            if (deviationText != null && deviationColor != null) {
-                Text(
-                    deviationText,
-                    color = deviationColor,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 9.sp,
-                )
-                Spacer(Modifier.width(8.dp))
-            }
             Icon(
                 Icons.Filled.SkipPrevious,
                 contentDescription = "Go back a step",
@@ -330,8 +309,7 @@ fun SpeedTrainerCountdownHud(
             )
             if (displayBeat != null) {
                 Text(
-                    if (state.config.micEnabled) "Play along to calibrate"
-                    else "Bar ${state.currentBar} of ${state.totalBars}",
+                    "Bar ${state.currentBar} of ${state.totalBars}",
                     color = AppColors.textSubtle,
                     fontSize = 9.sp,
                     lineHeight = 11.sp,

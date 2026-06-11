@@ -1,10 +1,10 @@
 package com.example.metrognome.points
 
 /**
- * Pure, stateless Beats calculator.
+ * Pure, stateless Gnotes calculator.
  *
  * Takes lifetime usage counters and an optional [DailyActivity] snapshot and
- * produces a [PointsSnapshot]. When [today] is provided, today's contribution
+ * produces a [PointsSnapshot]. When today is provided, today's contribution
  * is capped per [PointsLimits]; historical contributions (all previous days)
  * are never retroactively capped, preserving backward compatibility for
  * existing users.
@@ -29,6 +29,8 @@ object PointsCalculator {
         speedTrainerSeconds: Long,
         tunerFeedbackGiven: Int,
         micBonusSessions: Int,
+        /** Lifetime graded timing-bonus points from Practice + Speed Trainer → "Timing Bonus". */
+        performanceBonusPoints: Int,
         /** Distinct days the user actually opened the app → "Loyalty" contribution. */
         loyaltyActiveDays: Int,
         /** Calendar days since first launch (whether opened or not) → "Installed" contribution. */
@@ -52,7 +54,7 @@ object PointsCalculator {
             return historical + todayTotal.coerceAtMost(limitPerDay)
         }
 
-        // Beats from a score-based activity: historical score uncapped, today's score capped at maxBeatsPerDay.
+        // Gnotes from a score-based activity: historical score uncapped, today's score capped at maxBeatsPerDay.
         fun beatsFromScore(lifetimeScore: Int, todayScore: Int, divisor: Int, maxBeatsPerDay: Int): Int {
             val historicalBeats = (lifetimeScore - todayScore) / divisor
             val todayBeats      = (todayScore / divisor).coerceAtMost(maxBeatsPerDay)
@@ -96,6 +98,11 @@ object PointsCalculator {
             countedEvents(micBonusSessions, t.micBonusSessionsToday, PointsLimits.MIC_ACCURACY_SESSIONS_PER_DAY)
         else
             micBonusSessions
+
+        val performanceBonus = if (applyLimits)
+            countedEvents(performanceBonusPoints, t.performanceBonusToday, PointsLimits.PERFORMANCE_BONUS_PER_DAY)
+        else
+            performanceBonusPoints
 
         val contributions = buildList {
             if (metronomeMinutes > 0L) add(
@@ -154,6 +161,14 @@ object PointsCalculator {
                     points   = micBonus * PointsConfig.MIC_ACCURACY_BONUS_PER_SESSION,
                 )
             )
+            if (performanceBonus > 0) add(
+                PointsContribution(
+                    label    = "Timing Bonus",
+                    rawValue = performanceBonus.toLong(),
+                    rawUnit  = "in time",
+                    points   = performanceBonus * PointsConfig.PER_PERFORMANCE_BONUS,
+                )
+            )
             if (loyaltyActiveDays > 0) add(
                 PointsContribution(
                     label    = "Loyalty",
@@ -184,7 +199,7 @@ object PointsCalculator {
     }
 
     /**
-     * Today's capped Beats total from a [DailyActivity] snapshot.
+     * Today's capped Gnotes total from a [DailyActivity] snapshot.
      *
      * Used by [com.example.metrognome.points.rewards.RewardManager] to detect whether
      * the user has reached the daily maximum without touching historical totals.
@@ -199,6 +214,7 @@ object PointsCalculator {
         val speedMins  = (today.speedTrainerSecondsToday / 60).coerceAtMost(PointsLimits.SPEED_TRAINER_MINUTES_PER_DAY.toLong()).toInt()
         val feedback   = today.tunerFeedbackGiven.coerceAtMost(PointsLimits.TUNER_FEEDBACK_PER_DAY)
         val micBonus   = today.micBonusSessionsToday.coerceAtMost(PointsLimits.MIC_ACCURACY_SESSIONS_PER_DAY)
+        val perfBonus  = today.performanceBonusToday.coerceAtMost(PointsLimits.PERFORMANCE_BONUS_PER_DAY)
         return (metMins * PointsConfig.METRONOME_PER_MINUTE).toInt() +
                tunerNotes * PointsConfig.PER_TUNER_NOTE +
                gameBeats +
@@ -206,6 +222,7 @@ object PointsCalculator {
                speedMins * PointsConfig.PER_SPEED_TRAINER_MINUTE +
                feedback * PointsConfig.PER_TUNER_FEEDBACK +
                micBonus * PointsConfig.MIC_ACCURACY_BONUS_PER_SESSION +
+               perfBonus * PointsConfig.PER_PERFORMANCE_BONUS +
                PointsConfig.LOYALTY_PER_DAY
     }
 }

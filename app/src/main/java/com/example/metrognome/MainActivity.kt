@@ -60,6 +60,10 @@ enum class AppTab(val label: String) {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Route the hardware volume keys to the media stream so they adjust the click /
+        // mic-check playback the user actually hears (not the ring stream), even when
+        // nothing is playing yet - e.g. while the mic-check dialog nudges "turn it up".
+        volumeControlStream = android.media.AudioManager.STREAM_MUSIC
         enableEdgeToEdge()
         setContent {
             MetroGnomeTheme {

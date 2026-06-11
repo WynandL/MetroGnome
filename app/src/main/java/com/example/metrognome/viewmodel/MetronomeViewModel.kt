@@ -1,13 +1,19 @@
 package com.example.metrognome.viewmodel
 
+import android.Manifest
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
+import android.os.SystemClock
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
+import com.example.metrognome.audio.rhythm.RhythmDetector
+import com.example.metrognome.audio.selftest.MicCalibration
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.metronome.MetronomeEngine
 import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
@@ -19,6 +25,8 @@ import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
+import com.example.metrognome.debug.mic.MicDiagnosticsBuffer
+import com.example.metrognome.dev.DevEasterEgg
 import com.example.metrognome.whatsnew.AppWhatsNew
 import com.example.metrognome.whatsnew.WhatsNewTracker
 import kotlinx.coroutines.Job
@@ -30,7 +38,19 @@ import androidx.core.content.edit
 import com.example.metrognome.analytics.AnalyticsTracker
 
 data class BeatEvent(val beat: Int)
-data class PracticeResult(val durationMinutes: Int, val streak: Int, val totalSessions: Int)
+data class PracticeResult(
+    val durationMinutes: Int,
+    val streak: Int,
+    val totalSessions: Int,
+    // Average absolute timing deviation (ms) when mic mode ran this session; null when
+    // the mic was not used. Drives the graded timing bonus below.
+    val micAvgDeviationMs: Float? = null,
+    val micHitCount: Int = 0,
+    // Graded timing bonus actually credited this session (after the daily cap), and the
+    // 0..1 performance share behind it (tunes the congratulatory line). 0 = hidden.
+    val performanceBonus: Int = 0,
+    val performanceFraction: Float = 0f,
+)
 
 class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -92,6 +112,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _practicedEpochDays = MutableStateFlow(practiceManager.getPracticedEpochDays())
     val practicedEpochDays: StateFlow<Set<Long>> = _practicedEpochDays.asStateFlow()
 
+
     private val _streakCardExpanded = MutableStateFlow(prefs.getBoolean("streak_card_expanded", false))
     val streakCardExpanded: StateFlow<Boolean> = _streakCardExpanded.asStateFlow()
 
@@ -102,6 +123,21 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private var practiceJob: Job? = null
+
+    // ── Practice mic pipeline (only live while a mic-enabled practice session runs) ──
+    private var practiceDetector: RhythmDetector? = null
+    private var lastBeatMs = 0L
+    private var practiceLatencyMs = 0f
+    private val practiceDeviations = mutableListOf<Float>()
+
+    /** Dev easter-egg gate — mirrors SpeedTrainerViewModel so Practice feeds the Mic Timing Log. */
+    private val isDevMode get() = DevEasterEgg.isDevModeActive(getApplication())
+
+    // While a mic-measured session (Practice / Speed Trainer) is live, the engine plays the
+    // classic click regardless of the user's chosen sound, so the spectral clap detector gets
+    // the click profile it is tuned for. The saved sound (_soundType) is never mutated and is
+    // restored when the session stops. See setMicSoundOverride / effectiveSoundType.
+    private var forceClassicForMic = false
 
     private val _presets = MutableStateFlow(presetsManager.loadPresets())
     val presets: StateFlow<List<BpmPreset>> = _presets.asStateFlow()
@@ -199,17 +235,23 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     fun startPractice(minutes: Int) {
         if (!_isPlaying.value) {
             if (!requestAudioFocus()) return
+            // Force the classic click before syncing so the engine starts on it (no-op if mic off).
+            setMicSoundOverride(true)
             syncEngineSettings()
             engine.start()
             _isPlaying.value = true
             AnalyticsTracker.logMetronomeStarted(_bpm.value, _soundType.value, _timeSig.value)
             startPlayTimer()
+        } else {
+            // Metronome already running — swap the live click to classic for the mic session.
+            setMicSoundOverride(true)
         }
         _practiceGoalSeconds.value = minutes * 60
         _practiceSecondsRemaining.value = minutes * 60
         _isPracticeActive.value = true
         AnalyticsTracker.logPracticeStarted(minutes)
         startPracticeTimer()
+        startPracticeMic()
     }
 
     fun cancelPractice() {
@@ -219,9 +261,60 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         }
         practiceJob?.cancel()
         practiceJob = null
+        stopPracticeMic()
         _isPracticeActive.value = false
         _practiceSecondsRemaining.value = 0
     }
+
+    // ── Practice mic helpers ────────────────────────────────────────────────────
+
+    /** Start mic listening for this practice session, if mic mode is active and permitted. */
+    @Suppress("MissingPermission")
+    private fun startPracticeMic() {
+        val micCal = MicCalibration.read(getApplication())
+        practiceDeviations.clear()
+        practiceLatencyMs = 0f
+        if (!(micCal.isActive && hasMicPermission())) return
+
+        practiceLatencyMs = micCal.latencyMs
+        // Spectral mode: the detector rejects the metronome click by its signature, so a hit
+        // landing on the beat still counts (the old time-suppression window dropped those).
+        val det = RhythmDetector(classifyClaps = true)
+        practiceDetector = det
+        det.start()
+        viewModelScope.launch {
+            det.detections.collect { onsetMs -> onPracticeOnset(onsetMs) }
+        }
+        if (isDevMode) {
+            MicDiagnosticsBuffer.startSession("Practice", det.echoCancellationActive)
+            viewModelScope.launch { det.amplitude.collect { MicDiagnosticsBuffer.updateAmplitude(it) } }
+            det.debugOnClickRejected = { onset, onsetMs ->
+                MicDiagnosticsBuffer.logClickRejected(onsetMs, onset.lowRms, onset.highRms, onset.peakRatio)
+            }
+        }
+    }
+
+    /** Collect one corrected timing deviation against the most recent beat. */
+    private fun onPracticeOnset(onsetMs: Long) {
+        val raw = (onsetMs - lastBeatMs).toFloat()
+        if (kotlin.math.abs(raw) > 500f) {            // outside a generous window — not a beat hit
+            if (isDevMode) MicDiagnosticsBuffer.logOnsetRejected(onsetMs, raw)
+            return
+        }
+        val calibrated = raw - practiceLatencyMs
+        if (isDevMode) MicDiagnosticsBuffer.logOnsetAccepted(onsetMs, raw, calibrated)
+        practiceDeviations.add(calibrated)
+    }
+
+    private fun stopPracticeMic() {
+        if (isDevMode && practiceDetector != null) MicDiagnosticsBuffer.endSession()
+        practiceDetector?.stop()
+        practiceDetector = null
+    }
+
+    private fun hasMicPermission() =
+        ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED
 
     fun dismissPracticeResult() {
         _pendingPracticeResult.value = null
@@ -231,7 +324,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     fun debugSimulateStreak(days: Int) {
         _practiceStreak.value = days
         _bestStreak.value = maxOf(_bestStreak.value, days)
-        val today = com.example.metrognome.practice.PracticeSessionManager.currentEpochDay()
+        val today = PracticeSessionManager.currentEpochDay()
         _practicedEpochDays.value = (0 until days).map { today - it }.toSet()
     }
 
@@ -302,12 +395,71 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
 
+        // Snapshot mic timing (if it ran) before tearing the detector down.
+        val micHits = practiceDeviations.size
+        val micAvgDeviation = practiceDeviations
+            .map { kotlin.math.abs(it) }
+            .takeIf { it.isNotEmpty() }
+            ?.average()?.toFloat()
+        // Per-hit timing score (lenient: each good hit earns credit, wild ones score 0).
+        val micFraction = com.example.metrognome.points.PerformanceBonus
+            .sessionScore(practiceDeviations.map { kotlin.math.abs(it) })
+        stopPracticeMic()
+
+        // Graded Timing Bonus: a portion of the session minutes set by how well the player
+        // kept time. Same curve as Speed Trainer (PerformanceBonus is the single source). When
+        // dev "simulate timing" is on and no real hits landed, plausible values are synthesized
+        // so the bonus can be tested on a device/emulator with no real mic input.
+        // Only the timing PERFORMANCE is synthesized (the emulator mic gives nothing); the
+        // session length is real, so the bonus still respects "max = session minutes".
+        val simulate = com.example.metrognome.dev.DevEasterEgg.isDevModeActive(getApplication()) &&
+            com.example.metrognome.audio.selftest.SelfTestCalibrationStore(getApplication()).devSimulateTiming &&
+            micHits < com.example.metrognome.points.PerformanceBonus.MIN_HITS
+        val bonusFraction = if (simulate) (40..90).random() / 100f else micFraction
+        val bonusHits = if (simulate) 12 else micHits
+        val rawBonus = com.example.metrognome.points.PerformanceBonus.award(bonusFraction, bonusHits, goalMinutes)
+        var perfBonusEarned = 0
+        var perfFraction = 0f
+        if (rawBonus > 0) {
+            perfFraction = bonusFraction
+            val limit  = com.example.metrognome.points.PointsLimits.PERFORMANCE_BONUS_PER_DAY
+            val before = dailyLog.todayActivity(itemTracker).performanceBonusToday.coerceAtMost(limit)
+            itemTracker.addPerformanceBonus(rawBonus)
+            val after  = dailyLog.todayActivity(itemTracker).performanceBonusToday.coerceAtMost(limit)
+            perfBonusEarned = (after - before).coerceAtLeast(0)
+            if (perfBonusEarned > 0) {
+                AnalyticsTracker.logTimingBonusEarned(
+                    source = "practice",
+                    bonus = perfBonusEarned,
+                    fraction = perfFraction,
+                    hitCount = bonusHits,
+                )
+                com.example.metrognome.points.PointsBannerQueue.post(
+                    com.example.metrognome.points.PointsBannerData(
+                        pointsEarned     = perfBonusEarned,
+                        activityLabel    = "Timing Bonus",
+                        todayCount       = after,
+                        dailyLimit       = limit,
+                        limitJustReached = after == limit && before < limit,
+                    )
+                )
+            }
+        }
+
         _isPracticeActive.value = false
         _practiceStreak.value = newStreak
         _bestStreak.value = practiceManager.getBestStreak()
         _practicedEpochDays.value = practiceManager.getPracticedEpochDays()
         AnalyticsTracker.logPracticeCompleted(goalMinutes, newStreak, totalSessions)
-        _pendingPracticeResult.value = PracticeResult(goalMinutes, newStreak, totalSessions)
+        _pendingPracticeResult.value = PracticeResult(
+            durationMinutes = goalMinutes,
+            streak = newStreak,
+            totalSessions = totalSessions,
+            micAvgDeviationMs = micAvgDeviation,
+            micHitCount = micHits,
+            performanceBonus = perfBonusEarned,
+            performanceFraction = perfFraction,
+        )
         checkForNewUnlocks()
     }
 
@@ -448,6 +600,16 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         engine.onBeat = { beat ->
+            // Stamp the beat for practice-mic deviation math. The detector rejects the click
+            // spectrally (classifyClaps), so no time-suppression window is needed any more.
+            lastBeatMs = SystemClock.elapsedRealtime()
+            if (isDevMode && practiceDetector != null) {
+                MicDiagnosticsBuffer.logBeat(
+                    beat = beat,
+                    suppressUntilMs = 0L,   // spectral mode has no suppression window
+                    estimatedPlayMs = lastBeatMs + practiceLatencyMs.toLong(),
+                )
+            }
             viewModelScope.launch {
                 _currentBeat.value = beat
                 _beatEvents.emit(BeatEvent(beat))
@@ -528,6 +690,9 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private fun stopInternal() {
         stopPlayTimer()
         engine.stop()
+        // Every stop path (practice/trainer complete or cancel, manual stop) funnels through
+        // here, so this is the single point that lifts the mic classic-click override.
+        forceClassicForMic = false
         _isPlaying.value = false
         AnalyticsTracker.logMetronomeStopped()
         _currentBeat.value = 0
@@ -589,9 +754,28 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         val requiredProduct = PREMIUM_SOUND_REGISTRY.find { it.soundTypeIndex == type }?.productId
         if (requiredProduct != null && requiredProduct !in billingManager.purchasedSoundIds.value) return
         _soundType.value = type
-        engine.soundType = type
+        // Respect an active mic override: keep playing the classic click, but remember the pick
+        // so it takes effect the moment the override lifts.
+        engine.soundType = effectiveSoundType()
         prefs.edit { putInt("sound_type", type) }
         AnalyticsTracker.logSoundChanged(type)
+    }
+
+    /** The click the engine should actually play: classic while a mic session overrides it. */
+    private fun effectiveSoundType(): Int = if (forceClassicForMic) 0 else _soundType.value
+
+    /**
+     * Engage (or lift) the classic-click override for a mic-measured session. The override only
+     * takes hold when the mic is genuinely active and permitted, so this is a no-op for users who
+     * have mic accuracy off. The user's saved sound is untouched; [stopInternal] and the lift call
+     * restore it. Idempotent and safe to call repeatedly (e.g. on every trainer step).
+     */
+    fun setMicSoundOverride(sessionActive: Boolean) {
+        val shouldForce = sessionActive &&
+                MicCalibration.read(getApplication()).isActive && hasMicPermission()
+        if (forceClassicForMic == shouldForce) return
+        forceClassicForMic = shouldForce
+        if (_isPlaying.value) engine.soundType = effectiveSoundType()
     }
 
     fun setVolume(v: Float) {
@@ -621,13 +805,14 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         engine.bpm = _bpm.value
         engine.timeSignature = _timeSig.value
         engine.accentBeat = _accentBeat.value - 1
-        engine.soundType = _soundType.value
+        engine.soundType = effectiveSoundType()
         engine.volume = _volume.value
         engine.muted = _isMuted.value
     }
 
     override fun onCleared() {
         practiceJob?.cancel()
+        stopPracticeMic()
         stopInternal()
         abandonAudioFocus()
         billingManager.release()

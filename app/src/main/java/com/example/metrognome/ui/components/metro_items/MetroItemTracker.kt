@@ -38,6 +38,7 @@ class MetroItemTracker(context: Context) {
         private const val KEY_SPEED_TRAINING_SESSIONS = "speed_training_sessions"
         private const val KEY_SPEED_TRAINER_SECONDS   = "speed_trainer_seconds"
         private const val KEY_MIC_BONUS_SESSIONS      = "mic_bonus_sessions"
+        private const val KEY_PERFORMANCE_BONUS       = "performance_bonus_points"
 
         // Mirrors PracticeSessionManager key — read-only here, written only by PracticeSessionManager
         private const val KEY_PRACTICE_TOTAL = "total_sessions"
@@ -112,6 +113,13 @@ class MetroItemTracker(context: Context) {
         prefs.edit { putInt(KEY_MIC_BONUS_SESSIONS, current + 1) }
     }
 
+    /** Accumulate [points] into the lifetime graded timing-bonus total (used for Gnotes). */
+    fun addPerformanceBonus(points: Int) {
+        if (points <= 0) return
+        val current = prefs.getInt(KEY_PERFORMANCE_BONUS, 0)
+        prefs.edit { putInt(KEY_PERFORMANCE_BONUS, current + points) }
+    }
+
     // ── Readers ───────────────────────────────────────────────────────────────
 
     fun metronomeSeconds(): Long    = prefs.getLong(KEY_METRONOME_SECONDS, 0L)
@@ -124,6 +132,7 @@ class MetroItemTracker(context: Context) {
     fun speedTrainingSessionsCompleted(): Int = prefs.getInt(KEY_SPEED_TRAINING_SESSIONS, 0)
     fun speedTrainerSeconds(): Long           = prefs.getLong(KEY_SPEED_TRAINER_SECONDS, 0L)
     fun micBonusSessions(): Int              = prefs.getInt(KEY_MIC_BONUS_SESSIONS, 0)
+    fun performanceBonusPoints(): Int        = prefs.getInt(KEY_PERFORMANCE_BONUS, 0)
     fun practiceSessionsCompleted(): Int = practicePrefs.getInt(KEY_PRACTICE_TOTAL, 0)
     /** Distinct calendar days on which the user has opened the app. */
     fun loyaltyDays(): Int = usageDayTracker.distinctDaysCount()
@@ -219,6 +228,7 @@ class MetroItemTracker(context: Context) {
             remove(KEY_SPEED_TRAINING_SESSIONS)
             remove(KEY_SPEED_TRAINER_SECONDS)
             remove(KEY_MIC_BONUS_SESSIONS)
+            remove(KEY_PERFORMANCE_BONUS)
             // KEY_FORCE_UNLOCKED_IDS is intentionally preserved — it reflects real purchases
         }
     }

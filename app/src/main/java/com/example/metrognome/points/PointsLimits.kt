@@ -3,7 +3,7 @@ package com.example.metrognome.points
 /**
  * Daily earning caps for each activity.
  *
- * Only the units earned within a single calendar day count toward Beats —
+ * Only the units earned within a single calendar day count toward Gnotes;
  * any activity beyond the cap is ignored for that day. Historical contributions
  * from previous days are unchanged, so caps only affect going forward.
  *
@@ -16,7 +16,7 @@ object PointsLimits {
     const val METRONOME_MINUTES_PER_DAY: Int          = 45
     /** Individual note lock-ons that count per day. 18 × 5 pts = 90 pts max (equal to metronome). */
     const val TUNER_NOTES_PER_DAY: Int                = 18
-    /** Maximum Beats earnable from the rhythm game per day. Reached after ~1-2 decent games. */
+    /** Maximum Gnotes earnable from the rhythm game per day. Reached after ~1-2 decent games. */
     const val RHYTHM_BEATS_PER_DAY: Int               = 30
     /** Minutes of completed practice that count per day. 45 × 2 pts = 90 pts max (equal to metronome). */
     const val PRACTICE_MINUTES_PER_DAY: Int           = 45
@@ -26,6 +26,8 @@ object PointsLimits {
     const val TUNER_FEEDBACK_PER_DAY: Int             = 2
     /** Speed Trainer mic-accuracy bonus sessions that count per day. 3 × 10 pts = 30 pts max. */
     const val MIC_ACCURACY_SESSIONS_PER_DAY: Int      = 3
+    /** Graded timing-bonus Gnotes (from Practice + Speed Trainer) that count per day. */
+    const val PERFORMANCE_BONUS_PER_DAY: Int          = 45
     // Loyalty is inherently one point per calendar day — no cap needed.
     /** Maximum Gnotes earnable from rewarded ads per day. 100 / 50 = 2 watches. */
     const val REWARDED_GNOTES_PER_DAY: Int            = 100

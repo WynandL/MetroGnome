@@ -10,12 +10,14 @@ import androidx.annotation.RequiresPermission
 import com.example.metrognome.audio.dsp.PitchDetector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.log2
 import kotlin.math.sin
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Loopback self-calibration for the [Tuner].
@@ -97,6 +99,20 @@ class TunerCalibrator {
         private const val REFERENCE_MIN_CLARITY = 0.9f
         /** Minimum stable detections for a trustworthy result. */
         private const val REFERENCE_MIN_SAMPLES = 12
+        /**
+         * Early finish: once this many clean in-band detections already form a
+         * confident, tight result there is nothing more to learn, so the listen
+         * stops short instead of waiting out [REFERENCE_LISTEN_MS]. A comfortable
+         * margin above [REFERENCE_MIN_SAMPLES] guards against stopping on a brief
+         * clean patch that then drifts.
+         */
+        private const val REFERENCE_EARLY_SAMPLES = 18
+        /**
+         * Once the result is in, hold briefly before returning so the progress bar's
+         * 300 ms fill animation can sweep to 100 % rather than being cut off when the
+         * dialog swaps in the result. Matches the bar's tween in CalibrationDialog.
+         */
+        private const val PROGRESS_SETTLE_MS = 320L
         /** Measurement spread (cents) above which the fork was not ringing cleanly enough. */
         private const val REFERENCE_MAX_SPREAD_CENTS = 4f
         /** |correction − 1| beyond this means the wrong fork was struck — not a device error. */
@@ -200,10 +216,15 @@ class TunerCalibrator {
      * accuracy. The app plays nothing; the user strikes a fork of known pitch
      * [referenceHz] and holds it to the microphone while this listens.
      *
-     * Suspends for about four seconds.
+     * Detection runs *while* audio arrives: the moment enough clean detections
+     * confirm a confident, tight result the run finishes early rather than waiting
+     * out the full window. A faint or noisy fork keeps the run going for the full
+     * [REFERENCE_LISTEN_MS] and reports whatever it managed to gather. Either way
+     * the caller receives the same [ReferenceResult] shape.
      *
      * @param referenceHz the fork's true frequency (e.g. 440.0 for an A440 fork)
-     * @param onProgress  invoked 0.0 → 1.0 as the listening window elapses
+     * @param onProgress  invoked 0.0 → 1.0 as the listening window elapses; snapped
+     *                    to 1.0 on an early finish so a progress bar completes cleanly
      * @return a [ReferenceResult]; [ReferenceResult.confident] is false when the
      *         fork tone was not heard steadily. Null only if the mic was unavailable.
      */
@@ -217,16 +238,15 @@ class TunerCalibrator {
         val sampleRate = opened.second
         val detector = PitchDetector(sampleRate, WINDOW_SIZE)
 
-        val samples = try {
+        try {
             rec.startRecording()
-            captureProgressive(rec, sampleRate, onProgress)
+            listenForFork(rec, detector, sampleRate, referenceHz, onProgress)
         } catch (_: Exception) {
-            return@withContext null
+            null
         } finally {
             try { rec.stop() } catch (_: Exception) { /* already stopped */ }
             rec.release()
         }
-        analyseReference(samples, detector, sampleRate, referenceHz)
     }
 
     // ── Per-tone measurement ─────────────────────────────────────────────────────
@@ -314,53 +334,82 @@ class TunerCalibrator {
 
     // ── Tuning-fork measurement ──────────────────────────────────────────────────
 
-    private fun captureProgressive(
+    /**
+     * Listen to the struck fork, detecting incrementally as audio arrives.
+     *
+     * Each time a fresh analysis window fills, its pitch is tested against the
+     * fork band and kept if clean. As soon as a comfortable margin of clean
+     * detections ([REFERENCE_EARLY_SAMPLES]) already forms a confident result the
+     * run returns early; otherwise it listens for the full [REFERENCE_LISTEN_MS]
+     * and reports whatever it gathered. Because the early and full paths feed the
+     * same [evaluateReference], both report identical figures.
+     */
+    private suspend fun listenForFork(
         rec: AudioRecord,
+        detector: PitchDetector,
         sampleRate: Int,
+        referenceHz: Double,
         onProgress: (Float) -> Unit,
-    ): FloatArray {
+    ): ReferenceResult {
         val total = (sampleRate * REFERENCE_LISTEN_MS / 1000L).toInt()
+        val w = detector.windowSize
+        val settle = (sampleRate * REFERENCE_SETTLE_MS / 1000L).toInt()
+        val hop = w / 2
+        val lo = (referenceHz * (1.0 - REFERENCE_BAND)).toFloat()
+        val hi = (referenceHz * (1.0 + REFERENCE_BAND)).toFloat()
+
         val out = FloatArray(total)
         val buf = ShortArray(READ_CHUNK)
+        val window = FloatArray(w)
+        val freqs = ArrayList<Float>()
+
         var got = 0
+        var nextWindow = settle   // first window starts after the strike attack settles
         while (got < total) {
             val n = rec.read(buf, 0, minOf(buf.size, total - got))
             if (n <= 0) break
             for (i in 0 until n) out[got + i] = buf[i] / 32768f
             got += n
             onProgress(got.toFloat() / total)
+
+            // Detect across every window that newly became complete this read.
+            while (nextWindow + w <= got) {
+                System.arraycopy(out, nextWindow, window, 0, w)
+                val pitch = detector.detect(window)
+                if (pitch != null && pitch.clarity >= REFERENCE_MIN_CLARITY &&
+                    pitch.frequency in lo..hi
+                ) {
+                    freqs.add(pitch.frequency)
+                }
+                nextWindow += hop
+            }
+
+            // Early finish: enough clean detections that already agree tightly.
+            if (freqs.size >= REFERENCE_EARLY_SAMPLES) {
+                val result = evaluateReference(freqs, referenceHz)
+                if (result.confident) return finish(result, onProgress)
+            }
         }
-        return if (got == total) out else out.copyOf(got)
+        return finish(evaluateReference(freqs, referenceHz), onProgress)
     }
 
-    /** Reduce a fork capture to a correction factor against the known [referenceHz]. */
-    private fun analyseReference(
-        samples: FloatArray,
-        detector: PitchDetector,
-        sampleRate: Int,
-        referenceHz: Double,
-    ): ReferenceResult {
-        val w = detector.windowSize
-        val start = (sampleRate * REFERENCE_SETTLE_MS / 1000L).toInt()
-        val hop = w / 2
-        val buf = FloatArray(w)
-        val lo = (referenceHz * (1.0 - REFERENCE_BAND)).toFloat()
-        val hi = (referenceHz * (1.0 + REFERENCE_BAND)).toFloat()
+    /**
+     * Fill the progress bar to full and let its animation settle before handing
+     * back the result, so the dialog does not cut the bar off mid-sweep. See
+     * [PROGRESS_SETTLE_MS].
+     */
+    private suspend fun finish(result: ReferenceResult, onProgress: (Float) -> Unit): ReferenceResult {
+        onProgress(1f)
+        delay(PROGRESS_SETTLE_MS.milliseconds)
+        return result
+    }
 
-        // Gather every clean detection that sits near the stated fork pitch.
-        val freqs = ArrayList<Float>()
-        var pos = start
-        while (pos + w <= samples.size) {
-            System.arraycopy(samples, pos, buf, 0, w)
-            val pitch = detector.detect(buf)
-            if (pitch != null && pitch.clarity >= REFERENCE_MIN_CLARITY &&
-                pitch.frequency in lo..hi
-            ) {
-                freqs.add(pitch.frequency)
-            }
-            pos += hop
-        }
-
+    /**
+     * Reduce a set of clean, in-band fork detections to a correction factor
+     * against the known [referenceHz]. Shared by the early-finish check and the
+     * full-window fallback so both produce the same [ReferenceResult].
+     */
+    private fun evaluateReference(freqs: List<Float>, referenceHz: Double): ReferenceResult {
         if (freqs.size < REFERENCE_MIN_SAMPLES) {
             return ReferenceResult(
                 correctionFactor = 1f,
@@ -373,9 +422,9 @@ class TunerCalibrator {
         }
 
         // Robust core: drop the outer 20 % each side before measuring.
-        freqs.sort()
-        val drop = freqs.size / 5
-        val core = freqs.subList(drop, freqs.size - drop)
+        val sorted = freqs.sorted()
+        val drop = sorted.size / 5
+        val core = sorted.subList(drop, sorted.size - drop)
         val median = core[core.size / 2]
         val spreadCents =
             (1200.0 * log2(core.last().toDouble() / core.first().toDouble())).toFloat()

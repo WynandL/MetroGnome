@@ -114,7 +114,10 @@
       "Bash(grep -v \"^\\\\-\\\\-$\")",
       "PowerShell(cd \"C:\\\\Users\\\\wlambrechts\\\\AndroidStudioProjects\\\\MetroGnome\"; .\\\\gradlew compileDebugKotlin 2>&1 | Where-Object { $_ -match \"error:\" -or $_ -match \"^e:\" } | Select-Object -First 10)",
       "Bash(Remove-Item *)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(awk *)",
+      "PowerShell(.\\\\gradlew.bat :app:compileDebugKotlin -q)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }

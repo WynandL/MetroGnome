@@ -19,14 +19,16 @@ private val MESSAGES = listOf(
 /**
  * Bus for the pre-ad break banner. [AdManager] posts here just before showing
  * an interstitial; the UI collects [messages] and displays a transient pill.
- * Messages rotate through [MESSAGES] so the same line never appears twice in a row.
+ * Messages rotate through [MESSAGES] so the same line never appears twice in a row,
+ * and the rotation starts at a random point each launch so the first message of a
+ * session is not always the same one (the counter is in-memory, so it resets on restart).
  */
 object AdBreakQueue {
 
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val messages: SharedFlow<String> = _messages.asSharedFlow()
 
-    private val index = AtomicInteger(0)
+    private val index = AtomicInteger(MESSAGES.indices.random())
 
     fun post() {
         val i = index.getAndIncrement() % MESSAGES.size

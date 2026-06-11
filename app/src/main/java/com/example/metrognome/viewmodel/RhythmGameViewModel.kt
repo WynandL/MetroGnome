@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.metronome.MetronomeEngine
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.audio.rhythm.RhythmDetector
+import com.example.metrognome.audio.selftest.MicCalibration
 import kotlinx.coroutines.Job
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -105,15 +106,6 @@ const val NOTE_TRAVEL_MS = 2000L
  */
 const val MIC_MISS_GRACE_MS = 120L
 
-/**
- * Window after a beat in which a mic onset is treated as the metronome click,
- * used only when the device has no AEC. When AEC is active it cancels the click
- * at the hardware layer, so no suppression window is needed — adding one would
- * also suppress legitimate on-beat claps that arrive at the mic ~17 ms after
- * the onBeat callback fires.
- */
-const val CLICK_SUPPRESSION_MS = 150L
-
 /** After a hit, extra taps within this window are forgiven as double-tap twitch. */
 const val STRAY_TAP_GRACE_MS = 140L
 
@@ -125,7 +117,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private val engine = MetronomeEngine()
     private val itemTracker = MetroItemTracker(app)
     private val dailyLog    = com.example.metrognome.points.DailyActivityLog(app)
-    val detector = RhythmDetector()
+    val detector = RhythmDetector(classifyClaps = true)
 
     // ── Public state flows ────────────────────────────────────────────────────
 
@@ -141,7 +133,9 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private val _useMic = MutableStateFlow(false)
     private val _lastHitOffset = MutableStateFlow(0L)
     private val _beatsRemaining = MutableStateFlow(0)
-    private val _tolerance = MutableStateFlow(1.5f)
+    // Fixed timing-window multiplier (1.5 = default). No user-facing tolerance control is
+    // wired, so this is a constant rather than adjustable state.
+    private val toleranceMultiplier = 1.5f
     private val _highScores = MutableStateFlow(loadHighScores())
 
     /** Render-ready note list updated at ~60 fps by the game loop. */
@@ -158,7 +152,6 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     val useMic: StateFlow<Boolean> = _useMic.asStateFlow()
     val lastHitOffset: StateFlow<Long> = _lastHitOffset.asStateFlow()
     val beatsRemaining: StateFlow<Int> = _beatsRemaining.asStateFlow()
-    val tolerance: StateFlow<Float> = _tolerance.asStateFlow()
     val highScores: StateFlow<Map<String, Int>> = _highScores.asStateFlow()
     val visibleNotes: StateFlow<List<RenderNote>> = _visibleNotes.asStateFlow()
 
@@ -210,19 +203,17 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private var gameLoopJob: Job? = null
     private var micJob: Job? = null
 
+    // Output-latency correction for mic onsets, from the device self-test constant via
+    // MicCalibration (the single source of truth). 0 when uncalibrated (dev). Set per game.
+    private var micLatencyMs = 0L
+
     init {
         engine.onBeat = { beat ->
-            // Volatile write — safe from the engine thread and immediate (no coroutine hop).
-            // Only suppress when AEC is absent: AEC cancels the click in hardware, so
-            // a suppression window would block legitimate on-beat claps without helping.
-            if (_phase.value == GamePhase.PLAYING && _useMic.value
-                && !detector.echoCancellationActive
-            ) {
-                detector.suppressUntilMs = SystemClock.elapsedRealtime() + CLICK_SUPPRESSION_MS
-            }
+            // The detector rejects the metronome click spectrally (classifyClaps), so no
+            // time-suppression window is set here - an on-beat clap is no longer blocked.
             if (BuildConfig.DEBUG && _useMic.value) {
-                val suppressEnd = SystemClock.elapsedRealtime() + CLICK_SUPPRESSION_MS
-                MicDiagnosticsBuffer.logBeat(beat, suppressEnd, SystemClock.elapsedRealtime())
+                val now = SystemClock.elapsedRealtime()
+                MicDiagnosticsBuffer.logBeat(beat, now, now)
             }
             viewModelScope.launch { _currentBeat.value = beat }
         }
@@ -236,14 +227,6 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         currentDifficultyName = name
     }
 
-    /** Timing tolerance multiplier. 0.5 = strict, 1.5 = default, 2.5 = very easy. */
-    fun setTolerance(v: Float) {
-        _tolerance.value = v.coerceIn(0.5f, 2.5f)
-    }
-
-    fun toggleMic(on: Boolean) {
-        _useMic.value = on
-    }
 
     fun startGame() {
         reset()
@@ -287,7 +270,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
         // Compute tolerance-scaled windows once for this session (Fix 1).
         // Both tick() and processTap() read these — they can never disagree.
-        val tol = _tolerance.value
+        val tol = toleranceMultiplier
         winPerfect = (PERFECT_WINDOW_MS * tol).toLong()
         winGood = (GOOD_WINDOW_MS * tol).toLong()
         winMiss = (MISS_WINDOW_MS * tol).toLong()
@@ -316,28 +299,45 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         engine.accentBeat = 0
         engine.soundType = 0
 
-        // Mic starts immediately — gives it NOTE_TRAVEL_MS to calibrate noise floor.
-        // Only start if RECORD_AUDIO permission is actually held; the UI may have set
-        // useMic=true before the user fully granted the permission.
-        val micReady = _useMic.value && ContextCompat.checkSelfPermission(
+        // Mic mode is the single app-wide toggle (MicCalibration.isActive); the game uses
+        // the mic automatically when it is on. Only start if RECORD_AUDIO is actually held
+        // (granted during calibration; a later revoke falls back to tap mode).
+        val cal = MicCalibration.read(getApplication())
+        _useMic.value = cal.isActive
+        val micReady = cal.isActive && ContextCompat.checkSelfPermission(
             getApplication(), Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
 
         if (micReady) {
+            micLatencyMs = cal.latencyMs.toLong()
             detector.start()
             if (BuildConfig.DEBUG) {
                 MicDiagnosticsBuffer.startSession("RhythmGame", detector.echoCancellationActive)
-                detector.debugOnSuppressed = { onsetMs ->
-                    MicDiagnosticsBuffer.logOnsetSuppressed(onsetMs, detector.suppressUntilMs)
+                detector.debugOnClickRejected = { onset, onsetMs ->
+                    MicDiagnosticsBuffer.logClickRejected(onsetMs, onset.lowRms, onset.highRms, onset.peakRatio)
                 }
                 viewModelScope.launch { detector.amplitude.collect { MicDiagnosticsBuffer.updateAmplitude(it) } }
             }
             micJob = viewModelScope.launch {
                 detector.detections.collect { onsetElapsedMs ->
                     _micDetected.tryEmit(Unit)
-                    if (BuildConfig.DEBUG) MicDiagnosticsBuffer.logOnsetAccepted(onsetElapsedMs, 0f, 0f)
+                    // Subtract the device latency so a clap in time scores on the beat.
+                    val corrected = onsetElapsedMs - gameStartElapsedMs - micLatencyMs
+                    if (BuildConfig.DEBUG) {
+                        // Log the REAL deviation vs the nearest active note, so the Mic Timing
+                        // Log shows where claps actually land (raw = no latency correction,
+                        // cal = what scoring uses). Was hardcoded 0/0 = invisible.
+                        val raw = onsetElapsedMs - gameStartElapsedMs
+                        val nearest = notes.filter { it.state == NoteState.ACTIVE }
+                            .minByOrNull { abs(corrected - it.hitTimeMs) }
+                        MicDiagnosticsBuffer.logOnsetAccepted(
+                            onsetElapsedMs,
+                            nearest?.let { (raw - it.hitTimeMs).toFloat() } ?: 0f,
+                            nearest?.let { (corrected - it.hitTimeMs).toFloat() } ?: 0f,
+                        )
+                    }
                     if (_phase.value == GamePhase.PLAYING) {
-                        processTap(onsetElapsedMs - gameStartElapsedMs)
+                        processTap(corrected)
                     }
                 }
             }

@@ -7,6 +7,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.rhythm.RhythmDetector
+import com.example.metrognome.audio.selftest.MicCalibration
 import com.example.metrognome.speedtrainer.SpeedTrainerConfig
 import com.example.metrognome.speedtrainer.SpeedTrainerPrefs
 import com.example.metrognome.analytics.AnalyticsTracker
@@ -48,6 +49,7 @@ sealed class TrainerSessionState {
         val barsRemainingThisStep: Int,
         val autoAdvanceProgress: Float,
         val lastDeviationMs: Float?,
+        val micUsed: Boolean,
     ) : TrainerSessionState()
     data class Complete(
         val config: SpeedTrainerConfig,
@@ -55,6 +57,13 @@ sealed class TrainerSessionState {
         val reachedStepIndex: Int,
         val stepStats: List<StepStat>,
         val previousReachedBpm: Int?,
+        // Whether the mic actually ran this session (not just the persisted preference) -
+        // drives the result layout so a stale enabled-flag can never show empty mic bars.
+        val micUsed: Boolean,
+        // Graded timing bonus actually credited this session (after the daily cap), and the
+        // 0..1 performance share behind it (tunes the congratulatory line). 0 = hidden.
+        val performanceBonus: Int = 0,
+        val performanceFraction: Float = 0f,
     ) : TrainerSessionState()
 }
 
@@ -86,13 +95,13 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     private var currentTimeSig = 4
     private var countdownBeatsLeft = 0
 
-    // Output-latency calibration — measured during the count-in, applied during the session.
-    // Collected raw deviations (uncorrected) when the user plays along with the countdown.
-    // Median of these samples becomes the per-session latency bias.
-    private val calibrationSamples = mutableListOf<Float>()
+    // Output-latency correction applied to mic deviations. Sourced once per session from
+    // the device self-test constant via MicCalibration (the single source of truth). The
+    // count-in is now purely a "get ready / play along" lead-in, no longer a measurement.
     private var latencyBiasMs = 0f
 
     private var sessionStartMs = 0L
+    private var sessionMicUsed = false
 
     // Per-step hit deviation ring buffer for auto-advance + display
     private val recentDeviations = ArrayDeque<Float>()
@@ -101,10 +110,19 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     private val stepStats = mutableListOf<StepStat>()
     private var currentStepDeviations = mutableListOf<Float>()
 
+    // Every accepted hit's deviation across the whole session (not cleared per step).
+    // Feeds the per-hit Timing Bonus score so one wild hit can't sink an otherwise-good run.
+    private val sessionDeviations = mutableListOf<Float>()
+
     // Mic
     private var detector: RhythmDetector? = null
 
     private val isDevMode get() = DevEasterEgg.isDevModeActive(getApplication())
+
+    /** DEV: synthesize plausible mic timing at completion (gated behind dev mode). */
+    private val devSimulateTiming: Boolean
+        get() = isDevMode &&
+            com.example.metrognome.audio.selftest.SelfTestCalibrationStore(getApplication()).devSimulateTiming
 
     // ── Config ────────────────────────────────────────────────────────────────
 
@@ -129,9 +147,17 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     // ── Session lifecycle ─────────────────────────────────────────────────────
 
     fun beginSession(timeSig: Int) {
+        val micCal = MicCalibration.read(getApplication())
+
         val cfg = _config.value
         steps = cfg.stepsSequence()
         if (steps.isEmpty()) return
+
+        // Mic mode is the single app-wide toggle (MicCalibration.isActive) - no per-session
+        // opt-in. Whether it actually ran drives the result layout.
+        val micRunning = micCal.isActive && hasMicPermission()
+        // Dev sim shows the mic result layout (and a synthetic bonus) even without a real mic.
+        sessionMicUsed = micRunning || devSimulateTiming
 
         currentStepIndex = 0
         currentTimeSig = timeSig
@@ -139,11 +165,11 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         // 2 display bars + 1 extra beat so the session starts cleanly on a downbeat.
         // The 9th beat (beat=0) is the session's first downbeat — we transition then.
         countdownBeatsLeft = timeSig * 2 + 1
-        calibrationSamples.clear()
-        latencyBiasMs = 0f
+        latencyBiasMs = micCal.latencyMs
         recentDeviations.clear()
         stepStats.clear()
         currentStepDeviations.clear()
+        sessionDeviations.clear()
 
         sessionStartMs = SystemClock.elapsedRealtime()
         SessionFlags.speedTrainerActive = true
@@ -160,10 +186,10 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
             startBpm  = cfg.startBpm,
             targetBpm = cfg.targetBpm,
             stepCount = steps.size,
-            micEnabled = cfg.micEnabled,
+            micEnabled = micRunning,
         )
 
-        if (cfg.micEnabled && hasMicPermission() && isDevMode) startMic()
+        if (micRunning) startMic()
     }
 
     fun cancelSession() {
@@ -186,18 +212,12 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     fun onBeat(beat: Int) {
         lastBeatMs = SystemClock.elapsedRealtime()
 
-        // Suppress the metronome click from mic detection.
-        // The window is offset by latencyBiasMs so it covers the actual playback moment,
-        // not just the write-queue moment where lastBeatMs is stamped.
-        detector?.let { det ->
-            val suppressMs = if (det.echoCancellationActive) 20L else 60L
-            det.suppressUntilMs = lastBeatMs + latencyBiasMs.toLong() + suppressMs
-        }
+        // The detector rejects the metronome click spectrally (classifyClaps), so there is no
+        // time-suppression window any more; a hit landing on the beat still scores.
         if (isDevMode) {
-            val suppressMs = if (detector?.echoCancellationActive == true) 20L else 60L
             MicDiagnosticsBuffer.logBeat(
                 beat = beat,
-                suppressUntilMs = lastBeatMs + latencyBiasMs.toLong() + suppressMs,
+                suppressUntilMs = 0L,   // spectral mode has no suppression window
                 estimatedPlayMs = lastBeatMs + latencyBiasMs.toLong(),
             )
         }
@@ -206,16 +226,8 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
             is TrainerSessionState.Countdown -> {
                 countdownBeatsLeft--
                 if (countdownBeatsLeft <= 0) {
-                    // Finalise calibration before starting the session.
-                    // Median of countdown deviations estimates the device output latency.
-                    // Clamped to 0–350ms — negative latency is impossible, >350ms is pathological.
-                    if (calibrationSamples.size >= 3) {
-                        latencyBiasMs = calibrationSamples.sorted()[calibrationSamples.size / 2]
-                            .coerceIn(0f, 350f)
-                    }
-                    if (isDevMode) {
-                        MicDiagnosticsBuffer.logCalibrationFinalized(latencyBiasMs, calibrationSamples.size)
-                    }
+                    // Count-in done. latencyBiasMs was set from the device constant at
+                    // session start; the count-in only lets the player get ready.
                     // This beat=0 is the session's first downbeat — start running.
                     // It begins bar 1 (it completes no bar), so the full bar count
                     // remains; later downbeats decrement as each bar completes.
@@ -272,18 +284,8 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         when (_sessionState.value) {
-            is TrainerSessionState.Countdown -> {
-                // Collect calibration samples during count-in.
-                // Accept positive deviations only (after the beat) in a plausible
-                // output-latency range. Negative values or very small values are
-                // click bleed that slipped past AEC; >400ms is genuine lateness.
-                if (rawDeviation in 10f..400f) {
-                    calibrationSamples.add(rawDeviation)
-                    if (isDevMode) {
-                        MicDiagnosticsBuffer.logCalibrationSample(rawDeviation, calibrationSamples.size - 1)
-                    }
-                }
-            }
+            // During the count-in the player is only getting ready; onsets are ignored
+            // (no measurement happens here any more - latency comes from the self-test).
             is TrainerSessionState.Running -> {
                 // Apply the per-session latency correction so deviation is centred on 0
                 // for a musician playing in time, rather than offset by output latency.
@@ -294,6 +296,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
                 if (recentDeviations.size > RING_SIZE) recentDeviations.removeFirst()
 
                 currentStepDeviations.add(deviation)
+                sessionDeviations.add(deviation)
 
                 val cfg = _config.value
                 val goodHits = recentDeviations.count { abs(it) <= cfg.autoAdvanceWindowMs }
@@ -371,28 +374,49 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
-        // Mic accuracy bonus: award Gnotes if timing was consistently good.
-        val stepsWithHits = stepStats.filter { it.hitCount > 0 && it.avgDeviationMs != null }
-        val totalHits = stepsWithHits.sumOf { it.hitCount }
-        if (totalHits >= MIC_MIN_HITS) {
-            val avgDeviation = stepsWithHits.map { it.avgDeviationMs!! }.average().toFloat()
-            if (avgDeviation <= MIC_ACCURACY_THRESHOLD_MS) {
-                val limit     = com.example.metrognome.points.PointsLimits.MIC_ACCURACY_SESSIONS_PER_DAY
-                val rate      = com.example.metrognome.points.PointsConfig.MIC_ACCURACY_BONUS_PER_SESSION
-                val prevCount = dailyLog.todayActivity(itemTracker).micBonusSessionsToday
-                if (prevCount < limit) {
-                    itemTracker.recordMicBonusSession()
-                    val newCount = dailyLog.todayActivity(itemTracker).micBonusSessionsToday
-                    com.example.metrognome.points.PointsBannerQueue.post(
-                        com.example.metrognome.points.PointsBannerData(
-                            pointsEarned     = rate,
-                            activityLabel    = "Mic Accuracy",
-                            todayCount       = newCount,
-                            dailyLimit       = limit,
-                            limitJustReached = newCount >= limit,
-                        )
+        // Mic timing: score the session per-hit (mean of each hit's credit), so a few wild
+        // hits can't sink an otherwise-good run. (The old flat "Mic Accuracy" bonus was folded
+        // into this graded bonus, so a session no longer pays out twice for the same performance.)
+        val totalHits = sessionDeviations.size
+        val realFraction = com.example.metrognome.points.PerformanceBonus
+            .sessionScore(sessionDeviations.map { abs(it) })
+
+        // Graded Timing Bonus: a portion of the session minutes set by how well the player
+        // kept time. Replaces the per-tempo accuracy bars in the result overlay. When dev
+        // "simulate timing" is on and no real hits landed, a plausible fraction is synthesized so
+        // the bonus + result UI can be exercised on a device/emulator with no real mic input.
+        // Only the timing PERFORMANCE is synthesized (a device/emulator with no real hits); the
+        // session length stays real, so the bonus still respects "max = session minutes".
+        val simulate = devSimulateTiming && totalHits < com.example.metrognome.points.PerformanceBonus.MIN_HITS
+        val bonusFraction = if (simulate) (40..90).random() / 100f else realFraction
+        val bonusHits = if (simulate) 12 else totalHits
+        val sessionMinutes = (elapsedSeconds / 60f).let { kotlin.math.round(it) }.toInt()
+        val rawBonus = com.example.metrognome.points.PerformanceBonus.award(bonusFraction, bonusHits, sessionMinutes)
+        var performanceBonusEarned = 0
+        var performanceFraction = 0f
+        if (rawBonus > 0) {
+            performanceFraction = bonusFraction
+            val limit  = com.example.metrognome.points.PointsLimits.PERFORMANCE_BONUS_PER_DAY
+            val before = dailyLog.todayActivity(itemTracker).performanceBonusToday.coerceAtMost(limit)
+            itemTracker.addPerformanceBonus(rawBonus)
+            val after  = dailyLog.todayActivity(itemTracker).performanceBonusToday.coerceAtMost(limit)
+            performanceBonusEarned = (after - before).coerceAtLeast(0)
+            if (performanceBonusEarned > 0) {
+                AnalyticsTracker.logTimingBonusEarned(
+                    source = "speed_trainer",
+                    bonus = performanceBonusEarned,
+                    fraction = performanceFraction,
+                    hitCount = bonusHits,
+                )
+                com.example.metrognome.points.PointsBannerQueue.post(
+                    com.example.metrognome.points.PointsBannerData(
+                        pointsEarned     = performanceBonusEarned,
+                        activityLabel    = "Timing Bonus",
+                        todayCount       = after,
+                        dailyLimit       = limit,
+                        limitJustReached = after == limit && before < limit,
                     )
-                }
+                )
             }
         }
 
@@ -405,7 +429,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
             targetBpm     = cfg.targetBpm,
             reachedBpm    = reachedBpm,
             totalSessions = itemTracker.speedTrainingSessionsCompleted(),
-            micEnabled    = cfg.micEnabled,
+            micEnabled    = sessionMicUsed,
         )
         _sessionState.value = TrainerSessionState.Complete(
             config = cfg,
@@ -413,6 +437,9 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
             reachedStepIndex = currentStepIndex,
             stepStats = stepStats.toList(),
             previousReachedBpm = previousBest,
+            micUsed = sessionMicUsed,
+            performanceBonus = performanceBonusEarned,
+            performanceFraction = performanceFraction,
         )
     }
 
@@ -425,6 +452,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
                               else recentDeviations.count { abs(it) <= _config.value.autoAdvanceWindowMs }
                                        .toFloat() / RING_SIZE,
         lastDeviationMs = recentDeviations.lastOrNull(),
+        micUsed = sessionMicUsed,
     )
 
     // ── Mic ───────────────────────────────────────────────────────────────────
@@ -432,7 +460,9 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     @Suppress("MissingPermission")
     private fun startMic() {
         detector?.stop()
-        val det = RhythmDetector()
+        // Spectral mode: rejects the metronome click by signature and emits only claps, so an
+        // on-beat hit still counts (the old time-suppression window dropped those).
+        val det = RhythmDetector(classifyClaps = true)
         detector = det
         det.start()
         viewModelScope.launch {
@@ -441,8 +471,8 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         if (isDevMode) {
             MicDiagnosticsBuffer.startSession("SpeedTrainer", det.echoCancellationActive)
             viewModelScope.launch { det.amplitude.collect { MicDiagnosticsBuffer.updateAmplitude(it) } }
-            det.debugOnSuppressed = { onsetMs ->
-                MicDiagnosticsBuffer.logOnsetSuppressed(onsetMs, det.suppressUntilMs)
+            det.debugOnClickRejected = { onset, onsetMs ->
+                MicDiagnosticsBuffer.logClickRejected(onsetMs, onset.lowRms, onset.highRms, onset.peakRatio)
             }
         }
     }
@@ -465,8 +495,5 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     companion object {
         // Number of recent hits tracked for the accuracy ring display.
         private const val RING_SIZE = 8
-        // Mic accuracy bonus thresholds
-        private const val MIC_ACCURACY_THRESHOLD_MS = 80f   // avg absolute deviation to qualify
-        private const val MIC_MIN_HITS = 5                  // minimum mic detections for the result to be meaningful
     }
 }

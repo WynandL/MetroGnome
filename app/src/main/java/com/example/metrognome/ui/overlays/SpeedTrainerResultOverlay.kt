@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -40,12 +38,11 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.speedtrainer.SpeedTrainerConfig
+import com.example.metrognome.ui.components.PerformanceBonusReward
 import com.example.metrognome.ui.theme.AppColors
-import com.example.metrognome.viewmodel.StepStat
 import com.example.metrognome.viewmodel.TrainerSessionState
 import kotlin.math.abs
 
@@ -118,7 +115,7 @@ fun SpeedTrainerResultOverlay(
                             lineHeight = 11.sp,
                         )
                         Text(
-                            if (state.config.micEnabled) "Timing result" else "Full range covered",
+                            if (state.micUsed) "Timing result" else "Full range covered",
                             color = Color.White,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
@@ -130,7 +127,7 @@ fun SpeedTrainerResultOverlay(
                 Spacer(Modifier.height(18.dp))
 
                 // ── Body ──────────────────────────────────────────────────────
-                if (state.config.micEnabled) {
+                if (state.micUsed) {
                     MicResultBody(state)
                 } else {
                     NoMicResultBody(state)
@@ -232,14 +229,15 @@ private fun MicResultBody(state: TrainerSessionState.Complete) {
         }
     }
 
-    Spacer(Modifier.height(16.dp))
-
-    StepAccuracySection(
-        steps = state.steps,
-        reachedIndex = state.reachedStepIndex,
-        stats = state.stepStats,
-        modifier = Modifier.fillMaxWidth(),
-    )
+    // Performance is celebrated as a Gnotes bonus, not raw per-tempo stats. Hidden at 0.
+    if (state.performanceBonus > 0) {
+        Spacer(Modifier.height(18.dp))
+        PerformanceBonusReward(
+            bonus = state.performanceBonus,
+            fraction = state.performanceFraction,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 // ── Completed ramp arc ────────────────────────────────────────────────────────
@@ -350,121 +348,3 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
     }
 }
 
-// ── Step accuracy section (mic mode) ─────────────────────────────────────────
-
-@Composable
-private fun StepAccuracySection(
-    steps: List<Int>,
-    reachedIndex: Int,
-    stats: List<StepStat>,
-    modifier: Modifier = Modifier,
-) {
-    val statMap = stats.associateBy { it.bpm }
-    val validStats = stats.filter { it.avgDeviationMs != null }
-    val maxDev = validStats.mapNotNull { it.avgDeviationMs }.maxOrNull()?.coerceAtLeast(1f) ?: 1f
-    val bestStat = validStats.minByOrNull { it.avgDeviationMs!! }
-    val worstStat = validStats.maxByOrNull { it.avgDeviationMs!! }
-
-    Column(modifier = modifier) {
-        Text(
-            "Timing per tempo",
-            color = AppColors.textMuted,
-            fontSize = 10.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
-
-        // Variable-height bar chart: tall bar = tight timing, short bar = loose
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(44.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            steps.forEachIndexed { i, bpm ->
-                val stat = statMap[bpm]
-                val isReached = i <= reachedIndex
-                val deviation = stat?.avgDeviationMs
-                val heightFraction = when {
-                    !isReached -> 0f
-                    deviation == null -> 0.4f
-                    else -> (1f - (deviation / maxDev).coerceIn(0f, 0.82f)).coerceAtLeast(0.18f)
-                }
-                val barColor = when {
-                    !isReached -> Color.Transparent
-                    deviation == null -> AppColors.primaryPurple.copy(alpha = 0.5f)
-                    else -> accuracyColor(deviation)
-                }
-
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    contentAlignment = Alignment.BottomCenter,
-                ) {
-                    if (heightFraction > 0f) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight(heightFraction)
-                                .clip(RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
-                                .background(barColor),
-                        )
-                    }
-                }
-            }
-        }
-
-        // Best and worst tempo callout — actionable: "your timing breaks down at X BPM"
-        if (bestStat != null && worstStat != null) {
-            Spacer(Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(accuracyColor(bestStat.avgDeviationMs!!)),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        "Best  ${bestStat.bpm} BPM · ±${bestStat.avgDeviationMs.toInt()}ms",
-                        color = AppColors.textSubtle,
-                        fontSize = 9.sp,
-                    )
-                }
-                if (bestStat.bpm != worstStat.bpm) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "${worstStat.bpm} BPM · ±${worstStat.avgDeviationMs!!.toInt()}ms",
-                            color = AppColors.textSubtle,
-                            fontSize = 9.sp,
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(accuracyColor(worstStat.avgDeviationMs)),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-private fun accuracyColor(avgDeviationMs: Float): Color {
-    return when {
-        avgDeviationMs <= 15f -> AppColors.gold
-        avgDeviationMs <= 30f -> Color(0xFF7BC47B)
-        avgDeviationMs <= 60f -> Color(0xFFE0A84B)
-        else -> Color(0xFFD05555)
-    }
-}

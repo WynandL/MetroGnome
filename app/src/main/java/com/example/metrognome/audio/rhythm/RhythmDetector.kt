@@ -8,6 +8,7 @@ import android.media.MediaRecorder
 import android.media.audiofx.AcousticEchoCanceler
 import android.os.SystemClock
 import androidx.annotation.RequiresPermission
+import com.example.metrognome.audio.dsp.ClapDetector
 import com.example.metrognome.audio.dsp.OnsetDetector
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,13 +47,19 @@ import kotlin.math.sqrt
  *    the exact clock the game loop uses — so there is zero cross-clock drift.
  *    (The old design mixed wall-clock time, which can jump on NTP/DST changes.)
  *
- * ## Click suppression
- * [suppressUntilMs] gates the metronome click: onsets before it are dropped.
- * The caller sets a wide window when AEC is unavailable and a narrow one when
- * AEC is active — the click is then largely cancelled already, so only its
- * residual transient needs masking. See [echoCancellationActive].
+ * ## Click rejection — two modes
+ * Default ([classifyClaps] = false): an amplitude [OnsetDetector] reports every
+ * transient and [suppressUntilMs] gates the metronome click temporally — a wide
+ * window when AEC is unavailable, a narrow one when AEC is active. Used by the
+ * timing-bonus path (Speed Trainer, Practice).
+ *
+ * Spectral ([classifyClaps] = true): a [ClapDetector] tells the click apart from a
+ * clap by its 1100 Hz signature and emits **only claps**, so a leaked click never
+ * scores even when AEC misses it — and an on-beat clap, which a time window would
+ * have wrongly suppressed, still lands. [suppressUntilMs] is ignored in this mode.
+ * Used by the Rhythm Game.
  */
-class RhythmDetector {
+class RhythmDetector(private val classifyClaps: Boolean = false) {
 
     companion object {
         /** Tried in order until one initialises. 44.1 kHz first — universally supported. */
@@ -97,6 +104,15 @@ class RhythmDetector {
     @Volatile
     var debugOnSuppressed: ((onsetMs: Long) -> Unit)? = null
 
+    /**
+     * Debug-only callback fired for transients the spectral classifier judged to be the
+     * metronome click (classifyClaps mode) and therefore dropped. Null in production — set in
+     * debug builds to feed [MicDiagnosticsBuffer]. Carries the [ClapDetector.Onset] so the log
+     * can show the click-vs-clap band margin that justified the rejection.
+     */
+    @Volatile
+    var debugOnClickRejected: ((onset: ClapDetector.Onset, onsetMs: Long) -> Unit)? = null
+
     /** Whether hardware echo cancellation is running. When true, suppression is moot. */
     var echoCancellationActive: Boolean = false
         private set
@@ -125,7 +141,8 @@ class RhythmDetector {
         } else null
         echoCancellationActive = echoCanceler?.enabled == true
 
-        val onsetDetector = OnsetDetector(sampleRate)
+        val onsetDetector = if (classifyClaps) null else OnsetDetector(sampleRate)
+        val clapDetector = if (classifyClaps) ClapDetector(sampleRate) else null
         rec.startRecording()
         _capturing = true
 
@@ -152,12 +169,22 @@ class RhythmDetector {
                     appFrames += read
                     clock.update(rec, timestamp, appFrames)
 
-                    for (onsetIndex in onsetDetector.process(buf, read)) {
-                        val onsetMs = clock.onsetMs(onsetIndex)
-                        if (onsetMs >= suppressUntilMs) {
-                            _detections.tryEmit(onsetMs)
-                        } else {
-                            debugOnSuppressed?.invoke(onsetMs)
+                    if (clapDetector != null) {
+                        // Spectral mode: reject the metronome click by its signature and emit
+                        // only claps. No time window, so an on-beat clap still scores.
+                        for (onset in clapDetector.process(buf, read)) {
+                            val onsetMs = clock.onsetMs(onset.sampleIndex)
+                            if (onset.isClap) _detections.tryEmit(onsetMs)
+                            else debugOnClickRejected?.invoke(onset, onsetMs)
+                        }
+                    } else {
+                        for (onsetIndex in onsetDetector!!.process(buf, read)) {
+                            val onsetMs = clock.onsetMs(onsetIndex)
+                            if (onsetMs >= suppressUntilMs) {
+                                _detections.tryEmit(onsetMs)
+                            } else {
+                                debugOnSuppressed?.invoke(onsetMs)
+                            }
                         }
                     }
                 }

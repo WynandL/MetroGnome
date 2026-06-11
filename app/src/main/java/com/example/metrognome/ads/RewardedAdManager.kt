@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import androidx.core.content.edit
 import com.example.metrognome.BuildConfig
+import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.points.PointsBannerData
 import com.example.metrognome.points.PointsBannerQueue
 import com.example.metrognome.points.PointsConfig
@@ -123,6 +124,7 @@ class RewardedAdManager(private val context: Context) {
             dailyLimit       = PointsLimits.REWARDED_GNOTES_PER_DAY,
             limitJustReached = newToday >= PointsLimits.REWARDED_GNOTES_PER_DAY,
         ))
+        AnalyticsTracker.logRewardedAdWatched(earned)
         return earned
     }
 

@@ -1,11 +1,12 @@
 package com.example.metrognome.points
 
+import com.example.metrognome.analytics.AnalyticsTracker
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 /**
- * What the Beats banner displays after an activity is completed.
+ * What the Gnotes banner displays after an activity is completed.
  *
  * [pointsEarned] is 0 when the daily limit was already exceeded before this
  * completion. [limitJustReached] is true when this completion was the exact
@@ -20,7 +21,7 @@ data class PointsBannerData(
 )
 
 /**
- * App-wide bus for Beats earned notifications.
+ * App-wide bus for Gnotes earned notifications.
  *
  * ViewModels call [postActivity] immediately after recording a completion.
  * The UI collects [events] and shows a transient slide-in banner.
@@ -35,6 +36,7 @@ object PointsBannerQueue {
     val milestones: SharedFlow<Int> = _milestones.asSharedFlow()
 
     fun postMilestone(days: Int) {
+        AnalyticsTracker.logLoyaltyMilestone(days)
         _milestones.tryEmit(days)
     }
 
@@ -48,7 +50,7 @@ object PointsBannerQueue {
      * @param dailyLimit   The cap for this activity from [PointsLimits].
      */
     fun postActivity(label: String, pointsPerUnit: Int, todayCount: Int, dailyLimit: Int) {
-        _events.tryEmit(
+        post(
             PointsBannerData(
                 pointsEarned     = if (todayCount > dailyLimit) 0 else pointsPerUnit,
                 activityLabel    = label,
@@ -59,8 +61,18 @@ object PointsBannerQueue {
         )
     }
 
-    /** Post a fully-constructed banner — use when earning is delta-based (e.g. per-minute activities). */
+    /**
+     * Post a fully-constructed banner — use when earning is delta-based (e.g. per-minute activities).
+     * Central choke point for every Gnotes-earning banner, so analytics is logged once here.
+     */
     fun post(data: PointsBannerData) {
+        AnalyticsTracker.logGnotesEarned(
+            activity     = data.activityLabel,
+            amount       = data.pointsEarned,
+            todayTotal   = data.todayCount,
+            dailyLimit   = data.dailyLimit,
+            limitReached = data.limitJustReached,
+        )
         _events.tryEmit(data)
     }
 }

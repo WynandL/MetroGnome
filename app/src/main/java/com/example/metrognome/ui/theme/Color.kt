@@ -151,7 +151,7 @@ object GameColors {
     // Hit line idle colour / MIC label
     val hitLineIdle = Color(0xFF3A2A60)
 
-    // Tolerance slider range labels + timing hint text
+    // Rhythm game timing-hint text + tuner quiet/profiling state
     val rangeBlue = Color(0xFF5566AA)
 }
 

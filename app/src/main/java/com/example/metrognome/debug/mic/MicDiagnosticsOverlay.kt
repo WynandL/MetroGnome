@@ -1,17 +1,9 @@
 package com.example.metrognome.debug.mic
 
-import android.os.SystemClock
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,21 +15,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,37 +37,47 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.metrognome.audio.selftest.CheckStatus
+import com.example.metrognome.audio.dsp.ClapDetector
+import com.example.metrognome.audio.selftest.GradeLevel
+import com.example.metrognome.audio.selftest.MicSelfTest
+import com.example.metrognome.audio.selftest.ScoringPoint
+import com.example.metrognome.audio.selftest.SelfTestPhase
+import com.example.metrognome.audio.selftest.SelfTestReport
+import com.example.metrognome.audio.selftest.SelfTestThresholds
 import com.example.metrognome.ui.theme.AppColors
-import kotlin.math.abs
 
-private const val TIMELINE_WINDOW_MS = 4000L
+private val passColor = Color(0xFF4CAF50)
+private val failColor = Color(0xFFE53935)
+private val abortColor = Color(0xFFFF9800)
 
-private val colorAccepted   = Color(0xFF4CAF50)
-private val colorSuppressed = Color(0xFFFF9800)
-private val colorRejected   = Color(0xFFE53935)
-private val colorCalSample  = Color(0xFF6B8AE0)
-private val colorSuppressZone = Color(0xFF7B5EA7)
+private fun statusColor(s: CheckStatus) = when (s) {
+    CheckStatus.PASS -> passColor
+    CheckStatus.FAIL -> failColor
+    CheckStatus.ABORT -> abortColor
+    CheckStatus.PENDING -> AppColors.textDim
+}
 
 /**
- * Full-screen engineering overlay: live mic timing diagnostics.
+ * Full-screen engineering overlay: the mic acoustic-loopback self-test.
  *
- * Shows a 4-second scrolling timeline with beat markers, suppression windows,
- * estimated click play time, onset events, amplitude waveform, and a full
- * event log. All data comes from [MicDiagnosticsBuffer].
+ * Runs [MicSelfTest] - the device emits its own click/clap stimuli, hears them
+ * back, and reports how accurately it can score a player. Shows live phase
+ * progress and a final report card with the device latency constant.
  *
- * Debug-only. Delete this file and [MicDiagnosticsTrigger] call sites to remove.
+ * Debug-only. Public composable name kept stable so existing dev-gated call sites
+ * compile unchanged.
  */
+@SuppressLint("MissingPermission")
 @Composable
 fun MicDiagnosticsOverlay(onDismiss: () -> Unit) {
-    val events       by MicDiagnosticsBuffer.events.collectAsStateWithLifecycle()
-    val ampHistory   by MicDiagnosticsBuffer.ampHistory.collectAsStateWithLifecycle()
-    val source       by MicDiagnosticsBuffer.source.collectAsStateWithLifecycle()
-    val aecActive    by MicDiagnosticsBuffer.aecActive.collectAsStateWithLifecycle()
-    val biasMs       by MicDiagnosticsBuffer.latencyBiasMs.collectAsStateWithLifecycle()
-    val rawDev       by MicDiagnosticsBuffer.lastRawDevMs.collectAsStateWithLifecycle()
-    val calDev       by MicDiagnosticsBuffer.lastCalDevMs.collectAsStateWithLifecycle()
-    val calSamples   by MicDiagnosticsBuffer.calibrationSampleCount.collectAsStateWithLifecycle()
-    val sessionStart by MicDiagnosticsBuffer.sessionStartMs.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val selfTest = remember { MicSelfTest(context) }
+    val ui by selfTest.state.collectAsStateWithLifecycle()
+
+    DisposableEffect(Unit) {
+        onDispose { selfTest.cancel() }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -90,398 +92,303 @@ fun MicDiagnosticsOverlay(onDismiss: () -> Unit) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(12.dp),
+                    .padding(14.dp),
             ) {
-
                 // ── Header ────────────────────────────────────────────────────
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("⚙", fontSize = 16.sp, color = AppColors.gold)
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        "MIC DIAGNOSTICS",
+                        "MIC SELF-TEST",
                         color = AppColors.gold,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 13.sp,
                         letterSpacing = 1.5.sp,
                         fontFamily = FontFamily.Monospace,
                     )
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        source.uppercase(),
-                        color = AppColors.textMuted,
-                        fontSize = 9.sp,
-                        letterSpacing = 1.sp,
-                        fontFamily = FontFamily.Monospace,
-                    )
                     Spacer(Modifier.weight(1f))
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(26.dp)
-                            .clip(CircleShape)
-                            .background(AppColors.surfaceVariant)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = onDismiss,
-                            ),
-                    ) {
-                        Text("✕", color = AppColors.textSecondary, fontSize = 12.sp)
-                    }
+                    CloseButton(onDismiss)
                 }
 
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(14.dp))
 
-                // ── Stats row ─────────────────────────────────────────────────
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    DiagStatChip("BIAS",  if (biasMs > 0f) "${biasMs.toInt()}ms" else "--", AppColors.gold)
-                    DiagStatChip("AEC",   if (aecActive) "ON" else "OFF",
-                        if (aecActive) colorAccepted else colorRejected)
-                    DiagStatChip("RAW",   rawDev?.let { fmtDev(it) } ?: "--", AppColors.textSecondary)
-                    DiagStatChip("CAL",   calDev?.let { fmtDev(it) } ?: "--",
-                        calDev?.let { if (abs(it) <= 30f) colorAccepted else colorSuppressed }
-                            ?: AppColors.textDim)
-                    DiagStatChip("SMPL",  "$calSamples", AppColors.textMuted)
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                // ── Legend ────────────────────────────────────────────────────
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    LegendDot(AppColors.gold,                        "Beat")
-                    LegendDot(colorSuppressZone.copy(alpha = 0.7f),  "Suppress")
-                    LegendDot(AppColors.gold.copy(alpha = 0.55f),    "Est. click")
-                    LegendDot(colorAccepted,                         "Accepted")
-                    LegendDot(colorSuppressed,                       "Suppressed")
-                    LegendDot(colorRejected,                         "Rejected")
-                    LegendDot(colorCalSample,                        "Cal")
-                }
-
-                Spacer(Modifier.height(6.dp))
-
-                // ── Timeline ──────────────────────────────────────────────────
-                Text(
-                    "TIMELINE  ◀  ${TIMELINE_WINDOW_MS / 1000}s window  ▶  NOW",
-                    color = AppColors.textDim,
-                    fontSize = 8.sp,
-                    letterSpacing = 0.5.sp,
-                    fontFamily = FontFamily.Monospace,
-                )
-                Spacer(Modifier.height(4.dp))
-                DiagnosticsTimeline(
-                    events = events,
-                    ampHistory = ampHistory,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(130.dp)
-                        .clip(RoundedCornerShape(6.dp)),
-                )
-
-                Spacer(Modifier.height(10.dp))
-
-                // ── Event log ─────────────────────────────────────────────────
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        "EVENTS  (${events.size}/${MicDiagnosticsBuffer.MAX_EVENTS})",
-                        color = AppColors.textDim,
-                        fontSize = 8.sp,
-                        letterSpacing = 0.5.sp,
-                        fontFamily = FontFamily.Monospace,
-                    )
-                    Text(
-                        "CLEAR",
-                        color = AppColors.textDim,
-                        fontSize = 8.sp,
-                        letterSpacing = 0.5.sp,
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier
-                            .clickable { MicDiagnosticsBuffer.clear() }
-                            .padding(vertical = 4.dp, horizontal = 8.dp),
-                    )
-                }
-                Spacer(Modifier.height(4.dp))
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(AppColors.surfaceDeep)
-                        .padding(6.dp),
-                ) {
-                    LazyColumn(
-                        reverseLayout = true,
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        items(events.reversed()) { event ->
-                            DiagEventRow(event, sessionStart)
-                        }
-                    }
+                val report = ui.report
+                when {
+                    report != null -> ReportCard(report, onRunAgain = { runTest(selfTest) })
+                    ui.running -> RunningView(ui.phase, ui.statusLine, ui.liveLatencyMs)
+                    else -> IntroView(onRun = { runTest(selfTest) })
                 }
             }
         }
     }
 }
 
-// ── Timeline Canvas ───────────────────────────────────────────────────────────
+@SuppressLint("MissingPermission")
+private fun runTest(selfTest: MicSelfTest) = selfTest.run()
+
+// ── Intro ───────────────────────────────────────────────────────────────────
 
 @Composable
-private fun DiagnosticsTimeline(
-    events: List<MicDiagnosticsEvent>,
-    ampHistory: List<Pair<Long, Float>>,
-    modifier: Modifier = Modifier,
-) {
-    // Fast animation tick — forces Canvas recomposition so the timeline scrolls live.
-    @Suppress("UNUSED_VARIABLE")
-    val tick by rememberInfiniteTransition(label = "diagTick")
-        .animateFloat(0f, 1f, infiniteRepeatable(tween(150, easing = LinearEasing)), label = "tick")
-
-    Canvas(modifier = modifier.background(AppColors.surfaceDeep)) {
-        val nowMs = SystemClock.elapsedRealtime()
-        val windowStart = nowMs - TIMELINE_WINDOW_MS
-        val w = size.width
-        val h = size.height
-        val ampH = h * 0.22f
-        val eventH = h - ampH
-
-        fun timeToX(ms: Long) = (ms - windowStart).toFloat() / TIMELINE_WINDOW_MS * w
-
-        // ── Time axis tick marks every 500ms ──────────────────────────────────
-        var gridMs = (windowStart / 500L + 1) * 500L
-        while (gridMs <= nowMs) {
-            val x = timeToX(gridMs)
-            if (x in 0f..w) {
-                drawLine(
-                    color = AppColors.surfaceVariant.copy(alpha = 0.5f),
-                    start = Offset(x, 0f), end = Offset(x, eventH), strokeWidth = 0.5f,
-                )
-            }
-            gridMs += 500L
-        }
-
-        // ── Beat events: suppression zone, estimated play, beat tick ──────────
-        events.filterIsInstance<MicDiagnosticsEvent.BeatFired>()
-            .filter { it.timestampMs >= windowStart - 500 }
-            .forEach { beat ->
-                val beatX     = timeToX(beat.timestampMs)
-                val suppressX = timeToX(beat.suppressUntilMs)
-                val playX     = timeToX(beat.estimatedPlayMs)
-
-                // Suppression zone (purple tint)
-                val left  = beatX.coerceAtLeast(0f)
-                val right = suppressX.coerceAtMost(w)
-                if (right > left) {
-                    drawRect(
-                        color = colorSuppressZone.copy(alpha = 0.18f),
-                        topLeft = Offset(left, 0f),
-                        size = Size(right - left, eventH),
-                    )
-                }
-
-                // Estimated click play time — dashed gold vertical
-                if (playX in 0f..w) {
-                    val dash = 4.dp.toPx()
-                    var y = 0f
-                    while (y < eventH) {
-                        drawLine(
-                            color = AppColors.gold.copy(alpha = 0.55f),
-                            start = Offset(playX, y),
-                            end = Offset(playX, (y + dash).coerceAtMost(eventH)),
-                            strokeWidth = 1.dp.toPx(),
-                        )
-                        y += dash * 2f
-                    }
-                }
-
-                // Beat marker — solid gold tick
-                if (beatX in 0f..w) {
-                    drawLine(
-                        color = AppColors.gold,
-                        start = Offset(beatX, 0f), end = Offset(beatX, eventH),
-                        strokeWidth = 1.5.dp.toPx(),
-                    )
-                }
-            }
-
-        // ── Onset events ──────────────────────────────────────────────────────
-        val midY      = eventH * 0.48f
-        val upperY    = eventH * 0.28f
-        val lowerY    = eventH * 0.68f
-
-        events.filter { it.timestampMs >= windowStart }.forEach { event ->
-            when (event) {
-                is MicDiagnosticsEvent.OnsetAccepted -> {
-                    val x = timeToX(event.timestampMs)
-                    if (x in 0f..w) {
-                        drawCircle(colorAccepted.copy(alpha = 0.22f), 7.dp.toPx(), Offset(x, midY))
-                        drawCircle(colorAccepted, 3.5.dp.toPx(), Offset(x, midY))
-                    }
-                }
-                is MicDiagnosticsEvent.OnsetSuppressed -> {
-                    val x = timeToX(event.timestampMs)
-                    if (x in 0f..w) drawCircle(colorSuppressed, 3.dp.toPx(), Offset(x, upperY))
-                }
-                is MicDiagnosticsEvent.OnsetRejected -> {
-                    val x = timeToX(event.timestampMs)
-                    if (x in 0f..w) drawCircle(colorRejected, 3.dp.toPx(), Offset(x, lowerY))
-                }
-                is MicDiagnosticsEvent.CalibrationSample -> {
-                    val x = timeToX(event.timestampMs)
-                    if (x in 0f..w) drawCircle(colorCalSample, 3.dp.toPx(), Offset(x, midY))
-                }
-                else -> {}
-            }
-        }
-
-        // ── Divider between event zone and amplitude zone ─────────────────────
-        drawLine(
-            color = AppColors.surfaceVariant.copy(alpha = 0.6f),
-            start = Offset(0f, eventH), end = Offset(w, eventH), strokeWidth = 0.5f,
+private fun IntroView(onRun: () -> Unit) {
+    Column {
+        MonoBody(
+            "This plays a short series of clicks and claps through the speaker and " +
+                "listens back through the mic - measuring how accurately the app can " +
+                "score timing on this device.\n\n" +
+                "Find a quiet spot, turn the volume up, and keep the phone still.",
         )
-
-        // ── Amplitude waveform (bottom strip) ─────────────────────────────────
-        val barW = (w / (TIMELINE_WINDOW_MS / 23f)).coerceAtLeast(1.5f)
-        ampHistory.filter { it.first >= windowStart }.forEach { (t, amp) ->
-            val x = timeToX(t)
-            if (x in 0f..w) {
-                val barH = (amp * ampH).coerceAtLeast(0.5f)
-                drawRect(
-                    color = colorAccepted.copy(alpha = 0.60f),
-                    topLeft = Offset(x, h - barH),
-                    size = Size(barW, barH),
-                )
-            }
-        }
-
-        // ── "NOW" edge ────────────────────────────────────────────────────────
-        drawLine(Color.White.copy(alpha = 0.30f), Offset(w - 1f, 0f), Offset(w - 1f, h), 1f)
+        Spacer(Modifier.height(20.dp))
+        RunButton("RUN SELF-TEST", onRun)
     }
 }
 
-// ── Event log row ─────────────────────────────────────────────────────────────
+// ── Running ─────────────────────────────────────────────────────────────────
 
 @Composable
-private fun DiagEventRow(event: MicDiagnosticsEvent, sessionStartMs: Long) {
-    val relMs = event.timestampMs - sessionStartMs
-    val timeStr = "%+7d".format(relMs)
-
-    val (icon, iconColor, desc) = when (event) {
-        is MicDiagnosticsEvent.SessionStarted ->
-            Triple("▶", AppColors.primaryPurple,
-                "SESSION START  ${event.source}  AEC=${event.aecActive}")
-        is MicDiagnosticsEvent.SessionEnded ->
-            Triple("■", AppColors.textDim, "SESSION END")
-        is MicDiagnosticsEvent.BeatFired ->
-            Triple("│", AppColors.gold,
-                "BEAT ${event.beat}  supp→+${event.suppressUntilMs - event.timestampMs}ms" +
-                "  play≈+${event.estimatedPlayMs - event.timestampMs}ms")
-        is MicDiagnosticsEvent.OnsetAccepted ->
-            Triple("●", colorAccepted,
-                "ACCEPTED  raw ${fmtDev(event.rawDeviationMs)}  cal ${fmtDev(event.calibratedDeviationMs)}")
-        is MicDiagnosticsEvent.OnsetSuppressed ->
-            Triple("○", colorSuppressed,
-                "SUPPRESSED  window ends in +${event.suppressUntilMs - event.timestampMs}ms")
-        is MicDiagnosticsEvent.OnsetRejected ->
-            Triple("✗", colorRejected,
-                "REJECTED  raw ${fmtDev(event.rawDeviationMs)}")
-        is MicDiagnosticsEvent.CalibrationSample ->
-            Triple("·", colorCalSample,
-                "CAL #${event.sampleIndex + 1}  ${fmtDev(event.rawDeviationMs)}")
-        is MicDiagnosticsEvent.CalibrationFinalized ->
-            Triple("✓", AppColors.gold,
-                "CALIBRATED  bias=${event.biasMs.toInt()}ms  from ${event.sampleCount} samples")
+private fun RunningView(phase: SelfTestPhase, status: String, liveLatency: Float?) {
+    Column {
+        val phases = listOf(
+            SelfTestPhase.ENVIRONMENT to "Room",
+            SelfTestPhase.SPEAKER_PATH to "Speaker",
+            SelfTestPhase.DISCRIMINATION to "Discrimination",
+            SelfTestPhase.SCORING to "Scoring",
+        )
+        phases.forEach { (p, label) ->
+            val done = p.ordinal < phase.ordinal
+            val active = p == phase
+            val color = when {
+                done -> passColor
+                active -> AppColors.gold
+                else -> AppColors.textDim
+            }
+            Row(modifier = Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(if (done) "✓" else if (active) "▶" else "·", color = color,
+                    fontFamily = FontFamily.Monospace, fontSize = 12.sp, modifier = Modifier.width(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(label, color = color, fontFamily = FontFamily.Monospace, fontSize = 12.sp,
+                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        MonoBody(status)
+        if (liveLatency != null) {
+            Spacer(Modifier.height(6.dp))
+            Text("latency ≈ ${liveLatency.toInt()} ms", color = AppColors.gold,
+                fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+        }
     }
+}
 
+// ── Report card ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun ReportCard(report: SelfTestReport, onRunAgain: () -> Unit) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+
+        // Verdict banner — states the graded outcome and the rule behind it, not just a word.
+        val (verdictText, verdictColor) = when {
+            report.verdict == CheckStatus.ABORT -> "RETRY · fixable condition (see notes)" to abortColor
+            report.verdict == CheckStatus.PENDING -> "INCOMPLETE" to AppColors.textDim
+            report.grade == GradeLevel.GOOD_FIT ->
+                "GOOD FIT · timing lands in the perfect window · constant saved" to passColor
+            report.grade == GradeLevel.USABLE ->
+                "USABLE · scoring is fair, with caveats (see notes) · constant saved" to abortColor
+            else -> "NOT A FIT · this device can't score reliably (see below)" to failColor
+        }
+        Surface(color = verdictColor.copy(alpha = 0.16f), shape = RoundedCornerShape(8.dp)) {
+            Text(
+                verdictText, color = verdictColor, fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.ExtraBold, fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp).fillMaxWidth(),
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(report.deviceModel + "  ·  " + report.route.label, color = AppColors.textMuted,
+            fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+
+        Spacer(Modifier.height(14.dp))
+
+        // Each block: what it measured · the limit · how it was judged.
+        CheckBlock("ENVIRONMENT", report.environment, listOf(
+            "noise floor ${"%.3f".format(report.ambientFloor)}   (limit <= ${"%.3f".format(SelfTestThresholds.MAX_AMBIENT_FLOOR)})",
+            "media volume ${(report.systemVolumeFraction * 100).toInt()}%   (min ${(SelfTestThresholds.MIN_VOLUME_FRACTION * 100).toInt()}%)",
+        ))
+
+        CheckBlock("SPEAKER PATH", report.speakerPath, buildList {
+            val d = report.latencyDetail
+            if (d != null && report.latencyMs != null) {
+                add("latency ${report.latencyMs.toInt()} ms   (median of ${d.used}/${d.emitted} claps; ${d.warmupClaps} warm-up discarded)")
+                add("jitter +-${report.latencyJitterMs?.toInt() ?: 0} ms   (limit <= ${SelfTestThresholds.MAX_LATENCY_JITTER_MS.toInt()})")
+                add("split-half ${d.firstHalfMs.toInt()} vs ${d.secondHalfMs.toInt()} ms · drift ${d.splitDeltaMs.toInt()} ms   (limit <= ${SelfTestThresholds.MAX_LATENCY_SPLIT_DRIFT_MS.toInt()})")
+                add("plausible range ${SelfTestThresholds.MIN_LATENCY_MS.toInt()} to ${SelfTestThresholds.MAX_LATENCY_MS.toInt()} ms")
+            } else if (report.speakerPath == CheckStatus.FAIL) {
+                add("no output timestamp from this device · timing not measurable")
+            } else {
+                add("not run")
+            }
+        })
+
+        CheckBlock("DISCRIMINATION", report.discrimination, buildList {
+            if (report.clickRejectRate != null) {
+                add("from ${report.discPairs} click + clap pairs")
+                add("click rejected ${pct(report.clickRejectRate)}   (min ${(SelfTestThresholds.MIN_CLICK_REJECT_RATE * 100).toInt()}%)")
+                add("clap detected ${pct(report.clapDetectRate)}   (min ${(SelfTestThresholds.MIN_CLAP_DETECT_RATE * 100).toInt()}%)")
+                val m = report.spectralMargins
+                if (m != null) {
+                    add("integrated ratio: click<=${ratioStr(m.clickIntegratedMax)} · clap>=${ratioStr(m.clapIntegratedMin)}   (split at ${"%.1f".format(ClapDetector.CLAP_BAND_RATIO)}, used)")
+                    add("burst ratio: click<=${ratioStr(m.clickPeakMax)} · clap>=${ratioStr(m.clapPeakMin)}   (diagnostic only, not used)")
+                }
+            } else add("not run")
+        })
+
+        CheckBlock("SCORING", report.scoring, buildList {
+            if (report.meanAbsResidualMs != null || report.detectionRecall != null) {
+                val offsets = report.scoringPoints.size.coerceAtLeast(1)
+                add("${report.scoringTrials} trials (${report.scoringTrials / offsets} x ${report.scoringPoints.size} offsets)")
+                add("recall ${pct(report.detectionRecall)} overall · ${pct(report.outOfBandRecall)} clear of beat   (min ${(SelfTestThresholds.OUT_OF_BAND_MIN_RECALL * 100).toInt()}%)")
+                add("on-beat dead zone ${report.maskingHalfWidthMs?.toInt() ?: 0} ms   (good <= ${SelfTestThresholds.GRADE_GOOD_MASK_MS.toInt()})")
+                add("false positives ${report.falsePositives}")
+                add("mean |error| ${report.meanAbsResidualMs?.toInt() ?: 0} ms   (good <= ${SelfTestThresholds.GRADE_GOOD_MEAN_MS.toInt()}, max ${SelfTestThresholds.GRADE_USABLE_MEAN_MS.toInt()})")
+                add("p95 |error| ${report.p95AbsResidualMs?.toInt() ?: 0} ms   (good <= ${SelfTestThresholds.GRADE_GOOD_P95_MS.toInt()}, max ${SelfTestThresholds.GRADE_USABLE_P95_MS.toInt()})")
+            } else add("not run")
+        })
+
+        // Per-offset residual table — the raw scoring evidence, one row per offset.
+        if (report.scoringPoints.isNotEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            Text("PER-OFFSET RESIDUAL  (reported - injected, ms)", color = AppColors.textDim,
+                fontFamily = FontFamily.Monospace, fontSize = 9.sp, letterSpacing = 1.sp)
+            Spacer(Modifier.height(4.dp))
+            ResidualHeader()
+            report.scoringPoints.forEach { ResidualRow(it) }
+        }
+
+        // Latency constant
+        if (report.latencyMs != null && report.verdict == CheckStatus.PASS) {
+            Spacer(Modifier.height(14.dp))
+            Surface(color = AppColors.surfaceDim, shape = RoundedCornerShape(6.dp)) {
+                Text("SAVED LATENCY CONSTANT: ${report.latencyMs.toInt()} ms · applied to every mic feature",
+                    color = AppColors.gold, fontFamily = FontFamily.Monospace, fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp).fillMaxWidth())
+            }
+        }
+
+        // Notes
+        if (report.notes.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Text("NOTES", color = AppColors.textDim, fontFamily = FontFamily.Monospace,
+                fontSize = 9.sp, letterSpacing = 1.sp)
+            Spacer(Modifier.height(4.dp))
+            report.notes.forEach { note ->
+                Row(modifier = Modifier.padding(vertical = 2.dp)) {
+                    Text("•", color = abortColor, fontFamily = FontFamily.Monospace, fontSize = 10.sp,
+                        modifier = Modifier.width(12.dp))
+                    Text(note, color = AppColors.textSecondary, fontFamily = FontFamily.Monospace,
+                        fontSize = 10.sp, lineHeight = 13.sp)
+                }
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+        RunButton("RUN AGAIN", onRunAgain)
+        Spacer(Modifier.height(20.dp))
+    }
+}
+
+/** One check's heading (label + status) followed by its measured-vs-limit detail lines. */
+@Composable
+private fun CheckBlock(label: String, status: CheckStatus, lines: List<String>) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 1.5.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(icon, color = iconColor, fontSize = 10.sp, fontFamily = FontFamily.Monospace,
-            modifier = Modifier.width(11.dp))
-        Spacer(Modifier.width(4.dp))
-        Text(timeStr, color = AppColors.textDim, fontSize = 9.sp, fontFamily = FontFamily.Monospace,
-            modifier = Modifier.width(54.dp))
-        Spacer(Modifier.width(4.dp))
-        Text(desc, color = AppColors.textSecondary, fontSize = 9.sp,
-            fontFamily = FontFamily.Monospace, lineHeight = 11.sp)
+        Text(label, color = AppColors.textSecondary, fontFamily = FontFamily.Monospace,
+            fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        Text(status.name, color = statusColor(status), fontFamily = FontFamily.Monospace,
+            fontSize = 10.sp, fontWeight = FontWeight.Bold)
     }
+    lines.forEach { line ->
+        Text(line, color = AppColors.textMuted, fontFamily = FontFamily.Monospace,
+            fontSize = 10.sp, lineHeight = 14.sp,
+            modifier = Modifier.padding(start = 12.dp, top = 1.dp))
+    }
+    Spacer(Modifier.height(10.dp))
 }
 
-// ── Stat chip + legend ────────────────────────────────────────────────────────
-
 @Composable
-private fun DiagStatChip(label: String, value: String, valueColor: Color) {
-    Surface(color = AppColors.surfaceDim, shape = RoundedCornerShape(5.dp)) {
-        Column(
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(label, color = AppColors.textDim, fontSize = 7.sp, letterSpacing = 0.5.sp,
-                fontFamily = FontFamily.Monospace)
-            Text(value, color = valueColor, fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace)
-        }
+private fun ResidualHeader() {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+        Cell("inject", AppColors.textDim); Cell("report", AppColors.textDim); Cell("residual", AppColors.textDim)
     }
 }
 
 @Composable
-private fun LegendDot(color: Color, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(color))
-        Spacer(Modifier.width(3.dp))
-        Text(label, color = AppColors.textDim, fontSize = 7.sp, fontFamily = FontFamily.Monospace)
+private fun ResidualRow(p: ScoringPoint) {
+    val residual = p.residualMs
+    // Game-anchored tolerances; a miss inside the masking band is the expected on-beat
+    // dead zone (amber), a miss clear of the beat is a real failure (red).
+    val color = when {
+        residual == null ->
+            if (kotlin.math.abs(p.injectedMs) <= SelfTestThresholds.MASKING_BAND_MS) abortColor else failColor
+        kotlin.math.abs(residual) <= 15f -> passColor
+        kotlin.math.abs(residual) <= 35f -> abortColor
+        else -> failColor
+    }
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+        Cell(fmt(p.injectedMs), AppColors.textSecondary)
+        Cell(p.reportedMs?.let { fmt(it) } ?: "miss", AppColors.textSecondary)
+        Cell(residual?.let { fmt(it) } ?: "-", color)
     }
 }
 
-// ── Floating trigger button ───────────────────────────────────────────────────
-
-/**
- * Small ⚙ chip shown in debug builds while a mic session is active.
- * Tap to open [MicDiagnosticsOverlay].
- */
 @Composable
-fun MicDiagnosticsTrigger(
-    visible: Boolean,
-    overlayOpen: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (!visible) return
+private fun androidx.compose.foundation.layout.RowScope.Cell(text: String, color: Color) {
+    Text(text, color = color, fontFamily = FontFamily.Monospace, fontSize = 10.sp,
+        modifier = Modifier.weight(1f))
+}
+
+// ── Small shared pieces ───────────────────────────────────────────────────────
+
+@Composable
+private fun MonoBody(text: String) {
+    Text(text, color = AppColors.textSecondary, fontFamily = FontFamily.Monospace,
+        fontSize = 11.sp, lineHeight = 16.sp)
+}
+
+@Composable
+private fun RunButton(label: String, onClick: () -> Unit) {
+    Surface(
+        color = AppColors.gold,
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.clickable(onClick = onClick),
+    ) {
+        Text(label, color = AppColors.background, fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, letterSpacing = 1.sp,
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp))
+    }
+}
+
+@Composable
+private fun CloseButton(onDismiss: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier
-            .size(30.dp)
+        modifier = Modifier
+            .size(26.dp)
             .clip(CircleShape)
-            .background(if (overlayOpen) AppColors.gold else AppColors.surfaceDim)
-            .border(1.dp, AppColors.gold.copy(alpha = 0.65f), CircleShape)
+            .background(AppColors.surfaceVariant)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = onToggle,
+                onClick = onDismiss,
             ),
     ) {
-        Text(
-            "⚙",
-            fontSize = 14.sp,
-            color = if (overlayOpen) AppColors.background else AppColors.gold,
-        )
+        Text("✕", color = AppColors.textSecondary, fontSize = 12.sp)
     }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-private fun fmtDev(ms: Float) = "${if (ms >= 0f) "+" else ""}${ms.toInt()}ms"
+private fun fmt(ms: Float) = "${if (ms >= 0f) "+" else ""}${ms.toInt()}"
+private fun pct(f: Float?) = f?.let { "${(it * 100).toInt()}%" } ?: "-"
+private fun ratioStr(r: Float?) = r?.let { "%.1f".format(it) } ?: "-"

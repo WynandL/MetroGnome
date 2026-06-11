@@ -8,7 +8,7 @@ import com.example.metrognome.ui.components.metro_items.UnlockCondition
  * This is the bridge between the item unlock system and the points system.
  * No unlock logic changes — conditions still evaluate against raw counters.
  * These functions are purely for display: expressing "what you need to do"
- * in Beats terms so both systems feel unified to the user.
+ * in Gnotes terms so both systems feel unified to the user.
  *
  * When [PointsConfig] weights change, [pointsEquivalent] updates automatically.
  * When [PointsConfig.CURRENCY_NAME] changes, [pointsDisplayText] updates automatically.
@@ -16,7 +16,7 @@ import com.example.metrognome.ui.components.metro_items.UnlockCondition
  * when-expressions here so this file stays in sync.
  */
 
-/** The Beats value that satisfying this condition corresponds to. */
+/** The Gnotes value that satisfying this condition corresponds to. */
 fun UnlockCondition.pointsEquivalent(): Int = when (this) {
     is UnlockCondition.MetronomeSeconds ->
         (required / 60L * PointsConfig.METRONOME_PER_MINUTE).toInt()
@@ -46,7 +46,7 @@ fun UnlockCondition.pointsEquivalent(): Int = when (this) {
 }
 
 /**
- * Human-readable Beats unlock requirement, e.g. "Earn 60 Beats from Metronome".
+ * Human-readable Gnotes unlock requirement, e.g. "Earn 60 Gnotes from Metronome".
  *
  * Mirrors the source labels used in [EARN_RULES] so the item catalog and the
  * earn-rules dialog feel like one unified system to the user.

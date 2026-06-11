@@ -34,9 +34,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.metrognome.ui.components.PerformanceBonusReward
 import com.example.metrognome.ui.components.StreakIcon
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.PracticeResult
@@ -130,6 +130,15 @@ fun PracticeCompleteOverlay(
                         color      = AppColors.gold,
                         fontSize   = 22.sp,
                         fontWeight = FontWeight.Bold,
+                    )
+                }
+
+                // Timing bonus from mic mode, when earned. Hidden at 0 (no mic / misfire).
+                if (result.performanceBonus > 0) {
+                    Spacer(Modifier.height(20.dp))
+                    PerformanceBonusReward(
+                        bonus = result.performanceBonus,
+                        fraction = result.performanceFraction,
                     )
                 }
 

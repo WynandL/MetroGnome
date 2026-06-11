@@ -5,25 +5,40 @@ import android.content.SharedPreferences
 import android.util.Log
 import com.example.metrognome.points.PointsManager
 import com.example.metrognome.points.UsageDayTracker
+import com.example.metrognome.practice.PracticeSessionManager
+import com.example.metrognome.speedtrainer.SpeedTrainerPrefs
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 
 /**
- * Collects all usage counters into an [ActivitySummary] and writes it to logcat.
+ * Gathers every piece of the user's local profile into a single [ActivitySummary].
  *
- * Intended call site: every app foreground (via [com.example.metrognome.viewmodel.MetronomeViewModel.recordUsageDay]).
- * Running on the main thread is safe — all reads are in-process SharedPreferences lookups.
+ * This is the one place that knows where each counter, record, unlock and reward
+ * lives, so the rest of the app never has to. [collect] is the read path; nothing
+ * here writes. Running on the main thread is safe — all reads are in-process
+ * SharedPreferences lookups.
  *
- * Future: replace or extend [log] with an upload function when cross-device sync is
- * introduced. The [collect] function and [ActivitySummary] structure stay unchanged.
+ * A few values are read straight from their owning store's SharedPreferences (with
+ * the owner named in a comment) rather than constructing that store, to keep this a
+ * lightweight, side-effect-free read.
  */
 class ActivitySummaryLogger(context: Context) {
 
-    private val tracker       = MetroItemTracker(context)
-    private val usageDays     = UsageDayTracker(context)
-    private val pointsManager = PointsManager(context)
+    private val tracker         = MetroItemTracker(context)
+    private val usageDays       = UsageDayTracker(context)
+    private val pointsManager   = PointsManager(context)
+    private val practiceManager = PracticeSessionManager(context)
+    private val speedTrainer    = SpeedTrainerPrefs(context)
+
     private val cosmeticsPrefs: SharedPreferences =
         context.getSharedPreferences("metro_cosmetics", Context.MODE_PRIVATE)
+    private val rhythmPrefs: SharedPreferences =
+        context.getSharedPreferences("rhythm_highscores", Context.MODE_PRIVATE)
+    // Owned by RewardedAdManager (key "lifetime_gnotes") and RewardManager (key "ad_free_until_ms").
+    private val rewardedAdPrefs: SharedPreferences =
+        context.getSharedPreferences("rewarded_ad_manager", Context.MODE_PRIVATE)
+    private val rewardPrefs: SharedPreferences =
+        context.getSharedPreferences("points_rewards", Context.MODE_PRIVATE)
 
     fun collect(): ActivitySummary {
         val snapshot = pointsManager.getSnapshot()
@@ -43,8 +58,16 @@ class ActivitySummaryLogger(context: Context) {
             practiceSessionsCompleted     = tracker.practiceSessionsCompleted(),
             speedTrainerSessionsCompleted = tracker.speedTrainingSessionsCompleted(),
             micBonusSessions              = tracker.micBonusSessions(),
+            performanceBonusPoints        = tracker.performanceBonusPoints(),
+            rewardedAdGnotes              = rewardedAdPrefs.getInt("lifetime_gnotes", 0),
+            bestPracticeStreak            = practiceManager.getBestStreak(),
+            practicedEpochDays            = practiceManager.getPracticedEpochDays(),
+            rhythmHighScores              = rhythmHighScores(),
+            speedTrainerRecords           = speedTrainer.allReachedRecords(),
+            unlockedItemIds               = tracker.unlockedIds(METRO_ITEM_REGISTRY),
+            celebratedItemIds             = tracker.celebratedIds(),
+            adFreeRewardUntilMs           = rewardPrefs.getLong("ad_free_until_ms", 0L),
             gnoteTotal                    = snapshot.total,
-            unlockedItemCount             = tracker.unlockedIds(METRO_ITEM_REGISTRY).size,
         )
     }
 
@@ -56,16 +79,25 @@ class ActivitySummaryLogger(context: Context) {
             appendLine("usage days : ${s.distinctUsageDays}  (install days: ${s.daysSinceInstall})")
             appendLine("metronome  : ${s.metronomeSeconds}s")
             appendLine("tuner      : ${s.tunerSeconds}s  notes: ${s.tunerNotesLocked}  feedback: ${s.tunerFeedbackGiven}")
-            appendLine("game       : ${s.gamesCompleted} rounds  score: ${s.totalGameScore}")
-            appendLine("practice   : ${s.practiceMinutesTotal}min  sessions: ${s.practiceSessionsCompleted}")
-            appendLine("speed      : ${s.speedTrainerSeconds}s  sessions: ${s.speedTrainerSessionsCompleted}  mic bonus: ${s.micBonusSessions}")
-            appendLine("gnotes     : ${s.gnoteTotal}  items: ${s.unlockedItemCount}")
+            appendLine("game       : ${s.gamesCompleted} rounds  score: ${s.totalGameScore}  highs: ${s.rhythmHighScores}")
+            appendLine("practice   : ${s.practiceMinutesTotal}min  sessions: ${s.practiceSessionsCompleted}  best streak: ${s.bestPracticeStreak}  days: ${s.practicedEpochDays.size}")
+            appendLine("speed      : ${s.speedTrainerSeconds}s  sessions: ${s.speedTrainerSessionsCompleted}  mic bonus: ${s.micBonusSessions}  records: ${s.speedTrainerRecords.size}")
+            appendLine("bonus pts  : timing ${s.performanceBonusPoints}  ad ${s.rewardedAdGnotes}")
+            appendLine("rewards    : ad-free until ${s.adFreeRewardUntilMs}")
+            appendLine("items      : ${s.unlockedItemCount} unlocked  ${s.celebratedItemIds.size} celebrated")
+            appendLine("gnotes     : ${s.gnoteTotal}")
             append("=======================")
         })
     }
 
     private fun firstLaunchMs(): Long =
         cosmeticsPrefs.getLong("first_launch_ms", System.currentTimeMillis())
+
+    /** Rhythm high scores keyed by difficulty name (the "hs_" prefix is stripped). */
+    private fun rhythmHighScores(): Map<String, Int> =
+        rhythmPrefs.all.entries
+            .filter { it.key.startsWith("hs_") && it.value is Int }
+            .associate { it.key.removePrefix("hs_") to (it.value as Int) }
 
     companion object {
         private const val TAG = "ActivitySummary"

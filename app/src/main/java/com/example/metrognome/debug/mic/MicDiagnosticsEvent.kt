@@ -11,7 +11,7 @@ sealed class MicDiagnosticsEvent {
 
     data class SessionStarted(
         override val timestampMs: Long,
-        val source: String,       // "SpeedTrainer" | "RhythmGame"
+        val source: String,       // "SpeedTrainer" | "RhythmGame" | "Practice"
         val aecActive: Boolean,
     ) : MicDiagnosticsEvent()
 
@@ -44,6 +44,19 @@ sealed class MicDiagnosticsEvent {
     data class OnsetRejected(
         override val timestampMs: Long,
         val rawDeviationMs: Float,
+    ) : MicDiagnosticsEvent()
+
+    /**
+     * A transient the spectral classifier judged to be the metronome click (classifyClaps mode)
+     * and dropped before it could be scored. [lowRms]/[highRms] are the integrated band levels;
+     * a healthy reject is strongly low-band dominant (the 1100 Hz click sine). [peakRatio] is the
+     * largest single-hop high/low burst seen. Shows the margin by which the click was caught.
+     */
+    data class ClickRejected(
+        override val timestampMs: Long,
+        val lowRms: Double,
+        val highRms: Double,
+        val peakRatio: Double,
     ) : MicDiagnosticsEvent()
 
     /** One raw-deviation reading collected during the count-in calibration phase. */

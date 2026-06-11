@@ -275,6 +275,7 @@ private fun iconFor(iconKey: String): ImageVector = when (iconKey) {
     "game"      -> Icons.Filled.Stars
     "practice"  -> Icons.Filled.Timer
     "speed"     -> Icons.Filled.Bolt
+    "timing"    -> Icons.Filled.GraphicEq
     "feedback"  -> Icons.Filled.ThumbUp
     "loyalty"   -> Icons.Filled.EmojiEvents
     else        -> Icons.Filled.MusicNote

@@ -2,6 +2,7 @@ package com.example.metrognome.points.rewards
 
 import android.content.Context
 import androidx.core.content.edit
+import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.points.DailyActivityLog
 import com.example.metrognome.points.PointsBannerQueue
 import com.example.metrognome.points.PointsCalculator
@@ -19,7 +20,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Manages Beats-based rewards that live outside the billing/purchase system.
+ * Manages Gnotes-based rewards that live outside the billing/purchase system.
  *
  * Currently: reaching [RewardConfig.MAX_DAILY_BEATS] in a single day grants
  * [RewardConfig.AD_FREE_DAYS] days of ad-free experience. The grant is recorded
@@ -87,6 +88,7 @@ class RewardManager(context: Context, scope: CoroutineScope) {
         }
         _isAdFreeActive.value = true
         _rewardGranted.tryEmit(until)
+        AnalyticsTracker.logRewardGranted("ad_free", RewardConfig.AD_FREE_DAYS)
     }
 
     companion object {

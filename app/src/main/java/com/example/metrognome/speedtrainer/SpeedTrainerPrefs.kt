@@ -15,7 +15,6 @@ class SpeedTrainerPrefs(context: Context) {
             putString("increment_mode", config.incrementMode.name)
             putInt("bars_per_step", config.barsPerStep)
             putInt("repeats_per_step", config.repeatsPerStep)
-            putBoolean("mic_enabled", config.micEnabled)
             putInt("auto_advance_window_ms", config.autoAdvanceWindowMs)
         }
     }
@@ -31,7 +30,6 @@ class SpeedTrainerPrefs(context: Context) {
         }.getOrDefault(SpeedTrainerConfig.IncrementMode.FIXED),
         barsPerStep = prefs.getInt("bars_per_step", 4),
         repeatsPerStep = prefs.getInt("repeats_per_step", 1),
-        micEnabled = prefs.getBoolean("mic_enabled", false),
         autoAdvanceWindowMs = prefs.getInt("auto_advance_window_ms", 30),
     )
 
@@ -43,4 +41,14 @@ class SpeedTrainerPrefs(context: Context) {
         val key = "reached_${startBpm}_${targetBpm}"
         return if (prefs.contains(key)) prefs.getInt(key, startBpm) else null
     }
+
+    /**
+     * Every saved "reached BPM" personal best, keyed "start_target" → reached BPM.
+     * These are append-only records (a session only ever raises a value), so they are
+     * part of the user's portable progress.
+     */
+    fun allReachedRecords(): Map<String, Int> =
+        prefs.all.entries
+            .filter { it.key.startsWith("reached_") && it.value is Int }
+            .associate { it.key.removePrefix("reached_") to (it.value as Int) }
 }

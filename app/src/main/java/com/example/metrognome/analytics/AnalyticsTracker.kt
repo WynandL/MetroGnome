@@ -176,4 +176,69 @@ object AnalyticsTracker {
             param("item_name", itemName)
         }
     }
+
+    // ── Gnotes economy ────────────────────────────────────────────────────────
+
+    /** One Gnotes-earning event. Logged centrally for every banner the app posts. */
+    fun logGnotesEarned(
+        activity: String,
+        amount: Int,
+        todayTotal: Int,
+        dailyLimit: Int,
+        limitReached: Boolean,
+    ) {
+        Firebase.analytics.logEvent("gnotes_earned") {
+            param("activity",      activity)
+            param("amount",        amount.toLong())
+            param("today_total",   todayTotal.toLong())
+            param("daily_limit",   dailyLimit.toLong())
+            param("limit_reached", if (limitReached) "true" else "false")
+        }
+    }
+
+    /** Graded mic Timing Bonus credited after a Speed Trainer or Practice session. */
+    fun logTimingBonusEarned(source: String, bonus: Int, fraction: Float, hitCount: Int) {
+        Firebase.analytics.logEvent("timing_bonus_earned") {
+            param("source",    source)        // "speed_trainer" | "practice"
+            param("bonus",     bonus.toLong())
+            param("fraction",  fraction.toDouble())
+            param("hit_count", hitCount.toLong())
+        }
+    }
+
+    // ── Mic check (user-facing self-test) ─────────────────────────────────────
+
+    /** Outcome of a user-facing microphone check. Detailed device data goes to Firestore separately. */
+    fun logMicCheckCompleted(verdict: String, grade: String) {
+        Firebase.analytics.logEvent("mic_check_completed") {
+            param("verdict", verdict)   // PASS | FAIL | ABORT
+            param("grade",   grade)     // GOOD_FIT | USABLE | NOT_FIT
+        }
+    }
+
+    // ── Rewards ───────────────────────────────────────────────────────────────
+
+    /** A non-billing reward was granted (e.g. ad-free days for hitting the daily Gnotes cap). */
+    fun logRewardGranted(type: String, days: Int) {
+        Firebase.analytics.logEvent("reward_granted") {
+            param("type", type)         // "ad_free"
+            param("days", days.toLong())
+        }
+    }
+
+    /** A rewarded ad was watched to completion and Gnotes were granted. */
+    fun logRewardedAdWatched(gnotes: Int) {
+        Firebase.analytics.logEvent("rewarded_ad_watched") {
+            param("gnotes", gnotes.toLong())
+        }
+    }
+
+    // ── Loyalty ───────────────────────────────────────────────────────────────
+
+    /** A loyalty day-count milestone (7, 30, 60, 100, 365…) was reached. */
+    fun logLoyaltyMilestone(days: Int) {
+        Firebase.analytics.logEvent("loyalty_milestone") {
+            param("days", days.toLong())
+        }
+    }
 }

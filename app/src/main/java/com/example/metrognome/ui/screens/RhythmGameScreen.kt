@@ -1,10 +1,6 @@
 package com.example.metrognome.ui.screens
 
-import com.example.metrognome.dev.DevEasterEgg
 import androidx.compose.ui.platform.LocalContext
-import com.example.metrognome.debug.mic.MicDiagnosticsOverlay
-import com.example.metrognome.debug.mic.MicDiagnosticsTrigger
-import com.example.metrognome.ui.components.rememberMicPermissionState
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -48,7 +44,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material.icons.filled.StopCircle
@@ -56,8 +51,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -94,6 +87,7 @@ import com.example.metrognome.points.PointsManager
 import com.example.metrognome.points.PointsSnapshot
 import com.example.metrognome.points.UsageDayTracker
 import com.example.metrognome.ui.components.AdBannerView
+import com.example.metrognome.ui.components.MicTimingNudge
 import com.example.metrognome.ui.components.LOYALTY_MILESTONES
 import com.example.metrognome.ui.components.LoyaltyMilestonePath
 import com.example.metrognome.ui.components.StreakWeekCard
@@ -144,7 +138,6 @@ fun RhythmGameScreen(
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
     val lastQuality by vm.lastQuality.collectAsStateWithLifecycle()
     val result by vm.result.collectAsStateWithLifecycle()
-    val useMic by vm.useMic.collectAsStateWithLifecycle()
     val lastHitOffset by vm.lastHitOffset.collectAsStateWithLifecycle()
     val beatsRemaining by vm.beatsRemaining.collectAsStateWithLifecycle()
     val highScores by vm.highScores.collectAsStateWithLifecycle()
@@ -156,8 +149,6 @@ fun RhythmGameScreen(
     LaunchedEffect(Unit) {
         vm.checkForNewUnlocks()
     }
-
-    val mic = rememberMicPermissionState(onGranted = { vm.toggleMic(true) })
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier
@@ -171,9 +162,6 @@ fun RhythmGameScreen(
                 GamePhase.IDLE -> RhythmDashboard(
                     rhythmVm = vm,
                     metronomeVm = metronomeVm,
-                    useMic = useMic,
-                    micGranted = mic.isGranted,
-                    onRequestMic = { mic.request() },
                     isMetronomePlaying = isMetronomePlaying,
                     onStopMetronome = onStopMetronome,
                     onWatchRewardedAd = onWatchRewardedAd,
@@ -208,19 +196,7 @@ fun RhythmGameScreen(
         )
     }
 
-    // Dev-mode: mic diagnostics trigger + overlay (debug builds + easter egg dev mode)
-    if (DevEasterEgg.isDevModeActive(LocalContext.current)) {
-        var showMicDiag by remember { mutableStateOf(false) }
-        MicDiagnosticsTrigger(
-            visible = useMic && phase == GamePhase.PLAYING,
-            overlayOpen = showMicDiag,
-            onToggle = { showMicDiag = !showMicDiag },
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 52.dp, end = 10.dp),
-        )
-        if (showMicDiag) {
-            MicDiagnosticsOverlay(onDismiss = { showMicDiag = false })
-        }
-    }
+    // Mic self-test now lives in Settings (dev tools) as the single canonical launcher.
 
     } // close outer Box
 }
@@ -231,9 +207,6 @@ fun RhythmGameScreen(
 private fun RhythmDashboard(
     rhythmVm: RhythmGameViewModel,
     metronomeVm: MetronomeViewModel,
-    useMic: Boolean,
-    micGranted: Boolean,
-    onRequestMic: () -> Unit,
     isMetronomePlaying: Boolean,
     onStopMetronome: () -> Unit,
     onWatchRewardedAd: (onDone: () -> Unit) -> Unit,
@@ -302,9 +275,6 @@ private fun RhythmDashboard(
 
         GameCard(
             vm = rhythmVm,
-            useMic = useMic,
-            micGranted = micGranted,
-            onRequestMic = onRequestMic,
             isMetronomePlaying = isMetronomePlaying,
             onStopMetronome = onStopMetronome,
             highScores = highScores,
@@ -364,9 +334,6 @@ private fun RhythmDashboard(
 @Composable
 private fun GameCard(
     vm: RhythmGameViewModel,
-    useMic: Boolean,
-    micGranted: Boolean,
-    onRequestMic: () -> Unit,
     isMetronomePlaying: Boolean,
     onStopMetronome: () -> Unit,
     highScores: Map<String, Int> = emptyMap(),
@@ -522,50 +489,8 @@ private fun GameCard(
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
-            HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.5f))
-            Spacer(Modifier.height(10.dp))
+            MicTimingNudge()
 
-            // ── Compact mic row ───────────────────────────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.Mic,
-                        contentDescription = null,
-                        tint = if (useMic) AppColors.gold else AppColors.textMuted,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            "Play with sound",
-                            color = if (useMic) Color.White else AppColors.textSecondary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                        )
-                        Text(
-                            "clap or tap to score",
-                            color = AppColors.textDim,
-                            fontSize = 11.sp,
-                        )
-                    }
-                }
-                Switch(
-                    checked = useMic,
-                    onCheckedChange = { on ->
-                        if (on && !micGranted) onRequestMic()
-                        else vm.toggleMic(on)
-                    },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = AppColors.gold,
-                        checkedTrackColor = AppColors.primaryPurple,
-                    ),
-                )
-            }
         }
     }
 }

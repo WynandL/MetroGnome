@@ -3,7 +3,7 @@ package com.example.metrognome.points.rewards
 import com.example.metrognome.points.EARN_RULES
 
 /**
- * Constants for the Beats reward system.
+ * Constants for the Gnotes reward system.
  *
  * [MAX_DAILY_BEATS] is derived live from [EARN_RULES] so it updates automatically
  * when earn rates or caps change — no manual sync needed.
