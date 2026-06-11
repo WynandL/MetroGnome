@@ -86,6 +86,11 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     private val _bpmRequest = MutableSharedFlow<Int>(extraBufferCapacity = 4)
     val bpmRequest: SharedFlow<Int> = _bpmRequest.asSharedFlow()
 
+    // Emitted when a clap lands very close to the beat - drives the celebratory firework in the
+    // Gnome canvas. Purely visual; no effect on scoring. See FireworkEffect.kt.
+    private val _greatHit = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+    val greatHit: SharedFlow<Unit> = _greatHit.asSharedFlow()
+
     // ── Internal session bookkeeping ──────────────────────────────────────────
 
     private var steps: List<Int> = emptyList()
@@ -291,6 +296,11 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
                 // for a musician playing in time, rather than offset by output latency.
                 val deviation = rawDeviation - latencyBiasMs
                 if (isDevMode) MicDiagnosticsBuffer.logOnsetAccepted(onsetMs, rawDeviation, deviation)
+
+                // A very accurate clap fires a celebratory firework (visual only).
+                if (abs(deviation) <= com.example.metrognome.points.PerformanceBonus.GREAT_HIT_MS) {
+                    _greatHit.tryEmit(Unit)
+                }
 
                 recentDeviations.addLast(deviation)
                 if (recentDeviations.size > RING_SIZE) recentDeviations.removeFirst()

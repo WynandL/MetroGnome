@@ -80,9 +80,6 @@ data class ActivitySummary(
     /** Number of Speed Trainer ramps completed end-to-end. */
     val speedTrainerSessionsCompleted: Int,
 
-    /** Number of Speed Trainer sessions where mic accuracy earned a bonus. */
-    val micBonusSessions: Int,
-
     /** Lifetime graded timing-bonus points (raw input to the "Timing Bonus" Gnotes). */
     val performanceBonusPoints: Int,
 

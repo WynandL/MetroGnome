@@ -28,7 +28,6 @@ object PointsCalculator {
         totalPracticeMinutes: Int,
         speedTrainerSeconds: Long,
         tunerFeedbackGiven: Int,
-        micBonusSessions: Int,
         /** Lifetime graded timing-bonus points from Practice + Speed Trainer → "Timing Bonus". */
         performanceBonusPoints: Int,
         /** Distinct days the user actually opened the app → "Loyalty" contribution. */
@@ -94,11 +93,6 @@ object PointsCalculator {
         else
             tunerFeedbackGiven
 
-        val micBonus = if (applyLimits)
-            countedEvents(micBonusSessions, t.micBonusSessionsToday, PointsLimits.MIC_ACCURACY_SESSIONS_PER_DAY)
-        else
-            micBonusSessions
-
         val performanceBonus = if (applyLimits)
             countedEvents(performanceBonusPoints, t.performanceBonusToday, PointsLimits.PERFORMANCE_BONUS_PER_DAY)
         else
@@ -153,14 +147,6 @@ object PointsCalculator {
                     points   = feedback * PointsConfig.PER_TUNER_FEEDBACK,
                 )
             )
-            if (micBonus > 0) add(
-                PointsContribution(
-                    label    = "Mic Accuracy",
-                    rawValue = micBonus.toLong(),
-                    rawUnit  = if (micBonus == 1) "session" else "sessions",
-                    points   = micBonus * PointsConfig.MIC_ACCURACY_BONUS_PER_SESSION,
-                )
-            )
             if (performanceBonus > 0) add(
                 PointsContribution(
                     label    = "Timing Bonus",
@@ -213,7 +199,6 @@ object PointsCalculator {
         val pracMins   = today.practiceMinutesToday.coerceAtMost(PointsLimits.PRACTICE_MINUTES_PER_DAY)
         val speedMins  = (today.speedTrainerSecondsToday / 60).coerceAtMost(PointsLimits.SPEED_TRAINER_MINUTES_PER_DAY.toLong()).toInt()
         val feedback   = today.tunerFeedbackGiven.coerceAtMost(PointsLimits.TUNER_FEEDBACK_PER_DAY)
-        val micBonus   = today.micBonusSessionsToday.coerceAtMost(PointsLimits.MIC_ACCURACY_SESSIONS_PER_DAY)
         val perfBonus  = today.performanceBonusToday.coerceAtMost(PointsLimits.PERFORMANCE_BONUS_PER_DAY)
         return (metMins * PointsConfig.METRONOME_PER_MINUTE).toInt() +
                tunerNotes * PointsConfig.PER_TUNER_NOTE +
@@ -221,7 +206,6 @@ object PointsCalculator {
                pracMins * PointsConfig.PER_PRACTICE_MINUTE +
                speedMins * PointsConfig.PER_SPEED_TRAINER_MINUTE +
                feedback * PointsConfig.PER_TUNER_FEEDBACK +
-               micBonus * PointsConfig.MIC_ACCURACY_BONUS_PER_SESSION +
                perfBonus * PointsConfig.PER_PERFORMANCE_BONUS +
                PointsConfig.LOYALTY_PER_DAY
     }

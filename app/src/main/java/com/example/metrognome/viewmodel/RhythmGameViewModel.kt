@@ -90,10 +90,18 @@ data class GameResult(
 /** Canonical difficulty names — used as SharedPreferences keys. */
 val DIFFICULTY_NAMES = listOf("Beginner", "Easy", "Medium", "Hard", "Expert")
 
-/** Base timing windows in ms. Multiplied by the user's tolerance setting. */
+/** Base timing windows in ms (screen taps). Multiplied by the user's tolerance setting. */
 const val PERFECT_WINDOW_MS = 50L
 const val GOOD_WINDOW_MS = 100L
 const val MISS_WINDOW_MS = 150L
+
+/**
+ * Wider, fixed windows used when the microphone scores claps. Clapping cannot hit a tap-tight
+ * window reliably, so being roughly on the beat must still count. Not tolerance-scaled.
+ */
+const val MIC_PERFECT_WINDOW_MS = 110L
+const val MIC_GOOD_WINDOW_MS = 190L
+const val MIC_MISS_WINDOW_MS = 290L
 
 /** How long a note travels from spawn to the hit line. */
 const val NOTE_TRAVEL_MS = 2000L
@@ -304,6 +312,24 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         // (granted during calibration; a later revoke falls back to tap mode).
         val cal = MicCalibration.read(getApplication())
         _useMic.value = cal.isActive
+        // Clapping is far less precise than an instant screen tap, so widen the windows when the
+        // mic is scoring. The tolerance-scaled tap windows above stay for tap mode.
+        if (cal.isActive) {
+            // Wide clap windows, but clamped so no window exceeds ~45% of the beat interval.
+            // Beyond that, adjacent notes' hit windows overlap at faster tempos (Hard/Expert) and
+            // a clap or stray onset can be matched to the wrong note. Clamping keeps every clap
+            // unambiguously owned by one note while staying forgiving at slow tempos. Order is
+            // preserved (perfect <= good <= miss).
+            val maxWindow = (intervalMs * 0.45).toLong()
+            winMiss = MIC_MISS_WINDOW_MS.coerceAtMost(maxWindow)
+            winGood = MIC_GOOD_WINDOW_MS.coerceAtMost(winMiss)
+            winPerfect = MIC_PERFECT_WINDOW_MS.coerceAtMost(winGood)
+            // The accented downbeat is loud enough to either clip into broadband harmonics or
+            // throw a late room reflection that AEC cannot cancel - the clap detector then takes
+            // that for a clap, producing one false "hit" on every downbeat (with nobody clapping).
+            // Drop the accent in mic mode so all 16 clicks are uniform and reject identically.
+            engine.accentBeat = -1
+        }
         val micReady = cal.isActive && ContextCompat.checkSelfPermission(
             getApplication(), Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
@@ -320,24 +346,35 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
             }
             micJob = viewModelScope.launch {
                 detector.detections.collect { onsetElapsedMs ->
-                    _micDetected.tryEmit(Unit)
-                    // Subtract the device latency so a clap in time scores on the beat.
-                    val corrected = onsetElapsedMs - gameStartElapsedMs - micLatencyMs
-                    if (BuildConfig.DEBUG) {
-                        // Log the REAL deviation vs the nearest active note, so the Mic Timing
-                        // Log shows where claps actually land (raw = no latency correction,
-                        // cal = what scoring uses). Was hardcoded 0/0 = invisible.
-                        val raw = onsetElapsedMs - gameStartElapsedMs
-                        val nearest = notes.filter { it.state == NoteState.ACTIVE }
-                            .minByOrNull { abs(corrected - it.hitTimeMs) }
-                        MicDiagnosticsBuffer.logOnsetAccepted(
-                            onsetElapsedMs,
-                            nearest?.let { (raw - it.hitTimeMs).toFloat() } ?: 0f,
-                            nearest?.let { (corrected - it.hitTimeMs).toFloat() } ?: 0f,
-                        )
-                    }
-                    if (_phase.value == GamePhase.PLAYING) {
-                        processTap(corrected)
+                    // Guard the whole body: a single bad onset must never cancel this collector
+                    // and silently kill clap input for the rest of the game. Cancellation is
+                    // rethrown so stopGame() still tears the job down cleanly.
+                    try {
+                        _micDetected.tryEmit(Unit)
+                        // This game is VISUAL-cued (clap when the ball hits the line), so subtracting
+                        // the full acoustic round-trip [micLatencyMs] is wrong - it over-shifts claps
+                        // early (it is the right correction only for the audio-cued Speed Trainer).
+                        // Only the small mic input latency applies here; we leave it uncorrected and
+                        // let the widened hit windows absorb it.
+                        val clapSongMs = onsetElapsedMs - gameStartElapsedMs
+                        if (BuildConfig.DEBUG) {
+                            // raw = what we now score against; cal = the old full-round-trip value,
+                            // kept for comparison in the Mic Timing Log.
+                            val nearest = notes.filter { it.state == NoteState.ACTIVE }
+                                .minByOrNull { abs(clapSongMs - it.hitTimeMs) }
+                            MicDiagnosticsBuffer.logOnsetAccepted(
+                                onsetElapsedMs,
+                                nearest?.let { (clapSongMs - it.hitTimeMs).toFloat() } ?: 0f,
+                                nearest?.let { (clapSongMs - micLatencyMs - it.hitTimeMs).toFloat() } ?: 0f,
+                            )
+                        }
+                        if (_phase.value == GamePhase.PLAYING) {
+                            processTap(clapSongMs)
+                        }
+                    } catch (ce: kotlinx.coroutines.CancellationException) {
+                        throw ce
+                    } catch (_: Exception) {
+                        // Swallow and keep listening for the next clap.
                     }
                 }
             }

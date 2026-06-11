@@ -2,9 +2,7 @@ package com.example.metrognome.ui.overlays
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.pm.PackageManager
-import android.media.AudioManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -43,7 +41,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -68,8 +65,7 @@ import com.example.metrognome.audio.selftest.SelfTestPhase
 import com.example.metrognome.audio.selftest.SelfTestThresholds
 import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.cloud.MicCheckReporter
-import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.delay
+import com.example.metrognome.ui.components.rememberMediaVolumeFraction
 import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.theme.AppColors
 
@@ -132,17 +128,9 @@ fun MicCheckOverlay(onDismiss: () -> Unit) {
         }
     }
 
-    // Live media-volume readout for the intro nudge - a pure system read, no mic. Lets us
-    // gate Start until the volume is high enough rather than failing the run after the fact.
-    val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
-    var volumeFraction by remember { mutableFloatStateOf(musicVolumeFraction(audioManager)) }
-    LaunchedEffect(showingIntro) {
-        if (!showingIntro) return@LaunchedEffect
-        while (true) {
-            volumeFraction = musicVolumeFraction(audioManager)
-            delay(300.milliseconds)
-        }
-    }
+    // Gate Start on media volume via the shared loopback volume gate - a loopback needs the
+    // speaker up, so we nudge rather than fail the run after the fact. Only polls on the intro.
+    val volumeFraction = rememberMediaVolumeFraction(active = showingIntro)
 
     val cardScale = remember { Animatable(0.2f) }
     LaunchedEffect(Unit) {
@@ -403,12 +391,6 @@ private fun PrimaryButton(
             Text(label, color = tint, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         }
     }
-}
-
-/** Current media-stream volume as a 0..1 fraction. Pure system read - no mic involved. */
-private fun musicVolumeFraction(am: AudioManager): Float {
-    val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
-    return am.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / max
 }
 
 @Composable

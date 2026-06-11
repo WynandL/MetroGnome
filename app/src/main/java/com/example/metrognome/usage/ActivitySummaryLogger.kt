@@ -57,7 +57,6 @@ class ActivitySummaryLogger(context: Context) {
             practiceMinutesTotal          = tracker.totalPracticeMinutes(),
             practiceSessionsCompleted     = tracker.practiceSessionsCompleted(),
             speedTrainerSessionsCompleted = tracker.speedTrainingSessionsCompleted(),
-            micBonusSessions              = tracker.micBonusSessions(),
             performanceBonusPoints        = tracker.performanceBonusPoints(),
             rewardedAdGnotes              = rewardedAdPrefs.getInt("lifetime_gnotes", 0),
             bestPracticeStreak            = practiceManager.getBestStreak(),
@@ -81,7 +80,7 @@ class ActivitySummaryLogger(context: Context) {
             appendLine("tuner      : ${s.tunerSeconds}s  notes: ${s.tunerNotesLocked}  feedback: ${s.tunerFeedbackGiven}")
             appendLine("game       : ${s.gamesCompleted} rounds  score: ${s.totalGameScore}  highs: ${s.rhythmHighScores}")
             appendLine("practice   : ${s.practiceMinutesTotal}min  sessions: ${s.practiceSessionsCompleted}  best streak: ${s.bestPracticeStreak}  days: ${s.practicedEpochDays.size}")
-            appendLine("speed      : ${s.speedTrainerSeconds}s  sessions: ${s.speedTrainerSessionsCompleted}  mic bonus: ${s.micBonusSessions}  records: ${s.speedTrainerRecords.size}")
+            appendLine("speed      : ${s.speedTrainerSeconds}s  sessions: ${s.speedTrainerSessionsCompleted}  records: ${s.speedTrainerRecords.size}")
             appendLine("bonus pts  : timing ${s.performanceBonusPoints}  ad ${s.rewardedAdGnotes}")
             appendLine("rewards    : ad-free until ${s.adFreeRewardUntilMs}")
             appendLine("items      : ${s.unlockedItemCount} unlocked  ${s.celebratedItemIds.size} celebrated")

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Timer
@@ -278,5 +279,6 @@ private fun iconFor(iconKey: String): ImageVector = when (iconKey) {
     "timing"    -> Icons.Filled.GraphicEq
     "feedback"  -> Icons.Filled.ThumbUp
     "loyalty"   -> Icons.Filled.EmojiEvents
+    "ad"        -> Icons.Filled.PlayCircle
     else        -> Icons.Filled.MusicNote
 }

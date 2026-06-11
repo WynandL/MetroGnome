@@ -72,6 +72,7 @@ import com.example.metrognome.billing.PurchasableItemDef
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.ui.components.OwnedBadge
 import com.example.metrognome.ui.dialogs.ShowcaseFrame
+import com.example.metrognome.ui.dialogs.GrooveCheckRecalibrateDialog
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import kotlin.math.roundToInt
@@ -94,6 +95,8 @@ fun SettingsScreen(
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
     var isDevMode by remember { mutableStateOf(DevEasterEgg.isDevModeActive(context)) }
     var showMicCheck by remember { mutableStateOf(false) }
+    // Shown when an already-calibrated user flips Groove Check back on: re-enable vs re-check.
+    var showRecalPrompt by remember { mutableStateOf(false) }
     // Bumped when the mic check closes (or is reset) so the toggle re-reads engine state.
     var micCheckRefresh by remember { mutableIntStateOf(0) }
     val micCal = remember(micCheckRefresh) {
@@ -215,21 +218,6 @@ fun SettingsScreen(
                 }
             }
 
-            // When mic timing is on, the practice features force the Classic click so the
-            // detector hears your hits cleanly. The chosen sound above still applies to the
-            // plain metronome.
-            if (micCal.isActive) {
-                Text(
-                    text = "Mic timing is on, so Practice, Speed Trainer, and the Rhythm " +
-                            "Game play the Classic click for accurate hit detection. Your " +
-                            "chosen sound still applies to the regular metronome.",
-                    color = AppColors.textMuted,
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
-                    modifier = Modifier.padding(top = 6.dp, bottom = 4.dp),
-                )
-            }
-
             // Volume slider
             SettingsSliderRow(
                 label = "Click Volume",
@@ -243,23 +231,22 @@ fun SettingsScreen(
             // Rhythm Game all use the result; there is no per-feature toggle. Turning it on
             // requires a passing self-test — if the device is not calibrated yet, the check
             // runs first and the toggle reflects the outcome (so the X / a fail leaves it
-            // off). Gated to dev mode (not just debug) so it can be exercised end-to-end on
-            // the Internal Test track via the easter egg, while ordinary testers don't see it.
-            if (isDevMode) {
-                MicOptIn(
-                    enabled = micCal.isActive,
-                    hasMicPermission = true,   // the check dialog handles permission itself
-                    onToggle = {
-                        val store = com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context)
-                        when {
-                            micCal.isActive    -> { store.micModeEnabled = false; micCheckRefresh++ }
-                            micCal.isCalibrated -> { store.micModeEnabled = true; micCheckRefresh++ }
-                            else                -> showMicCheck = true
-                        }
-                    },
-                    onRequestPermission = {},
-                )
-            }
+            // off).
+            MicOptIn(
+                enabled = micCal.isActive,
+                hasMicPermission = true,   // the check dialog handles permission itself
+                onToggle = {
+                    val store = com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context)
+                    when {
+                        micCal.isActive    -> { store.micModeEnabled = false; micCheckRefresh++ }
+                        // Already calibrated and turning back on: ask whether to re-enable as-is
+                        // or re-run the check, rather than silently re-enabling.
+                        micCal.isCalibrated -> showRecalPrompt = true
+                        else                -> showMicCheck = true
+                    }
+                },
+                onRequestPermission = {},
+            )
 
             Spacer(Modifier.height(8.dp))
             HorizontalDivider(color = AppColors.surfaceVariant)
@@ -373,6 +360,21 @@ fun SettingsScreen(
                 })
             }
 
+            if (showRecalPrompt) {
+                GrooveCheckRecalibrateDialog(
+                    onReEnable = {
+                        com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context).micModeEnabled = true
+                        micCheckRefresh++
+                        showRecalPrompt = false
+                    },
+                    onRecalibrate = {
+                        showRecalPrompt = false
+                        showMicCheck = true   // same self-test flow a first-time user runs
+                    },
+                    onDismiss = { showRecalPrompt = false },
+                )
+            }
+
             Spacer(Modifier.height(8.dp))
         }
 
@@ -438,13 +440,17 @@ private fun PurchasableItemRow(
             color = AppColors.textPrimary,
             modifier = Modifier.padding(bottom = 2.dp)
         )
-        Text(
-            def.description,
-            color = AppColors.textSecondary,
-            fontSize = 12.sp,
-            lineHeight = 18.sp,
-            modifier = Modifier.padding(bottom = 6.dp)
-        )
+        // Once owned, drop the sales-pitch description and show only the collection subtext,
+        // mirroring the ad-free section (heading + owned message, no advertising copy).
+        if (!alreadyUnlocked) {
+            Text(
+                def.description,
+                color = AppColors.textSecondary,
+                fontSize = 12.sp,
+                lineHeight = 18.sp,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+        }
         if (alreadyUnlocked) {
             OwnedBadge(ownedMessage)
         } else when {

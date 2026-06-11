@@ -303,6 +303,10 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         }
         val calibrated = raw - practiceLatencyMs
         if (isDevMode) MicDiagnosticsBuffer.logOnsetAccepted(onsetMs, raw, calibrated)
+        // A very accurate clap fires a celebratory firework (visual only).
+        if (kotlin.math.abs(calibrated) <= com.example.metrognome.points.PerformanceBonus.GREAT_HIT_MS) {
+            _greatHit.tryEmit(Unit)
+        }
         practiceDeviations.add(calibrated)
     }
 
@@ -412,7 +416,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         // so the bonus can be tested on a device/emulator with no real mic input.
         // Only the timing PERFORMANCE is synthesized (the emulator mic gives nothing); the
         // session length is real, so the bonus still respects "max = session minutes".
-        val simulate = com.example.metrognome.dev.DevEasterEgg.isDevModeActive(getApplication()) &&
+        val simulate = isDevMode &&
             com.example.metrognome.audio.selftest.SelfTestCalibrationStore(getApplication()).devSimulateTiming &&
             micHits < com.example.metrognome.points.PerformanceBonus.MIN_HITS
         val bonusFraction = if (simulate) (40..90).random() / 100f else micFraction
@@ -556,6 +560,11 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _beatEvents = MutableSharedFlow<BeatEvent>(extraBufferCapacity = 4)
     val beatEvents: SharedFlow<BeatEvent> = _beatEvents.asSharedFlow()
+
+    // Emitted when a practice clap lands very close to the beat - drives the celebratory firework
+    // in the Gnome canvas. Purely visual; no effect on scoring. See FireworkEffect.kt.
+    private val _greatHit = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+    val greatHit: SharedFlow<Unit> = _greatHit.asSharedFlow()
 
     private val tapTimes = ArrayDeque<Long>(8)
 

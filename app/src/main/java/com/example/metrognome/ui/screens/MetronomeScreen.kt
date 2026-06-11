@@ -246,6 +246,11 @@ fun MetronomeScreen(
                 accentBeat = accentBeat,
                 activeItems = activeItems,
                 onItemTapped = { tappedItem = it },
+                // Fireworks on a very accurate clap, from whichever mic session is live (only one
+                // is ever active). Practice -> vm; Speed Trainer -> trainerVm.
+                greatHitSignal = remember(vm, trainerVm) {
+                    kotlinx.coroutines.flow.merge(vm.greatHit, trainerVm.greatHit)
+                },
                 modifier = Modifier.fillMaxSize()
             )
 

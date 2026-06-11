@@ -30,8 +30,6 @@ object PointsConfig {
     const val LOYALTY_PER_DAY: Int             = 10
     /** Bonus per calendar day the app has been installed — rewards long-term users retroactively. */
     const val INSTALLED_DAY_BONUS: Int         = 1
-    /** Bonus per Speed Trainer session where the mic detected accurate timing. */
-    const val MIC_ACCURACY_BONUS_PER_SESSION: Int = 10
     /** Graded timing bonus is already in points (1 Gnote per earned bonus point). */
     const val PER_PERFORMANCE_BONUS: Int = 1
     /** Gnotes granted for watching one rewarded ad. */

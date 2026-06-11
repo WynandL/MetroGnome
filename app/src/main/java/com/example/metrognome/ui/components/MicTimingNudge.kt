@@ -61,7 +61,7 @@ fun MicTimingNudge(modifier: Modifier = Modifier) {
                 modifier = Modifier.size(13.dp),
             )
             Text(
-                "Mic timing is on",
+                "Groove Check is on",
                 color = AppColors.textSecondary,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,

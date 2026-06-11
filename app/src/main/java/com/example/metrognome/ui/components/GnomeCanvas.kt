@@ -31,10 +31,16 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
 import com.example.metrognome.ui.components.metro_items.MetroItem
+import com.example.metrognome.ui.components.metro_items.FireworkBurst
+import com.example.metrognome.ui.components.metro_items.drawFireworkBurst
+import com.example.metrognome.ui.components.metro_items.MAX_FIREWORK_BURSTS
 import com.example.metrognome.ui.components.metro_items.items.drawSparkle
 import com.example.metrognome.ui.theme.ItemPalette
 import com.example.metrognome.ui.theme.GnomeColors
 import com.example.metrognome.viewmodel.BeatEvent
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -58,8 +64,36 @@ fun GnomeCanvas(
     modifier: Modifier = Modifier,
     activeItems: List<MetroItem> = emptyList(),
     onItemTapped: (MetroItem) -> Unit = {},
+    // Optional: each emission spawns a celebratory firework in the sky (a very accurate clap in
+    // Practice / Speed Trainer). Null by default, so previews and the plain metronome are
+    // unaffected. NOT part of the item/unlock system - see FireworkEffect.kt.
+    greatHitSignal: Flow<Unit>? = null,
 ) {
     val currentBpm by rememberUpdatedState(bpm)
+
+    // Live firework bursts. Each great hit adds one (capped); it self-removes when its
+    // progress animation completes. Drawn behind Metro in the sky.
+    val fireworkBursts = remember { mutableStateListOf<FireworkBurst>() }
+    val burstScope = rememberCoroutineScope()
+    val canvasSize = remember { mutableStateOf(Size.Zero) }
+    if (greatHitSignal != null) {
+        LaunchedEffect(greatHitSignal) {
+            greatHitSignal.collect {
+                val s = canvasSize.value
+                if (s == Size.Zero || fireworkBursts.size >= MAX_FIREWORK_BURSTS) return@collect
+                val center = Offset(
+                    s.width * (0.18f + Random.nextFloat() * 0.64f),
+                    s.height * (0.10f + Random.nextFloat() * 0.28f),
+                )
+                val burst = FireworkBurst(center, Random.nextInt())
+                fireworkBursts.add(burst)
+                burstScope.launch {
+                    burst.progress.animateTo(1f, tween(1100, easing = LinearEasing))
+                    fireworkBursts.remove(burst)
+                }
+            }
+        }
+    }
 
     val infiniteTransition = rememberInfiniteTransition(label = "breath")
     val breathAnim by infiniteTransition.animateFloat(
@@ -114,8 +148,6 @@ fun GnomeCanvas(
     val effectivePendulum = pendulumAngle.value
     val effectiveBreath = if (!isPlaying) breathAnim else 0f
 
-    val canvasSize = remember { mutableStateOf(Size.Zero) }
-
     Canvas(modifier = modifier
         .fillMaxSize()
         .pointerInput(activeItems) {
@@ -143,6 +175,11 @@ fun GnomeCanvas(
         val u           = size.height / 17f
 
         drawBackground(twinkle.value)
+
+        // Celebratory fireworks (great-clap reward) — deep sky, behind every item and Metro.
+        fireworkBursts.forEach { burst ->
+            drawFireworkBurst(burst.progress.value, burst.center, u, burst.seed)
+        }
 
         // Background items (scene decoration — not body-attached)
         activeItems.filter { !it.isBodyAttached }.forEach { item ->

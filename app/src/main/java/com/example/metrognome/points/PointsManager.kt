@@ -37,7 +37,6 @@ class PointsManager(
         totalPracticeMinutes = tracker.totalPracticeMinutes(),
         speedTrainerSeconds  = tracker.speedTrainerSeconds(),
         tunerFeedbackGiven   = tracker.tunerFeedbackGiven(),
-        micBonusSessions     = tracker.micBonusSessions(),
         performanceBonusPoints = tracker.performanceBonusPoints(),
         loyaltyActiveDays = usageDays.distinctDaysCount(),
         installedDays     = tracker.daysSinceFirstLaunch(),

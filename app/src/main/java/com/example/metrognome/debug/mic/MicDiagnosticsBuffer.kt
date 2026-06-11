@@ -36,18 +36,6 @@ object MicDiagnosticsBuffer {
     private val _aecActive = MutableStateFlow(false)
     val aecActive: StateFlow<Boolean> = _aecActive.asStateFlow()
 
-    private val _latencyBiasMs = MutableStateFlow(0f)
-    val latencyBiasMs: StateFlow<Float> = _latencyBiasMs.asStateFlow()
-
-    private val _lastRawDevMs = MutableStateFlow<Float?>(null)
-    val lastRawDevMs: StateFlow<Float?> = _lastRawDevMs.asStateFlow()
-
-    private val _lastCalDevMs = MutableStateFlow<Float?>(null)
-    val lastCalDevMs: StateFlow<Float?> = _lastCalDevMs.asStateFlow()
-
-    private val _calibrationSampleCount = MutableStateFlow(0)
-    val calibrationSampleCount: StateFlow<Int> = _calibrationSampleCount.asStateFlow()
-
     private val _sessionStartMs = MutableStateFlow(0L)
     val sessionStartMs: StateFlow<Long> = _sessionStartMs.asStateFlow()
 
@@ -59,10 +47,6 @@ object MicDiagnosticsBuffer {
         _ampHistory.value = emptyList()
         _source.value = source
         _aecActive.value = aecActive
-        _latencyBiasMs.value = 0f
-        _lastRawDevMs.value = null
-        _lastCalDevMs.value = null
-        _calibrationSampleCount.value = 0
         _sessionStartMs.value = now
         append(MicDiagnosticsEvent.SessionStarted(now, source, aecActive))
     }
@@ -78,13 +62,7 @@ object MicDiagnosticsBuffer {
     }
 
     fun logOnsetAccepted(onsetMs: Long, rawDev: Float, calDev: Float) {
-        _lastRawDevMs.value = rawDev
-        _lastCalDevMs.value = calDev
         append(MicDiagnosticsEvent.OnsetAccepted(onsetMs, rawDev, calDev))
-    }
-
-    fun logOnsetSuppressed(onsetMs: Long, suppressUntilMs: Long) {
-        append(MicDiagnosticsEvent.OnsetSuppressed(onsetMs, suppressUntilMs))
     }
 
     fun logOnsetRejected(onsetMs: Long, rawDev: Float) {
@@ -93,16 +71,6 @@ object MicDiagnosticsBuffer {
 
     fun logClickRejected(onsetMs: Long, lowRms: Double, highRms: Double, peakRatio: Double) {
         append(MicDiagnosticsEvent.ClickRejected(onsetMs, lowRms, highRms, peakRatio))
-    }
-
-    fun logCalibrationSample(rawDev: Float, sampleIndex: Int) {
-        _calibrationSampleCount.value = sampleIndex + 1
-        append(MicDiagnosticsEvent.CalibrationSample(SystemClock.elapsedRealtime(), rawDev, sampleIndex))
-    }
-
-    fun logCalibrationFinalized(biasMs: Float, sampleCount: Int) {
-        _latencyBiasMs.value = biasMs
-        append(MicDiagnosticsEvent.CalibrationFinalized(SystemClock.elapsedRealtime(), biasMs, sampleCount))
     }
 
     // ── Amplitude ─────────────────────────────────────────────────────────────

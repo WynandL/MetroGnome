@@ -64,8 +64,9 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     MetroItemEntry(MusicStand, UnlockCondition.PracticeSessionsCompleted(5)),  // 5 sessions
 
     // ── Tuner feedback reward ─────────────────────────────────────────────────
-    // Earned by submitting a single thumbs-up reading via the tuner feedback card.
-    MetroItemEntry(TuningFork, UnlockCondition.TunerFeedbackGiven(1)),
+    // Earned by submitting three feedback readings via the tuner feedback card
+    // (one was too easy to trip accidentally).
+    MetroItemEntry(TuningFork, UnlockCondition.TunerFeedbackGiven(3)),
 
     // ── Tuner rewards — TunerSeconds accumulates from v3.3 onwards ────────────
     // Thresholds (tuner seconds — mic actively open):

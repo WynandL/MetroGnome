@@ -362,7 +362,6 @@ private fun syntheticOtherDevice(l: ActivitySummary): ActivitySummary {
         practiceMinutesTotal          = l.practiceMinutesTotal + 15,           // other ahead
         practiceSessionsCompleted     = l.practiceSessionsCompleted + 2,
         speedTrainerSessionsCompleted = (l.speedTrainerSessionsCompleted - 3).coerceAtLeast(0), // local
-        micBonusSessions              = l.micBonusSessions + 4,
         performanceBonusPoints        = l.performanceBonusPoints + 30,
         rewardedAdGnotes              = l.rewardedAdGnotes + 50,
         bestPracticeStreak            = l.bestPracticeStreak + 5,              // other ahead
@@ -401,7 +400,6 @@ private fun compareRows(b: ActivitySummary, a: ActivitySummary): List<CmpRow> = 
     CmpRow("practiceMinutesTotal", b.practiceMinutesTotal.toString(), a.practiceMinutesTotal.toString()),
     CmpRow("practiceSessionsCompleted", b.practiceSessionsCompleted.toString(), a.practiceSessionsCompleted.toString()),
     CmpRow("speedTrainerSessionsCompleted", b.speedTrainerSessionsCompleted.toString(), a.speedTrainerSessionsCompleted.toString()),
-    CmpRow("micBonusSessions", b.micBonusSessions.toString(), a.micBonusSessions.toString()),
     CmpRow("performanceBonusPoints", b.performanceBonusPoints.toString(), a.performanceBonusPoints.toString()),
     CmpRow("rewardedAdGnotes", b.rewardedAdGnotes.toString(), a.rewardedAdGnotes.toString()),
     CmpRow("bestPracticeStreak", b.bestPracticeStreak.toString(), a.bestPracticeStreak.toString()),
@@ -440,7 +438,6 @@ private fun mergeRows(l: ActivitySummary, o: ActivitySummary, m: ActivitySummary
     maxRowI("practiceMinutesTotal", l.practiceMinutesTotal, o.practiceMinutesTotal, m.practiceMinutesTotal),
     maxRowI("practiceSessionsCompleted", l.practiceSessionsCompleted, o.practiceSessionsCompleted, m.practiceSessionsCompleted),
     maxRowI("speedTrainerSessionsCompleted", l.speedTrainerSessionsCompleted, o.speedTrainerSessionsCompleted, m.speedTrainerSessionsCompleted),
-    maxRowI("micBonusSessions", l.micBonusSessions, o.micBonusSessions, m.micBonusSessions),
     maxRowI("performanceBonusPoints", l.performanceBonusPoints, o.performanceBonusPoints, m.performanceBonusPoints),
     maxRowI("rewardedAdGnotes", l.rewardedAdGnotes, o.rewardedAdGnotes, m.rewardedAdGnotes),
     maxRowI("bestPracticeStreak", l.bestPracticeStreak, o.bestPracticeStreak, m.bestPracticeStreak),

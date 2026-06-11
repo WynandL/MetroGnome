@@ -318,48 +318,99 @@ private fun RampArc(config: SpeedTrainerConfig, modifier: Modifier = Modifier) {
     val stepCount = steps.size
     val ascending = config.ascending
 
+    val blue = Color(0xFF5B78C8)
+    val dotBlue = Color(0xFF8AA4EC)
     Box(
         modifier = modifier
-            .height(56.dp)
+            .height(66.dp)
             .drawBehind {
                 val w = size.width
                 val h = size.height
                 val padH = 12.dp.toPx()
                 val endX = w - padH
-                val bottomY = h * 0.82f
-                val topY = h * 0.10f
+                val bottomY = h * 0.84f
+                val topY = h * 0.12f
 
                 // startY/endY flip for descending so the curve falls left→right
                 val startY = if (ascending) bottomY else topY
                 val endY   = if (ascending) topY    else bottomY
+                val cx = endX * 0.55f
 
-                val path = Path().apply {
+                val curve = Path().apply {
                     moveTo(padH, startY)
-                    quadraticTo(endX * 0.55f, startY, endX, endY)
+                    quadraticTo(cx, startY, endX, endY)
                 }
 
+                // Soft area fill under the curve — gives the ramp body instead of a lone thin line.
+                val fill = Path().apply {
+                    moveTo(padH, startY)
+                    quadraticTo(cx, startY, endX, endY)
+                    lineTo(endX, bottomY)
+                    lineTo(padH, bottomY)
+                    close()
+                }
                 drawPath(
-                    path = path,
+                    path = fill,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(AppColors.gold.copy(alpha = 0.20f), AppColors.gold.copy(alpha = 0f)),
+                        startY = topY,
+                        endY   = bottomY,
+                    ),
+                )
+
+                // Faint baseline grounds the curve.
+                drawLine(
+                    color = AppColors.textDim.copy(alpha = 0.22f),
+                    start = Offset(padH, bottomY),
+                    end   = Offset(endX, bottomY),
+                    strokeWidth = 1.dp.toPx(),
+                )
+
+                // Glow beneath the stroke, then the crisp gradient stroke on top.
+                drawPath(
+                    path = curve,
+                    color = AppColors.gold.copy(alpha = 0.16f),
+                    style = Stroke(width = 7.dp.toPx(), cap = StrokeCap.Round),
+                )
+                drawPath(
+                    path = curve,
                     brush = Brush.linearGradient(
-                        colors = if (ascending) listOf(Color(0xFF5B78C8), AppColors.gold)
-                                 else           listOf(AppColors.gold, Color(0xFF5B78C8)),
+                        colors = if (ascending) listOf(blue, AppColors.gold)
+                                 else           listOf(AppColors.gold, blue),
                         start = Offset(padH, startY),
                         end   = Offset(endX, endY),
                     ),
-                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
+                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
                 )
 
-                // Step dots — t=0 is always the start BPM (left), t=1 is target (right)
+                // Step markers — t=0 is the start BPM (left), t=1 the target (right). Each gets a
+                // subtle riser from the baseline plus a dot that reads distinctly off the line.
                 val totalRange = abs(config.targetBpm - config.startBpm).toFloat().coerceAtLeast(1f)
-                val cx = endX * 0.55f
+                val showRisers = stepCount <= 24
                 steps.forEachIndexed { i, bpm ->
                     val t = (abs(bpm - config.startBpm).toFloat() / totalRange).coerceIn(0f, 1f)
                     val x = (1-t)*(1-t)*padH + 2*(1-t)*t*cx + t*t*endX
-                    val y = (1-t)*(1-t)*startY + 2*(1-t)*t*startY + t*t*endY
+                    val y = startY + (endY - startY) * t * t
                     val isEndpoint = i == 0 || i == steps.lastIndex
-                    val dotColor = if (isEndpoint) AppColors.gold else Color(0xFF6B8AE0).copy(alpha = 0.7f)
-                    val radius = if (isEndpoint) 4.5.dp.toPx() else if (stepCount <= 20) 2.5.dp.toPx() else 1.5.dp.toPx()
-                    drawCircle(color = dotColor, radius = radius, center = Offset(x, y))
+
+                    if (showRisers && !isEndpoint) {
+                        drawLine(
+                            color = dotBlue.copy(alpha = 0.22f),
+                            start = Offset(x, bottomY),
+                            end   = Offset(x, y),
+                            strokeWidth = 1.dp.toPx(),
+                        )
+                    }
+
+                    if (isEndpoint) {
+                        drawCircle(AppColors.gold.copy(alpha = 0.25f), radius = 9.dp.toPx(), center = Offset(x, y))
+                        drawCircle(AppColors.gold, radius = 5.dp.toPx(), center = Offset(x, y))
+                        drawCircle(Color.White.copy(alpha = 0.85f), radius = 1.8.dp.toPx(), center = Offset(x, y))
+                    } else {
+                        val r = if (stepCount <= 20) 3.5.dp.toPx() else 2.5.dp.toPx()
+                        drawCircle(dotBlue, radius = r, center = Offset(x, y))
+                        drawCircle(Color.White.copy(alpha = 0.9f), radius = r * 0.42f, center = Offset(x, y))
+                    }
                 }
             },
     )

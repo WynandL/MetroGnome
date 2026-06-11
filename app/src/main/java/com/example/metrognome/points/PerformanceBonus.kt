@@ -34,6 +34,13 @@ object PerformanceBonus {
     /** Minimum mic hits for the timing to be meaningful; fewer earns nothing. */
     const val MIN_HITS = 5
 
+    /**
+     * Absolute deviation at or below which a clap counts as "very good" and fires a celebratory
+     * firework in the Gnome canvas (purely visual, no scoring effect). Looser than [TIGHT_MS] so
+     * the reward feels attainable without being constant.
+     */
+    const val GREAT_HIT_MS = 35f
+
     /** One hit's timing credit in [0,1]: full at/under [TIGHT_MS], zero at/over [LOOSE_MS]. */
     fun hitScore(absDeviationMs: Float): Float =
         ((LOOSE_MS - absDeviationMs) / (LOOSE_MS - TIGHT_MS)).coerceIn(0f, 1f)

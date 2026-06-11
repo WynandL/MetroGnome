@@ -181,7 +181,13 @@ fun RhythmGameScreen(
                     visibleNotes = visibleNotes
                 )
 
-                GamePhase.RESULT -> ResultPanel(result = result, onDismiss = { onBeforeResultDismiss { vm.dismissResult() } })
+                GamePhase.RESULT -> ResultPanel(
+                    result = result,
+                    // Restart at the current difficulty (reset() keeps bpm/beats/name) through the
+                    // same ad gate as dismissing.
+                    onPlayAgain = { onBeforeResultDismiss { vm.startGame() } },
+                    onDismiss = { onBeforeResultDismiss { vm.dismissResult() } },
+                )
             }
         }
         if (!isAdFree) {
@@ -216,8 +222,6 @@ private fun RhythmDashboard(
 
     val gnoteCount      by metronomeVm.gnoteCount.collectAsStateWithLifecycle()
     val adLoaded        by metronomeVm.rewardedAdLoaded.collectAsStateWithLifecycle()
-    val isPracticeEnabled     by metronomeVm.isPracticeEnabled.collectAsStateWithLifecycle()
-    val isSpeedTrainerEnabled by metronomeVm.isSpeedTrainerEnabled.collectAsStateWithLifecycle()
     val practiceStreak  by metronomeVm.practiceStreak.collectAsStateWithLifecycle()
     val bestStreak      by metronomeVm.bestStreak.collectAsStateWithLifecycle()
     val practicedEpochDays by metronomeVm.practicedEpochDays.collectAsStateWithLifecycle()
@@ -256,15 +260,16 @@ private fun RhythmDashboard(
 
         Spacer(Modifier.height(6.dp))
 
-        if (isPracticeEnabled || (isSpeedTrainerEnabled && practiceStreak > 0)) {
-            PracticeStreakCard(
-                streak             = practiceStreak,
-                bestStreak         = bestStreak,
-                practicedEpochDays = practicedEpochDays,
-                modifier           = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(6.dp))
-        }
+        // Always show the streak on the Rhythm page, even at Day 0 - it reads "Start your streak"
+        // and nudges the user to begin one. (The home page keeps the conditional gating so Metro
+        // gets maximum space there.)
+        PracticeStreakCard(
+            streak             = practiceStreak,
+            bestStreak         = bestStreak,
+            practicedEpochDays = practicedEpochDays,
+            modifier           = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(6.dp))
 
         CollectionCard(
             activeItemIds = activeItemIds,
@@ -583,6 +588,7 @@ private fun PlayingPanel(
             NoteHighway(
                 visibleNotes = visibleNotes,
                 lastQuality = lastQuality,
+                micDetected = vm.micDetected,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
@@ -831,6 +837,7 @@ private fun MicEqualizer(
 private fun NoteHighway(
     visibleNotes: List<RenderNote>,
     lastQuality: HitQuality,
+    micDetected: SharedFlow<Unit>,
     modifier: Modifier = Modifier
 ) {
     // Quality glow at the hit line
@@ -840,6 +847,16 @@ private fun NoteHighway(
         HitQuality.ALMOST -> GameColors.almost
         HitQuality.MISS -> GameColors.miss
         HitQuality.NONE -> GameColors.hitLineIdle
+    }
+
+    // Every detected clap pulses the hit line, so a heard-but-unscored clap is acknowledged
+    // in the lane the player is watching - distinct from the quality glow (scored hits only).
+    val clapFlash = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        micDetected.collect {
+            clapFlash.snapTo(1f)
+            clapFlash.animateTo(0f, tween(220))
+        }
     }
 
     Box(modifier = modifier) {
@@ -888,6 +905,17 @@ private fun NoteHighway(
                 center = Offset(railX2 + noteR * 0.5f, hitY)
             )
 
+            // Clap-heard pulse: a bright bar flashing over the hit line on every detection.
+            if (clapFlash.value > 0f) {
+                drawLine(
+                    color = Color.White.copy(alpha = 0.75f * clapFlash.value),
+                    start = Offset(railX1 - noteR * 0.5f, hitY),
+                    end = Offset(railX2 + noteR * 0.5f, hitY),
+                    strokeWidth = lineW * 3f,
+                    cap = StrokeCap.Round,
+                )
+            }
+
             // Draw notes — position derived from pre-computed progress
             for (note in visibleNotes) {
                 val y = note.progress * hitY
@@ -902,17 +930,20 @@ private fun NoteHighway(
                     note.progress > 0.65f -> GameColors.noteAmber  // approaching — amber
                     else -> GameColors.notePurple   // far — purple
                 }
-                val glowAlpha = if (inHitWindow) 0.35f else 0.15f
+                // Within the hit window, grow and brighten toward the line so the visual peak is
+                // exactly AT the line (progress 1.0) — the moment to clap — instead of luring an
+                // early clap the instant the note first turns gold.
+                val proximity = if (inHitWindow)
+                    (1f - kotlin.math.abs(note.progress - 1f) / 0.13f).coerceIn(0f, 1f) else 0f
+                val r = noteR * (1f + 0.30f * proximity)
+                val glowAlpha = if (inHitWindow) 0.18f + 0.40f * proximity else 0.15f
+                val glowR = noteR * (1.8f + 1.0f * proximity)
 
+                drawCircle(noteColor.copy(alpha = glowAlpha), radius = glowR, center = Offset(cx, y))
+                drawCircle(noteColor, radius = r, center = Offset(cx, y))
                 drawCircle(
-                    noteColor.copy(alpha = glowAlpha),
-                    radius = noteR * 1.8f,
-                    center = Offset(cx, y)
-                )
-                drawCircle(noteColor, radius = noteR, center = Offset(cx, y))
-                drawCircle(
-                    Color.White.copy(alpha = 0.18f), radius = noteR * 0.45f,
-                    center = Offset(cx - noteR * 0.2f, y - noteR * 0.25f)
+                    Color.White.copy(alpha = 0.18f), radius = r * 0.45f,
+                    center = Offset(cx - r * 0.2f, y - r * 0.25f)
                 )
             }
         }
@@ -974,6 +1005,7 @@ private fun ScoreBadge(label: String, value: String, color: Color) {
 @Composable
 private fun ResultPanel(
     result: com.example.metrognome.viewmodel.GameResult?,
+    onPlayAgain: () -> Unit,
     onDismiss: () -> Unit
 ) {
     if (result == null) return
@@ -1045,7 +1077,7 @@ private fun ResultPanel(
         }
         Spacer(Modifier.height(22.dp))
         Surface(
-            onClick = onDismiss,
+            onClick = onPlayAgain,
             shape = RoundedCornerShape(16.dp),
             color = AppColors.primaryPurple,
             border = BorderStroke(1.dp, AppColors.mediumPurple),
@@ -1408,7 +1440,6 @@ private fun PracticeStreakCard(
                 Spacer(Modifier.height(8.dp))
                 listOf(
                     "Finish a Practice session or a Speed Trainer session to count today.",
-                    "Come back tomorrow to keep your streak going.",
                 ).forEach { rule ->
                     Text(
                         text       = rule,

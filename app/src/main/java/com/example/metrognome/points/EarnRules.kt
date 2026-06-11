@@ -89,7 +89,7 @@ val EARN_RULES: List<EarnRule> = listOf(
     ),
     EarnRule(
         label         = "Timing Bonus",
-        description   = "Play in time with the mic on during Practice or Speed Trainer. You earn a share of the session length, set by how well you keep time.",
+        description   = "Play in time with Groove Check on during Practice or Speed Trainer. You earn a share of the session length, set by how well you keep time.",
         iconKey       = "timing",
         pointsPerUnit = PointsConfig.PER_PERFORMANCE_BONUS,
         rateUnit      = "min in time",
@@ -115,5 +115,15 @@ val EARN_RULES: List<EarnRule> = listOf(
         dailyLimit       = 1,
         limitUnit        = "day",
         inherentlyDaily  = true,
+    ),
+    EarnRule(
+        label         = "Ad Bonus",
+        description   = "Watch a short rewarded ad, whenever you choose, for an instant ${PointsConfig.CURRENCY_NAME} boost",
+        iconKey       = "ad",
+        pointsPerUnit = PointsConfig.REWARDED_GNOTES_PER_WATCH,
+        rateUnit      = "ad",
+        // Derived from the two source constants so it stays in sync (100 / 50 = 2 watches/day).
+        dailyLimit    = PointsLimits.REWARDED_GNOTES_PER_DAY / PointsConfig.REWARDED_GNOTES_PER_WATCH,
+        limitUnit     = "ads",
     ),
 )

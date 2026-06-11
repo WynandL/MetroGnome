@@ -288,6 +288,6 @@ private fun ThankingRow() {
             .padding(vertical = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text("Got it — thank you", color = AppColors.textSecondary, fontSize = 13.sp)
+        Text("Got it, thank you", color = AppColors.textSecondary, fontSize = 13.sp)
     }
 }

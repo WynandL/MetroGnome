@@ -24,8 +24,6 @@ object PointsLimits {
     const val SPEED_TRAINER_MINUTES_PER_DAY: Int      = 45
     /** Tuner feedback submissions that count per day. */
     const val TUNER_FEEDBACK_PER_DAY: Int             = 2
-    /** Speed Trainer mic-accuracy bonus sessions that count per day. 3 × 10 pts = 30 pts max. */
-    const val MIC_ACCURACY_SESSIONS_PER_DAY: Int      = 3
     /** Graded timing-bonus Gnotes (from Practice + Speed Trainer) that count per day. */
     const val PERFORMANCE_BONUS_PER_DAY: Int          = 45
     // Loyalty is inherently one point per calendar day — no cap needed.

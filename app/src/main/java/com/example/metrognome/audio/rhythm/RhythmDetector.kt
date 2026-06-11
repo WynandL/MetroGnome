@@ -98,7 +98,7 @@ class RhythmDetector(private val classifyClaps: Boolean = false) {
 
     /**
      * Debug-only callback fired for onsets that were dropped by [suppressUntilMs].
-     * Null in production — set by the caller in debug builds to feed [MicDiagnosticsBuffer].
+     * Null in production — set by the caller in debug builds to feed MicDiagnosticsBuffer.
      * Delete this property and the [debugOnSuppressed]?.invoke() call below to remove.
      */
     @Volatile
@@ -107,7 +107,7 @@ class RhythmDetector(private val classifyClaps: Boolean = false) {
     /**
      * Debug-only callback fired for transients the spectral classifier judged to be the
      * metronome click (classifyClaps mode) and therefore dropped. Null in production — set in
-     * debug builds to feed [MicDiagnosticsBuffer]. Carries the [ClapDetector.Onset] so the log
+     * debug builds to feed MicDiagnosticsBuffer. Carries the [ClapDetector.Onset] so the log
      * can show the click-vs-clap band margin that justified the rejection.
      */
     @Volatile

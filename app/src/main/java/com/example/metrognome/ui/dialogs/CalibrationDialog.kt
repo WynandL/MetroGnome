@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -45,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.metrognome.ui.components.VolumeNudge
+import com.example.metrognome.ui.components.rememberMediaVolumeOk
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.CalibrationMode
 import com.example.metrognome.viewmodel.CalibrationState
@@ -368,6 +371,12 @@ fun CalibrationConfirmDialog(
         CalibrationMode.INSTRUMENT -> return
     }
 
+    // Microphone (loopback) calibration plays a tone and listens back, so gate Start on media
+    // volume - polled live, so lowering the volume after the dialog opens disables Start too.
+    // The tuning fork is acoustic-only and is never gated.
+    val volumeOk = rememberMediaVolumeOk(active = mode == CalibrationMode.LOOPBACK)
+    val startEnabled = mode != CalibrationMode.LOOPBACK || volumeOk
+
     val cardScale = remember { Animatable(0.2f) }
     LaunchedEffect(Unit) {
         cardScale.animateTo(
@@ -430,6 +439,10 @@ fun CalibrationConfirmDialog(
                     lineHeight = 19.sp,
                 )
                 Spacer(Modifier.height(22.dp))
+                if (!startEnabled) {
+                    VolumeNudge("Turn your volume up to start.", Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(12.dp))
+                }
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Surface(
                         onClick = onDismiss,
@@ -452,12 +465,14 @@ fun CalibrationConfirmDialog(
                     Spacer(Modifier.width(10.dp))
                     Surface(
                         onClick = onConfirm,
+                        enabled = startEnabled,
                         shape = RoundedCornerShape(14.dp),
                         color = AppColors.gold.copy(alpha = 0.10f),
                         border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.75f)),
                         modifier = Modifier
                             .weight(1f)
-                            .height(44.dp),
+                            .height(44.dp)
+                            .alpha(if (startEnabled) 1f else 0.4f),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
