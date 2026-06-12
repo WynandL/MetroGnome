@@ -152,7 +152,8 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
         listenIntent = true
         if (hasMicPermission()) {
             tuner.start()
-            startUsageTimer()
+            // A simulated reading (dev screenshots) must not accrue usage or trip unlocks.
+            if (!tuner.isSimulating) startUsageTimer()
         }
     }
 
@@ -240,6 +241,24 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun dismissFeedback() { _feedbackPrompt.value = null }
+
+    // ── DEV: tuner reading simulation (for emulator screenshots) ─────────────────
+    // The emulator's audio pipeline can't drive a real reading, so feed the engine a
+    // fake locked-on note. The simulation persists across tab navigation, so trigger
+    // it here then switch to the Tuner tab to capture it.
+
+    private val simPresets = listOf(69 to -14f, 40 to 11f, 50 to -6f, 55 to 22f)
+    private var simPresetIndex = 0
+
+    /** DEV: cycle through a few slightly-off locked readings; each call advances one. */
+    fun debugCycleSimulatedReading() {
+        val (midi, cents) = simPresets[simPresetIndex % simPresets.size]
+        simPresetIndex++
+        tuner.startSimulation(midi, cents)
+    }
+
+    /** DEV: clear the simulated reading and resume normal tuner behaviour. */
+    fun debugStopSimulation() = tuner.stopSimulation()
 
     /** DEV: force-show the feedback card using the current reading (or a synthetic A4 if silent). */
     fun debugTriggerFeedback() {

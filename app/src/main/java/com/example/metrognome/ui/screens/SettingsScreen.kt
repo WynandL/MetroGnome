@@ -85,6 +85,8 @@ private val itemOwnedMessages = mapOf(
 fun SettingsScreen(
     vm: MetronomeViewModel,
     onTriggerFeedback: () -> Unit = {},
+    onSimulateTuner: () -> Unit = {},
+    onStopTunerSimulation: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val bpm by vm.bpm.collectAsStateWithLifecycle()
@@ -345,6 +347,8 @@ fun SettingsScreen(
                     vm = vm,
                     micCal = micCal,
                     onTriggerFeedback = onTriggerFeedback,
+                    onSimulateTuner = onSimulateTuner,
+                    onStopTunerSimulation = onStopTunerSimulation,
                     onMicStateChanged = { micCheckRefresh++ },
                 )
             }

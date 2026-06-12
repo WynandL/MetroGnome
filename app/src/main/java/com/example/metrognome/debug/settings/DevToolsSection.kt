@@ -67,6 +67,8 @@ fun DevToolsSection(
     vm: MetronomeViewModel,
     micCal: MicCalibration,
     onTriggerFeedback: () -> Unit,
+    onSimulateTuner: () -> Unit,
+    onStopTunerSimulation: () -> Unit,
     onMicStateChanged: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -295,6 +297,29 @@ fun DevToolsSection(
             border = BorderStroke(1.dp, AppColors.devBlueBorder)
         ) {
             Text("Trigger Tuner Feedback Card", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(Modifier.height(6.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            OutlinedButton(
+                onClick = onSimulateTuner,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border = BorderStroke(1.dp, AppColors.devBlueBorder)
+            ) {
+                Text("Simulate Tuner Note (cycles)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+            OutlinedButton(
+                onClick = onStopTunerSimulation,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border = BorderStroke(1.dp, AppColors.devBlueBorder)
+            ) {
+                Text("Stop", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
         }
 
         Spacer(Modifier.height(6.dp))

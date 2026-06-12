@@ -18,6 +18,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.log2
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
@@ -139,12 +140,20 @@ class Tuner {
     @Volatile
     var calibrationFactor: Float = 1f
 
+    /** DEV: when true, a fake reading is held and live capture is suppressed. */
+    @Volatile
+    private var simulating = false
+
+    /** True while a simulated reading is being shown (see [startSimulation]). */
+    val isSimulating: Boolean get() = simulating
+
     private var record: AudioRecord? = null
     private var scope: CoroutineScope? = null
 
     /** Start listening. Caller must hold RECORD_AUDIO permission. */
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun start() {
+        if (simulating) return   // a simulated reading owns the flows — do not open the mic
         if (_listening) return
 
         val opened = openRecord() ?: run {
@@ -256,6 +265,7 @@ class Tuner {
     }
 
     fun stop() {
+        if (simulating) return   // nothing real to tear down; keep the simulated reading on screen
         scope?.cancel()
         scope = null
         try {
@@ -269,6 +279,44 @@ class Tuner {
         _amplitude.value = 0f
         _reading.value = null
         _ambient.value = AmbientReport.Idle
+    }
+
+    // ── DEV: simulated reading ───────────────────────────────────────────────────
+    // Holds a fixed, locked-on reading with no audio input so the Tuner screen can be
+    // screenshotted on an emulator (where the mic pipeline is unusable). While active,
+    // start()/stop() are inert, so the fake values survive screen navigation until
+    // [stopSimulation] is called.
+
+    /**
+     * Feed a fake locked-on reading for [midiNote], offset by [cents], as if a steady
+     * instrument note were being heard. Tears down any live capture first.
+     */
+    fun startSimulation(midiNote: Int, cents: Float, clarity: Float = 0.97f) {
+        stop()                 // simulating is still false here, so real teardown runs
+        simulating = true
+        val freq = (referenceHz *
+            2.0.pow((midiNote - 69) / 12.0) *
+            2.0.pow(cents / 1200.0)).toFloat()
+        val r = toReading(freq, clarity)
+        _reading.value = r
+        _ambient.value = AmbientReport(
+            state = ListeningState.LOCKED,
+            headline = "Locked on ${r.noteName}${r.octave}",
+            guidance = "",
+            ambientLevel = AmbientLevel.QUIET,
+            candidateHz = freq,
+            stabilityCents = 2f,
+            locked = true,
+        )
+        _amplitude.value = 0.6f
+    }
+
+    /** Clear the simulated reading and return the tuner to normal operation. */
+    fun stopSimulation() {
+        simulating = false
+        _reading.value = null
+        _ambient.value = AmbientReport.Idle
+        _amplitude.value = 0f
     }
 
     // ── Internals ────────────────────────────────────────────────────────────────

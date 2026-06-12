@@ -209,6 +209,8 @@ fun MetroGnomeApp() {
             AppTab.SETTINGS -> SettingsScreen(
                 vm = metronomeVm,
                 onTriggerFeedback = tunerVm::debugTriggerFeedback,
+                onSimulateTuner = tunerVm::debugCycleSimulatedReading,
+                onStopTunerSimulation = tunerVm::debugStopSimulation,
             )
         }
     }
