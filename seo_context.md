@@ -15,7 +15,7 @@
 | Android Authority follow-up | Low | Allow until 2026-06-16 |
 | GSC: pull impression/query data from Search Console | High | Indexing confirmed June 6. Now baseline-critical after the 2026-06-12 canonical fix + on-page overhaul. Data requested in 2026-06-12 report |
 | GSC: Validate Fix on homepage "Duplicate, Google chose different canonical" | High | Fixed 2026-06-12 (vercel.app now 301s to metrognome.co.za). Submit Validate Fix and re-inspect the homepage; expect Google-selected canonical to flip over coming crawls |
-| Content: flip "How to Improve Your Timing" blog from "coming soon" to "now available" | Medium | Post live 2026-06-11. Do this WHEN v5.6 reaches Play Store production: change the "coming in v5.6 this week" wording to present tense in landing/blog/how-to-improve-your-timing.html |
+| Content: flip "How to Improve Your Timing" blog to present tense | Done 2026-06-12 | Done on master (commit 09ec535): Groove Check now public per dev. NOTE: confirm Play Store versionCode/date and update the "v5.6 NOT in production" lines in the App + Core features sections to match |
 | Vercel: confirm 2026-06-11 master deploy landed | Done 2026-06-12 | Blog post verified live; webhook had missed it, fixed via empty trigger commit. Webhook misses recur intermittently (remedy: empty commit). Website config lives in landing/vercel.json (Root Directory = landing) |
 
 ---
