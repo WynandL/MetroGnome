@@ -1,6 +1,12 @@
 {
   "redirects": [
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
+      "destination": "https://metrognome.co.za/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
       "destination": "https://metrognome.co.za/:path*",
