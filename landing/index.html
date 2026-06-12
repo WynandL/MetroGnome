@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Metro Gnome - Free Metronome &amp; Chromatic Tuner for Android</title>
-  <meta name="description" content="Free metronome and chromatic tuner app for Android. Tap tempo, rhythm game, and smart tuner built for real musicians.">
+  <meta name="description" content="Free metronome, chromatic tuner, rhythm game, and speed trainer for Android. Tap tempo, train your speed, and stay in time. Built for real musicians.">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="qwODXdkzQirlCbR2ycGuLXg0EKr2PddGe5CZnxfjDTw">
   <meta name="google-site-verification" content="UFwW2Ybk-LWanrl-LZsS4XjzSsgx0mVHjApxjV7BqP0">
@@ -14,10 +14,18 @@
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Metro Gnome">
   <meta property="og:title" content="Metro Gnome - Free Metronome &amp; Chromatic Tuner for Android">
-  <meta property="og:description" content="Free metronome and chromatic tuner app for Android. Tap tempo, rhythm game, and smart tuner built for real musicians.">
+  <meta property="og:description" content="Free metronome, chromatic tuner, rhythm game, and speed trainer for Android. Tap tempo, train your speed, and stay in time. Built for real musicians.">
   <meta property="og:url" content="https://metrognome.co.za/">
   <meta property="og:image" content="https://metrognome.co.za/metro.png">
+  <meta property="og:image:alt" content="Metro Gnome, the friendly gnome metronome and tuner for Android">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Metro Gnome - Free Metronome &amp; Chromatic Tuner for Android">
+  <meta name="twitter:description" content="Free metronome, chromatic tuner, rhythm game, and speed trainer for Android. Tap tempo, train your speed, and stay in time.">
+  <meta name="twitter:image" content="https://metrognome.co.za/metro.png">
 
   <!-- SoftwareApplication Schema -->
   <script type="application/ld+json">
@@ -33,7 +41,15 @@
       "priceCurrency": "USD"
     },
     "url": "https://play.google.com/store/apps/details?id=com.wynandl.metrognome",
-    "description": "Free metronome and chromatic tuner app for Android with rhythm game, tap tempo, practice timer, and smart ambient noise detection.",
+    "description": "Free metronome, chromatic tuner, rhythm game, speed trainer, and practice timer for Android with smart ambient noise detection and a rewards system.",
+    "featureList": [
+      "Precision metronome with tap tempo and BPM presets",
+      "Chromatic tuner with ambient noise detection",
+      "Rhythm game playable by tapping or clapping",
+      "Speed trainer with automatic BPM ramps",
+      "Practice timer with daily streak tracking",
+      "Earn rewards and unlock collectibles"
+    ],
     "aggregateRating": {
       "@type": "AggregateRating",
       "ratingValue": "4.5",
@@ -44,6 +60,72 @@
       "name": "Wynand L",
       "description": "Independent app developer"
     }
+  }
+  </script>
+
+  <!-- FAQ Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is Metro Gnome really a free metronome app for Android?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, completely free. The metronome, chromatic tuner, rhythm game, and speed trainer are all free with no time limits. Optional purchases remove ads or unlock cosmetic items, but the core tools never cost anything. Metro Gnome works on Android 7.0 and above, fully offline."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does the BPM counter and tap tempo work?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Tap the TAP button and Metro Gnome calculates your BPM from the interval between taps (at least 2 taps within 2.5 seconds). You can save any BPM as a named preset. The metronome uses raw AudioTrack for sample-accurate timing that does not drift over long sessions."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Metro Gnome have a speed trainer?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The speed trainer ramps the tempo up automatically. Set a start BPM, a target BPM, a step size, and how many bars to play at each step, then practice a passage slowly and let the app raise the tempo for you until you can play it up to speed."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does the tuner work in a noisy practice room?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "That is what it was designed for. The tuner profiles your room's background noise, then distinguishes your instrument from the noise floor, rejects voices and broadband sounds, and only locks on to a stable musical tone, with on-screen guidance from QUIET to ACQUIRING to LOCKED."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is Metro Gnome good for music teachers?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The practice timer lets students set a session goal of 5, 10, 15, 20, or 30 minutes. When a session completes the app tracks a daily streak and total sessions, so students build a practice habit and teachers can check on consistency. It is free on any Android phone."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it work offline?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Fully. The metronome, tuner, rhythm game, and speed trainer all run entirely on-device with no internet connection required. The only feature that needs a connection is loading ads, which you can remove with a one-time purchase."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What Android version do I need?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Metro Gnome requires Android 7.0 (API level 24) or higher. It targets the latest Android for the best experience but runs well on older devices too."
+        }
+      }
+    ]
   }
   </script>
 
@@ -282,8 +364,8 @@
 
     .shot { display: flex; flex-direction: column; align-items: center; gap: 0.85rem; }
 
-    /* Screenshots are device mockups on transparent backgrounds — let the
-       drop-shadow hug the phone shape rather than wrapping a CSS frame. */
+    /* Screenshots are device mockups on transparent backgrounds, so the
+       drop-shadow hugs the phone shape rather than wrapping a CSS frame. */
     .shot-frame {
       width: 100%;
       max-width: 230px;
@@ -643,10 +725,10 @@
   <section id="features">
     <div class="container">
       <p class="section-label">What's inside</p>
-      <h2>Three tools. One app. Zero compromises.</h2>
+      <h2>Far more than a metronome.</h2>
       <p class="lead">
-        Most apps do one thing. Metro Gnome gives you a precision metronome,
-        a smart chromatic tuner, and a rhythm game - all free, all in one place.
+        Most apps do one thing. Metro Gnome gives you a precision metronome, a smart chromatic tuner,
+        a rhythm game, a speed trainer, a practice timer, and a rewards system - all free, all in one place.
       </p>
 
       <div class="pillars">
@@ -664,7 +746,6 @@
             <li>BPM presets - save your favourite tempos</li>
             <li>Custom accent beat and time signature</li>
             <li>Multiple sounds: click, hi-hat, woodblock, warm, bell</li>
-            <li>Practice timer with streak tracking</li>
             <li>Background play</li>
           </ul>
         </article>
@@ -708,6 +789,57 @@
             <li>PERFECT / GOOD / ALMOST scoring</li>
             <li>High scores per difficulty</li>
             <li>Acoustic Echo Cancellation - play while the metronome runs</li>
+          </ul>
+        </article>
+
+        <article class="pillar">
+          <div class="pillar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+            </svg>
+          </div>
+          <h3>Speed Trainer</h3>
+          <p>Nail a passage slowly, then let the tempo climb on its own until you can play it up to speed.</p>
+          <ul>
+            <li>Automatic BPM ramps</li>
+            <li>Set start, target, and step size</li>
+            <li>Choose how many bars per step</li>
+            <li>Ascending or descending tempo</li>
+            <li>Built for clean, gradual speed gains</li>
+          </ul>
+        </article>
+
+        <article class="pillar">
+          <div class="pillar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+            </svg>
+          </div>
+          <h3>Practice Timer &amp; Streaks</h3>
+          <p>Set a focused session and build a daily streak that keeps you coming back to the instrument.</p>
+          <ul>
+            <li>Timed practice sessions</li>
+            <li>Daily streak and best-streak tracking</li>
+            <li>Weekly practice calendar</li>
+            <li>Total sessions counter</li>
+            <li>Great for building a habit</li>
+          </ul>
+        </article>
+
+        <article class="pillar">
+          <div class="pillar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+            </svg>
+          </div>
+          <h3>Rewards &amp; Collectibles</h3>
+          <p>Earn Gnotes as you practise and unlock accessories and scenery for Metro the Gnome.</p>
+          <ul>
+            <li>Earn Gnotes from every activity</li>
+            <li>Loyalty milestones</li>
+            <li>Unlock Metro's accessories and forest world</li>
+            <li>Ad-free reward for hitting your daily goal</li>
+            <li>A reason to come back tomorrow</li>
           </ul>
         </article>
 
@@ -847,7 +979,7 @@
         <details>
           <summary>Is Metro Gnome really a free metronome app for Android?</summary>
           <div class="faq-answer">
-            Yes - completely free. The metronome, chromatic tuner, and rhythm game are all free with no time limits.
+            Yes - completely free. The metronome, chromatic tuner, rhythm game, and speed trainer are all free with no time limits.
             There are optional purchases to remove ads or unlock cosmetic items, but the core tools never cost anything.
             Metro Gnome works on Android 7.0 and above, fully offline.
           </div>
@@ -860,6 +992,15 @@
             (requires at least 2 taps within 2.5 seconds). You can also save any BPM as a named preset and
             switch between songs instantly. The metronome uses raw AudioTrack on the Android audio stack for
             sample-accurate timing that doesn't drift over long sessions.
+          </div>
+        </details>
+
+        <details>
+          <summary>Does Metro Gnome have a speed trainer?</summary>
+          <div class="faq-answer">
+            Yes. The speed trainer ramps the tempo up automatically. Set a start BPM, a target BPM, a step size,
+            and how many bars to play at each step, then practise a passage slowly and let the app raise the tempo
+            for you until you can play it up to speed. It's the simplest way to build clean speed on any instrument.
           </div>
         </details>
 
@@ -897,8 +1038,8 @@
         <details>
           <summary>Does it work offline?</summary>
           <div class="faq-answer">
-            Fully. The metronome, tuner, and rhythm game all run entirely on-device - no internet connection
-            required. The only feature that needs a connection is loading ads (which you can remove with a
+            Fully. The metronome, tuner, rhythm game, and speed trainer all run entirely on-device - no internet
+            connection required. The only feature that needs a connection is loading ads (which you can remove with a
             one-time purchase).
           </div>
         </details>
