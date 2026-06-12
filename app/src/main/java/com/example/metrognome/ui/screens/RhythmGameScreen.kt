@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material.icons.filled.StopCircle
+import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -103,6 +104,7 @@ import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.viewmodel.NoteState
 import com.example.metrognome.viewmodel.RenderNote
 import com.example.metrognome.viewmodel.RhythmGameViewModel
+import com.example.metrognome.viewmodel.rhythmStars
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
@@ -278,11 +280,17 @@ private fun RhythmDashboard(
 
         Spacer(Modifier.height(10.dp))
 
+        val dailyTarget = remember(gnoteCount) {
+            PointsManager(context, metronomeVm.rewardedAdManager).rhythmDailyTarget()
+        }
+
         GameCard(
             vm = rhythmVm,
             isMetronomePlaying = isMetronomePlaying,
             onStopMetronome = onStopMetronome,
             highScores = highScores,
+            dailyEarned = dailyTarget.first,
+            dailyCap = dailyTarget.second,
         )
 
         Spacer(Modifier.height(24.dp))
@@ -304,7 +312,7 @@ private fun RhythmDashboard(
             text  = {
                 Text(
                     text = "Watch a short clip and Metro rewards you with $earn ${PointsConfig.CURRENCY_NAME}. " +
-                           "Two clips per day. Come back tomorrow for more.",
+                           "Three clips per day. Come back tomorrow for more.",
                     fontSize   = 13.sp,
                     lineHeight = 19.sp,
                 )
@@ -342,6 +350,8 @@ private fun GameCard(
     isMetronomePlaying: Boolean,
     onStopMetronome: () -> Unit,
     highScores: Map<String, Int> = emptyMap(),
+    dailyEarned: Int = 0,
+    dailyCap: Int = 0,
 ) {
     val pendingStart = remember { mutableStateOf<(() -> Unit)?>(null) }
 
@@ -489,13 +499,99 @@ private fun GameCard(
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                             )
+                            Spacer(Modifier.height(4.dp))
+                            val stars = rhythmStars(best, d.beats)
+                            Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                                repeat(3) { i ->
+                                    Text(
+                                        if (i < stars) "★" else "☆",
+                                        fontSize = 9.sp,
+                                        color = if (i < stars) AppColors.gold
+                                                else AppColors.gold.copy(alpha = 0.20f),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
 
+            Spacer(Modifier.height(12.dp))
+            DailyTargetMeter(earned = dailyEarned, cap = dailyCap)
+
             MicTimingNudge()
 
+        }
+    }
+}
+
+// ── Daily target meter ────────────────────────────────────────────────────────
+//
+// Shows today's Rhythm-game Gnotes against the daily cap, reading from the points
+// single source of truth (PointsManager.rhythmDailyTarget). Gives the card a clear
+// "how close am I to maxing today" goal without inventing a new challenge system.
+
+@Composable
+private fun DailyTargetMeter(earned: Int, cap: Int) {
+    val reached  = cap > 0 && earned >= cap
+    val fraction = if (cap > 0) (earned.toFloat() / cap).coerceIn(0f, 1f) else 0f
+
+    Surface(
+        shape    = RoundedCornerShape(12.dp),
+        color    = AppColors.surface,
+        border   = BorderStroke(
+            1.dp,
+            if (reached) AppColors.gold.copy(alpha = 0.40f) else AppColors.surfaceVariant,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.TrackChanges,
+                contentDescription = null,
+                tint = AppColors.gold,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = if (reached) "Daily target reached" else "Daily ${PointsConfig.CURRENCY_NAME}",
+                        color = AppColors.textSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "$earned / $cap",
+                        color = AppColors.gold,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(AppColors.surfaceVariant),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(fraction)
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(AppColors.gold),
+                    )
+                }
+            }
         }
     }
 }
@@ -1009,13 +1105,12 @@ private fun ResultPanel(
     onDismiss: () -> Unit
 ) {
     if (result == null) return
-    val stars = when {
-        result.misses == 0 && result.perfects > 0 -> 3
-        result.perfects > result.goods + result.almosts + result.misses -> 3
-        result.misses < result.perfects + result.goods -> 2
-        result.score > 0 -> 1
-        else -> 0
-    }
+    // Single source of truth (shared with the Rhythm-page difficulty chips) so the
+    // stars earned for a run match the stars shown next to that difficulty's best score.
+    val stars = rhythmStars(
+        result.score,
+        result.perfects + result.goods + result.almosts + result.misses,
+    )
 
     Column(
         modifier = Modifier

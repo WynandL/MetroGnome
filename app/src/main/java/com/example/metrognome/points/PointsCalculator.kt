@@ -192,6 +192,13 @@ object PointsCalculator {
      * Loyalty is included unconditionally — if the app is running, the day is earned.
      * Keep in sync with the capping logic in [calculate].
      */
+    /**
+     * Today's capped rhythm-game Gnotes only - for the Rhythm page "daily target" meter.
+     * Mirrors the game branch of [calculate]/[todayBeats] so the meter agrees with the total.
+     */
+    fun rhythmBeatsToday(today: DailyActivity): Int =
+        (today.gameScoreToday / PointsConfig.GAME_SCORE_DIVISOR).coerceAtMost(PointsLimits.RHYTHM_BEATS_PER_DAY)
+
     fun todayBeats(today: DailyActivity): Int {
         val metMins    = (today.metronomeSeconds / 60).coerceAtMost(PointsLimits.METRONOME_MINUTES_PER_DAY.toLong())
         val tunerNotes = today.tunerNotesLocked.coerceAtMost(PointsLimits.TUNER_NOTES_PER_DAY)

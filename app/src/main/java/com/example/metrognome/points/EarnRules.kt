@@ -122,7 +122,7 @@ val EARN_RULES: List<EarnRule> = listOf(
         iconKey       = "ad",
         pointsPerUnit = PointsConfig.REWARDED_GNOTES_PER_WATCH,
         rateUnit      = "ad",
-        // Derived from the two source constants so it stays in sync (100 / 50 = 2 watches/day).
+        // Derived from the two source constants so it stays in sync (45 / 15 = 3 watches/day).
         dailyLimit    = PointsLimits.REWARDED_GNOTES_PER_DAY / PointsConfig.REWARDED_GNOTES_PER_WATCH,
         limitUnit     = "ads",
     ),

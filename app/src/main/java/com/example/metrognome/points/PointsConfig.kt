@@ -20,8 +20,8 @@ object PointsConfig {
     const val METRONOME_PER_MINUTE: Int        = 2
     const val TUNER_PER_MINUTE: Int            = 2  // kept for ConditionPoints item-unlock display only
     const val PER_TUNER_NOTE: Int              = 5  // points per individual note locked on
-    const val GAME_SCORE_DIVISOR: Int          = 25   // every 25 game-score points = 1 Gnote
-    const val GAME_SCORE_AVG_PER_GAME: Int     = 500  // typical casual-game score; used only in ConditionPoints display
+    const val GAME_SCORE_DIVISOR: Int          = 110  // every 110 game-score points = 1 Gnote (near-perfect beginner game ~14 Gnotes)
+    const val GAME_SCORE_AVG_PER_GAME: Int     = 1000  // typical casual-game score; used only in ConditionPoints display
     const val PER_PRACTICE_MINUTE: Int         = 2   // points per minute of completed practice
     const val PRACTICE_MINUTES_AVG_PER_SESSION: Int = 15  // estimate for ConditionPoints display only
     const val PER_SPEED_TRAINER_MINUTE: Int     = 2   // points per minute of a completed speed trainer session
@@ -33,5 +33,5 @@ object PointsConfig {
     /** Graded timing bonus is already in points (1 Gnote per earned bonus point). */
     const val PER_PERFORMANCE_BONUS: Int = 1
     /** Gnotes granted for watching one rewarded ad. */
-    const val REWARDED_GNOTES_PER_WATCH: Int = 50
+    const val REWARDED_GNOTES_PER_WATCH: Int = 15
 }

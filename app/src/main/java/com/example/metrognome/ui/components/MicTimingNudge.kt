@@ -2,7 +2,6 @@ package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -34,43 +33,41 @@ import com.example.metrognome.ui.theme.AppColors
  * Reads the one master flag [MicCalibration.isActive] (the user's opt-in AND a passing
  * calibration). Renders nothing when the feature is off, so callers drop it in
  * unconditionally; the leading spacing is only emitted when it actually shows.
+ *
+ * Rendered as a full-width banner so it reads as a deliberate status strip in the
+ * Rhythm card, Practice setup, and Speed Trainer dialog rather than a stray pill.
  */
 @Composable
 fun MicTimingNudge(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     if (!MicCalibration.read(context).isActive) return
 
-    Box(
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 12.dp),
-        contentAlignment = Alignment.Center,
+            .padding(top = 12.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(AppColors.gold.copy(alpha = 0.10f))
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
     ) {
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(AppColors.gold.copy(alpha = 0.10f))
-                .padding(horizontal = 12.dp, vertical = 7.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Mic,
-                contentDescription = null,
-                tint = AppColors.gold,
-                modifier = Modifier.size(13.dp),
-            )
-            Text(
-                "Groove Check is on",
-                color = AppColors.textSecondary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                "· change in Settings",
-                color = AppColors.textMuted,
-                fontSize = 10.sp,
-            )
-        }
+        Icon(
+            imageVector = Icons.Filled.Mic,
+            contentDescription = null,
+            tint = AppColors.gold,
+            modifier = Modifier.size(14.dp),
+        )
+        Text(
+            "Groove Check is on",
+            color = AppColors.textSecondary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            "· change in Settings",
+            color = AppColors.textMuted,
+            fontSize = 10.sp,
+        )
     }
 }

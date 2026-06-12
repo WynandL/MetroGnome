@@ -30,6 +30,13 @@ class PointsManager(
     private val dailyLog  = DailyActivityLog(context)
     private val usageDays = UsageDayTracker(context)
 
+    /**
+     * (earnedToday, dailyCap) of rhythm-game Gnotes, for the Rhythm page daily-target meter.
+     * Reads the same live counters as [getSnapshot]; cap comes from [PointsLimits].
+     */
+    fun rhythmDailyTarget(): Pair<Int, Int> =
+        PointsCalculator.rhythmBeatsToday(dailyLog.todayActivity(tracker)) to PointsLimits.RHYTHM_BEATS_PER_DAY
+
     fun getSnapshot(): PointsSnapshot = PointsCalculator.calculate(
         metronomeSeconds     = tracker.metronomeSeconds(),
         tunerNotesLocked     = tracker.tunerNotesLocked(),
