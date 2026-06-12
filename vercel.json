@@ -1,5 +1,16 @@
 {
   "outputDirectory": "landing",
   "buildCommand": null,
-  "framework": null
+  "framework": null,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
+      "destination": "https://metrognome.co.za/:path*",
+      "permanent": true
+    },
+    { "source": "/index.html", "destination": "/", "permanent": true },
+    { "source": "/blog/index.html", "destination": "/blog/", "permanent": true },
+    { "source": "/blog", "destination": "/blog/", "permanent": true }
+  ]
 }
