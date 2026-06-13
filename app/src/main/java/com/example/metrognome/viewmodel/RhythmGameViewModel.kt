@@ -304,7 +304,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
         engine.bpm = bpm
         engine.timeSignature = _timeSig.value
-        engine.accentBeat = 0
+        engine.accentBeats = setOf(0)
         engine.soundType = 0
 
         // Mic mode is the single app-wide toggle (MicCalibration.isActive); the game uses
@@ -328,7 +328,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
             // throw a late room reflection that AEC cannot cancel - the clap detector then takes
             // that for a clap, producing one false "hit" on every downbeat (with nobody clapping).
             // Drop the accent in mic mode so all 16 clicks are uniform and reject identically.
-            engine.accentBeat = -1
+            engine.accentBeats = emptySet()
         }
         val micReady = cal.isActive && ContextCompat.checkSelfPermission(
             getApplication(), Manifest.permission.RECORD_AUDIO

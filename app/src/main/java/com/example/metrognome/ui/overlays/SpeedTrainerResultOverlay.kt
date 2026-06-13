@@ -94,32 +94,32 @@ fun SpeedTrainerResultOverlay(
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .size(42.dp)
+                            .size(52.dp)
                             .background(AppColors.gold.copy(alpha = 0.15f), CircleShape),
                     ) {
                         Icon(
                             Icons.Filled.Bolt,
                             contentDescription = null,
                             tint = AppColors.gold,
-                            modifier = Modifier.size(21.dp),
+                            modifier = Modifier.size(27.dp),
                         )
                     }
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
                             "SPEED TRAINER",
                             color = AppColors.textMuted,
-                            fontSize = 9.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.5.sp,
-                            lineHeight = 11.sp,
+                            lineHeight = 14.sp,
                         )
                         Text(
                             if (state.micUsed) "Timing result" else "Full range covered",
                             color = Color.White,
-                            fontSize = 15.sp,
+                            fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
-                            lineHeight = 18.sp,
+                            lineHeight = 26.sp,
                         )
                     }
                 }
@@ -149,7 +149,7 @@ fun SpeedTrainerResultOverlay(
                         Text(
                             "Done",
                             color = AppColors.gold,
-                            fontSize = 14.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                         )
                     }
@@ -229,12 +229,14 @@ private fun MicResultBody(state: TrainerSessionState.Complete) {
         }
     }
 
-    // Performance is celebrated as a Gnotes bonus, not raw per-tempo stats. Hidden at 0.
-    if (state.performanceBonus > 0) {
+    // Groove Check grade, shown whenever a qualifying mic session ran (not gated on the Gnote
+    // bonus, so a quick demo still shows the score).
+    if (state.grooveScore > 0) {
         Spacer(Modifier.height(18.dp))
         PerformanceBonusReward(
+            grooveScore = state.grooveScore,
+            read = state.grooveRead,
             bonus = state.performanceBonus,
-            fraction = state.performanceFraction,
             modifier = Modifier.fillMaxWidth(),
         )
     }

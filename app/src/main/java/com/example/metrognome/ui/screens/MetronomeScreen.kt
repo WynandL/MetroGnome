@@ -122,7 +122,7 @@ fun MetronomeScreen(
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
     val currentBeat by vm.currentBeat.collectAsStateWithLifecycle()
-    val accentBeat by vm.accentBeat.collectAsStateWithLifecycle()
+    val accentBeats by vm.accentBeats.collectAsStateWithLifecycle()
     val activeItemIds by vm.activeItemIds.collectAsStateWithLifecycle()
     val activeItems = androidx.compose.runtime.remember(activeItemIds) {
         METRO_ITEM_REGISTRY.filter { it.item.id in activeItemIds }.map { it.item }
@@ -227,7 +227,7 @@ fun MetronomeScreen(
             timeSig = timeSig,
             currentBeat = currentBeat,
             isPlaying = isPlaying,
-            accentBeat = accentBeat,
+            accentBeats = accentBeats,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 48.dp, bottom = 4.dp)
@@ -243,7 +243,7 @@ fun MetronomeScreen(
                 isPlaying = isPlaying,
                 beatEvents = vm.beatEvents,
                 flashOnBeat = flashOnBeat,
-                accentBeat = accentBeat,
+                accentBeats = accentBeats,
                 activeItems = activeItems,
                 onItemTapped = { tappedItem = it },
                 // Fireworks on a very accurate clap, from whichever mic session is live (only one
@@ -1139,7 +1139,7 @@ private fun BeatIndicatorRow(
     timeSig: Int,
     currentBeat: Int,
     isPlaying: Boolean,
-    accentBeat: Int,
+    accentBeats: Set<Int>,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -1149,7 +1149,7 @@ private fun BeatIndicatorRow(
     ) {
         for (i in 0 until timeSig) {
             val isActive = isPlaying && i == currentBeat
-            val isAccent = accentBeat > 0 && i == accentBeat - 1
+            val isAccent = i in accentBeats
 
             val dotSize by animateDpAsState(
                 targetValue   = if (isActive) 16.dp else 12.dp,
@@ -1216,12 +1216,12 @@ internal fun tempoLabel(bpm: Int): String = when {
     bpm < 60  -> "Largo"
     bpm < 66  -> "Larghetto"
     bpm < 76  -> "Adagio"
-    bpm < 108 -> "Andante"
-    bpm < 120 -> "Moderato"
-    bpm < 156 -> "Allegretto"
-    bpm < 176 -> "Allegro"
-    bpm < 200 -> "Vivace"
-    bpm < 240 -> "Presto"
+    bpm < 96  -> "Andante"
+    bpm < 110 -> "Moderato"
+    bpm < 120 -> "Allegretto"
+    bpm < 156 -> "Allegro"
+    bpm < 176 -> "Vivace"
+    bpm < 200 -> "Presto"
     else      -> "Prestissimo"
 }
 
@@ -1326,7 +1326,7 @@ private fun BpmDisplayPreview() {
 @Preview(showBackground = true, backgroundColor = 0xFF1A1040)
 @Composable
 private fun BeatIndicatorRowPreview() {
-    BeatIndicatorRow(timeSig = 4, currentBeat = 1, isPlaying = true, accentBeat = 1)
+    BeatIndicatorRow(timeSig = 4, currentBeat = 1, isPlaying = true, accentBeats = setOf(0))
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF1A1040)

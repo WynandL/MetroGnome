@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.metrognome.points.PerformanceBonus
+import com.example.metrognome.groove.GrooveScorer
 import com.example.metrognome.ui.theme.AppColors
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -163,24 +163,21 @@ private fun SummaryCard(
     val tightest = calDevs.minByOrNull { abs(it) }
     val loosest  = calDevs.maxByOrNull { abs(it) }
 
-    val meetsMinHits = accepted.size >= PerformanceBonus.MIN_HITS
-    // Per-hit scoring: mean of each hit's credit. A hit scores something only if it lands
-    // inside LOOSE_MS; wild hits score 0 but don't drag the result down (no negative pull).
-    val fraction = PerformanceBonus.sessionScore(calDevs.map { abs(it) })
-    val scoredHits = calDevs.count { abs(it) < PerformanceBonus.LOOSE_MS }
+    val groove = GrooveScorer.score(calDevs)
+    val meetsMinHits = accepted.size >= GrooveScorer.MIN_HITS
 
-    // Plain-language verdict that mirrors PerformanceBonus.award() exactly.
+    // Plain-language verdict that mirrors GrooveScorer exactly (consistency-first grading).
     val (verdict, verdictColor) = when {
-        accepted.size < PerformanceBonus.MIN_HITS ->
-            "Only ${accepted.size} onset(s) accepted - need >= ${PerformanceBonus.MIN_HITS}. " +
-                "Bonus is 0 regardless of timing. The mic is not hearing enough distinct hits " +
+        accepted.size < GrooveScorer.MIN_HITS ->
+            "Only ${accepted.size} onset(s) accepted - need >= ${GrooveScorer.MIN_HITS}. " +
+                "Grade is 0 regardless of timing. The mic is not hearing enough distinct hits " +
                 "(finger taps are weak; a clap registers far better)." to rejectColor
-        fraction <= 0f ->
-            "No hit landed inside ${PerformanceBonus.LOOSE_MS.roundToInt()}ms, so every hit scored 0 -> bonus 0." to rejectColor
+        !groove.qualified ->
+            "Hits were too scattered to grade - groove score 0." to rejectColor
         else ->
-            "$scoredHits of ${accepted.size} hits earned credit -> session score ${"%.2f".format(fraction)}. " +
-                "Bonus = round(sessionMinutes x ${"%.2f".format(fraction)}), floored to >= 1 - a few wild " +
-                "hits no longer sink the session." to acceptColor
+            "Groove score ${groove.grooveScore}/100 (${groove.read}). Driven by consistency " +
+                "(jitter ${groove.jitterMs.roundToInt()}ms) with a ${signed(groove.biasMs)}ms offset. " +
+                "Gnotes = round(sessionMinutes x ${"%.2f".format(groove.fraction)}), floored to >= 1." to acceptColor
     }
 
     Surface(
@@ -206,15 +203,16 @@ private fun SummaryCard(
 
             Spacer(Modifier.height(10.dp))
 
-            KeyVal("MIN_HITS gate", if (meetsMinHits) "PASS (>= ${PerformanceBonus.MIN_HITS})" else "FAIL (< ${PerformanceBonus.MIN_HITS})",
+            KeyVal("MIN_HITS gate", if (meetsMinHits) "PASS (>= ${GrooveScorer.MIN_HITS})" else "FAIL (< ${GrooveScorer.MIN_HITS})",
                 if (meetsMinHits) acceptColor else rejectColor)
-            KeyVal("scored hits (< ${PerformanceBonus.LOOSE_MS.roundToInt()}ms)", "$scoredHits / ${accepted.size}",
-                if (scoredHits > 0) acceptColor else rejectColor)
-            KeyVal("session score", "%.2f".format(fraction), AppColors.textPrimary)
+            KeyVal("groove score", "${groove.grooveScore} / 100", if (groove.qualified) acceptColor else rejectColor)
+            KeyVal("read", groove.read, AppColors.textPrimary)
+            KeyVal("consistency (jitter)", "${groove.jitterMs.roundToInt()} ms", AppColors.textPrimary)
+            KeyVal("offset (bias)", "${signed(groove.biasMs)} ms", AppColors.textPrimary)
             KeyVal("avg |deviation|", avgAbs?.let { "${it.roundToInt()} ms" } ?: "-", AppColors.textPrimary)
             KeyVal("tightest hit", tightest?.let { "${signed(it)} ms" } ?: "-", AppColors.textPrimary)
             KeyVal("loosest hit", loosest?.let { "${signed(it)} ms" } ?: "-", AppColors.textPrimary)
-            KeyVal("tight / loose curve", "${PerformanceBonus.TIGHT_MS.roundToInt()} / ${PerformanceBonus.LOOSE_MS.roundToInt()} ms",
+            KeyVal("jitter curve", "${GrooveScorer.TIGHT_JITTER_MS.roundToInt()} / ${GrooveScorer.LOOSE_JITTER_MS.roundToInt()} ms",
                 AppColors.textMuted)
 
             Spacer(Modifier.height(12.dp))

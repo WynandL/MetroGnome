@@ -61,9 +61,13 @@ sealed class TrainerSessionState {
         // drives the result layout so a stale enabled-flag can never show empty mic bars.
         val micUsed: Boolean,
         // Graded timing bonus actually credited this session (after the daily cap), and the
-        // 0..1 performance share behind it (tunes the congratulatory line). 0 = hidden.
+        // 0..1 performance share behind it. 0 = hidden.
         val performanceBonus: Int = 0,
         val performanceFraction: Float = 0f,
+        // Groove Check grade (0..100, length-independent) and its plain-language read, shown to the
+        // player. grooveScore 0 = no qualifying mic session (hidden by the overlay).
+        val grooveScore: Int = 0,
+        val grooveRead: String = "",
     ) : TrainerSessionState()
 }
 
@@ -298,7 +302,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
                 if (isDevMode) MicDiagnosticsBuffer.logOnsetAccepted(onsetMs, rawDeviation, deviation)
 
                 // A very accurate clap fires a celebratory firework (visual only).
-                if (abs(deviation) <= com.example.metrognome.points.PerformanceBonus.GREAT_HIT_MS) {
+                if (abs(deviation) <= com.example.metrognome.groove.GrooveScorer.GREAT_HIT_MS) {
                     _greatHit.tryEmit(Unit)
                 }
 
@@ -384,28 +388,30 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
-        // Mic timing: score the session per-hit (mean of each hit's credit), so a few wild
-        // hits can't sink an otherwise-good run. (The old flat "Mic Accuracy" bonus was folded
-        // into this graded bonus, so a session no longer pays out twice for the same performance.)
+        // Adaptive Groove Check grade from the SIGNED per-hit deviations (consistency-first; see
+        // groove/GrooveScorer). The grooveScore (0..100) is shown to the player; the Gnotes bonus
+        // is a separate, length-bounded reward. Single source shared with Practice.
         val totalHits = sessionDeviations.size
-        val realFraction = com.example.metrognome.points.PerformanceBonus
-            .sessionScore(sessionDeviations.map { abs(it) })
+        val realGroove = com.example.metrognome.groove.GrooveScorer.score(sessionDeviations.toList())
 
-        // Graded Timing Bonus: a portion of the session minutes set by how well the player
-        // kept time. Replaces the per-tempo accuracy bars in the result overlay. When dev
-        // "simulate timing" is on and no real hits landed, a plausible fraction is synthesized so
-        // the bonus + result UI can be exercised on a device/emulator with no real mic input.
-        // Only the timing PERFORMANCE is synthesized (a device/emulator with no real hits); the
-        // session length stays real, so the bonus still respects "max = session minutes".
-        val simulate = devSimulateTiming && totalHits < com.example.metrognome.points.PerformanceBonus.MIN_HITS
-        val bonusFraction = if (simulate) (40..90).random() / 100f else realFraction
-        val bonusHits = if (simulate) 12 else totalHits
+        // Dev "simulate timing": with no real hits on a device/emulator that has no usable mic,
+        // synthesize a plausible grade so the bonus + result UI can still be exercised. Only the
+        // PERFORMANCE is synthesized; the session length stays real (max = session minutes).
+        val simulate = devSimulateTiming && totalHits < com.example.metrognome.groove.GrooveScorer.MIN_HITS
+        val groove = if (simulate) {
+            val f = (40..90).random() / 100f
+            realGroove.copy(
+                grooveScore = Math.round(f * 100),
+                fraction = f,
+                hitCount = 12,
+                qualified = true,
+                read = "Simulated timing",
+            )
+        } else realGroove
         val sessionMinutes = (elapsedSeconds / 60f).let { kotlin.math.round(it) }.toInt()
-        val rawBonus = com.example.metrognome.points.PerformanceBonus.award(bonusFraction, bonusHits, sessionMinutes)
+        val rawBonus = com.example.metrognome.groove.GrooveScorer.bonusGnotes(groove.fraction, groove.hitCount, sessionMinutes)
         var performanceBonusEarned = 0
-        var performanceFraction = 0f
         if (rawBonus > 0) {
-            performanceFraction = bonusFraction
             val limit  = com.example.metrognome.points.PointsLimits.PERFORMANCE_BONUS_PER_DAY
             val before = dailyLog.todayActivity(itemTracker).performanceBonusToday.coerceAtMost(limit)
             itemTracker.addPerformanceBonus(rawBonus)
@@ -415,8 +421,8 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
                 AnalyticsTracker.logTimingBonusEarned(
                     source = "speed_trainer",
                     bonus = performanceBonusEarned,
-                    fraction = performanceFraction,
-                    hitCount = bonusHits,
+                    fraction = groove.fraction,
+                    hitCount = groove.hitCount,
                 )
                 com.example.metrognome.points.PointsBannerQueue.post(
                     com.example.metrognome.points.PointsBannerData(
@@ -449,7 +455,9 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
             previousReachedBpm = previousBest,
             micUsed = sessionMicUsed,
             performanceBonus = performanceBonusEarned,
-            performanceFraction = performanceFraction,
+            performanceFraction = groove.fraction,
+            grooveScore = if (groove.qualified) groove.grooveScore else 0,
+            grooveRead = groove.read,
         )
     }
 

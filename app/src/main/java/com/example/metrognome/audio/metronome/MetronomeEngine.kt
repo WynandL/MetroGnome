@@ -45,8 +45,11 @@ class MetronomeEngine {
     var bpm: Int = 120
     @Volatile
     var timeSignature: Int = 4
+    // 0-based pulse indices that should be accented. Always reassigned (never mutated in
+    // place) so the audio thread reads a consistent snapshot via the volatile reference.
+    // Empty = no accents. Derived from the meter's beat grouping (see MeterTheory).
     @Volatile
-    var accentBeat: Int = 0   // 0-based beat index; -1 = no accent
+    var accentBeats: Set<Int> = setOf(0)
     @Volatile
     var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock, 3=warm, 4=bell (premium), 5=bowl (premium)
     @Volatile
@@ -99,7 +102,7 @@ class MetronomeEngine {
             while (isActive) {
                 val currentBpm = bpm.coerceIn(20, 300)
                 val samplesPerBeat = (sampleRate * 60.0 / currentBpm).toInt()
-                val isAccent = accentBeat >= 0 && beat == accentBeat
+                val isAccent = beat in accentBeats
                 val buffer = buildBeatBuffer(samplesPerBeat, isAccent)
 
                 // Notify the UI BEFORE writing audio data.

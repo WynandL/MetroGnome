@@ -24,71 +24,89 @@ import com.example.metrognome.points.PointsConfig
 import com.example.metrognome.ui.theme.AppColors
 
 /**
- * Congratulatory Gnotes reward shown after a mic-enabled Practice or Speed Trainer
- * session, in place of the old per-tempo accuracy bars. It deliberately shows only
- * the (positive) reward and an encouraging line, never a raw "you were Xms off"
- * stat that could discourage. Callers must only render it when [bonus] > 0; a zero
- * (a misfire or the daily cap already reached) is hidden by the caller.
+ * Groove Check result shown after a mic-enabled Practice or Speed Trainer session.
  *
- * [fraction] is the 0..1 performance share that produced the bonus; it only tunes
- * the encouraging headline, never the number.
+ * It leads with the [grooveScore] (0..100), a LENGTH-INDEPENDENT quality grade, so even a quick
+ * demo shows a meaningful, satisfying number. [read] is the plain-language explanation underneath
+ * ("Locked in", "Steady but behind the beat"), which fills the "why is it that?" gap. The Gnotes
+ * [bonus] rides below as the smaller, honest economy reward and is hidden when 0 (a sub-cap
+ * misfire or the daily cap already reached) - the grade still shows.
+ *
+ * Callers render this whenever [grooveScore] > 0 (a qualifying mic session), not gated on [bonus].
  */
 @Composable
 fun PerformanceBonusReward(
+    grooveScore: Int,
+    read: String,
     bonus: Int,
-    fraction: Float,
     modifier: Modifier = Modifier,
 ) {
-    // fraction is the session score in [0,1]: the mean of each hit's timing credit
-    // (1.0 = every hit tight, 0 = none landed in time). The thresholds below gate how
-    // effusive the praise is; "Perfectly in time!" is reserved for near-flawless play so
-    // it never overstates a merely-decent session.
-    val headline = when {
-        fraction >= 0.95f -> "Perfectly in time!"
-        fraction >= 0.80f -> "Great timing!"
-        fraction >= 0.60f -> "Solid timing"
-        fraction >= 0.40f -> "Good and steady"
-        else              -> "You're doing great"
-    }
-
     Column(
         modifier = modifier
             .background(AppColors.gold.copy(alpha = 0.10f), RoundedCornerShape(16.dp))
-            .padding(vertical = 14.dp, horizontal = 18.dp),
+            .padding(vertical = 16.dp, horizontal = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = headline,
+            text = "GROOVE SCORE",
             color = AppColors.textSecondary,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.Center,
+            letterSpacing = 1.sp,
         )
-        Spacer(Modifier.size(6.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.MusicNote,
-                contentDescription = null,
-                tint = AppColors.gold,
-                modifier = Modifier.size(22.dp),
-            )
-            Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.size(4.dp))
+        Row(verticalAlignment = Alignment.Bottom) {
             Text(
-                text = "+$bonus",
+                text = "$grooveScore",
                 color = AppColors.gold,
-                fontSize = 30.sp,
+                fontSize = 44.sp,
                 fontWeight = FontWeight.Black,
             )
-            Spacer(Modifier.width(6.dp))
             Text(
-                text = if (bonus == 1) PointsConfig.CURRENCY_NAME_SINGULAR else PointsConfig.CURRENCY_NAME,
-                color = AppColors.gold,
-                fontSize = 14.sp,
+                text = " / 100",
+                color = AppColors.textMuted,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 7.dp),
             )
+        }
+        if (read.isNotEmpty()) {
+            Spacer(Modifier.size(4.dp))
+            Text(
+                text = read,
+                color = AppColors.textSecondary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+            )
+        }
+        if (bonus > 0) {
+            Spacer(Modifier.size(12.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.MusicNote,
+                    contentDescription = null,
+                    tint = AppColors.gold,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.width(5.dp))
+                Text(
+                    text = "+$bonus",
+                    color = AppColors.gold,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = if (bonus == 1) PointsConfig.CURRENCY_NAME_SINGULAR else PointsConfig.CURRENCY_NAME,
+                    color = AppColors.gold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
         }
     }
 }

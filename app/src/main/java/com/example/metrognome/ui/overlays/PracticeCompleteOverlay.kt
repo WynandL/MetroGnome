@@ -133,12 +133,14 @@ fun PracticeCompleteOverlay(
                     )
                 }
 
-                // Timing bonus from mic mode, when earned. Hidden at 0 (no mic / misfire).
-                if (result.performanceBonus > 0) {
+                // Groove Check grade from mic mode, when a qualifying session ran. Shown whenever
+                // the grade exists (not gated on the Gnote bonus, so a quick demo still shows it).
+                if (result.grooveScore > 0) {
                     Spacer(Modifier.height(20.dp))
                     PerformanceBonusReward(
+                        grooveScore = result.grooveScore,
+                        read = result.grooveRead,
                         bonus = result.performanceBonus,
-                        fraction = result.performanceFraction,
                     )
                 }
 

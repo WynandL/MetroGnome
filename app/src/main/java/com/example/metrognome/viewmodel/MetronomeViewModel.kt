@@ -19,6 +19,8 @@ import com.example.metrognome.audio.metronome.MetronomeEngine
 import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
 import com.example.metrognome.billing.BillingManager
 import com.example.metrognome.practice.PracticeSessionManager
+import com.example.metrognome.theory.Meter
+import com.example.metrognome.theory.MeterTheory
 import com.example.metrognome.presets.BpmPreset
 import com.example.metrognome.presets.BpmPresetsManager
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
@@ -47,9 +49,13 @@ data class PracticeResult(
     val micAvgDeviationMs: Float? = null,
     val micHitCount: Int = 0,
     // Graded timing bonus actually credited this session (after the daily cap), and the
-    // 0..1 performance share behind it (tunes the congratulatory line). 0 = hidden.
+    // 0..1 performance share behind it. 0 = hidden.
     val performanceBonus: Int = 0,
     val performanceFraction: Float = 0f,
+    // Groove Check grade (0..100, length-independent) and its plain-language read, shown to the
+    // player. grooveScore 0 = the mic did not produce a qualifying session (hidden by the overlay).
+    val grooveScore: Int = 0,
+    val grooveRead: String = "",
 )
 
 class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
@@ -304,7 +310,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         val calibrated = raw - practiceLatencyMs
         if (isDevMode) MicDiagnosticsBuffer.logOnsetAccepted(onsetMs, raw, calibrated)
         // A very accurate clap fires a celebratory firework (visual only).
-        if (kotlin.math.abs(calibrated) <= com.example.metrognome.points.PerformanceBonus.GREAT_HIT_MS) {
+        if (kotlin.math.abs(calibrated) <= com.example.metrognome.groove.GrooveScorer.GREAT_HIT_MS) {
             _greatHit.tryEmit(Unit)
         }
         practiceDeviations.add(calibrated)
@@ -405,27 +411,32 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             .map { kotlin.math.abs(it) }
             .takeIf { it.isNotEmpty() }
             ?.average()?.toFloat()
-        // Per-hit timing score (lenient: each good hit earns credit, wild ones score 0).
-        val micFraction = com.example.metrognome.points.PerformanceBonus
-            .sessionScore(practiceDeviations.map { kotlin.math.abs(it) })
+        // Adaptive Groove Check grade from the SIGNED per-hit deviations (consistency-first; see
+        // groove/GrooveScorer). The grooveScore (0..100) is shown to the player; the Gnotes bonus
+        // below is a separate, length-bounded reward.
+        val realGroove = com.example.metrognome.groove.GrooveScorer.score(practiceDeviations.toList())
         stopPracticeMic()
 
-        // Graded Timing Bonus: a portion of the session minutes set by how well the player
-        // kept time. Same curve as Speed Trainer (PerformanceBonus is the single source). When
-        // dev "simulate timing" is on and no real hits landed, plausible values are synthesized
-        // so the bonus can be tested on a device/emulator with no real mic input.
-        // Only the timing PERFORMANCE is synthesized (the emulator mic gives nothing); the
-        // session length is real, so the bonus still respects "max = session minutes".
+        // Dev "simulate timing": with no real hits on a device/emulator that has no usable mic,
+        // synthesize a plausible grade so the bonus + result UI can still be exercised. Only the
+        // PERFORMANCE is synthesized; the session length stays real (max = session minutes).
         val simulate = isDevMode &&
             com.example.metrognome.audio.selftest.SelfTestCalibrationStore(getApplication()).devSimulateTiming &&
-            micHits < com.example.metrognome.points.PerformanceBonus.MIN_HITS
-        val bonusFraction = if (simulate) (40..90).random() / 100f else micFraction
-        val bonusHits = if (simulate) 12 else micHits
-        val rawBonus = com.example.metrognome.points.PerformanceBonus.award(bonusFraction, bonusHits, goalMinutes)
+            micHits < com.example.metrognome.groove.GrooveScorer.MIN_HITS
+        val groove = if (simulate) {
+            val f = (40..90).random() / 100f
+            realGroove.copy(
+                grooveScore = Math.round(f * 100),
+                fraction = f,
+                hitCount = 12,
+                qualified = true,
+                read = "Simulated timing",
+            )
+        } else realGroove
+
+        val rawBonus = com.example.metrognome.groove.GrooveScorer.bonusGnotes(groove.fraction, groove.hitCount, goalMinutes)
         var perfBonusEarned = 0
-        var perfFraction = 0f
         if (rawBonus > 0) {
-            perfFraction = bonusFraction
             val limit  = com.example.metrognome.points.PointsLimits.PERFORMANCE_BONUS_PER_DAY
             val before = dailyLog.todayActivity(itemTracker).performanceBonusToday.coerceAtMost(limit)
             itemTracker.addPerformanceBonus(rawBonus)
@@ -435,8 +446,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
                 AnalyticsTracker.logTimingBonusEarned(
                     source = "practice",
                     bonus = perfBonusEarned,
-                    fraction = perfFraction,
-                    hitCount = bonusHits,
+                    fraction = groove.fraction,
+                    hitCount = groove.hitCount,
                 )
                 com.example.metrognome.points.PointsBannerQueue.post(
                     com.example.metrognome.points.PointsBannerData(
@@ -462,7 +473,9 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             micAvgDeviationMs = micAvgDeviation,
             micHitCount = micHits,
             performanceBonus = perfBonusEarned,
-            performanceFraction = perfFraction,
+            performanceFraction = groove.fraction,
+            grooveScore = if (groove.qualified) groove.grooveScore else 0,
+            grooveRead = groove.read,
         )
         checkForNewUnlocks()
     }
@@ -540,7 +553,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _isPlaying = MutableStateFlow(false)
     private val _currentBeat = MutableStateFlow(0)
     private val _timeSig = MutableStateFlow(prefs.getInt("time_sig", 4))
-    private val _accentBeat = MutableStateFlow(prefs.getInt("accent_beat", 1))
+    private val _timeSigDenom = MutableStateFlow(prefs.getInt("time_sig_denom", 4))
+    private val _accentBeats = MutableStateFlow(loadAccentBeats())
     private val _soundType = MutableStateFlow(prefs.getInt("sound_type", 0))
     private val _volume = MutableStateFlow(prefs.getFloat("volume", 0.85f))
     private val _flashOnBeat = MutableStateFlow(prefs.getBoolean("flash", true))
@@ -551,7 +565,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
     val currentBeat: StateFlow<Int> = _currentBeat.asStateFlow()
     val timeSig: StateFlow<Int> = _timeSig.asStateFlow()
-    val accentBeat: StateFlow<Int> = _accentBeat.asStateFlow()
+    val timeSigDenom: StateFlow<Int> = _timeSigDenom.asStateFlow()
+    val accentBeats: StateFlow<Set<Int>> = _accentBeats.asStateFlow()
     val soundType: StateFlow<Int> = _soundType.asStateFlow()
     val volume: StateFlow<Float> = _volume.asStateFlow()
     val flashOnBeat: StateFlow<Boolean> = _flashOnBeat.asStateFlow()
@@ -746,17 +761,45 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun setTimeSig(sig: Int) {
-        _timeSig.value = sig
-        engine.timeSignature = sig
-        if (_accentBeat.value > sig) setAccentBeat(1)
-        prefs.edit { putInt("time_sig", sig) }
+    /**
+     * Set the time signature. The bar length (top) drives the engine's pulse count, and the
+     * accents are reset to the meter's natural grouping (see [MeterTheory.defaultAccents]).
+     * The user can then fine-tune individual accents with [toggleAccent].
+     */
+    fun setMeter(top: Int, bottom: Int) {
+        val accents = MeterTheory.defaultAccents(Meter(top, bottom))
+        _timeSig.value = top
+        _timeSigDenom.value = bottom
+        _accentBeats.value = accents
+        engine.timeSignature = top
+        engine.accentBeats = accents
+        prefs.edit {
+            putInt("time_sig", top)
+            putInt("time_sig_denom", bottom)
+            putString("accent_beats", accents.joinToString(","))
+        }
     }
 
-    fun setAccentBeat(beat: Int) {
-        _accentBeat.value = beat
-        engine.accentBeat = beat - 1
-        prefs.edit { putInt("accent_beat", beat) }
+    /** Flip the accent on a single 0-based pulse, leaving the rest of the pattern intact. */
+    fun toggleAccent(beatIndex: Int) {
+        val next = _accentBeats.value.toMutableSet()
+        if (!next.add(beatIndex)) next.remove(beatIndex)
+        _accentBeats.value = next
+        engine.accentBeats = next
+        prefs.edit { putString("accent_beats", next.joinToString(",")) }
+    }
+
+    /**
+     * Restore the accent pattern saved in prefs, or derive the meter's natural accents when
+     * none is stored yet (first run, or upgrade from the old single-accent setting).
+     */
+    private fun loadAccentBeats(): Set<Int> {
+        prefs.getString("accent_beats", null)?.let { csv ->
+            return csv.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
+        }
+        val top = prefs.getInt("time_sig", 4)
+        val bottom = prefs.getInt("time_sig_denom", 4)
+        return MeterTheory.defaultAccents(Meter(top, bottom))
     }
 
     fun setSoundType(type: Int) {
@@ -813,7 +856,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private fun syncEngineSettings() {
         engine.bpm = _bpm.value
         engine.timeSignature = _timeSig.value
-        engine.accentBeat = _accentBeat.value - 1
+        engine.accentBeats = _accentBeats.value
         engine.soundType = effectiveSoundType()
         engine.volume = _volume.value
         engine.muted = _isMuted.value

@@ -2,14 +2,17 @@ package com.example.metrognome.dev
 
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import com.example.metrognome.BuildConfig
+import com.example.metrognome.haptics.HapticPattern
+import com.example.metrognome.haptics.LocalHaptics
 import androidx.core.content.edit
 
 /**
@@ -69,13 +72,18 @@ object DevEasterEgg {
 
 /**
  * Invisible tap detector. Wrap your About / version text with this composable.
- * After [tapCount] taps within [windowMs] milliseconds the manual dev-mode flag
- * is toggled, a toast is shown, and [onToggled] is called with the new state.
  *
- * Calling it again with the same speed disables dev mode — the toggle is symmetric.
+ * Two-step unlock so it cannot be triggered by accident (and is not obvious to onlookers):
+ *   1. Long-press the target. After the system long-press is recognized a [HapticPattern.LONG_PRESS]
+ *      buzz fires, confirming the egg is "armed".
+ *   2. Within [armWindowMs] of that buzz, tap the target [tapCount] times. The manual dev-mode flag
+ *      then toggles, a toast is shown, and [onToggled] is called with the new state.
  *
- * @param tapCount       Number of taps needed to trigger the toggle (default 10).
- * @param windowMs       Time window in which all taps must land (default 3 000 ms).
+ * Taps without a preceding long-press (or after the arm window lapses) are ignored, so casual taps
+ * do nothing. The toggle is symmetric — repeating the gesture disables dev mode again.
+ *
+ * @param tapCount       Number of taps needed once armed (default 10).
+ * @param armWindowMs    Time after the buzz in which the taps must land (default 4 000 ms).
  * @param toastEnabled   Show a short Toast on toggle (default true).
  * @param enabledMessage Toast text when dev mode is turned ON.
  * @param disabledMessage Toast text when dev mode is turned OFF.
@@ -85,7 +93,7 @@ object DevEasterEgg {
 fun DevTapTarget(
     modifier: Modifier = Modifier,
     tapCount: Int = 10,
-    windowMs: Long = 3_000L,
+    armWindowMs: Long = 4_000L,
     toastEnabled: Boolean = true,
     enabledMessage: String = "Developer mode enabled 🛠️",
     disabledMessage: String = "Developer mode disabled",
@@ -93,29 +101,42 @@ fun DevTapTarget(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
+    val haptics = LocalHaptics.current
     val tapTimes = remember { ArrayDeque<Long>() }
+    // Epoch ms until which taps are accepted; 0 = disarmed. Held in state but only read inside the
+    // gesture lambdas, so a recomposition on arm/disarm is harmless.
+    val armedUntil = remember { mutableStateOf(0L) }
 
     Box(
-        modifier = modifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,          // no ripple — invisible to casual users
-        ) {
-            val now = System.currentTimeMillis()
-            tapTimes.removeAll { now - it > windowMs }
-            tapTimes.addLast(now)
-
-            if (tapTimes.size >= tapCount) {
-                tapTimes.clear()
-                val enabled = DevEasterEgg.toggle(context)
-                if (toastEnabled) {
-                    Toast.makeText(
-                        context,
-                        if (enabled) enabledMessage else disabledMessage,
-                        Toast.LENGTH_SHORT,
-                    ).show()
-                }
-                onToggled(DevEasterEgg.isDevModeActive(context))
-            }
+        modifier = modifier.pointerInput(Unit) {
+            detectTapGestures(
+                onLongPress = {
+                    // Arm the egg: confirm with a buzz and open the tap window.
+                    armedUntil.value = System.currentTimeMillis() + armWindowMs
+                    tapTimes.clear()
+                    haptics.fire(HapticPattern.LONG_PRESS)
+                },
+                onTap = {
+                    val now = System.currentTimeMillis()
+                    if (now <= armedUntil.value) {
+                        tapTimes.removeAll { now - it > armWindowMs }
+                        tapTimes.addLast(now)
+                        if (tapTimes.size >= tapCount) {
+                            tapTimes.clear()
+                            armedUntil.value = 0L
+                            val enabled = DevEasterEgg.toggle(context)
+                            if (toastEnabled) {
+                                Toast.makeText(
+                                    context,
+                                    if (enabled) enabledMessage else disabledMessage,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                            onToggled(DevEasterEgg.isDevModeActive(context))
+                        }
+                    }
+                },
+            )
         },
     ) {
         content()

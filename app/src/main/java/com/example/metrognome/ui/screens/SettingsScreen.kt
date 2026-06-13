@@ -27,6 +27,9 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ButtonDefaults
 import com.example.metrognome.ui.components.AppFilterChip
+import com.example.metrognome.ui.components.TimeSignaturePicker
+import com.example.metrognome.theory.Meter
+import com.example.metrognome.theory.MeterTheory
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
@@ -91,7 +94,8 @@ fun SettingsScreen(
     val context = LocalContext.current
     val bpm by vm.bpm.collectAsStateWithLifecycle()
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
-    val accentBeat by vm.accentBeat.collectAsStateWithLifecycle()
+    val timeSigDenom by vm.timeSigDenom.collectAsStateWithLifecycle()
+    val accentBeats by vm.accentBeats.collectAsStateWithLifecycle()
     val soundType by vm.soundType.collectAsStateWithLifecycle()
     val volume by vm.volume.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
@@ -167,17 +171,25 @@ fun SettingsScreen(
                 onValueChange = { vm.setBpm(it.roundToInt()) }
             )
 
-            // Time signature chips
-            SettingsRow(label = "Time Signature") {
-                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                    listOf(2, 3, 4, 6, 7).forEach { sig ->
-                        AppFilterChip(
-                            selected = sig == timeSig,
-                            onClick = { vm.setTimeSig(sig) },
-                            label = "$sig/4",
-                        )
-                    }
-                }
+            // Time signature: presets + custom stepper + accent editor. The live classification
+            // (e.g. "Compound triple") rides next to the heading as a quiet annotation.
+            SettingsRow(
+                label = "Time Signature",
+                trailing = {
+                    Text(
+                        MeterTheory.label(Meter(timeSig, timeSigDenom)),
+                        color = AppColors.textMuted,
+                        fontSize = 13.sp,
+                    )
+                },
+            ) {
+                TimeSignaturePicker(
+                    top = timeSig,
+                    bottom = timeSigDenom,
+                    accentBeats = accentBeats,
+                    onMeterChange = { top, bottom -> vm.setMeter(top, bottom) },
+                    onToggleAccent = { vm.toggleAccent(it) },
+                )
             }
 
             Spacer(Modifier.height(8.dp))
@@ -255,23 +267,6 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
 
             SettingsSectionTitle("Visual")
-
-            SettingsRow(label = "Accent Beat") {
-                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                    AppFilterChip(
-                        selected = accentBeat == 0,
-                        onClick = { vm.setAccentBeat(0) },
-                        label = "None",
-                    )
-                    for (beat in 1..timeSig) {
-                        AppFilterChip(
-                            selected = beat == accentBeat,
-                            onClick = { vm.setAccentBeat(beat) },
-                            label = "$beat",
-                        )
-                    }
-                }
-            }
 
             SettingsSwitchRow(
                 checked = flashOnBeat,
@@ -739,10 +734,25 @@ private fun SettingsSliderRow(
 }
 
 @Composable
-private fun SettingsRow(label: String, content: @Composable () -> Unit) {
+private fun SettingsRow(
+    label: String,
+    trailing: (@Composable () -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
     Column(modifier = Modifier.padding(bottom = 14.dp)) {
-        Text(label, color = AppColors.textPrimary, fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 8.dp))
+        if (trailing == null) {
+            Text(label, color = AppColors.textPrimary, fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(bottom = 8.dp))
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp),
+            ) {
+                Text(label, color = AppColors.textPrimary, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.width(10.dp))
+                trailing()
+            }
+        }
         content()
     }
 }

@@ -60,7 +60,7 @@ fun GnomeCanvas(
     isPlaying: Boolean,
     beatEvents: SharedFlow<BeatEvent>,
     flashOnBeat: Boolean,
-    accentBeat: Int,          // 1-based; 0 = no accent
+    accentBeats: Set<Int> = emptySet(),   // 0-based pulse indices to flash harder on
     modifier: Modifier = Modifier,
     activeItems: List<MetroItem> = emptyList(),
     onItemTapped: (MetroItem) -> Unit = {},
@@ -133,7 +133,7 @@ fun GnomeCanvas(
             }
             if (flashOnBeat) {
                 launch {
-                    val maxFlash = if (accentBeat > 0 && event.beat == accentBeat - 1) 0.7f else 0.35f
+                    val maxFlash = if (event.beat in accentBeats) 0.7f else 0.35f
                     flash.snapTo(maxFlash)
                     flash.animateTo(0f, tween(350))
                 }
@@ -979,7 +979,6 @@ private fun GnomeCanvasIdlePreview() {
         isPlaying = false,
         beatEvents = MutableSharedFlow(),
         flashOnBeat = false,
-        accentBeat = 0,
         modifier = Modifier.fillMaxSize()
     )
 }

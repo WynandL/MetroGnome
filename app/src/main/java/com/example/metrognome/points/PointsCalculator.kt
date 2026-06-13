@@ -151,7 +151,7 @@ object PointsCalculator {
                 PointsContribution(
                     label    = "Timing Bonus",
                     rawValue = performanceBonus.toLong(),
-                    rawUnit  = "in time",
+                    rawUnit  = "from timing",
                     points   = performanceBonus * PointsConfig.PER_PERFORMANCE_BONUS,
                 )
             )
