@@ -13,6 +13,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://metrognome.co.za/privacy.html</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>https://metrognome.co.za/blog/how-to-improve-your-timing.html</loc>
     <lastmod>2026-06-11</lastmod>
     <changefreq>monthly</changefreq>
