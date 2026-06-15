@@ -7,6 +7,12 @@
       "permanent": true
     },
     {
+      "source": "/blog/",
+      "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
+      "destination": "https://metrognome.co.za/blog/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
       "destination": "https://metrognome.co.za/:path*",
