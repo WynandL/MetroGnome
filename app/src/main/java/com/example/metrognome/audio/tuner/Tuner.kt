@@ -4,9 +4,13 @@ import android.Manifest
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.os.SystemClock
 import androidx.annotation.RequiresPermission
 import com.example.metrognome.audio.NoteNames
 import com.example.metrognome.audio.dsp.PitchDetector
+import com.example.metrognome.cloud.TunerLockReporter
+import com.example.metrognome.debug.tuner.TunerLockLog
+import com.example.metrognome.debug.tuner.TunerReadingLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -85,6 +89,14 @@ class Tuner {
 
         /** Raw-RMS → 0..1 visualizer scaling, matched to the rhythm engine's meter. */
         private const val AMPLITUDE_GAIN = 1f / 8000f
+
+        /**
+         * While locked, a fresh pitch this far (cents) from the held note is treated as an
+         * interferer (a louder competing source) and kept *out* of the displayed reading —
+         * the lock itself still rides on via the presence probe. Matches the analyzer's
+         * hold step so the two agree on what "the locked note" means.
+         */
+        private const val READING_MATCH_CENTS = 80f
     }
 
     /**
@@ -169,6 +181,7 @@ class Tuner {
         val ambientDetector = AmbientDetector(HOP_SIZE * 1000.0 / sampleRate)
         rec.startRecording()
         _listening = true
+        TunerLockLog.startSession()
 
         val captureScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         scope = captureScope
@@ -192,6 +205,17 @@ class Tuner {
             var recentCount = 0
             var emaFreq = 0f
             var emaMidi = Int.MIN_VALUE
+
+            // Noise profile + lock diagnostics state.
+            var noiseFinalized = false
+            var lockActive = false
+            var lockStartMs = 0L
+            var lockNote = "?"
+            var lockMinClarity = 1f
+            var lockMinPresence = 1f
+            var lockPresenceSaves = 0
+            var lockHijackSurvivals = 0
+            var lockMaxLevel = 0f
 
             try {
                 while (isActive) {
@@ -225,9 +249,69 @@ class Tuner {
                     for (i in 0 until WINDOW_SIZE) analysis[i] = ring[(ringPos + i) % WINDOW_SIZE]
 
                     val pitch = detector.detect(analysis)
-                    _ambient.value = ambientDetector.observe(pitch, windowRms(analysis))
+                    val rms = windowRms(analysis)
 
-                    if (!_ambient.value.locked) {
+                    // Tier 2/3: confirm the *currently locked* note is still present at its
+                    // own frequency, independent of the globally tallest pitch — this is what
+                    // lets a lock ride out a louder interferer or noise that erodes clarity.
+                    // The experimental layers (noise-scaled ride-out + spectral subtraction)
+                    // follow the live AmbientTuning strength level.
+                    val level = AmbientTuning.level
+                    detector.denoisePresence = level.denoise
+                    ambientDetector.maxHoldScale = level.maxHoldScale
+                    val prev = _ambient.value
+                    val target = if (prev.locked) prev.candidateHz else null
+                    val nearClarity = if (target != null) detector.presenceAt(analysis, target) else 0f
+
+                    val report = ambientDetector.observe(pitch, rms, nearClarity)
+
+                    // Learn the room-noise spectrum during ambient profiling, freeze it once
+                    // profiling ends, so the presence probe can subtract it from then on.
+                    if (report.state == ListeningState.PROFILING) {
+                        detector.learnNoise(analysis)
+                    } else if (!noiseFinalized) {
+                        detector.finalizeNoise()
+                        noiseFinalized = true
+                    }
+
+                    _ambient.value = report
+
+                    // ── Lock diagnostics — record each completed lock for the dev viewer ──
+                    val isLocked = report.locked
+                    val lockTarget = report.candidateHz
+                    val pitchOnNote = pitch != null && lockTarget != null &&
+                            abs(centsBetween(pitch.frequency, lockTarget)) <= READING_MATCH_CENTS
+                    if (isLocked) {
+                        if (!lockActive) {
+                            lockActive = true
+                            lockStartMs = SystemClock.elapsedRealtime()
+                            lockNote = lockTarget?.let { NoteNames.label(it) } ?: "?"
+                            lockMinClarity = 1f; lockMinPresence = 1f
+                            lockPresenceSaves = 0; lockHijackSurvivals = 0; lockMaxLevel = 0f
+                        }
+                        if (pitch != null) lockMinClarity = minOf(lockMinClarity, pitch.clarity)
+                        lockMinPresence = minOf(lockMinPresence, nearClarity)
+                        lockMaxLevel = maxOf(lockMaxLevel, rms)
+                        if (!pitchOnNote && nearClarity >= AmbientDetector.HOLD_CLARITY) lockPresenceSaves++
+                        if (pitch != null && !pitchOnNote) lockHijackSurvivals++
+                    } else if (lockActive) {
+                        lockActive = false
+                        TunerLockLog.record(
+                            TunerLockLog.LockSession(
+                                noteLabel       = lockNote,
+                                holdMs          = SystemClock.elapsedRealtime() - lockStartMs,
+                                minClarity      = lockMinClarity,
+                                minPresence     = lockMinPresence,
+                                presenceSaves   = lockPresenceSaves,
+                                hijackSurvivals = lockHijackSurvivals,
+                                maxLevel        = lockMaxLevel,
+                                ambientLevel    = report.ambientLevel.name,
+                                dropReason      = report.state.name,
+                            )
+                        )
+                    }
+
+                    if (!isLocked) {
                         // Not a confident instrument note — park the needle, reset smoothing.
                         _reading.value = null
                         recentCount = 0
@@ -237,6 +321,9 @@ class Tuner {
                     }
                     // Locked, but this frame carried no fresh pitch — hold the last reading.
                     if (pitch == null) continue
+                    // Locked, but this pitch is a far interferer over the held note — keep it
+                    // out of the needle; the lock survives on the presence probe alone.
+                    if (!pitchOnNote) continue
 
                     val corrected = pitch.frequency * calibrationFactor
 
@@ -256,7 +343,18 @@ class Tuner {
                         emaFreq += SMOOTHING_ALPHA * (median - emaFreq)
                     }
 
-                    _reading.value = toReading(emaFreq, pitch.clarity)
+                    val rd = toReading(emaFreq, pitch.clarity)
+                    _reading.value = rd
+                    if (TunerReadingLog.recording) {
+                        TunerReadingLog.record(
+                            note = "${rd.noteName}${rd.octave}",
+                            frequencyHz = rd.frequency,
+                            cents = rd.cents,
+                            clarity = rd.clarity,
+                            calFactor = calibrationFactor,
+                            ambient = report.ambientLevel.name,
+                        )
+                    }
                 }
             } catch (_: Exception) {
                 // AudioRecord released mid-read during stop() — expected, end quietly.
@@ -279,6 +377,8 @@ class Tuner {
         _amplitude.value = 0f
         _reading.value = null
         _ambient.value = AmbientReport.Idle
+        TunerLockLog.endSession()
+        TunerLockReporter.submitSession()   // anonymous session summary; off unless enabled
     }
 
     // ── DEV: simulated reading ───────────────────────────────────────────────────
@@ -327,6 +427,10 @@ class Tuner {
         for (v in buf) sum += v.toDouble() * v
         return sqrt(sum / buf.size).toFloat()
     }
+
+    /** Signed cents from [b] to [a]. */
+    private fun centsBetween(a: Float, b: Float): Float =
+        (1200.0 * log2(a.toDouble() / b.toDouble())).toFloat()
 
     /** Map a frequency to the nearest note, octave and cents offset. */
     private fun toReading(frequency: Float, clarity: Float): Reading {

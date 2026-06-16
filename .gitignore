@@ -20,3 +20,6 @@ keystore.properties
 google-services.json
 *.aab
 *.apk
+
+# Local-only tuner test-tone harness (generator + large WAV + manifest); regenerated on demand
+/tools/tuner_test_tones/

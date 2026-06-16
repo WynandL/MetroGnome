@@ -16,6 +16,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.audio.tuner.AmbientReport
+import com.example.metrognome.audio.tuner.AmbientTuning
 import com.example.metrognome.audio.tuner.Tuner
 import com.example.metrognome.audio.tuner.TunerCalibrator
 import com.example.metrognome.audio.tuner.TunerFeedbackConfig
@@ -118,6 +119,10 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
     private val _feedbackPrompt = MutableStateFlow<TunerSessionSnapshot?>(null)
     val feedbackPrompt: StateFlow<TunerSessionSnapshot?> = _feedbackPrompt.asStateFlow()
 
+    private val _ambientLevel = MutableStateFlow(loadAmbientLevel())
+    /** User-chosen ambient-suppression strength; drives the engine's experimental layers. */
+    val ambientLevel: StateFlow<AmbientTuning.Level> = _ambientLevel.asStateFlow()
+
     // ── Usage tracking (item unlocks + analytics) ───────────────────────────────
 
     private val _activeItemIds = MutableStateFlow(tracker.unlockedIds(METRO_ITEM_REGISTRY))
@@ -141,8 +146,21 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
     init {
         tuner.referenceHz = _referenceHz.value
         tuner.calibrationFactor = _calibrationInfo.value.factor
+        AmbientTuning.level = _ambientLevel.value   // apply the saved suppression strength
         if (TunerFeedbackConfig.ENABLED) startTuneDetection()
     }
+
+    /** Set the ambient-suppression strength; applies live and persists. */
+    fun setAmbientLevel(level: AmbientTuning.Level) {
+        _ambientLevel.value = level
+        AmbientTuning.level = level
+        prefs.edit { putString(KEY_AMBIENT_LEVEL, level.name) }
+    }
+
+    private fun loadAmbientLevel(): AmbientTuning.Level =
+        prefs.getString(KEY_AMBIENT_LEVEL, null)
+            ?.let { runCatching { AmbientTuning.Level.valueOf(it) }.getOrNull() }
+            ?: AmbientTuning.Level.MAX
 
     // ── Listening ───────────────────────────────────────────────────────────────
 
@@ -514,6 +532,7 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
         const val MAX_REFERENCE = 466f
 
         private const val KEY_REFERENCE = "reference_hz"
+        private const val KEY_AMBIENT_LEVEL = "ambient_suppression"
         private const val KEY_FACTOR = "calibration_factor"
         private const val KEY_ACCURACY = "calibration_accuracy"
         private const val KEY_MODE = "calibration_mode"

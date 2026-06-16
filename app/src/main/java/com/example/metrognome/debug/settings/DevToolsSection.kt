@@ -40,6 +40,9 @@ import com.example.metrognome.audio.selftest.SelfTestCalibrationStore
 import com.example.metrognome.debug.mic.MicDiagnosticsOverlay
 import com.example.metrognome.debug.mic.MicTimingLogOverlay
 import com.example.metrognome.debug.profile.ProfileRoundTripOverlay
+import com.example.metrognome.debug.tuner.TunerLockLogOverlay
+import com.example.metrognome.debug.tuner.TunerReadingLog
+import com.example.metrognome.debug.tuner.TunerReadingLogOverlay
 import com.example.metrognome.points.PointsBannerQueue
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.UnlockCondition
@@ -89,7 +92,10 @@ fun DevToolsSection(
     var showAdPolicy by remember { mutableStateOf(false) }
     var showMicSelfTest by remember { mutableStateOf(false) }
     var showMicTimingLog by remember { mutableStateOf(false) }
+    var showTunerLockLog by remember { mutableStateOf(false) }
+    var showTunerReadingLog by remember { mutableStateOf(false) }
     var showProfileRoundTrip by remember { mutableStateOf(false) }
+    var recordReadings by remember { mutableStateOf(TunerReadingLog.recording) }
 
     Column(modifier = modifier.fillMaxWidth()) {
         // ── DEV ONLY ──────────────────────────────────────────────────────────
@@ -480,12 +486,68 @@ fun DevToolsSection(
             Text("Mic Timing Log", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
         }
 
+        Spacer(Modifier.height(6.dp))
+
+        // Tuner noise-robustness diagnostics. The suppression *strength* is now a user-facing
+        // control on the Tuner page (Ambient Suppression: Off/Low/High), so it is not duplicated
+        // here. These two viewers read the lock quality and the known-truth accuracy run.
+        Row(modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = { showTunerLockLog = true },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
+                border = BorderStroke(1.dp, AppColors.gold)
+            ) {
+                Text("Tuner Lock Log", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
+
+            Spacer(Modifier.width(8.dp))
+
+            OutlinedButton(
+                onClick = { showTunerReadingLog = true },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
+                border = BorderStroke(1.dp, AppColors.gold)
+            ) {
+                Text("Tuner Reading Log", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
+        }
+
+        Spacer(Modifier.height(6.dp))
+
+        // Known-truth accuracy test: record every settled reading while the test-tone file
+        // plays into the mic, then open the Reading Log (mean¢ per note ≈ calibration bias).
+        OutlinedButton(
+            onClick = {
+                recordReadings = !recordReadings
+                if (recordReadings) TunerReadingLog.start() else TunerReadingLog.stop()
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = if (recordReadings) AppColors.devRed else AppColors.devGrey
+            ),
+            border = BorderStroke(1.dp, if (recordReadings) AppColors.devRed else AppColors.devDarkBorder)
+        ) {
+            Text(
+                if (recordReadings) "● Recording Tuner Readings" else "Record Tuner Readings",
+                fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
+            )
+        }
+
         if (showMicSelfTest) {
             MicDiagnosticsOverlay(onDismiss = { showMicSelfTest = false })
         }
 
         if (showMicTimingLog) {
             MicTimingLogOverlay(onDismiss = { showMicTimingLog = false })
+        }
+
+        if (showTunerLockLog) {
+            TunerLockLogOverlay(onDismiss = { showTunerLockLog = false })
+        }
+
+        if (showTunerReadingLog) {
+            TunerReadingLogOverlay(onDismiss = { showTunerReadingLog = false })
         }
 
         if (showProfileRoundTrip) {

@@ -4,11 +4,13 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.example.metrognome.audio.tuner.AmbientLevel
 import com.example.metrognome.audio.tuner.AmbientReport
+import com.example.metrognome.audio.tuner.AmbientTuning
 import com.example.metrognome.audio.tuner.ListeningState
 import com.example.metrognome.audio.tuner.Tuner
 import com.example.metrognome.audio.tuner.TunerCalibrator
@@ -41,6 +43,7 @@ class TunerScreenTest {
         calibrationInfo: CalibrationInfo = CalibrationInfo(1f, Float.NaN, calibrated = false),
         micGranted: Boolean = true,
         keepScreenOn: Boolean = false,
+        ambientLevel: AmbientTuning.Level = AmbientTuning.Level.MAX,
         onRequestMic: () -> Unit = {},
         onNudgeReference: (Float) -> Unit = {},
         onSetReferenceHz: (Float) -> Unit = {},
@@ -50,6 +53,7 @@ class TunerScreenTest {
         onClearCalibration: () -> Unit = {},
         onCalibrateToNote: (Tuner.Reading) -> Unit = {},
         onToggleScreenOn: (Boolean) -> Unit = {},
+        onSetAmbientLevel: (AmbientTuning.Level) -> Unit = {},
     ) {
         rule.setContent {
             MetroGnomeTheme {
@@ -71,6 +75,8 @@ class TunerScreenTest {
                     onClearCalibration = onClearCalibration,
                     onCalibrateToNote = onCalibrateToNote,
                     onToggleScreenOn = onToggleScreenOn,
+                    ambientLevel = ambientLevel,
+                    onSetAmbientLevel = onSetAmbientLevel,
                 )
             }
         }
@@ -96,9 +102,9 @@ class TunerScreenTest {
     }
 
     @Test
-    fun reading_relatesHeardFrequencyToTheNote() {
+    fun reading_relatesDetectedFrequencyToTheNote() {
         render(reading = reading(cents = 9f, inTune = false))
-        rule.onNodeWithText("HEARD").assertIsDisplayed()
+        rule.onNodeWithText("DETECTED").assertIsDisplayed()
         rule.onNodeWithText("SITS AT", substring = true).assertIsDisplayed()
     }
 
@@ -150,10 +156,10 @@ class TunerScreenTest {
         assertEquals(-1f, delta, 0.001f)
     }
 
-    // ── Ambient histogram ────────────────────────────────────────────────────────
+    // ── Frequency rail ─────────────────────────────────────────────────────────
 
     @Test
-    fun ambientHistogram_showsReadingRoomDuringProfiling() {
+    fun frequencyRail_showsOctaveAnchors() {
         render(
             ambient = AmbientReport(
                 state = ListeningState.PROFILING,
@@ -164,37 +170,38 @@ class TunerScreenTest {
                 locked = false,
             )
         )
-        rule.onNodeWithText("READING ROOM").performScrollTo().assertIsDisplayed()
+        // The rail always paints its octave anchor labels; A2/A6 are unique on screen.
+        rule.onNodeWithText("A2").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("A6").performScrollTo().assertIsDisplayed()
     }
 
     @Test
-    fun ambientHistogram_showsLockedLabel() {
-        render(
-            ambient = AmbientReport(
-                state = ListeningState.LOCKED,
-                headline = "", guidance = "",
-                ambientLevel = AmbientLevel.QUIET,
-                candidateHz = 440f,
-                stabilityCents = 3f,
-                locked = true,
-            )
-        )
-        rule.onNodeWithText("LOCKED").performScrollTo().assertIsDisplayed()
-    }
-
-    @Test
-    fun ambientHistogram_showsCandidateNoteName() {
+    fun frequencyRail_showsCandidateNoteInHeader() {
         render(
             ambient = AmbientReport(
                 state = ListeningState.ACQUIRING,
                 headline = "", guidance = "",
                 ambientLevel = AmbientLevel.QUIET,
-                candidateHz = 440f,
+                candidateHz = 261.63f,   // C4 — not an octave-anchor label, so unambiguous
                 stabilityCents = 5f,
                 locked = false,
             )
         )
-        rule.onNodeWithText("A4").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("C4").performScrollTo().assertIsDisplayed()
+    }
+
+    // ── Ambient suppression ──────────────────────────────────────────────────────
+
+    @Test
+    fun ambientSuppression_cyclesAndFiresCallback() {
+        var picked: AmbientTuning.Level? = null
+        render(ambientLevel = AmbientTuning.Level.MAX, onSetAmbientLevel = { picked = it })
+        rule.onNodeWithText("AMBIENT SUPPRESSION").performScrollTo().assertIsDisplayed()
+        // The bars-only control carries the level in its contentDescription and
+        // advances one step per tap, wrapping Max → Standard.
+        rule.onNodeWithContentDescription("Ambient suppression", substring = true)
+            .performScrollTo().performClick()
+        assertEquals(AmbientTuning.Level.STANDARD, picked)
     }
 
     // ── Calibration — idle ───────────────────────────────────────────────────────

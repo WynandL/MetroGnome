@@ -150,6 +150,55 @@ class AmbientDetectorTest {
     }
 
     @Test
+    fun lockSurvivesLowClarityButCorrectPitch() {
+        // In noise the same note keeps detecting, but clarity sags below the strict ACQUIRE
+        // bar. As long as it sits on the locked note it must keep the lock alive — this is
+        // the band the detector used to throw away, starving a perfectly good lock.
+        val d = detector()
+        d.profileQuiet()
+        repeat(12) { d.tone(330f) }                       // lock on at full clarity
+        val low = (1..10).map {
+            d.observe(PitchDetector.Pitch(330f, 0.70f), 0.06f).state   // 0.70 ∈ [HOLD, ACQUIRE)
+        }
+        assertTrue("a correct note at hold-clarity must hold the lock", low.all { it == ListeningState.LOCKED })
+    }
+
+    @Test
+    fun acquireStaysStrictAtLowClarity() {
+        // The lenient *hold* clarity must not loosen *acquisition*: a steady but low-clarity
+        // tone (never previously locked) must never trigger a fresh lock.
+        val d = detector()
+        d.profileQuiet()
+        val states = (1..20).map { d.observe(PitchDetector.Pitch(330f, 0.70f), 0.06f).state }
+        assertFalse("low-clarity tone must never acquire a lock", states.any { it == ListeningState.LOCKED })
+    }
+
+    @Test
+    fun presenceHoldsThroughAHijackerThatWouldOtherwiseDropIt() {
+        // A loud, steady, WRONG pitch (a louder competing source) sits over the note for
+        // longer than the disturbance ride-out would tolerate. With the presence probe
+        // confirming the real note is still there, the lock must survive throughout.
+        val d = detector()
+        d.profileQuiet()
+        repeat(12) { d.tone(220f) }
+        val states = (1..14).map {
+            d.observe(PitchDetector.Pitch(500f, 0.95f), 0.06f, nearClarity = 0.9f).state
+        }
+        assertTrue("presence should hold the lock through a sustained hijacker", states.all { it == ListeningState.LOCKED })
+    }
+
+    @Test
+    fun presenceAloneHoldsThroughADetectionGap() {
+        // No global pitch at all (detector returns null), but the presence probe still finds
+        // the note at its frequency — the lock must ride out well past the silent-gap window.
+        val d = detector()
+        d.profileQuiet()
+        repeat(12) { d.tone(220f) }
+        val states = (1..12).map { d.observe(null, 0.0008f, nearClarity = 0.9f).state }
+        assertTrue("presence should hold the lock when the global pitch vanishes", states.all { it == ListeningState.LOCKED })
+    }
+
+    @Test
     fun steadyRoomToneIsNotMistakenForANote() {
         // A constant hum present from the very start is part of the room, not a note.
         val d = detector()

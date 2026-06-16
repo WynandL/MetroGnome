@@ -10,10 +10,16 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -27,6 +33,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,6 +41,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -84,6 +92,8 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -94,6 +104,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.audio.tuner.AmbientLevel
 import com.example.metrognome.audio.tuner.AmbientReport
+import com.example.metrognome.audio.tuner.AmbientTuning
 import com.example.metrognome.audio.tuner.ListeningState
 import com.example.metrognome.audio.NoteNames
 import com.example.metrognome.audio.tuner.Tuner
@@ -113,6 +124,7 @@ import com.example.metrognome.viewmodel.CalibrationMode
 import com.example.metrognome.viewmodel.CalibrationState
 import com.example.metrognome.viewmodel.TunerViewModel
 import java.util.Locale
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.ln
@@ -189,6 +201,7 @@ fun TunerScreen(
     val calibration by vm.calibration.collectAsStateWithLifecycle()
     val calibrationInfo by vm.calibrationInfo.collectAsStateWithLifecycle()
     val feedbackPrompt by vm.feedbackPrompt.collectAsStateWithLifecycle()
+    val ambientLevel by vm.ambientLevel.collectAsStateWithLifecycle()
 
     val prefs = remember { context.getSharedPreferences("metrognome_prefs", Context.MODE_PRIVATE) }
     var nudgeDismissed by remember { mutableStateOf(prefs.getBoolean("tuner_calibration_nudge_shown", false)) }
@@ -239,6 +252,8 @@ fun TunerScreen(
                 nudgeDismissed = true
                 prefs.edit { putBoolean("tuner_calibration_nudge_shown", true) }
             },
+            ambientLevel = ambientLevel,
+            onSetAmbientLevel = vm::setAmbientLevel,
         )
 
         TunerFeedbackCard(
@@ -281,6 +296,8 @@ internal fun TunerScreenContent(
     isAdFree: Boolean = false,
     showCalibrationNudge: Boolean = false,
     onDismissCalibrationNudge: () -> Unit = {},
+    ambientLevel: AmbientTuning.Level = AmbientTuning.Level.MAX,
+    onSetAmbientLevel: (AmbientTuning.Level) -> Unit = {},
 ) {
     val pendingReading = remember { mutableStateOf<Tuner.Reading?>(null) }
     var pendingConfirm by remember { mutableStateOf<CalibrationMode?>(null) }
@@ -361,7 +378,7 @@ internal fun TunerScreenContent(
         }
 
         Spacer(Modifier.height(10.dp))
-        AmbientHistogram(ambient)
+        AmbientPanel(ambient, ambientLevel, onSetAmbientLevel)
 
         Spacer(Modifier.height(12.dp))
         CalibrationCard(
@@ -511,6 +528,10 @@ private fun TunerGauge(reading: Tuner.Reading?) {
  *
  * Layout is stable regardless of reading state: empty strings / transparent text
  * hold vertical space so nothing shifts as the tuner locks on.
+ *
+ * The "DETECTED" value is the tuner's best estimate of the true sounded pitch: the raw mic
+ * reading after any stored calibration correction. The needle and SITS AT compare against
+ * the ideal note frequency, so a green/in-tune result means in tune in the real world.
  */
 @Composable
 private fun GaugeReadout(reading: Tuner.Reading?, amplitude: Float) {
@@ -565,7 +586,7 @@ private fun GaugeReadout(reading: Tuner.Reading?, amplitude: Float) {
             letterSpacing = 2.sp,
         )
 
-        // Frequency chips — HEARD → D2 SITS AT — only when a note is detected.
+        // Frequency chips — DETECTED → D2 SITS AT — only when a note is detected.
         if (reading != null) {
             Spacer(Modifier.height(10.dp))
             val targetHz = reading.frequency / 2.0.pow(reading.cents / 1200.0)
@@ -573,7 +594,7 @@ private fun GaugeReadout(reading: Tuner.Reading?, amplitude: Float) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                LabelValueBadge("HEARD", String.format(Locale.US, "%.1f Hz", reading.frequency))
+                LabelValueBadge("DETECTED", String.format(Locale.US, "%.1f Hz", reading.frequency))
                 Text("→", color = AppColors.textDim, fontSize = 14.sp)
                 LabelValueBadge(
                     "${reading.noteName}${reading.octave} SITS AT",
@@ -678,25 +699,37 @@ private fun LevelMeter(amplitude: Float) {
 /**
  * Collapsible environment panel below the gauge.
  *
- * Collapsed (default): a pulsing orb whose color communicates the engine state
- * without demanding attention, a calm label, the candidate note, and the
- * frequency histogram the musician already loves.
+ * Collapsed (default): a row of state icons, the candidate note, and the frequency
+ * rail — all calm enough to glance at while playing.
  *
- * Tap to expand: noise floor (3 dots), pitch-spread bar, and the engine's
- * guidance text.  Interesting for curious musicians, invisible for everyone else.
+ * Tap to expand: a held plain-language status, the noise floor, signal steadiness,
+ * and the room-hum filter. Interesting for curious musicians, invisible otherwise.
  */
 @Composable
-private fun AmbientHistogram(report: AmbientReport) {
+private fun AmbientPanel(
+    report: AmbientReport,
+    ambientLevel: AmbientTuning.Level = AmbientTuning.Level.MAX,
+    onSetAmbientLevel: (AmbientTuning.Level) -> Unit = {},
+) {
     var expanded by remember { mutableStateOf(false) }
-    val stateColor by animateColorAsState(ambientStateColor(report.state), label = "ambientColor")
     val chevronDeg by animateFloatAsState(if (expanded) 180f else 0f, label = "chevron")
+
+    // Calm narration: the engine's frame-state flips several times a second in a
+    // noisy room. Hold the last *stable* reading for the header and detail panel so
+    // it can actually be read — LOCKED commits instantly, other states after a short
+    // dwell. The live needle and frequency rail still read the raw [report].
+    var shown by remember { mutableStateOf(report) }
+    LaunchedEffect(report.state) {
+        if (report.state == ListeningState.LOCKED) shown = report
+        else { delay(900); shown = report }
+    }
 
     Surface(
         color = AppColors.surfaceDim,
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+        Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp)) {
 
             // ── Header: pulsing orb + state label + note name + expand chevron ───
             Row(
@@ -708,16 +741,16 @@ private fun AmbientHistogram(report: AmbientReport) {
                         indication = null,
                     ) { expanded = !expanded },
             ) {
-                AmbientStateIcons(state = report.state)
+                AmbientStateIcons(state = shown.state)
                 Spacer(Modifier.weight(1f))
                 // Fixed-width slot — always reserves 36 dp so the chevron never shifts
                 Box(modifier = Modifier.width(36.dp), contentAlignment = Alignment.CenterEnd) {
-                    val noteText = if (report.candidateHz != null &&
-                            report.state != ListeningState.PROFILING)
-                        NoteNames.label(report.candidateHz) else ""
+                    val cand = shown.candidateHz
+                    val noteText = if (cand != null && shown.state != ListeningState.PROFILING)
+                        NoteNames.label(cand) else ""
                     Text(
                         noteText,
-                        color = if (report.locked) GameColors.good else AppColors.gold,
+                        color = if (shown.locked) GameColors.good else AppColors.gold,
                         fontSize = 14.sp, fontWeight = FontWeight.Black,
                     )
                 }
@@ -732,34 +765,53 @@ private fun AmbientHistogram(report: AmbientReport) {
 
             Spacer(Modifier.height(10.dp))
 
-            // ── Frequency histogram ───────────────────────────────────────────────
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp),
-            ) {
-                drawHistogramGrid()
-                drawAmbientBars(
-                    bins = report.ambientBins,
-                    candidateHz = report.candidateHz,
-                    stateColor = stateColor,
-                    locked = report.locked,
-                )
-            }
+            // ── Frequency rail ────────────────────────────────────────────────────
+            // Slim pitch ruler. The old vertical axis (room-noise energy per band)
+            // was frozen after profiling and carried no tuning value, so it is gone;
+            // only the live marker position — where the pitch sits — remains.
+            FrequencyRail(
+                candidateHz = report.candidateHz,
+                locked = report.locked,
+                profiling = report.state == ListeningState.PROFILING,
+            )
 
-            // Frequency axis labels — A2 A3 A4 A5 as anchor points
+            // ── Ambient suppression — always visible, even when collapsed ─────────
+            // No divider here: a 1dp rule directly under the rail's labels reads as
+            // a floating x-axis. The caps section header + whitespace separate it.
+            Spacer(Modifier.height(18.dp))
+            // Heading + live caption on the left; tap-to-cycle level control on the
+            // right of the same row, so the control adds no extra row and never
+            // leaves the right side empty.
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                listOf(110f to "A2", 220f to "A3", 440f to "A4", 880f to "A5").forEach { (hz, label) ->
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        label,
-                        color = if (hz == 440f) AppColors.gold.copy(alpha = 0.6f)
-                                else AppColors.textDim,
-                        fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                        "AMBIENT SUPPRESSION",
+                        color = AppColors.textDim,
+                        fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
                     )
+                    Spacer(Modifier.height(3.dp))
+                    Crossfade(
+                        targetState = ambientLevel,
+                        animationSpec = tween(200),
+                        label = "suppressionCaption",
+                    ) { level ->
+                        Text(
+                            suppressionCaption(level),
+                            color = AppColors.textMuted,
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                        )
+                    }
                 }
+                Spacer(Modifier.width(12.dp))
+                SuppressionLevelToggle(
+                    level = ambientLevel,
+                    onCycle = { onSetAmbientLevel(ambientLevel.next()) },
+                )
             }
 
             // ── Expanded environment detail ───────────────────────────────────────
@@ -769,95 +821,98 @@ private fun AmbientHistogram(report: AmbientReport) {
                 exit  = shrinkVertically() + fadeOut(),
             ) {
                 Column {
-                    Spacer(Modifier.height(12.dp))
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(AppColors.surfaceVariant),
-                    )
-                    Spacer(Modifier.height(10.dp))
+                    // Whitespace + caps header separate this revealed detail, matching
+                    // the divider-free treatment of the suppression section above.
+                    Spacer(Modifier.height(18.dp))
                     Text(
                         "ENVIRONMENT",
                         color = AppColors.textDim,
                         fontSize = 10.sp, fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(10.dp))
 
-                    // Noise floor — 3 dots always present; only color changes.
-                    // Fixed-width label box (56 dp) prevents dots from shifting.
-                    val dotColor = noiseColor(report.ambientLevel)
-                    AmbientDetailRow("Noise floor") {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(3.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            repeat(3) { i ->
-                                Box(
-                                    Modifier.size(7.dp).clip(CircleShape)
-                                        .background(
-                                            if (i < noiseDots(report.ambientLevel)) dotColor
-                                            else AppColors.surfaceVariant
-                                        ),
-                                )
-                            }
-                        }
-                        Spacer(Modifier.width(6.dp))
-                        Box(modifier = Modifier.width(56.dp)) {
-                            Text(noiseLabel(report.ambientLevel), color = dotColor, fontSize = 10.sp)
+                    // Held status — what the tuner is seeing and what to do, in plain
+                    // words. Fed only by the debounced [shown], so it sits still long
+                    // enough to read; it crossfades when the words actually change.
+                    Crossfade(
+                        targetState = shown.headline to shown.guidance,
+                        animationSpec = tween(250),
+                        label = "ambientStatus",
+                    ) { (headline, guidance) ->
+                        Column {
+                            Text(
+                                headline,
+                                color = AppColors.textSecondary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                guidance,
+                                color = AppColors.textMuted,
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp,
+                                minLines = 2,
+                                maxLines = 2,
+                            )
                         }
                     }
 
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(14.dp))
 
-                    // Pitch spread — bar and value always present; grey/dash when no data.
-                    // This prevents the guidance text from jumping as states change.
-                    val hasSpread = !report.stabilityCents.isNaN() && report.stabilityCents >= 0f &&
-                            report.state in listOf(
+                    // All three rows share a fixed meter column (same width and left
+                    // edge) and a fixed value column (text left-aligned), so the
+                    // indicators and words line up and never shift as readings change.
+                    // The old dots became a 3-segment meter to match the bar footprint.
+                    val dotColor = noiseColor(shown.ambientLevel)
+                    AmbientDetailRow("Noise floor") {
+                        DetailSegmentMeter(filled = noiseDots(shown.ambientLevel), segments = 3, color = dotColor)
+                        Spacer(Modifier.width(8.dp))
+                        DetailValue(noiseLabel(shown.ambientLevel), dotColor)
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Steadiness — how still the detected pitch is held. A fuller, greener
+                    // bar means a steadier read; "--" until there is a tone to judge.
+                    val hasSteady = !shown.stabilityCents.isNaN() && shown.stabilityCents >= 0f &&
+                            shown.state in listOf(
                                 ListeningState.ACQUIRING,
                                 ListeningState.LOCKED,
                                 ListeningState.UNSTABLE,
                             )
-                    val spreadFrac = if (hasSpread) (report.stabilityCents / 50f).coerceIn(0f, 1f) else 0f
-                    val spreadColor = when {
-                        !hasSpread                  -> AppColors.textDim
-                        report.stabilityCents < 5f  -> GameColors.good
-                        report.stabilityCents < 18f -> AppColors.gold
-                        else                        -> AppColors.warning
+                    val cents = shown.stabilityCents
+                    val steadyFrac = if (hasSteady) (1f - cents / 50f).coerceIn(0f, 1f) else 0f
+                    val (steadyWord, steadyColor) = when {
+                        !hasSteady  -> "--" to AppColors.textDim
+                        cents < 5f  -> "Steady" to GameColors.good
+                        cents < 18f -> "Wavering" to AppColors.gold
+                        else        -> "Jumpy" to AppColors.warning
                     }
-                    AmbientDetailRow("Pitch spread") {
-                        Box(
-                            modifier = Modifier
-                                .width(70.dp).height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(AppColors.surfaceVariant),
-                        ) {
-                            Box(
-                                Modifier.fillMaxWidth(spreadFrac).fillMaxHeight()
-                                    .background(spreadColor),
-                            )
-                        }
-                        Spacer(Modifier.width(6.dp))
-                        Box(modifier = Modifier.width(28.dp)) {
-                            Text(
-                                if (hasSpread) "${report.stabilityCents.roundToInt()}¢" else "--",
-                                color = if (hasSpread) spreadColor else AppColors.textDim,
-                                fontSize = 10.sp,
-                            )
-                        }
+                    AmbientDetailRow("Steadiness") {
+                        DetailBarMeter(frac = steadyFrac, color = steadyColor)
+                        Spacer(Modifier.width(8.dp))
+                        DetailValue(steadyWord, steadyColor)
                     }
 
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(8.dp))
 
-                    Text(
-                        report.guidance,
-                        color = AppColors.textMuted,
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp,
-                        minLines = 2,
-                        maxLines = 2,
-                    )
+                    // Room hum — the steady tone (mains buzz, a fan) the engine learned
+                    // during profiling and is actively filtering out. Quiet proof of work.
+                    val humActive = shown.humHz > 0f
+                    AmbientDetailRow("Room hum") {
+                        DetailBarMeter(
+                            frac = if (humActive) 1f else 0f,
+                            color = if (humActive) GameColors.good else AppColors.surfaceVariant,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        DetailValue(
+                            if (humActive) "${shown.humHz.roundToInt()} Hz" else "None",
+                            if (humActive) GameColors.good else AppColors.textDim,
+                        )
+                    }
                     Spacer(Modifier.height(4.dp))
                 }
             }
@@ -915,76 +970,127 @@ private fun AmbientStateIcons(state: ListeningState) {
     }
 }
 
-/** Subtle horizontal reference lines at 25 / 50 / 75 / 100 % of bar height. */
-private fun DrawScope.drawHistogramGrid() {
-    val gridColor = AppColors.surfaceVariant.copy(alpha = 0.55f)
-    val strokePx = 0.7.dp.toPx()
-    for (fraction in listOf(0.25f, 0.5f, 0.75f, 1.0f)) {
-        val y = size.height * (1f - fraction)
-        drawLine(
-            color = gridColor,
-            start = Offset(0f, y),
-            end = Offset(size.width, y),
-            strokeWidth = strokePx,
-        )
-    }
-}
-
-private fun DrawScope.drawAmbientBars(
-    bins: FloatArray,
+/**
+ * Slim pitch rail that replaces the old room-noise histogram.
+ *
+ * The vertical axis used to show learned background-noise energy per band — but
+ * that froze once profiling finished and told a musician nothing about whether a
+ * note is in tune. What remains is the only thing they act on: *where* the
+ * detected pitch sits along the frequency axis.
+ *
+ * Octave anchors (A2..A6) are drawn at their true log-frequency positions so the
+ * labels line up with the marker (the old evenly-spaced labels did not). The
+ * marker is a glowing thumb — gold normally, green on lock — echoing the
+ * reference-pitch slider. While profiling, a soft blue bloom sweeps the rail to
+ * show the room is being measured.
+ */
+@Composable
+private fun FrequencyRail(
     candidateHz: Float?,
-    stateColor: Color,
     locked: Boolean,
+    profiling: Boolean,
 ) {
-    if (bins.isEmpty()) return
+    val anchors = listOf(110f to "A2", 220f to "A3", 440f to "A4", 880f to "A5", 1760f to "A6")
+    val lo = ln(AmbientReport.DISPLAY_FREQ_LO.toDouble())
+    val hi = ln(AmbientReport.DISPLAY_FREQ_HI.toDouble())
+    fun frac(hz: Float) = (((ln(hz.toDouble()) - lo) / (hi - lo)).coerceIn(0.0, 1.0)).toFloat()
 
-    val count = bins.size
-    val barW = size.width / count
-    val gap = (barW * 0.18f).coerceAtLeast(1.5f)
-    val netW = barW - gap
-    val cornerR = CornerRadius(netW / 2f, netW / 2f)
+    val markerColor = if (locked) GameColors.good else AppColors.gold
 
-    val barColor = stateColor.copy(alpha = 0.45f)
-    val barColorFull = stateColor.copy(alpha = 0.75f)
-
-    for (i in 0 until count) {
-        val level = bins[i]
-        val barH = (level * size.height * 0.90f).coerceAtLeast(if (level > 0f) 3.dp.toPx() else 0f)
-        val x = i * barW + gap / 2f
-        val y = size.height - barH
-        if (barH > 0f) {
-            drawRoundRect(
-                color = if (level > 0.6f) barColorFull else barColor,
-                topLeft = Offset(x, y),
-                size = Size(netW, barH),
-                cornerRadius = cornerR,
-            )
-        } else {
-            // Baseline tick so the axis is always visible
-            drawRoundRect(
-                color = AppColors.surfaceVariant.copy(alpha = 0.5f),
-                topLeft = Offset(x, size.height - 2.dp.toPx()),
-                size = Size(netW, 2.dp.toPx()),
-                cornerRadius = cornerR,
-            )
+    // Marker glow blooms on each new candidate, then settles — same spring DNA as
+    // the reference-pitch thumb.
+    val haloAlpha = remember { Animatable(0.18f) }
+    LaunchedEffect(candidateHz, locked) {
+        if (candidateHz != null) {
+            haloAlpha.snapTo(0.5f)
+            haloAlpha.animateTo(0.18f, spring(dampingRatio = 0.7f, stiffness = 80f))
         }
     }
 
-    // Gold marker for the current candidate / locked frequency
-    if (candidateHz != null) {
-        val lo = ln(AmbientReport.BIN_FREQ_LO.toDouble())
-        val hi = ln(AmbientReport.BIN_FREQ_HI.toDouble())
-        val t = ((ln(candidateHz.toDouble()) - lo) / (hi - lo)).coerceIn(0.0, 1.0).toFloat()
-        val cx = t * size.width
-        val markerColor = if (locked) GameColors.good else AppColors.gold
-        drawLine(
-            color = markerColor.copy(alpha = 0.9f),
-            start = Offset(cx, 0f),
-            end = Offset(cx, size.height),
-            strokeWidth = 2.5.dp.toPx(),
-            cap = StrokeCap.Round,
-        )
-        drawCircle(markerColor, 5.dp.toPx(), Offset(cx, size.height * 0.3f))
+    // Profiling sweep travels left → right; -1f when idle so it is not drawn.
+    val sweepX = if (profiling) {
+        val transition = rememberInfiniteTransition(label = "railSweep")
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(1500, easing = LinearEasing), RepeatMode.Restart),
+            label = "railSweepX",
+        ).value
+    } else -1f
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(26.dp),
+        ) {
+            val cy = size.height / 2f
+
+            drawLine(
+                color = AppColors.surfaceVariant,
+                start = Offset(0f, cy),
+                end = Offset(size.width, cy),
+                strokeWidth = 3.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+
+            // Octave ticks; A4 (concert pitch) emphasised in gold.
+            anchors.forEach { (hz, _) ->
+                val x = frac(hz) * size.width
+                val isConcert = hz == 440f
+                drawLine(
+                    color = if (isConcert) AppColors.gold.copy(alpha = 0.55f)
+                            else AppColors.textDim.copy(alpha = 0.5f),
+                    start = Offset(x, cy - 5.dp.toPx()),
+                    end = Offset(x, cy + 5.dp.toPx()),
+                    strokeWidth = if (isConcert) 2.dp.toPx() else 1.5.dp.toPx(),
+                    cap = StrokeCap.Round,
+                )
+            }
+
+            // Profiling sweep bloom.
+            if (sweepX >= 0f) {
+                val sx = sweepX * size.width
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(GameColors.rangeBlue.copy(alpha = 0.30f), Color.Transparent),
+                        center = Offset(sx, cy),
+                        radius = 16.dp.toPx(),
+                    ),
+                    radius = 16.dp.toPx(),
+                    center = Offset(sx, cy),
+                )
+            }
+
+            // Detected / locked pitch marker — halo + solid thumb.
+            if (candidateHz != null) {
+                val mx = frac(candidateHz) * size.width
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(markerColor.copy(alpha = haloAlpha.value), Color.Transparent),
+                        center = Offset(mx, cy),
+                        radius = 13.dp.toPx(),
+                    ),
+                    radius = 13.dp.toPx(),
+                    center = Offset(mx, cy),
+                )
+                drawCircle(markerColor, 6.dp.toPx(), Offset(mx, cy))
+            }
+        }
+
+        // Octave labels pinned under their true tick positions.
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val railWidth = maxWidth
+            anchors.forEach { (hz, label) ->
+                Text(
+                    label,
+                    color = if (hz == 440f) AppColors.gold.copy(alpha = 0.6f) else AppColors.textDim,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.offset(x = railWidth * frac(hz) - 6.dp),
+                )
+            }
+        }
     }
 }
 
@@ -1023,6 +1129,116 @@ private fun AmbientDetailRow(label: String, indicator: @Composable () -> Unit) {
         Text(label, color = AppColors.textSubtle, fontSize = 10.sp)
         Spacer(Modifier.weight(1f))
         indicator()
+    }
+}
+
+// Shared geometry for the environment detail rows so every meter and value column
+// lines up to the same edges, keeping the panel static regardless of the readings.
+private val DETAIL_METER_WIDTH = 72.dp
+private val DETAIL_METER_HEIGHT = 5.dp
+private val DETAIL_VALUE_WIDTH = 64.dp
+
+/** Continuous fill meter (steadiness, hum). */
+@Composable
+private fun DetailBarMeter(frac: Float, color: Color) {
+    Box(
+        modifier = Modifier
+            .width(DETAIL_METER_WIDTH)
+            .height(DETAIL_METER_HEIGHT)
+            .clip(RoundedCornerShape(2.5.dp))
+            .background(AppColors.surfaceVariant),
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth(frac.coerceIn(0f, 1f))
+                .fillMaxHeight()
+                .background(color),
+        )
+    }
+}
+
+/** Discrete variant of the same footprint — [filled] of [segments] lit (noise floor). */
+@Composable
+private fun DetailSegmentMeter(filled: Int, segments: Int, color: Color) {
+    Row(
+        modifier = Modifier
+            .width(DETAIL_METER_WIDTH)
+            .height(DETAIL_METER_HEIGHT),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        repeat(segments) { i ->
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(2.5.dp))
+                    .background(if (i < filled) color else AppColors.surfaceVariant),
+            )
+        }
+    }
+}
+
+/** Value text in the shared fixed-width column, left-aligned so all rows line up.
+ *  Pinned to one line so an unexpectedly long value can never wrap and shift the row. */
+@Composable
+private fun DetailValue(text: String, color: Color) {
+    Box(modifier = Modifier.width(DETAIL_VALUE_WIDTH)) {
+        Text(text, color = color, fontSize = 10.sp, maxLines = 1)
+    }
+}
+
+// ── Ambient suppression level toggle ───────────────────────────────────────────────
+
+/** One-line description of what each suppression level does, kept honest: even
+ *  STANDARD is not "off" (the proven layers are always on). */
+private fun suppressionCaption(level: AmbientTuning.Level): String = when (level) {
+    AmbientTuning.Level.STANDARD -> "Proven noise handling"
+    AmbientTuning.Level.ENHANCED -> "Stronger lock in noisy rooms"
+    AmbientTuning.Level.MAX      -> "Maximum noise fighting"
+}
+
+/**
+ * Compact tap-to-cycle control for [AmbientTuning.Level], docked on the
+ * suppression heading row. Three ascending bars light up gold to the current
+ * level (1 = Standard, 2 = Enhanced, 3 = Max); each tap advances one step and
+ * wraps Max → Standard. The rounded, bordered surface reads as a control; the
+ * rising bar heights read as an increasing-strength scale.
+ */
+@Composable
+private fun SuppressionLevelToggle(
+    level: AmbientTuning.Level,
+    onCycle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onCycle,
+        color = AppColors.surfaceVariant,
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, Color(0x33FFFFFF)),
+        modifier = modifier.semantics { contentDescription = "Ambient suppression, ${level.label}" },
+    ) {
+        val litCount = level.ordinal + 1
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
+        ) {
+            listOf(8.dp, 12.dp, 16.dp).forEachIndexed { i, barHeight ->
+                val barColor by animateColorAsState(
+                    targetValue = if (i < litCount) AppColors.gold
+                                  else AppColors.textDim.copy(alpha = 0.35f),
+                    animationSpec = tween(220),
+                    label = "suppressionBar$i",
+                )
+                Box(
+                    Modifier
+                        .width(4.dp)
+                        .height(barHeight)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(barColor),
+                )
+            }
+        }
     }
 }
 
@@ -1566,24 +1782,17 @@ private fun TunerGaugePreview() {
 
 @Preview(showBackground = true, backgroundColor = 0xFF0D0B1E, widthDp = 360)
 @Composable
-private fun AmbientHistogramPreview() {
-    val bins = FloatArray(AmbientReport.BIN_COUNT) { i ->
-        when {
-            i < 4 -> 0f
-            i in 6..8 -> 0.8f
-            i == 12 -> 0.4f
-            else -> 0f
-        }
-    }
-    AmbientHistogram(
+private fun AmbientPanelPreview() {
+    AmbientPanel(
         report = AmbientReport(
             state = ListeningState.ACQUIRING,
-            headline = "", guidance = "",
-            ambientLevel = AmbientLevel.QUIET,
+            headline = "Found a tone near A4",
+            guidance = "Holding steady, confirming the note...",
+            ambientLevel = AmbientLevel.MODERATE,
             candidateHz = 440f,
             stabilityCents = 5f,
             locked = false,
-            ambientBins = bins,
+            humHz = 50f,
         )
     )
 }

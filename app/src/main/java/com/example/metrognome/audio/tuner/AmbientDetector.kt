@@ -4,7 +4,6 @@ import com.example.metrognome.audio.NoteNames
 import com.example.metrognome.audio.dsp.PitchDetector
 import kotlin.math.abs
 import kotlin.math.ceil
-import kotlin.math.ln
 import kotlin.math.log2
 
 /** What the tuner currently thinks the microphone is hearing. */
@@ -41,9 +40,8 @@ enum class AmbientLevel { QUIET, MODERATE, NOISY }
  * @property candidateHz    the pitch currently under consideration, if any
  * @property stabilityCents spread of recent pitches in cents; NaN if not applicable
  * @property locked         true only when [state] is [ListeningState.LOCKED]
- * @property ambientBins    [BIN_COUNT] normalized (0..1) frequency-activity values,
- *                          log-spaced from [BIN_FREQ_LO] to [BIN_FREQ_HI] Hz.
- *                          Populated during profiling; frozen after it completes.
+ * @property humHz          frequency of the steady room tone being filtered out, or
+ *                          0f when none was learned during profiling
  */
 data class AmbientReport(
     val state: ListeningState,
@@ -53,15 +51,13 @@ data class AmbientReport(
     val candidateHz: Float?,
     val stabilityCents: Float,
     val locked: Boolean,
-    val ambientBins: FloatArray = FloatArray(BIN_COUNT),
+    val humHz: Float = 0f,
 ) {
     companion object {
-        /** Number of log-frequency bins in [ambientBins]. */
-        const val BIN_COUNT = 24
-        /** Low end of the histogram frequency axis (Hz). */
-        const val BIN_FREQ_LO = 80f
-        /** High end of the histogram frequency axis (Hz). */
-        const val BIN_FREQ_HI = 3500f
+        /** Low end of the tuner's frequency-rail display axis (Hz). */
+        const val DISPLAY_FREQ_LO = 80f
+        /** High end of the tuner's frequency-rail display axis (Hz). */
+        const val DISPLAY_FREQ_HI = 3500f
 
         /** Neutral report for when the tuner is not listening. */
         val Idle = AmbientReport(
@@ -72,29 +68,7 @@ data class AmbientReport(
             candidateHz = null,
             stabilityCents = Float.NaN,
             locked = false,
-            ambientBins = FloatArray(BIN_COUNT),
         )
-    }
-
-    // FloatArray breaks data-class structural equality — override manually.
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is AmbientReport) return false
-        return state == other.state && headline == other.headline &&
-                guidance == other.guidance && ambientLevel == other.ambientLevel &&
-                candidateHz == other.candidateHz && stabilityCents == other.stabilityCents &&
-                locked == other.locked && ambientBins.contentEquals(other.ambientBins)
-    }
-
-    override fun hashCode(): Int {
-        var r = state.hashCode()
-        r = 31 * r + headline.hashCode()
-        r = 31 * r + ambientLevel.hashCode()
-        r = 31 * r + (candidateHz?.hashCode() ?: 0)
-        r = 31 * r + stabilityCents.hashCode()
-        r = 31 * r + locked.hashCode()
-        r = 31 * r + ambientBins.contentHashCode()
-        return r
     }
 }
 
@@ -131,6 +105,14 @@ data class AmbientReport(
  */
 class AmbientDetector(hopMillis: Double) {
 
+    /**
+     * Upper limit on how far the live noise estimate may stretch the hold ride-out windows
+     * (Tier 5). 1.0 disables the stretch entirely. Settable so the [AmbientTuning] strength
+     * level can drive it live, while keeping this class free of any global reads (so the unit
+     * tests stay deterministic). Defaults to the full stretch.
+     */
+    var maxHoldScale: Float = DEFAULT_MAX_HOLD_SCALE
+
     companion object {
         /** Room-profiling duration at start-up. */
         private const val PROFILE_MS = 900.0
@@ -166,8 +148,26 @@ class AmbientDetector(hopMillis: Double) {
         /** Recent tonal frames needed before stability is even assessed. */
         private const val MIN_RECENT = 3
 
-        /** A frame's pitch counts as a real tone only above this detector clarity. */
-        private const val CLARITY_MIN = 0.85f
+        /**
+         * To *acquire* a new lock, a frame's pitch must clear this clarity — strict, so a
+         * voice or noise can never trigger a false lock. Tight to acquire.
+         */
+        const val ACQUIRE_CLARITY = 0.85f
+
+        /**
+         * To *hold* an existing lock, a frame need only clear this lower clarity (provided
+         * its pitch still sits on the locked note). The [PitchDetector] reports correct
+         * frequencies well below the acquire bar when noise erodes clarity; discarding
+         * those frames is what used to starve a perfectly good lock in a noisy room. Loose
+         * to hold. The same value is the bar for the targeted presence probe.
+         */
+        const val HOLD_CLARITY = 0.65f
+
+        /** Default upper limit on how far a noisy room may stretch the hold ride-out windows. */
+        private const val DEFAULT_MAX_HOLD_SCALE = 2.0f
+
+        /** Per-frame decay of the live broadband-noise estimate when no fresh noise arrives. */
+        private const val NOISE_DECAY = 0.04f
 
         /** A frame is "active" only when its level exceeds the background by this factor. */
         private const val LEVEL_MARGIN = 2.0f
@@ -205,10 +205,8 @@ class AmbientDetector(hopMillis: Double) {
     private val profilePitches = ArrayList<Float>()
     private var ambientFloor = MIN_FLOOR
     private var humHz = 0f   // 0 = no steady room tone learned
+    private var liveNoise = 0f   // live peak-hold estimate of loud, tone-free (noise) frames
 
-    // ── Ambient frequency histogram ─────────────────────────────────────────────
-    private val binAccum = FloatArray(AmbientReport.BIN_COUNT)  // raw counts during profiling
-    private val binNorm  = FloatArray(AmbientReport.BIN_COUNT)  // normalized 0..1 (frozen post-profiling)
 
     // ── Rolling detection state ─────────────────────────────────────────────────
     private val pitchRing = ArrayDeque<Float?>()
@@ -227,22 +225,27 @@ class AmbientDetector(hopMillis: Double) {
     /**
      * Feed one frame of analysis. Call once per detector window.
      *
-     * @param pitch    the [PitchDetector] result for this window, or null
-     * @param levelRms RMS level of the same window (normalised, ≈0..1)
+     * @param pitch       the [PitchDetector] result for this window, or null
+     * @param levelRms    RMS level of the same window (normalised, ≈0..1)
+     * @param nearClarity optional targeted presence of the *currently locked* note at its
+     *        own frequency (see [PitchDetector.presenceAt]). Lets a lock survive a louder
+     *        interferer that hijacks the global pitch, or clarity erosion in noise, by
+     *        confirming the note is still physically present. 0 when not supplied / not
+     *        locked; ignored entirely while acquiring, so it can never cause a false lock.
      * @return what the analyzer now believes about the environment
      */
-    fun observe(pitch: PitchDetector.Pitch?, levelRms: Float): AmbientReport {
-        val rawTonal = pitch != null && pitch.clarity >= CLARITY_MIN
+    fun observe(
+        pitch: PitchDetector.Pitch?,
+        levelRms: Float,
+        nearClarity: Float = 0f,
+    ): AmbientReport {
+        val rawTonal = pitch != null && pitch.clarity >= ACQUIRE_CLARITY
         val rawHz = pitch?.frequency ?: 0f
 
         // ── Profiling: learn the room, decide nothing yet ───────────────────────
         if (profiling) {
             profileLevels.add(levelRms)
-            if (rawTonal) {
-                profilePitches.add(rawHz)
-                val bin = binIndex(rawHz)
-                binAccum[bin]++
-            }
+            if (rawTonal) profilePitches.add(rawHz)
             if (profileLevels.size >= profileFrames) finishProfiling()
             return report(ListeningState.PROFILING, null, Float.NaN)
         }
@@ -254,12 +257,22 @@ class AmbientDetector(hopMillis: Double) {
         val tonal = rawTonal && !isHum
         val hz = if (tonal) rawHz else null
 
+        // A pitch that clears the lower *hold* bar (and is not the hum). Used only to keep
+        // an existing lock alive — never to acquire one.
+        val holdTonal = pitch != null && pitch.clarity >= HOLD_CLARITY && !isHum
+
         val loud = levelRms > ambientFloor * LEVEL_MARGIN
         // Track the room only on genuinely quiet, tone-free frames.
         if (!loud && !rawTonal) {
             ambientFloor = (ambientFloor + FLOOR_ADAPT * (levelRms - ambientFloor))
                 .coerceAtLeast(MIN_FLOOR)
         }
+
+        // Live broadband-noise estimate: peak-hold the level of loud, tone-free frames and
+        // decay slowly. Unlike [ambientFloor] (frozen after profiling) this reacts to noise
+        // that starts mid-session, and stretches the hold ride-out while noise is present.
+        liveNoise = if (loud && !rawTonal) maxOf(liveNoise, levelRms)
+                    else liveNoise * (1f - NOISE_DECAY)
 
         val active = loud && tonal
         pushPitch(if (active) hz else null)
@@ -274,24 +287,33 @@ class AmbientDetector(hopMillis: Double) {
 
         // ── Engaged: hold the lock with loose, hysteretic criteria ──────────────
         if (engaged) {
-            if (active && abs(cents(hz!!, lockedHz)) <= HOLD_STEP_CENTS) {
-                // Good frame — still on the note.
-                lockedHz = hz
+            // The note is confirmed still present this frame if EITHER the global pitch
+            // sits on the locked note (even at the lenient hold clarity) OR the targeted
+            // presence probe still finds it at its own frequency (survives a hijack/noise).
+            val onNoteByPitch = loud && holdTonal &&
+                    abs(cents(rawHz, lockedHz)) <= HOLD_STEP_CENTS
+            val onNoteByPresence = nearClarity >= HOLD_CLARITY
+            if (onNoteByPitch || onNoteByPresence) {
+                if (onNoteByPitch) lockedHz = rawHz   // track a slow glide via the real pitch
                 gapRun = 0
                 disturbRun = 0
-                return report(ListeningState.LOCKED, hz, spread)
+                return report(ListeningState.LOCKED, lockedHz, spread)
             }
-            if (!active) {
-                // Silence / quiet — short ride-out (instrument may have been briefly muted).
-                disturbRun = 0
-                gapRun++
-                if (gapRun <= holdGapFrames) return report(ListeningState.LOCKED, lockedHz, spread)
-            } else {
-                // Active but wrong pitch — speech or noise over the note.
-                // Ride out longer: the instrument is likely still physically sounding.
+
+            // Not confirmed this frame. Ride it out — longer when the room is noisy, and
+            // longer for a competing tone (speech over the note) than for plain silence.
+            val scale = holdScale()
+            val disturbance = loud && holdTonal   // a wrong-pitch tone sitting over the note
+            if (disturbance) {
                 gapRun = 0
                 disturbRun++
-                if (disturbRun <= holdDisturbFrames) return report(ListeningState.LOCKED, lockedHz, spread)
+                if (disturbRun <= (holdDisturbFrames * scale).toInt())
+                    return report(ListeningState.LOCKED, lockedHz, spread)
+            } else {
+                disturbRun = 0
+                gapRun++
+                if (gapRun <= (holdGapFrames * scale).toInt())
+                    return report(ListeningState.LOCKED, lockedHz, spread)
             }
             // Lock has expired — store where it was for fast re-acquisition.
             recentlyLockedHz = lockedHz
@@ -326,8 +348,11 @@ class AmbientDetector(hopMillis: Double) {
             return report(ListeningState.LOCKED, hz, spread)
         }
 
+        // Acquire on a *robust* spread (a single stray frame in noise no longer blocks a
+        // lock), but still report the full spread for the UI stability read.
+        val acquireSpread = robustSpread(recent)
         val steadyEnough = recent.size >= MIN_RECENT &&
-                !spread.isNaN() && spread <= ACQUIRE_CENTS
+                !acquireSpread.isNaN() && acquireSpread <= ACQUIRE_CENTS
         if (steadyEnough) {
             steadyRun++
             if (steadyRun >= acquireFrames) {
@@ -358,9 +383,6 @@ class AmbientDetector(hopMillis: Double) {
                 humHz = profilePitches[profilePitches.size / 2]
             }
         }
-        // Freeze the normalized histogram from the profiling observations.
-        val peak = binAccum.max().takeIf { it > 0f } ?: 1f
-        for (i in binNorm.indices) binNorm[i] = binAccum[i] / peak
     }
 
     private fun pushPitch(hz: Float?) {
@@ -374,6 +396,18 @@ class AmbientDetector(hopMillis: Double) {
         else -> AmbientLevel.QUIET
     }
 
+    /**
+     * Factor (1..[MAX_HOLD_SCALE]) by which to stretch the hold ride-out windows, driven by
+     * the live noise estimate relative to the loudness gate. 1 in a quiet room; grows as
+     * recent broadband noise rises, so a confirmed lock is given more rope exactly when the
+     * room is working against it. Acquisition is never scaled, so false locks stay hard.
+     */
+    private fun holdScale(): Float {
+        if (maxHoldScale <= 1f) return 1f
+        val ref = (ambientFloor * LEVEL_MARGIN).coerceAtLeast(MIN_FLOOR)
+        return (liveNoise / ref).coerceIn(1f, maxHoldScale)
+    }
+
     private fun report(state: ListeningState, candidateHz: Float?, spread: Float): AmbientReport {
         val level = ambientBand()
         val (headline, guidance) = messageFor(state, level, candidateHz)
@@ -385,28 +419,8 @@ class AmbientDetector(hopMillis: Double) {
             candidateHz = candidateHz,
             stabilityCents = spread,
             locked = state == ListeningState.LOCKED,
-            ambientBins = currentBinsSnapshot(),
+            humHz = humHz,
         )
-    }
-
-    /** Live-normalized bin snapshot for the histogram: during profiling returns partial
-     *  data so the bars visually grow as the room is learned. After profiling, returns
-     *  the frozen normalized profile. */
-    private fun currentBinsSnapshot(): FloatArray {
-        return if (profiling) {
-            val peak = binAccum.max().takeIf { it > 0f } ?: 1f
-            FloatArray(AmbientReport.BIN_COUNT) { binAccum[it] / peak }
-        } else {
-            binNorm.copyOf()
-        }
-    }
-
-    /** Log-frequency bin index for [hz], clamped to valid range. */
-    private fun binIndex(hz: Float): Int {
-        val lo = ln(AmbientReport.BIN_FREQ_LO.toDouble())
-        val hi = ln(AmbientReport.BIN_FREQ_HI.toDouble())
-        val t = (ln(hz.toDouble()) - lo) / (hi - lo)
-        return (t * AmbientReport.BIN_COUNT).toInt().coerceIn(0, AmbientReport.BIN_COUNT - 1)
     }
 
     /** The live-assistant copy: what is heard, what is being done, what to do. */
@@ -459,4 +473,16 @@ class AmbientDetector(hopMillis: Double) {
 
     private fun centsSpread(values: List<Float>): Float =
         (1200.0 * log2(values.max().toDouble() / values.min().toDouble())).toFloat()
+
+    /**
+     * Spread in cents after trimming the single lowest and highest value, so one stray
+     * frame (an octave blip, a transient in noise) cannot by itself block acquisition.
+     * Falls back to the plain [centsSpread] for short rings where trimming is unsafe.
+     */
+    private fun robustSpread(values: List<Float>): Float {
+        if (values.size < 5) return if (values.size >= 2) centsSpread(values) else Float.NaN
+        val sorted = values.sorted()
+        val trimmed = sorted.subList(1, sorted.size - 1)
+        return (1200.0 * log2(trimmed.last().toDouble() / trimmed.first().toDouble())).toFloat()
+    }
 }

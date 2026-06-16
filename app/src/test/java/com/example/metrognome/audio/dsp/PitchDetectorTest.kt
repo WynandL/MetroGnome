@@ -116,4 +116,57 @@ class PitchDetectorTest {
     fun rejectsWrongWindowLength() {
         detector().detect(FloatArray(windowSize - 1))
     }
+
+    // ── Presence probe (presenceAt) ───────────────────────────────────────────────
+
+    @Test
+    fun presenceIsHighOnTheToneAndLowOffIt() {
+        val d = detector()
+        val tone = signal(220.0 to 0.6)
+        assertTrue("presence on the tone should be high", d.presenceAt(tone, 220f) > 0.9f)
+        // A harmonically-unrelated nearby pitch shares no periodicity → weak presence.
+        assertTrue("presence off the tone should be low", d.presenceAt(tone, 330f) < 0.5f)
+    }
+
+    @Test
+    fun presenceRejectsOutOfRangeTarget() {
+        val d = detector()
+        val tone = signal(220.0 to 0.6)
+        assertTrue(d.presenceAt(tone, 5f) == 0f)        // below MIN_FREQUENCY
+        assertTrue(d.presenceAt(tone, 9000f) == 0f)     // above MAX_FREQUENCY
+    }
+
+    @Test
+    fun presenceProbeNeverInfluencesDetect() {
+        // detect() must give the identical result whether or not the noise/denoise path ran.
+        val d = detector()
+        val tone = signal(440.0 to 0.6)
+        val before = d.detect(tone)!!.frequency
+        repeat(4) { d.learnNoise(signal(137.0 to 0.5)) }
+        d.finalizeNoise()
+        d.presenceAt(tone, 440f)
+        d.denoisePresence = true
+        val after = d.detect(tone)!!.frequency
+        assertTrue("detect must be unaffected by the presence/denoise path", before == after)
+    }
+
+    @Test
+    fun denoiseLiftsAToneBuriedUnderASteadyInterferer() {
+        // A loud, steady, inharmonic interferer masks a weak 220 Hz note. Learning the
+        // interferer and subtracting it should make the buried note's presence stand out.
+        val interferer = signal(137.0 to 0.8, 411.7 to 0.6)
+        val buried = signal(137.0 to 0.8, 411.7 to 0.6, 220.0 to 0.15)
+
+        val d = detector()
+        repeat(6) { d.learnNoise(interferer) }
+        d.finalizeNoise()
+
+        d.denoisePresence = false
+        val off = d.presenceAt(buried, 220f)
+        d.denoisePresence = true
+        val on = d.presenceAt(buried, 220f)
+
+        assertTrue("denoise should raise the buried tone's presence (off=$off on=$on)", on > off + 0.05f)
+        assertTrue("denoised presence should clearly confirm the note (on=$on)", on > 0.5f)
+    }
 }
