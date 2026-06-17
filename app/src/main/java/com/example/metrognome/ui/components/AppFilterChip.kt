@@ -17,7 +17,7 @@ import com.example.metrognome.ui.theme.AppColors
  * The [String] overload handles the common case. The [label] composable overload supports
  * chips with composite content (icon + text, badges, etc.).
  *
- * [endPadding] is the trailing gap used to space chips in a left-packed [FlowRow]; pass
+ * [endPadding] is the trailing gap used to space chips in a left-packed FlowRow; pass
  * `0.dp` when positioning chips yourself (e.g. flush-aligned in a Box) so the padding does
  * not offset the alignment.
  *

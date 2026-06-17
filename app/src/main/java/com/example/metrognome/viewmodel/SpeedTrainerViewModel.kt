@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.os.SystemClock
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 // ── Public session state ──────────────────────────────────────────────────────
 
@@ -401,7 +402,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         val groove = if (simulate) {
             val f = (40..90).random() / 100f
             realGroove.copy(
-                grooveScore = Math.round(f * 100),
+                grooveScore = (f * 100).roundToInt(),
                 fraction = f,
                 hitCount = 12,
                 qualified = true,

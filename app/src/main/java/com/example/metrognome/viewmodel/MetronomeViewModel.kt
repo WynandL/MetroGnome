@@ -32,6 +32,7 @@ import com.example.metrognome.dev.DevEasterEgg
 import com.example.metrognome.whatsnew.AppWhatsNew
 import com.example.metrognome.whatsnew.WhatsNewTracker
 import kotlinx.coroutines.Job
+import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -426,7 +427,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         val groove = if (simulate) {
             val f = (40..90).random() / 100f
             realGroove.copy(
-                grooveScore = Math.round(f * 100),
+                grooveScore = (f * 100).roundToInt(),
                 fraction = f,
                 hitCount = 12,
                 qualified = true,

@@ -18,4 +18,7 @@ object CloudReportConfig {
      * real-world lock behaviour is worth gathering.
      */
     const val TUNER_LOCK_ENABLED = false
+
+    /** Anonymous in-app poll responses (see [PollReporter]). */
+    const val POLLS_ENABLED = true
 }

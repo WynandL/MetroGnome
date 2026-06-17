@@ -51,19 +51,12 @@ object TunerLockLog {
     private val _sessions = MutableStateFlow<List<LockSession>>(emptyList())
     val sessions: StateFlow<List<LockSession>> = _sessions.asStateFlow()
 
-    /** True after a fresh capture session has cleared the log at least once. */
-    private val _capturing = MutableStateFlow(false)
-    val capturing: StateFlow<Boolean> = _capturing.asStateFlow()
-
     /** Begin a new capture session: clears any prior locks. */
     fun startSession() {
         _sessions.value = emptyList()
-        _capturing.value = true
     }
 
-    fun endSession() {
-        _capturing.value = false
-    }
+    fun endSession() {}
 
     fun record(session: LockSession) {
         val current = _sessions.value

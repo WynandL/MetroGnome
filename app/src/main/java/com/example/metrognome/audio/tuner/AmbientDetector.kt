@@ -397,7 +397,7 @@ class AmbientDetector(hopMillis: Double) {
     }
 
     /**
-     * Factor (1..[MAX_HOLD_SCALE]) by which to stretch the hold ride-out windows, driven by
+     * Factor (1..MAX_HOLD_SCALE) by which to stretch the hold ride-out windows, driven by
      * the live noise estimate relative to the loudness gate. 1 in a quiet room; grows as
      * recent broadband noise rises, so a confirmed lock is given more rope exactly when the
      * room is working against it. Acquisition is never scaled, so false locks stay hard.

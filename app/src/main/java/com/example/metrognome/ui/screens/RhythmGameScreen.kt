@@ -92,6 +92,10 @@ import com.example.metrognome.ui.components.MicTimingNudge
 import com.example.metrognome.ui.components.LOYALTY_MILESTONES
 import com.example.metrognome.ui.components.LoyaltyMilestonePath
 import com.example.metrognome.ui.components.StreakWeekCard
+import com.example.metrognome.cloud.PollReporter
+import com.example.metrognome.poll.PollConfig
+import com.example.metrognome.poll.PollManager
+import com.example.metrognome.ui.components.PollBanner
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.dialogs.EarnRulesDialog
 import com.example.metrognome.ui.dialogs.ItemCatalogDialog
@@ -145,11 +149,24 @@ fun RhythmGameScreen(
     val highScores by vm.highScores.collectAsStateWithLifecycle()
     val visibleNotes by vm.visibleNotes.collectAsStateWithLifecycle()
 
-    val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
+    val unlockQueue  by vm.unlockQueue.collectAsStateWithLifecycle()
+    val gnoteCount   by metronomeVm.gnoteCount.collectAsStateWithLifecycle()
+
+    val context = LocalContext.current
+    val pollManager = remember { PollManager(context) }
+    var activePoll   by remember { mutableStateOf<PollConfig?>(null) }
+    var pollDismissed by remember { mutableStateOf(false) }
 
     // Purge stale queue entries and pick up day-based unlocks on every tab entry
     LaunchedEffect(Unit) {
         vm.checkForNewUnlocks()
+    }
+
+    // Set activePoll once gnoteCount settles; never re-trigger after the user answers
+    LaunchedEffect(gnoteCount) {
+        if (!pollDismissed && activePoll == null && gnoteCount > 0) {
+            activePoll = pollManager.pendingPoll(gnoteCount)
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -205,6 +222,21 @@ fun RhythmGameScreen(
     }
 
     // Mic self-test now lives in Settings (dev tools) as the single canonical launcher.
+
+    val poll = activePoll
+    if (poll != null) {
+        PollBanner(
+            visible  = phase == GamePhase.IDLE && !pollDismissed,
+            poll     = poll,
+            onResponse = { response ->
+                pollManager.markAnswered(poll.id)
+                PollReporter.submit(poll.id, response, gnoteCount)
+                pollDismissed = true
+            },
+            onDismiss = { pollDismissed = true },
+            modifier  = Modifier.align(Alignment.BottomCenter),
+        )
+    }
 
     } // close outer Box
 }
@@ -533,7 +565,7 @@ private fun GameCard(
 
 @Composable
 private fun DailyTargetMeter(earned: Int, cap: Int) {
-    val reached  = cap > 0 && earned >= cap
+    val reached  = cap in 1..earned
     val fraction = if (cap > 0) (earned.toFloat() / cap).coerceIn(0f, 1f) else 0f
 
     Surface(

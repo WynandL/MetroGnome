@@ -56,7 +56,7 @@ private val beatColor     = Color(0xFF9575CD)
  * Read-only viewer for the [MicDiagnosticsBuffer] - shows what the mic heard during
  * the most recent Speed Trainer (or Rhythm Game) session: every beat, every onset
  * (accepted / suppressed / rejected with its deviation), the amplitude trace, and a
- * summary that maps the result onto the [PerformanceBonus] gates so it is obvious why
+ * summary that maps the result onto the PerformanceBonus gates so it is obvious why
  * a Timing Bonus did or did not pay out.
  *
  * Not real-time: it reflects whatever the singleton last captured. Run a session with

@@ -1,5 +1,6 @@
 package com.example.metrognome.debug.settings
 
+import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,13 +44,16 @@ import com.example.metrognome.debug.profile.ProfileRoundTripOverlay
 import com.example.metrognome.debug.tuner.TunerLockLogOverlay
 import com.example.metrognome.debug.tuner.TunerReadingLog
 import com.example.metrognome.debug.tuner.TunerReadingLogOverlay
+import com.example.metrognome.poll.ALL_POLLS
 import com.example.metrognome.points.PointsBannerQueue
+import com.example.metrognome.ui.components.PollBanner
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.UnlockCondition
 import com.example.metrognome.ui.components.metro_items.displayText
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.whatsnew.AppWhatsNew
+import androidx.core.content.edit
 
 /**
  * The entire DEV ONLY tooling surface for the Settings screen, extracted into one
@@ -88,6 +92,14 @@ fun DevToolsSection(
 
     var previewIndex by remember { mutableIntStateOf(0) }
     var testBannerCount by remember { mutableIntStateOf(1) }
+    var showPollPreview by remember { mutableStateOf(false) }
+    var pollResetKey by remember { mutableIntStateOf(0) }
+    val pollAnswered = remember(pollResetKey) {
+        ALL_POLLS.firstOrNull()?.let { poll ->
+            context.getSharedPreferences("poll_state", Context.MODE_PRIVATE)
+                .getBoolean("answered_${poll.id}", false)
+        } ?: false
+    }
     var showUnlockRules by remember { mutableStateOf(false) }
     var showAdPolicy by remember { mutableStateOf(false) }
     var showMicSelfTest by remember { mutableStateOf(false) }
@@ -303,6 +315,54 @@ fun DevToolsSection(
             border = BorderStroke(1.dp, AppColors.devBlueBorder)
         ) {
             Text("Trigger Tuner Feedback Card", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(Modifier.height(6.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            OutlinedButton(
+                onClick = { showPollPreview = true },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border = BorderStroke(1.dp, AppColors.devBlueBorder)
+            ) {
+                Text("Preview Poll Banner", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
+            OutlinedButton(
+                onClick = {
+                    context.getSharedPreferences("poll_state", Context.MODE_PRIVATE)
+                        .edit { clear() }
+                    pollResetKey++
+                },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (pollAnswered) AppColors.devRed else AppColors.devGrey
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    if (pollAnswered) AppColors.devRedBorder else AppColors.devDarkBorder
+                )
+            ) {
+                Text(
+                    if (pollAnswered) "Reset Poll (answered)" else "Reset Poll (open)",
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
+                )
+            }
+        }
+
+        if (showPollPreview) {
+            ALL_POLLS.firstOrNull()?.let { poll ->
+                Spacer(Modifier.height(6.dp))
+                PollBanner(
+                    visible    = true,
+                    poll       = poll,
+                    onResponse = { /* no Firestore write in dev preview */ },
+                    onDismiss  = { showPollPreview = false },
+                )
+            }
         }
 
         Spacer(Modifier.height(6.dp))

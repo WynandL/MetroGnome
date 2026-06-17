@@ -60,8 +60,8 @@ fun GnomeCanvas(
     isPlaying: Boolean,
     beatEvents: SharedFlow<BeatEvent>,
     flashOnBeat: Boolean,
-    accentBeats: Set<Int> = emptySet(),   // 0-based pulse indices to flash harder on
     modifier: Modifier = Modifier,
+    accentBeats: Set<Int> = emptySet(),
     activeItems: List<MetroItem> = emptyList(),
     onItemTapped: (MetroItem) -> Unit = {},
     // Optional: each emission spawns a celebratory firework in the sky (a very accurate clap in

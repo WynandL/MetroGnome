@@ -124,6 +124,7 @@ import com.example.metrognome.viewmodel.CalibrationMode
 import com.example.metrognome.viewmodel.CalibrationState
 import com.example.metrognome.viewmodel.TunerViewModel
 import java.util.Locale
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.cos
@@ -721,7 +722,7 @@ private fun AmbientPanel(
     var shown by remember { mutableStateOf(report) }
     LaunchedEffect(report.state) {
         if (report.state == ListeningState.LOCKED) shown = report
-        else { delay(900); shown = report }
+        else { delay(900.milliseconds); shown = report }
     }
 
     Surface(

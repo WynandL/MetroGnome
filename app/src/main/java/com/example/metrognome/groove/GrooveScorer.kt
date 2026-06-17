@@ -83,7 +83,7 @@ object GrooveScorer {
         val variance = signedDeviationsMs.map { (it - bias) * (it - bias) }.average().toFloat()
         val jitter = sqrt(variance)
 
-        val consistency = rampDown(jitter, TIGHT_JITTER_MS, LOOSE_JITTER_MS)
+        val consistency = rampDown(jitter)
         val biasFactor = biasFactor(abs(bias))
         val fraction = (consistency * biasFactor).coerceIn(0f, 1f)
 
@@ -111,9 +111,8 @@ object GrooveScorer {
 
     // --- internals ---
 
-    /** 1f at/under [full], 0f at/over [zero], linear between. */
-    private fun rampDown(x: Float, full: Float, zero: Float): Float =
-        ((zero - x) / (zero - full)).coerceIn(0f, 1f)
+    private fun rampDown(x: Float): Float =
+        ((LOOSE_JITTER_MS - x) / (LOOSE_JITTER_MS - TIGHT_JITTER_MS)).coerceIn(0f, 1f)
 
     /** 1f within the grace band, tapering to [BIAS_MIN_FACTOR] at [BIAS_FLOOR_MS]. */
     private fun biasFactor(absBias: Float): Float {

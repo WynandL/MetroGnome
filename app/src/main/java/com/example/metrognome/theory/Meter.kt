@@ -12,8 +12,8 @@ package com.example.metrognome.theory
  *    value carries the pulse) and never changes the class. So 3/8 and 3/4 are both simple,
  *    6/8 and 6/4 are both compound.
  *  - The metronome clicks [Meter.top] pulses per bar (one click per counted unit), which
- *    matches the engine's existing behaviour. [defaultAccents] says which of those pulses
- *    are accented, and that set is derived from [beatGrouping] so the same grouping that
+ *    matches the engine's existing behaviour. defaultAccents says which of those pulses
+ *    are accented, and that set is derived from beatGrouping so the same grouping that
  *    names the meter also drives the sound.
  *  - Irregular groupings are a sensible default, not gospel. The Settings UI lets the user
  *    override accents per beat, which is exactly why we do not try to pick the "one true"

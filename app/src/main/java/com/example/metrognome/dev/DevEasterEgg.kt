@@ -5,7 +5,7 @@ import android.widget.Toast
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -105,25 +105,25 @@ fun DevTapTarget(
     val tapTimes = remember { ArrayDeque<Long>() }
     // Epoch ms until which taps are accepted; 0 = disarmed. Held in state but only read inside the
     // gesture lambdas, so a recomposition on arm/disarm is harmless.
-    val armedUntil = remember { mutableStateOf(0L) }
+    val armedUntil = remember { mutableLongStateOf(0L) }
 
     Box(
         modifier = modifier.pointerInput(Unit) {
             detectTapGestures(
                 onLongPress = {
                     // Arm the egg: confirm with a buzz and open the tap window.
-                    armedUntil.value = System.currentTimeMillis() + armWindowMs
+                    armedUntil.longValue = System.currentTimeMillis() + armWindowMs
                     tapTimes.clear()
                     haptics.fire(HapticPattern.LONG_PRESS)
                 },
                 onTap = {
                     val now = System.currentTimeMillis()
-                    if (now <= armedUntil.value) {
+                    if (now <= armedUntil.longValue) {
                         tapTimes.removeAll { now - it > armWindowMs }
                         tapTimes.addLast(now)
                         if (tapTimes.size >= tapCount) {
                             tapTimes.clear()
-                            armedUntil.value = 0L
+                            armedUntil.longValue = 0L
                             val enabled = DevEasterEgg.toggle(context)
                             if (toastEnabled) {
                                 Toast.makeText(

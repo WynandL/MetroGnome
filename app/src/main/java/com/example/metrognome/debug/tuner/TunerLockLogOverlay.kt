@@ -146,7 +146,7 @@ private fun SummaryCard(sessions: List<TunerLockLog.LockSession>) {
             }
 
             Spacer(Modifier.height(10.dp))
-            KeyVal("avg hold", "${avgHoldMs} ms", AppColors.textPrimary)
+            KeyVal("avg hold", "$avgHoldMs ms", AppColors.textPrimary)
             KeyVal("total locked", "${(totalHoldMs / 1000f).let { "%.1f".format(it) }} s", AppColors.textPrimary)
             KeyVal("drop reasons", drops.entries.joinToString("  ") { "${it.key}:${it.value}" }, AppColors.textPrimary)
 
@@ -204,7 +204,7 @@ private fun LockRow(s: TunerLockLog.LockSession) {
             Text(
                 "saves ${s.presenceSaves}   hijacks ${s.hijackSurvivals}   " +
                     "min clarity ${"%.2f".format(s.minClarity)}   min presence ${"%.2f".format(s.minPresence)}   " +
-                    "${s.ambientLevel.lowercase()}",
+                    s.ambientLevel.lowercase(),
                 color = AppColors.textMuted,
                 fontSize = 10.sp,
                 fontFamily = FontFamily.Monospace,

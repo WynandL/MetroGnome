@@ -10,7 +10,7 @@ package com.example.metrognome.audio.tuner
  *  - Tier 5: how far live background noise may stretch the lock's hold/ride-out windows
  *    ([AmbientDetector.maxHoldScale]). 1.0 disables the stretch.
  *  - Tier 6: whether the presence probe subtracts the learned room-noise spectrum
- *    ([PitchDetector.denoisePresence]) — the most aggressive "lift the note out of the
+ *    (PitchDetector.denoisePresence) — the most aggressive "lift the note out of the
  *    noise floor" behaviour.
  *
  * None of these affect the displayed pitch or its accuracy — they only change how
