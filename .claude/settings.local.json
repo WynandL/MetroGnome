@@ -27,7 +27,14 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(git commit *)",
+      "PowerShell(./gradlew clean 2>&1 | Select-Object -Last 20)",
+      "PowerShell(./gradlew assembleDebug 2>&1 | Select-Object -Last 40)",
+      "Bash(./gradlew :app:compileDebugKotlin -q)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:unpkg.com)"
     ]
   }
 }

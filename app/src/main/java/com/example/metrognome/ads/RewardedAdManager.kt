@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 private const val REWARDED_AD_UNIT_TEST = "ca-app-pub-3940256099942544/5224354917"
-// TODO: replace with your AdMob rewarded ad unit ID after creating it in the AdMob console.
 private const val REWARDED_AD_UNIT_PROD = "ca-app-pub-8485854692249613/6776283607"
 
 private const val PREFS_NAME     = "rewarded_ad_manager"

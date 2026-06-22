@@ -18,9 +18,11 @@ class BillingManager(application: Application) {
         const val PRODUCT_REMOVE_ADS    = "remove_ads"
 
         // Sounds — add future PRODUCT_SOUND_* constants here, then add to SOUND_PRODUCTS
-        const val PRODUCT_SOUND_BELL   = "sound_bell"
-        const val PRODUCT_SOUND_BOWL   = "sound_bowl"
-        val SOUND_PRODUCTS: Set<String> = setOf(PRODUCT_SOUND_BELL, PRODUCT_SOUND_BOWL)
+        const val PRODUCT_SOUND_BELL    = "sound_bell"
+        const val PRODUCT_SOUND_BOWL    = "sound_bowl"
+        const val PRODUCT_SOUND_KALIMBA = "sound_kalimba"
+        const val PRODUCT_SOUND_COWBELL = "sound_cowbell"
+        val SOUND_PRODUCTS: Set<String> = setOf(PRODUCT_SOUND_BELL, PRODUCT_SOUND_BOWL, PRODUCT_SOUND_KALIMBA, PRODUCT_SOUND_COWBELL)
 
         // Items — add future PRODUCT_ITEM_* constants here, then add to ITEM_PRODUCTS
         const val PRODUCT_ITEM_GLISSIE = "item_glissie"

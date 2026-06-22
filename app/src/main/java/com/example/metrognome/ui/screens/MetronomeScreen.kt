@@ -116,6 +116,9 @@ fun MetronomeScreen(
     trainerVm: SpeedTrainerViewModel,
     onBeforePracticeResultDismiss: (onDone: () -> Unit) -> Unit = { it() },
     onBeforeTrainerResultDismiss: (onDone: () -> Unit) -> Unit = { it() },
+    /** Fired when the user manually taps the stop button (not on practice/trainer auto-stop).
+     *  Fire-and-forget: nothing waits for this to complete. */
+    onBeforeManualStop: () -> Unit = {},
 ) {
     val bpm by vm.bpm.collectAsStateWithLifecycle()
     val isPlaying by vm.isPlaying.collectAsStateWithLifecycle()
@@ -277,7 +280,10 @@ fun MetronomeScreen(
             bpm = bpm,
             isPlaying = isPlaying,
             onBpmChange = { vm.setBpm(it) },
-            onTogglePlay = { vm.togglePlay() },
+            onTogglePlay = {
+                if (isPlaying) onBeforeManualStop()
+                vm.togglePlay()
+            },
             onTapTempo = {
                 if (!tapHintShown) {
                     tapHintShown = true

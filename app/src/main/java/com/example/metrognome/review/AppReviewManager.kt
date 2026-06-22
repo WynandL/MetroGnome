@@ -5,68 +5,50 @@ import android.content.Context
 import androidx.core.content.edit
 import com.google.android.play.core.review.ReviewManagerFactory
 
-private const val PREFS_NAME = "app_review"
-private const val KEY_DISTINCT_DAYS    = "distinct_days"
-private const val KEY_REVIEW_REQUESTED = "review_requested" // legacy boolean — kept for migration
-private const val KEY_REQUEST_COUNT    = "request_count"
+private const val PREFS_NAME           = "app_review"
+private const val KEY_LAST_OFFERED_DAY = "last_offered_day" // local-midnight epoch day we last launched the flow
 
-private const val DAYS_THRESHOLD_FIRST  = 7   // first ask: one week of real use
-private const val DAYS_THRESHOLD_SECOND = 30  // second ask: one month of real use
-private const val MAX_REQUESTS = 2
+// Loyalty counter (shared): distinct calendar days the app has been opened, owned by
+// UsageDayTracker and also read by the ad tier system. Keys mirrored here (not imported)
+// to keep the review package self-contained.
+private const val USAGE_PREFS_NAME = "usage_days"
+private const val USAGE_KEY_COUNT  = "count"
+
+/** Loyalty days before the review prompt becomes eligible. */
+private const val MIN_LOYALTY_DAYS = 3
 
 /**
  * Manages the Google Play In-App Review prompt.
  *
- * Tracks distinct calendar days the app is foregrounded. Two review opportunities:
- *  1. After [DAYS_THRESHOLD_FIRST] distinct days — early engaged user.
- *  2. After [DAYS_THRESHOLD_SECOND] distinct days — established daily user.
+ * Eligibility is driven by the shared loyalty counter (distinct calendar days the app
+ * has been opened, the same counter that gates item unlocks, Gnotes, and the ad tier).
+ * From [MIN_LOYALTY_DAYS] loyalty days onward the prompt is offered at most once per
+ * calendar day.
  *
- * The Play Store's own quota manages whether the sheet actually appears after
- * launchReviewFlow is called — calling it twice is safe and expected.
+ * Why "once per day forever" rather than a fixed request limit: the Play API never
+ * reports whether the user actually reviewed (by design), so we cannot stop on that
+ * signal. Instead we offer daily and let Play's own quota (which throttles the sheet
+ * heavily and suppresses it for users who have already engaged) taper it off
+ * naturally. Most daily calls are silent no-ops that Play rate-limits; this does not
+ * spam the user.
  *
- * Migration: users who already have the legacy [KEY_REVIEW_REQUESTED]=true boolean
- * are treated as having had one request, and remain eligible for the second at day 30.
- *
- * Usage:
- *   1. Call [recordAppOpen] on every foreground entry.
- *   2. Call [maybeRequestReview] at natural earned moments — it is a no-op until eligible.
+ * Trigger placement is the caller's responsibility and MUST be an ad-free moment
+ * (navigation to the Tuner/Settings tabs), guarded against recent ads, so a review
+ * sheet can never stack with an interstitial. See [maybeRequestReview].
  */
-class AppReviewManager(context: Context) {
+class AppReviewManager(private val context: Context) {
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val reviewManager = ReviewManagerFactory.create(context)
 
     /**
-     * Marks today as a day the app was opened.
-     * Safe to call multiple times per day — only the first call per day has any effect.
-     */
-    fun recordAppOpen() {
-        if (requestCount() >= MAX_REQUESTS) return
-        val today = todayKey()
-        val days = prefs.getStringSet(KEY_DISTINCT_DAYS, emptySet())!!.toMutableSet()
-        if (days.add(today)) {
-            prefs.edit { putStringSet(KEY_DISTINCT_DAYS, days) }
-        }
-    }
-
-    /** How many distinct calendar days the app has been opened so far. */
-    fun distinctDaysOpened(): Int =
-        prefs.getStringSet(KEY_DISTINCT_DAYS, emptySet())!!.size
-
-    /** How many times the review prompt has been requested. Max [MAX_REQUESTS]. */
-    fun requestCount(): Int =
-        if (prefs.getBoolean(KEY_REVIEW_REQUESTED, false))
-            prefs.getInt(KEY_REQUEST_COUNT, 1)
-        else
-            prefs.getInt(KEY_REQUEST_COUNT, 0)
-
-    /**
-     * Shows the native Play Store in-app rating sheet if the user qualifies.
-     * No-op when ineligible or when the Play Store quota suppresses the sheet.
+     * Offers the native Play in-app rating sheet if eligible today.
+     * No-op when below [MIN_LOYALTY_DAYS], when already offered today, or when the
+     * Play Store quota suppresses the sheet. Safe to call on every qualifying moment.
      */
     fun maybeRequestReview(activity: Activity) {
-        if (!isEligible()) return
-        markRequested()
+        if (!isEligibleToday()) return
+        prefs.edit { putInt(KEY_LAST_OFFERED_DAY, todayEpochDay()) }
         reviewManager.requestReviewFlow()
             .addOnSuccessListener { reviewInfo ->
                 reviewManager.launchReviewFlow(activity, reviewInfo)
@@ -76,38 +58,26 @@ class AppReviewManager(context: Context) {
             }
     }
 
-    private fun isEligible(): Boolean {
-        val count = requestCount()
-        if (count >= MAX_REQUESTS) return false
-        val days = distinctDaysOpened()
-        return when (count) {
-            0    -> days >= DAYS_THRESHOLD_FIRST
-            1    -> days >= DAYS_THRESHOLD_SECOND
-            else -> false
-        }
+    /** Loyalty day reached and not yet offered today. */
+    private fun isEligibleToday(): Boolean {
+        if (loyaltyDays() < MIN_LOYALTY_DAYS) return false
+        return prefs.getInt(KEY_LAST_OFFERED_DAY, -1) != todayEpochDay()
     }
 
-    private fun markRequested() {
-        prefs.edit {
-            putBoolean(KEY_REVIEW_REQUESTED, true)
-            putInt(KEY_REQUEST_COUNT, requestCount() + 1)
-        }
-    }
+    private fun loyaltyDays(): Int =
+        context.getSharedPreferences(USAGE_PREFS_NAME, Context.MODE_PRIVATE)
+            .getInt(USAGE_KEY_COUNT, 0)
 
-    // Local-midnight epoch day — matches the day boundary used by the Gnotes caps,
-    // loyalty, and ad caps. ("3 distinct days" is an accounting check, so it uses the
-    // conventional midnight boundary, not the streak's forgiving 2 AM rollover.)
-    private fun todayKey(): String {
+    // Local-midnight epoch day, matching the day boundary used by the loyalty counter,
+    // Gnotes caps, and ad frequency counter. A raw UTC day would reset mid-afternoon for
+    // users with large negative UTC offsets.
+    private fun todayEpochDay(): Int {
         val now = System.currentTimeMillis()
-        return ((now + java.util.TimeZone.getDefault().getOffset(now)) / 86_400_000L).toString()
+        return ((now + java.util.TimeZone.getDefault().getOffset(now)) / 86_400_000L).toInt()
     }
 
     /** Wipes all stored state. For debug use only. */
     fun debugReset() {
-        prefs.edit {
-            remove(KEY_DISTINCT_DAYS)
-            remove(KEY_REVIEW_REQUESTED)
-            remove(KEY_REQUEST_COUNT)
-        }
+        prefs.edit { clear() }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.metrognome.analytics
 
+import com.example.metrognome.ads.UserTier
 import com.google.firebase.Firebase
 import com.google.firebase.analytics.analytics
 import com.google.firebase.analytics.logEvent
@@ -231,6 +232,18 @@ object AnalyticsTracker {
         Firebase.analytics.logEvent("rewarded_ad_watched") {
             param("gnotes", gnotes.toLong())
         }
+    }
+
+    // ── User tier ────────────────────────────────────────────────────────────
+
+    /**
+     * Sets the "user_tier" Firebase user property (explorer / casual / engaged).
+     * User properties persist on the device and tag every subsequent analytics event,
+     * so you can filter or segment any report or the real-time view by tier.
+     * Call once per app launch — tier changes only happen after days of usage.
+     */
+    fun updateUserTier(tier: UserTier) {
+        Firebase.analytics.setUserProperty("user_tier", tier.name.lowercase())
     }
 
     // ── Loyalty ───────────────────────────────────────────────────────────────

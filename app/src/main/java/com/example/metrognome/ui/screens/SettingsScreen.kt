@@ -73,6 +73,8 @@ import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.billing.PurchasableItemDef
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.ui.components.OwnedBadge
+import com.example.metrognome.ui.components.instruments.InstrumentAffinityRow
+import com.example.metrognome.ui.components.instruments.InstrumentAffinityBadges
 import com.example.metrognome.ui.dialogs.ShowcaseFrame
 import com.example.metrognome.ui.dialogs.GrooveCheckRecalibrateDialog
 import com.example.metrognome.ui.theme.AppColors
@@ -197,8 +199,14 @@ fun SettingsScreen(
 
             SettingsSectionTitle("Sound")
 
-            // Sound type chips
-            SettingsRow(label = "Click Sound") {
+            // Sound type chips, with the instrument-affinity nudge inline in the heading row:
+            // the instruments the selected sound suits glow gold, the rest stay dim.
+            SettingsRow(
+                label = "Click Sound",
+                trailing = { InstrumentAffinityRow(soundType = soundType) },
+                trailingFillWidth = true,
+                trailingSpacing = 20.dp,
+            ) {
                 FlowRow(modifier = Modifier.fillMaxWidth()) {
                     listOf("Classic", "Hi-Hat", "Wood", "Warm").forEachIndexed { index, name ->
                         AppFilterChip(
@@ -537,6 +545,7 @@ private fun PremiumSoundDialog(
         onRestore          = onRestore,
         onDismiss          = onDismiss,
         previewContent     = { SoundShowcase(def.displayName) },
+        belowDescription   = { InstrumentAffinityBadges(soundType = def.soundTypeIndex) },
         secondaryButton    = {
             com.example.metrognome.ui.dialogs.PreviewActionButton(
                 label   = "▶  Preview (4 beats)",
@@ -736,6 +745,8 @@ private fun SettingsSliderRow(
 private fun SettingsRow(
     label: String,
     trailing: (@Composable () -> Unit)? = null,
+    trailingFillWidth: Boolean = false,
+    trailingSpacing: Dp = 10.dp,
     content: @Composable () -> Unit,
 ) {
     Column(modifier = Modifier.padding(bottom = 14.dp)) {
@@ -748,8 +759,12 @@ private fun SettingsRow(
                 modifier = Modifier.padding(bottom = 8.dp),
             ) {
                 Text(label, color = AppColors.textPrimary, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.width(10.dp))
-                trailing()
+                Spacer(Modifier.width(trailingSpacing))
+                if (trailingFillWidth) {
+                    Box(Modifier.weight(1f)) { trailing() }
+                } else {
+                    trailing()
+                }
             }
         }
         content()

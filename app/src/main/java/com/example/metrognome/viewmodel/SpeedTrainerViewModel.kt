@@ -356,10 +356,15 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         stepStats.add(StepStat(bpm = bpm, avgDeviationMs = avg, hitCount = currentStepDeviations.size))
     }
 
+    /** Duration (seconds) of the most recently completed Speed Trainer session. */
+    var lastSessionDurationSeconds: Int = 0
+        private set
+
     private fun completeSession() {
         SessionFlags.speedTrainerActive = false
         stopMic()
         val elapsedSeconds = (SystemClock.elapsedRealtime() - sessionStartMs) / 1000L
+        lastSessionDurationSeconds = elapsedSeconds.toInt().coerceAtLeast(0)
 
         // A completed Speed Trainer session counts as a practice day for the streak.
         practiceManager.recordSession()
@@ -508,7 +513,6 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         stopMic()
-        super.onCleared()
     }
 
     companion object {

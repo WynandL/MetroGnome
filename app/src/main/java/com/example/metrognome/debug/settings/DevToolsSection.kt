@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,7 +30,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ads.AdEngineConfig
+import com.example.metrognome.ads.AdPlacement
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -616,30 +621,7 @@ fun DevToolsSection(
     }
 
     if (showAdPolicy) {
-        AlertDialog(
-            onDismissRequest = { showAdPolicy = false },
-            containerColor   = AppColors.surfaceDeep,
-            titleContentColor = AppColors.gold,
-            textContentColor  = AppColors.textSecondary,
-            title = { Text("Ad Policy", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(modifier = Modifier
-                    .heightIn(max = 400.dp)
-                    .verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        text = com.example.metrognome.ads.buildAdPolicySummary(),
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp,
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showAdPolicy = false }) {
-                    Text("OK", color = AppColors.textAccent, fontWeight = FontWeight.Bold)
-                }
-            }
-        )
+        AdPolicyDialog(onDismiss = { showAdPolicy = false })
     }
 
     if (showUnlockRules) {
@@ -759,5 +741,238 @@ private fun StreakSimulator(
                 contentPadding = PaddingValues(horizontal = 10.dp),
             ) { Text("Reset", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
         }
+    }
+}
+
+// ── Ad Policy Dashboard ───────────────────────────────────────────────────────
+
+private val explorerColor = AppColors.textMutedBlue
+private val casualColor   = AppColors.textAccent
+private val engagedColor  = AppColors.gold
+
+@Composable
+private fun AdPolicyDialog(onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape    = RoundedCornerShape(16.dp),
+            color    = AppColors.surfaceDeep,
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    "Ad Policy",
+                    fontWeight = FontWeight.Bold,
+                    fontSize   = 17.sp,
+                    color      = AppColors.gold,
+                )
+                Spacer(Modifier.height(16.dp))
+
+                AdPolicySectionLabel("TIERS")
+                AdPolicyTierLegend()
+                Spacer(Modifier.height(14.dp))
+
+                AdPolicySectionLabel("GLOBAL COOLDOWN")
+                Text(
+                    "Minimum gap between any two ads, anywhere in the app.",
+                    color = AppColors.textMuted, fontSize = 10.sp, lineHeight = 14.sp,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                )
+                AdPolicyGlobalCooldown()
+                Spacer(Modifier.height(14.dp))
+
+                AdPolicySectionLabel("PLACEMENTS")
+                Text(
+                    "Per-placement cooldown runs in parallel with the global cooldown. Both must clear before an ad shows.",
+                    color = AppColors.textMuted, fontSize = 10.sp, lineHeight = 14.sp,
+                    modifier = Modifier.padding(bottom = 2.dp),
+                )
+                AdPlacement.entries.forEach { p ->
+                    Spacer(Modifier.height(6.dp))
+                    AdPolicyPlacementCard(p)
+                }
+                Spacer(Modifier.height(14.dp))
+
+                AdPolicySectionLabel("HOW COOLDOWNS GROW OVER TIME")
+                val freqPct      = (AdEngineConfig.FREQUENCY_STEP * 100).toInt()
+                val freqExample  = "%.1f".format(1.0 + 3 * AdEngineConfig.FREQUENCY_STEP)
+                val depthMaxX    = "%.1f".format(AdEngineConfig.DEPTH_MAX_MULTIPLIER)
+                Text(
+                    "Frequency: each ad shown today on a placement adds +$freqPct% to that placement's next cooldown. " +
+                    "Compounds: 3 ads today means the 4th waits ${freqExample}x as long as the 1st.",
+                    color      = AppColors.textSecondary,
+                    fontSize   = 11.sp,
+                    lineHeight = 16.sp,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Depth: the session length from the last ad on a placement is stored. If it exceeded the " +
+                    "reference time, the next cooldown for that placement stretches by up to ${depthMaxX}x. " +
+                    "Longer practice = more breathing room before the next ad.",
+                    color      = AppColors.textSecondary,
+                    fontSize   = 11.sp,
+                    lineHeight = 16.sp,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Global growth: the global cooldown also stretches logarithmically with total lifetime ad shows, " +
+                    "so very long-term users naturally see ads less often even before reaching Engaged tier.",
+                    color      = AppColors.textSecondary,
+                    fontSize   = 11.sp,
+                    lineHeight = 16.sp,
+                )
+                Spacer(Modifier.height(12.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Close", color = AppColors.textAccent, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdPolicySectionLabel(text: String) {
+    Text(
+        text          = text,
+        color         = AppColors.textSubtle,
+        fontSize      = 9.sp,
+        fontWeight    = FontWeight.Bold,
+        letterSpacing = 1.2.sp,
+        modifier      = Modifier.padding(bottom = 6.dp),
+    )
+}
+
+@Composable
+private fun AdPolicyTierLegend() {
+    listOf(
+        Triple("Explorer", explorerColor, "loyalty < ${AdEngineConfig.EXPLORER_MAX_LOYALTY_DAYS} OR triggers < ${AdEngineConfig.EXPLORER_MAX_TRIGGERS}"),
+        Triple("Casual",   casualColor,   "loyalty ${AdEngineConfig.EXPLORER_MAX_LOYALTY_DAYS}-${AdEngineConfig.ENGAGED_MIN_LOYALTY_DAYS - 1} AND triggers ${AdEngineConfig.EXPLORER_MAX_TRIGGERS}-${AdEngineConfig.ENGAGED_MIN_TRIGGERS - 1}"),
+        Triple("Engaged",  engagedColor,  "loyalty >= ${AdEngineConfig.ENGAGED_MIN_LOYALTY_DAYS} AND triggers >= ${AdEngineConfig.ENGAGED_MIN_TRIGGERS}"),
+    ).forEach { (name, color, condition) ->
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier          = Modifier.padding(vertical = 2.dp),
+        ) {
+            Text(
+                name,
+                color      = color,
+                fontWeight = FontWeight.Bold,
+                fontSize   = 11.sp,
+                modifier   = Modifier.width(64.dp),
+            )
+            Text(condition, color = AppColors.textMuted, fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+private fun AdPolicyGlobalCooldown() {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        AdPolicyCooldownChip("Explorer", "${AdEngineConfig.GLOBAL_COOLDOWN_EXPLORER_MS / 60_000L} min", explorerColor)
+        AdPolicyCooldownChip("Casual",   "${AdEngineConfig.GLOBAL_COOLDOWN_CASUAL_MS   / 60_000L} min", casualColor)
+        AdPolicyCooldownChip("Engaged",  "${AdEngineConfig.GLOBAL_COOLDOWN_ENGAGED_MS  / 60_000L} min", engagedColor)
+    }
+    Spacer(Modifier.height(4.dp))
+    val logPct = (AdEngineConfig.GLOBAL_LOG_FACTOR * 100).toInt()
+    val logCap = AdEngineConfig.GLOBAL_LOG_CAP.toInt()
+    Text(
+        "Also grows logarithmically with lifetime ad shows: ln(shows+1) x $logPct%, up to ${logCap}x the base.",
+        color      = AppColors.textMuted,
+        fontSize   = 10.sp,
+        lineHeight = 14.sp,
+    )
+}
+
+@Composable
+private fun AdPolicyPlacementCard(p: AdPlacement) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = RoundedCornerShape(8.dp),
+        color    = AppColors.surface,
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            // Name + trigger
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically,
+            ) {
+                Text(p.label, fontWeight = FontWeight.Bold, color = AppColors.textPrimary, fontSize = 13.sp)
+                AdPolicyGateBadge("${p.minTriggerCount} global triggers to unlock")
+            }
+            // Extra gates (session length, app age)
+            if (p.minSessionSeconds > 0 || p.minAppDays > 0) {
+                Row(
+                    modifier = Modifier.padding(top = 3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    if (p.minSessionSeconds > 0) AdPolicyGateBadge("session >= ${p.minSessionSeconds / 60} min")
+                    if (p.minAppDays > 0)        AdPolicyGateBadge("app age >= ${p.minAppDays} day(s)")
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            // Per-placement cooldown chips
+            Text("Placement cooldown (after an ad fires here):", color = AppColors.textMuted, fontSize = 9.sp)
+            Spacer(Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                AdPolicyCooldownChip("Exp.", "${p.exploreCooldownMs / 60_000L} min", explorerColor)
+                AdPolicyCooldownChip("Cas.",   "${p.casualCooldownMs  / 60_000L} min", casualColor)
+                AdPolicyCooldownChip("Eng.",  "${p.engagedCooldownMs / 60_000L} min", engagedColor)
+            }
+            Spacer(Modifier.height(6.dp))
+            // Range
+            Text(
+                "Cooldown floor / ceiling: ${p.minCooldownMs / 60_000L} min...${p.maxCooldownMs / 60_000L} min",
+                color      = AppColors.textMuted,
+                fontSize   = 10.sp,
+                lineHeight = 14.sp,
+            )
+            // Depth ref
+            val depthMaxX = "%.1f".format(AdEngineConfig.DEPTH_MAX_MULTIPLIER)
+            val depthText = if (p.referenceSessionSeconds > 0)
+                "Depth ref: ${p.referenceSessionSeconds / 60} min. Sessions longer than this stretch the next cooldown (up to ${depthMaxX}x)."
+            else
+                "Depth: disabled. Frequency multiplier only (games are too short for session length to be meaningful)."
+            Text(depthText, color = AppColors.textMuted, fontSize = 10.sp, lineHeight = 14.sp)
+        }
+    }
+}
+
+@Composable
+private fun AdPolicyCooldownChip(label: String, value: String, color: Color) {
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = color.copy(alpha = 0.13f),
+    ) {
+        Row(
+            modifier              = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Text(label, color = color.copy(alpha = 0.65f), fontSize = 9.sp)
+            Text(value, color = color, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+private fun AdPolicyGateBadge(text: String) {
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = AppColors.surfaceVariant,
+    ) {
+        Text(
+            text     = text,
+            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+            color    = AppColors.textMuted,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }

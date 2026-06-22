@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
 
@@ -39,6 +40,12 @@ class MetronomeEngine {
     // Premium (index 5)
     private val bowlClick  = generateBowlClick(frequency = 261.0,  durationMs = 220, volume = 0.80f)
     private val bowlAccent = generateBowlClick(frequency = 330.0,  durationMs = 260, volume = 0.94f)
+    // Premium (index 6): kalimba, normal C5 / accent G5 (a calm perfect fifth above)
+    private val kalimbaClick  = generateKalimbaClick(frequency = 523.25, durationMs = 220, volume = 0.80f)
+    private val kalimbaAccent = generateKalimbaClick(frequency = 783.99, durationMs = 250, volume = 0.94f)
+    // Premium (index 7): cowbell, voiced to cut through a loud kit (built for drummers)
+    private val cowbellClick  = generateCowbellClick(baseFrequency = 540.0, durationMs = 150, volume = 0.82f)
+    private val cowbellAccent = generateCowbellClick(baseFrequency = 660.0, durationMs = 170, volume = 0.96f)
 
     // Mutable settings — read from audio thread, written from main thread (volatile)
     @Volatile
@@ -51,7 +58,7 @@ class MetronomeEngine {
     @Volatile
     var accentBeats: Set<Int> = setOf(0)
     @Volatile
-    var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock, 3=warm, 4=bell (premium), 5=bowl (premium)
+    var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock, 3=warm, 4=bell, 5=bowl, 6=kalimba, 7=cowbell (4-7 premium)
     @Volatile
     var volume: Float = 1.0f
     @Volatile
@@ -216,6 +223,8 @@ class MetronomeEngine {
             3 -> if (isAccent) deepAccent else deepClick
             4 -> if (isAccent) bellAccent else bellClick
             5 -> if (isAccent) bowlAccent else bowlClick
+            6 -> if (isAccent) kalimbaAccent else kalimbaClick
+            7 -> if (isAccent) cowbellAccent else cowbellClick
             else -> if (isAccent) accentClick else normalClick
         }
         val buf = ShortArray(samplesPerBeat)
@@ -238,6 +247,8 @@ class MetronomeEngine {
             3 -> deepClick
             4 -> bellClick
             5 -> bowlClick
+            6 -> kalimbaClick
+            7 -> cowbellClick
             else -> normalClick
         }
         val vol = volume.coerceIn(0f, 1f)
@@ -313,6 +324,66 @@ class MetronomeEngine {
             val f3 = sin(2.0 * PI * frequency * 5.404 * t) * (1.0 - p).pow(5.5) * 0.25
             val f4 = sin(2.0 * PI * frequency * 8.0   * t) * (1.0 - p).pow(8.0) * 0.10
             ((f1 + f2 + f3 + f4) * volume).toFloat()
+        }
+        val peak = wet.maxOf { abs(it) }
+        val scale = if (peak > 0.99f) 0.99f / peak else 1f
+        return ShortArray(numSamples) { i ->
+            (wet[i] * scale * Short.MAX_VALUE).toInt()
+                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+    }
+
+    /**
+     * Kalimba (thumb-piano) synthesis: a warm plucked tine.
+     * The first three partials are near-harmonic (with a touch of stretch on the upper two
+     * for tine character) and decay progressively faster, giving the round, woody body.
+     * A faint high inharmonic partial (6.4x) with a very fast decay supplies the bright
+     * "pluck" shimmer at the attack without ringing long enough to blur fast tempos.
+     * A 4 ms raised-cosine fade-in softens the onset so it reads as a pluck, not a click.
+     */
+    private fun generateKalimbaClick(frequency: Double, durationMs: Int, volume: Float): ShortArray {
+        val numSamples = sampleRate * durationMs / 1000
+        val attack = (0.004 * sampleRate).toInt().coerceAtLeast(1)
+        val wet = FloatArray(numSamples) { i ->
+            val t = i.toDouble() / sampleRate
+            val p = i.toDouble() / numSamples
+            val f1   = sin(2.0 * PI * frequency         * t) * (1.0 - p).pow(1.6)  * 0.62
+            val f2   = sin(2.0 * PI * frequency * 2.01  * t) * (1.0 - p).pow(2.8)  * 0.30
+            val f3   = sin(2.0 * PI * frequency * 3.04  * t) * (1.0 - p).pow(4.0)  * 0.14
+            val ping = sin(2.0 * PI * frequency * 6.4   * t) * (1.0 - p).pow(12.0) * 0.10
+            val onset = if (i < attack) 0.5 * (1.0 - cos(PI * i / attack)) else 1.0
+            ((f1 + f2 + f3 + ping) * onset * volume).toFloat()
+        }
+        val peak = wet.maxOf { abs(it) }
+        val scale = if (peak > 0.99f) 0.99f / peak else 1f
+        return ShortArray(numSamples) { i ->
+            (wet[i] * scale * Short.MAX_VALUE).toInt()
+                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+    }
+
+    /**
+     * Cowbell synthesis, voiced to cut through a loud acoustic kit (built for drummers).
+     * Two inharmonic metal tones at the classic 808 ratio (base and 1.48x base), each
+     * carrying odd harmonics (3x, 5x) that mimic the bright square-wave spectrum of struck
+     * metal, so the click reads clearly over cymbals and snare. A 1 ms attack and a fast
+     * decay keep the transient sharp and stop it ringing into the next beat.
+     */
+    private fun generateCowbellClick(baseFrequency: Double, durationMs: Int, volume: Float): ShortArray {
+        val numSamples = sampleRate * durationMs / 1000
+        val attack = (0.001 * sampleRate).toInt().coerceAtLeast(1)
+        val fB = baseFrequency * 1.48
+        val wet = FloatArray(numSamples) { i ->
+            val t = i.toDouble() / sampleRate
+            val p = i.toDouble() / numSamples
+            val voiceA = (sin(2.0 * PI * baseFrequency * t)
+                    + sin(2.0 * PI * baseFrequency * 3.0 * t) * 0.32
+                    + sin(2.0 * PI * baseFrequency * 5.0 * t) * 0.14) * (1.0 - p).pow(3.0) * 0.55
+            val voiceB = (sin(2.0 * PI * fB * t)
+                    + sin(2.0 * PI * fB * 3.0 * t) * 0.32
+                    + sin(2.0 * PI * fB * 5.0 * t) * 0.14) * (1.0 - p).pow(3.4) * 0.45
+            val onset = if (i < attack) i.toDouble() / attack else 1.0
+            ((voiceA + voiceB) * onset * volume).toFloat()
         }
         val peak = wet.maxOf { abs(it) }
         val scale = if (peak > 0.99f) 0.99f / peak else 1f

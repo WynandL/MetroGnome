@@ -31,5 +31,19 @@ val PREMIUM_SOUND_REGISTRY: List<PremiumSoundDef> = listOf(
         description = "A crystal singing bowl strike - warm, resonant harmonics with a gentle shimmer. " +
                 "Deep and meditative. The kind of sound you could practise to for hours."
     ),
+    PremiumSoundDef(
+        soundTypeIndex = 6,
+        productId = BillingManager.PRODUCT_SOUND_KALIMBA,
+        displayName = "Kalimba",
+        description = "A kalimba thumb-piano pluck, warm wooden tines with a soft, bright shimmer. " +
+                "Gentle and grounding, the kind of calm pulse you could practise to all day."
+    ),
+    PremiumSoundDef(
+        soundTypeIndex = 7,
+        productId = BillingManager.PRODUCT_SOUND_COWBELL,
+        displayName = "Cowbell",
+        description = "A bright, metallic cowbell built to cut through a loud kit. " +
+                "Punchy and unmistakable, the click drummers can actually hear over the cymbals."
+    ),
     // Add new premium sounds here
 )

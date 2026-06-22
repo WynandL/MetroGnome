@@ -246,6 +246,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             setMicSoundOverride(true)
             syncEngineSettings()
             engine.start()
+            sessionStartMs = System.currentTimeMillis()
             _isPlaying.value = true
             AnalyticsTracker.logMetronomeStarted(_bpm.value, _soundType.value, _timeSig.value)
             startPlayTimer()
@@ -692,6 +693,14 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     // ── Public actions ─────────────────────────────────────────────────────────
 
+    /** Wall-clock ms when the current/last play session started. */
+    private var sessionStartMs: Long = 0L
+
+    /** Duration (seconds) of the most recently completed play session.
+     *  Updated on every stop so callers can read it immediately after stopping. */
+    var lastSessionDurationSeconds: Int = 0
+        private set
+
     fun togglePlay() {
         if (_isPlaying.value) {
             stopPlayback()
@@ -699,6 +708,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             if (!requestAudioFocus()) return
             syncEngineSettings()
             engine.start()
+            sessionStartMs = System.currentTimeMillis()
             _isPlaying.value = true
             AnalyticsTracker.logMetronomeStarted(_bpm.value, _soundType.value, _timeSig.value)
             startPlayTimer()
@@ -713,6 +723,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun stopInternal() {
+        lastSessionDurationSeconds = ((System.currentTimeMillis() - sessionStartMs) / 1000L)
+            .toInt().coerceAtLeast(0)
         stopPlayTimer()
         engine.stop()
         // Every stop path (practice/trainer complete or cancel, manual stop) funnels through
@@ -869,6 +881,5 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         stopInternal()
         abandonAudioFocus()
         billingManager.release()
-        super.onCleared()
     }
 }

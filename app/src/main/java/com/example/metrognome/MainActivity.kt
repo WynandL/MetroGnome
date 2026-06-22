@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.metrognome.ads.AdManager
 import com.example.metrognome.ads.AdPlacement
+import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.haptics.HapticEngine
 import com.example.metrognome.haptics.LocalHaptics
 import androidx.compose.runtime.CompositionLocalProvider
@@ -92,47 +93,22 @@ fun MetroGnomeApp() {
     val reviewManager = remember { AppReviewManager(context) }
     val hapticEngine  = remember { HapticEngine(context) }
 
+    LaunchedEffect(Unit) { AnalyticsTracker.updateUserTier(adManager.userTier()) }
+
     // Re-query Play Store for owned purchases every time the app returns to foreground.
     // This handles: switching devices, purchasing on one device then opening another,
-    // and any case where the local cache drifts from Play's source of truth.
-    // Also count this as a distinct day opened (review eligibility), but do NOT
-    // prompt here: a rating sheet on cold resume is jarring and depresses ratings.
+    // and any case where the local cache drifts from Play's source of truth. Also count
+    // this as a distinct day opened (drives loyalty, which gates review eligibility).
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         metronomeVm.reconcilePurchases()
         metronomeVm.refreshReward()
         metronomeVm.recordUsageDay()
-        reviewManager.recordAppOpen()
     }
 
-    // Ask for the Play Store review at a natural, earned moment: when the user
-    // stops the metronome after playing it. The day-3 once-only gate inside
-    // AppReviewManager still applies, so this is a no-op until eligible.
-    var wasMetronomePlaying by remember { mutableStateOf(false) }
-    LaunchedEffect(isPlaying) {
-        if (wasMetronomePlaying && !isPlaying) {
-            activity?.let { reviewManager.maybeRequestReview(it) }
-        }
-        wasMetronomePlaying = isPlaying
-    }
-
-    // Second review trigger: fires when the user has accumulated enough real tuner
-    // usage (locked pitch detection time, same counter as item unlocks). Collected
-    // from TunerViewModel so we reuse the existing tracking rather than wall-clock
-    // tab time, which would count idle screen time rather than actual tuning.
-    val tunerReviewReady by tunerVm.tunerReviewReady.collectAsStateWithLifecycle()
-    LaunchedEffect(tunerReviewReady) {
-        if (tunerReviewReady) activity?.let { reviewManager.maybeRequestReview(it) }
-    }
-
-    // Third review trigger: the 30-day loyalty milestone. A user who has opened the
-    // app on 30 distinct days is the definition of an established user — the best
-    // moment to ask. The banner fires first (a positive moment), then the review prompt
-    // appears naturally as a follow-up. Other milestone days are ignored here.
-    LaunchedEffect(Unit) {
-        com.example.metrognome.points.PointsBannerQueue.milestones.collect { days ->
-            if (days == 30) activity?.let { reviewManager.maybeRequestReview(it) }
-        }
-    }
+    // The Play review prompt is requested only on navigation to the Tuner/Settings tabs
+    // (see the tab onClick below): ad-free surfaces, guarded against recent ads, so a
+    // rating sheet can never stack with an interstitial. Eligibility (loyalty >= 3 days,
+    // once per day) lives inside AppReviewManager.
 
     // Notify the user when they earn the daily-maximum Beats reward.
     LaunchedEffect(metronomeVm) {
@@ -165,7 +141,14 @@ fun MetroGnomeApp() {
                         if (currentTab == AppTab.RHYTHM && tab != AppTab.RHYTHM) {
                             rhythmVm.stopGame()
                         }
+                        // Ask for a review when the user lands on a calm, ad-free tab
+                        // (Tuner/Settings) from elsewhere, never if an ad showed recently.
+                        val landingOnCalmTab =
+                            tab != currentTab && (tab == AppTab.TUNER || tab == AppTab.SETTINGS)
                         currentTab = tab
+                        if (landingOnCalmTab && !adManager.recentlyShowedAd()) {
+                            activity?.let { reviewManager.maybeRequestReview(it) }
+                        }
                     }
                 )
             }
@@ -177,11 +160,23 @@ fun MetroGnomeApp() {
                 trainerVm = speedTrainerVm,
                 onBeforePracticeResultDismiss = { onDone ->
                     if (isAdFree) onDone()
-                    else activity?.let { adManager.maybeShow(AdPlacement.PRACTICE_COMPLETE, it, false, onDone) } ?: onDone()
+                    else {
+                        val sessionS = (metronomeVm.pendingPracticeResult.value?.durationMinutes ?: 0) * 60
+                        activity?.let { adManager.maybeShow(AdPlacement.PRACTICE_COMPLETE, it, false, sessionS, onDone) } ?: onDone()
+                    }
                 },
                 onBeforeTrainerResultDismiss = { onDone ->
                     if (isAdFree) onDone()
-                    else activity?.let { adManager.maybeShow(AdPlacement.SPEED_TRAINER_RESULT, it, false, onDone) } ?: onDone()
+                    else {
+                        val sessionS = speedTrainerVm.lastSessionDurationSeconds
+                        activity?.let { adManager.maybeShow(AdPlacement.SPEED_TRAINER_RESULT, it, false, sessionS, onDone) } ?: onDone()
+                    }
+                },
+                onBeforeManualStop = {
+                    if (!isAdFree) {
+                        val sessionS = metronomeVm.lastSessionDurationSeconds
+                        activity?.let { adManager.maybeShow(AdPlacement.METRONOME_STOP, it, false, sessionS) {} }
+                    }
                 },
             )
             AppTab.RHYTHM -> RhythmGameScreen(
@@ -192,7 +187,7 @@ fun MetroGnomeApp() {
                 isAdFree = isAdFree,
                 onBeforeResultDismiss = { onDone ->
                     if (isAdFree) onDone()
-                    else activity?.let { adManager.maybeShow(AdPlacement.RHYTHM_RESULT, it, false, onDone) } ?: onDone()
+                    else activity?.let { adManager.maybeShow(AdPlacement.RHYTHM_RESULT, it, false, 0, onDone) } ?: onDone()
                 },
                 onWatchRewardedAd = { onDone ->
                     activity?.let { metronomeVm.rewardedAdManager.show(it, onDone) } ?: onDone()

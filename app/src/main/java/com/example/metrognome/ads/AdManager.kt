@@ -12,44 +12,62 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import kotlin.math.ln
 
 private const val AD_UNIT_ID_TEST = "ca-app-pub-3940256099942544/1033173712"
 private const val AD_UNIT_ID_PROD = "ca-app-pub-8485854692249613/2040537682"
 
-private const val AD_BREAK_DELAY_MS   = 1800L
+private const val AD_BREAK_DELAY_MS = 3000L
 
-private const val PREFS_NAME          = "ad_manager"
-private const val KEY_FIRST_LAUNCH_MS = "first_launch_ms"
-private const val KEY_TOTAL_TRIGGERS  = "total_triggers"
-private const val KEY_LAST_GLOBAL_MS  = "last_global_ms"
+private const val PREFS_NAME             = "ad_manager"
+private const val KEY_TOTAL_TRIGGERS     = "total_triggers"
+private const val KEY_TOTAL_SHOWS        = "total_shows"
+private const val KEY_LAST_GLOBAL_MS     = "last_global_ms"
 
-private val AdPlacement.callCountKey    get() = "ad_${key}_call_count"
-private val AdPlacement.lastShownMsKey  get() = "ad_${key}_last_shown_ms"
-private val AdPlacement.todayCountKey   get() = "ad_${key}_today_count"
-private val AdPlacement.todayDateKey    get() = "ad_${key}_today_date"
+// Read-only borrow from UsageDayTracker: distinct calendar days the user opened the app.
+// Keys are stable and intentionally not imported to keep the ads package self-contained.
+private const val USAGE_PREFS_NAME  = "usage_days"
+private const val USAGE_KEY_COUNT   = "count"
+
+private val AdPlacement.lastShownMsKey        get() = "ad_${key}_last_shown_ms"
+private val AdPlacement.lastSessionSecondsKey get() = "ad_${key}_last_session_s"
+private val AdPlacement.todayCountKey         get() = "ad_${key}_today_count"
+private val AdPlacement.todayDateKey          get() = "ad_${key}_today_date"
 
 /**
- * Central interstitial-ad controller. All placement decisions live here; callers
- * declare *when* to ask, not *whether* to show.
+ * Central interstitial-ad controller with an adaptive tier system.
+ *
+ * Cooldowns are computed dynamically on every gate check — no static lookup table.
+ * Three signals interact:
+ *
+ *   Tier      — EXPLORER / CASUAL / ENGAGED from install age + lifetime opportunity count.
+ *               Sets the base global and per-placement cooldowns.
+ *
+ *   Depth     — the session length stored at the last ad show for a placement.
+ *               A longer prior session extends the current cooldown (rewards engagement).
+ *
+ *   Frequency — each ad shown today for a placement adds 30% to the next cooldown
+ *               for that placement (self-regulates fast sessions like Rhythm Game).
+ *
+ * The global cooldown also stretches logarithmically with total lifetime shows.
  *
  * Add new triggers by:
  *   1. Adding an entry to [AdPlacement] with its policy.
- *   2. Calling [maybeShow] at the relevant UI dismissal point.
+ *   2. Calling [maybeShow] at the relevant UI event, passing the session duration.
  *
- * The onDone callback is always invoked: immediately if the ad is skipped or
- * unavailable, or after the full-screen ad closes.
+ * onDone is always invoked: immediately if the ad is skipped/unavailable, or
+ * after the full-screen ad closes.
  */
 class AdManager(private val context: Context) {
 
-    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private var loadedAd: InterstitialAd? = null
+    private val prefs     = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private var loadedAd  : InterstitialAd? = null
     private var isLoading = false
 
-    init {
-        if (prefs.getLong(KEY_FIRST_LAUNCH_MS, 0L) == 0L) {
-            prefs.edit { putLong(KEY_FIRST_LAUNCH_MS, System.currentTimeMillis()) }
-        }
-    }
+    // True from the moment an ad break is committed (banner posted) until the
+    // full-screen ad is dismissed/fails. Guards the 3s banner window so concurrent
+    // triggers are absorbed cleanly instead of posting a second banner. Main-thread only.
+    private var adBreakInFlight = false
 
     fun preload() {
         if (isLoading || loadedAd != null) return
@@ -57,32 +75,31 @@ class AdManager(private val context: Context) {
         val unitId = if (BuildConfig.DEBUG) AD_UNIT_ID_TEST else AD_UNIT_ID_PROD
         InterstitialAd.load(context, unitId, AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
-                override fun onAdLoaded(ad: InterstitialAd) {
-                    loadedAd = ad
-                    isLoading = false
-                }
-                override fun onAdFailedToLoad(error: LoadAdError) {
-                    loadedAd = null
-                    isLoading = false
-                }
+                override fun onAdLoaded(ad: InterstitialAd) { loadedAd = ad; isLoading = false }
+                override fun onAdFailedToLoad(e: LoadAdError) { loadedAd = null; isLoading = false }
             })
     }
 
+    /**
+     * @param sessionSeconds Duration of the session that just ended (0 if not applicable).
+     *   Used as the gate for [AdPlacement.minSessionSeconds] AND stored for the depth
+     *   multiplier that will stretch the NEXT cooldown for this placement.
+     */
     fun maybeShow(
         placement: AdPlacement,
         activity: Activity,
         isAdFree: Boolean,
+        sessionSeconds: Int = 0,
         onDone: () -> Unit,
     ) {
-        // Increment counters regardless of gate outcome so they accumulate over time.
-        val totalTriggers     = prefs.getInt(KEY_TOTAL_TRIGGERS, 0) + 1
-        val placementCalls    = prefs.getInt(placement.callCountKey, 0) + 1
-        prefs.edit {
-            putInt(KEY_TOTAL_TRIGGERS, totalTriggers)
-            putInt(placement.callCountKey, placementCalls)
-        }
+        // An ad break is already committed for this session (banner showing, ad about
+        // to display). Absorb the concurrent trigger: no second banner, no double count.
+        if (adBreakInFlight) { onDone(); return }
 
-        if (!shouldShow(placement, isAdFree, totalTriggers, placementCalls)) {
+        val totalTriggers = prefs.getInt(KEY_TOTAL_TRIGGERS, 0) + 1
+        prefs.edit { putInt(KEY_TOTAL_TRIGGERS, totalTriggers) }
+
+        if (!shouldShow(placement, isAdFree, totalTriggers, sessionSeconds)) {
             if (loadedAd == null) preload()
             onDone()
             return
@@ -95,30 +112,34 @@ class AdManager(private val context: Context) {
             return
         }
 
-        // Clear the slot immediately — prevents any double-show if maybeShow is called
-        // again during the banner-display delay.
+        // Commit. Consume the ad, mark the break in flight, and record the show NOW so
+        // cooldowns reflect the in-flight ad immediately. Then post the pre-ad banner;
+        // the 3s delay lets it land before the full-screen ad takes over. recordShow at
+        // commit (not after the delay) means a rare finishing-bail leaves one cooldown
+        // slightly conservative, an acceptable bias toward fewer ads.
         loadedAd = null
+        adBreakInFlight = true
+        recordShow(placement, sessionSeconds)
         AdBreakQueue.post()
 
         Handler(Looper.getMainLooper()).postDelayed({
-            if (activity.isFinishing) {
-                preload()
-                onDone()
-                return@postDelayed
-            }
-            recordShow(placement)
+            if (activity.isFinishing) { adBreakInFlight = false; preload(); onDone(); return@postDelayed }
             ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    preload()
-                    onDone()
-                }
-                override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                    preload()
-                    onDone()
-                }
+                override fun onAdDismissedFullScreenContent() { adBreakInFlight = false; preload(); onDone() }
+                override fun onAdFailedToShowFullScreenContent(e: AdError) { adBreakInFlight = false; preload(); onDone() }
             }
             ad.show(activity)
         }, AD_BREAK_DELAY_MS)
+    }
+
+    /**
+     * True if an interstitial is in flight (banner showing / about to show) or one was
+     * shown within [windowMs]. Used by the review prompt to stay out of any moment where
+     * an ad could be on screen, so a rating sheet never stacks with an interstitial.
+     */
+    fun recentlyShowedAd(windowMs: Long = 90_000L): Boolean {
+        if (adBreakInFlight) return true
+        return System.currentTimeMillis() - prefs.getLong(KEY_LAST_GLOBAL_MS, 0L) < windowMs
     }
 
     @Suppress("unused")
@@ -128,54 +149,104 @@ class AdManager(private val context: Context) {
         preload()
     }
 
-    // ── Gates ─────────────────────────────────────────────────────────────────
+    // ── Tier ──────────────────────────────────────────────────────────────────────
+
+    fun userTier(): UserTier {
+        val loyalty  = loyaltyDays()
+        val triggers = prefs.getInt(KEY_TOTAL_TRIGGERS, 0)
+        return when {
+            loyalty < AdEngineConfig.EXPLORER_MAX_LOYALTY_DAYS || triggers < AdEngineConfig.EXPLORER_MAX_TRIGGERS -> UserTier.EXPLORER
+            loyalty >= AdEngineConfig.ENGAGED_MIN_LOYALTY_DAYS && triggers >= AdEngineConfig.ENGAGED_MIN_TRIGGERS -> UserTier.ENGAGED
+            else -> UserTier.CASUAL
+        }
+    }
+
+    // ── Dynamic cooldowns ─────────────────────────────────────────────────────────
+
+    /**
+     * Global minimum gap between any two ads.
+     * Base is tier-dependent; extended logarithmically with lifetime show count
+     * so long-term users naturally breathe more between ads.
+     */
+    private fun effectiveGlobalCooldownMs(tier: UserTier): Long {
+        val base = when (tier) {
+            UserTier.EXPLORER -> AdEngineConfig.GLOBAL_COOLDOWN_EXPLORER_MS
+            UserTier.CASUAL   -> AdEngineConfig.GLOBAL_COOLDOWN_CASUAL_MS
+            UserTier.ENGAGED  -> AdEngineConfig.GLOBAL_COOLDOWN_ENGAGED_MS
+        }
+        val shows      = prefs.getInt(KEY_TOTAL_SHOWS, 0)
+        val multiplier = (1.0 + ln(1.0 + shows) * AdEngineConfig.GLOBAL_LOG_FACTOR)
+            .coerceIn(1.0, AdEngineConfig.GLOBAL_LOG_CAP)
+        return (base * multiplier).toLong()
+    }
+
+    /**
+     * Per-placement cooldown, with two compounding multipliers:
+     *
+     *   Depth multiplier — the session stored at the previous show for this placement
+     *   compared to [AdPlacement.referenceSessionSeconds]. A session 2× the reference
+     *   extends the cooldown by up to 2.5×. Disabled when referenceSessionSeconds == 0.
+     *
+     *   Frequency multiplier — each ad shown today for this placement adds 30%,
+     *   naturally slowing down rapid-fire sessions (e.g. many short rhythm games).
+     *
+     * Result is clamped to [[AdPlacement.minCooldownMs], [AdPlacement.maxCooldownMs]].
+     */
+    private fun effectivePlacementCooldownMs(placement: AdPlacement, tier: UserTier): Long {
+        val base = when (tier) {
+            UserTier.EXPLORER -> placement.exploreCooldownMs
+            UserTier.CASUAL   -> placement.casualCooldownMs
+            UserTier.ENGAGED  -> placement.engagedCooldownMs
+        }
+
+        val storedSession = prefs.getInt(placement.lastSessionSecondsKey, 0)
+        val depthMultiplier = if (placement.referenceSessionSeconds > 0 && storedSession > 0) {
+            val ratio = storedSession.toDouble() / placement.referenceSessionSeconds
+            (1.0 + (ratio - 1.0).coerceAtLeast(0.0) * AdEngineConfig.DEPTH_FACTOR)
+                .coerceIn(1.0, AdEngineConfig.DEPTH_MAX_MULTIPLIER)
+        } else 1.0
+
+        val todayShows          = todayShowCount(placement)
+        val frequencyMultiplier = 1.0 + todayShows * AdEngineConfig.FREQUENCY_STEP
+
+        return (base * depthMultiplier * frequencyMultiplier).toLong()
+            .coerceIn(placement.minCooldownMs, placement.maxCooldownMs)
+    }
+
+    // ── Gate ─────────────────────────────────────────────────────────────────────
 
     private fun shouldShow(
         placement: AdPlacement,
         isAdFree: Boolean,
         totalTriggers: Int,
-        placementCallCount: Int,
+        sessionSeconds: Int,
     ): Boolean {
-        // Gate 1: ad-free (billing or Gnotes reward)
         if (isAdFree) return false
 
-        // Gate 2: app age — protect users who just installed and are exploring
-        val firstLaunch = prefs.getLong(KEY_FIRST_LAUNCH_MS, System.currentTimeMillis())
-        val appAgeDays  = (System.currentTimeMillis() - firstLaunch) / 86_400_000L
-        if (appAgeDays < placement.minAppDays) return false
-
-        // Gate 3: engagement — don't show until the user has demonstrated real usage
+        if (loyaltyDays() < placement.minAppDays) return false
         if (totalTriggers < placement.minTriggerCount) return false
+        if (placement.minSessionSeconds > 0 && sessionSeconds < placement.minSessionSeconds) return false
 
-        // Gate 4: per-placement frequency (e.g. every 3rd rhythm game)
-        if (placementCallCount % placement.showEveryN != 0) return false
-
-        // Gate 5: app-wide cooldown
-        val lastGlobal = prefs.getLong(KEY_LAST_GLOBAL_MS, 0L)
-        if (System.currentTimeMillis() - lastGlobal < placement.globalCooldownMs) return false
-
-        // Gate 6: per-placement cooldown
-        if (placement.placementCooldownMs > 0L) {
-            val lastPlacement = prefs.getLong(placement.lastShownMsKey, 0L)
-            if (System.currentTimeMillis() - lastPlacement < placement.placementCooldownMs) return false
-        }
-
-        // Gate 7: daily cap
-        if (todayShowCount(placement) >= placement.maxPerDay) return false
+        val tier = userTier()
+        val now  = System.currentTimeMillis()
+        if (now - prefs.getLong(KEY_LAST_GLOBAL_MS, 0L) < effectiveGlobalCooldownMs(tier)) return false
+        if (now - prefs.getLong(placement.lastShownMsKey, 0L) < effectivePlacementCooldownMs(placement, tier)) return false
 
         return true
     }
 
-    // ── Persistence helpers ────────────────────────────────────────────────────
+    // ── Persistence ───────────────────────────────────────────────────────────────
 
-    private fun recordShow(placement: AdPlacement) {
+    private fun recordShow(placement: AdPlacement, sessionSeconds: Int) {
         val now   = System.currentTimeMillis()
         val today = todayEpochDay()
         prefs.edit {
             putLong(KEY_LAST_GLOBAL_MS, now)
-            putLong(placement.lastShownMsKey, now)
-            putInt(placement.todayCountKey, todayShowCount(placement) + 1)
-            putInt(placement.todayDateKey, today)
+            putInt(KEY_TOTAL_SHOWS,     prefs.getInt(KEY_TOTAL_SHOWS, 0) + 1)
+            putLong(placement.lastShownMsKey,        now)
+            putInt(placement.lastSessionSecondsKey,  sessionSeconds)
+            putInt(placement.todayCountKey,          todayShowCount(placement) + 1)
+            putInt(placement.todayDateKey,           today)
         }
     }
 
@@ -186,8 +257,13 @@ class AdManager(private val context: Context) {
         else 0
     }
 
-    // Local-midnight epoch day so the per-placement daily cap resets at the user's
-    // local midnight rather than a raw UTC boundary (which lands mid-afternoon for
+    private fun loyaltyDays(): Int {
+        return context.getSharedPreferences(USAGE_PREFS_NAME, Context.MODE_PRIVATE)
+            .getInt(USAGE_KEY_COUNT, 0)
+    }
+
+    // Local-midnight epoch day so the per-placement frequency counter resets at the
+    // user's local midnight, not a raw UTC boundary (which lands mid-afternoon in
     // large negative UTC offsets).
     private fun todayEpochDay(): Int {
         val now = System.currentTimeMillis()

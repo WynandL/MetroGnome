@@ -102,6 +102,7 @@ fun PremiumPurchaseDialog(
     onDismiss: () -> Unit,
     highlights: List<String> = emptyList(),
     previewContent: (@Composable () -> Unit)? = null,
+    belowDescription: (@Composable () -> Unit)? = null,
     secondaryButton: (@Composable () -> Unit)? = null,
 ) {
     Dialog(
@@ -211,6 +212,12 @@ fun PremiumPurchaseDialog(
                         lineHeight = 19.sp,
                         textAlign  = TextAlign.Center,
                     )
+
+                    // ── Below-description slot (e.g. instrument-affinity badges) ──
+                    belowDescription?.let {
+                        Spacer(Modifier.height(14.dp))
+                        it()
+                    }
 
                     // ── Benefit highlights ──────────────────────────────────
                     if (highlights.isNotEmpty()) {
