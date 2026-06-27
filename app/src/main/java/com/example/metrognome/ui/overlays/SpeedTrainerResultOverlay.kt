@@ -106,14 +106,8 @@ fun SpeedTrainerResultOverlay(
                     }
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text(
-                            "SPEED TRAINER",
-                            color = AppColors.textMuted,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.5.sp,
-                            lineHeight = 14.sp,
-                        )
+                        OverlayEyebrow("SPEED TRAINER", color = AppColors.textMuted)
+                        Spacer(Modifier.height(3.dp))
                         Text(
                             if (state.micUsed) "Timing result" else "Full range covered",
                             color = Color.White,

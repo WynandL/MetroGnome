@@ -8,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -20,9 +21,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,7 +51,7 @@ fun PracticeCompleteOverlay(
     val overlayAlpha = remember { Animatable(0f) }
 
     LaunchedEffect(result) {
-        launch { overlayAlpha.animateTo(0.88f, tween(280)) }
+        launch { overlayAlpha.animateTo(0.72f, tween(280)) }
         cardScale.animateTo(
             targetValue = 1f,
             animationSpec = spring(
@@ -81,27 +81,22 @@ fun PracticeCompleteOverlay(
 
         Surface(
             modifier = Modifier
-                .padding(horizontal = 22.dp)
+                .padding(horizontal = 24.dp)
+                .widthIn(min = 280.dp, max = 380.dp)
                 .graphicsLayer {
                     scaleX = cardScale.value
                     scaleY = cardScale.value
-                    alpha  = (cardScale.value - 0.15f) / 0.85f
+                    alpha  = ((cardScale.value - 0.15f) / 0.85f).coerceIn(0f, 1f)
                 },
-            shape          = RoundedCornerShape(28.dp),
+            shape          = RoundedCornerShape(24.dp),
             color          = AppColors.surfaceDeep,
-            shadowElevation = 28.dp,
+            shadowElevation = 32.dp,
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
+                modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text         = "✦  PRACTICE COMPLETE  ✦",
-                    color        = AppColors.gold,
-                    fontSize     = 12.sp,
-                    fontWeight   = FontWeight.ExtraBold,
-                    letterSpacing = 2.sp,
-                )
+                OverlayEyebrow("✦  PRACTICE COMPLETE  ✦", color = AppColors.textMuted)
 
                 Spacer(Modifier.height(20.dp))
 
@@ -144,21 +139,25 @@ fun PracticeCompleteOverlay(
                     )
                 }
 
-                Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(20.dp))
 
-                Button(
+                Surface(
                     onClick = onDismiss,
-                    colors  = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
-                    shape   = RoundedCornerShape(22.dp),
-                    modifier = Modifier.fillMaxWidth(0.65f),
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color.Transparent,
+                    border = BorderStroke(1.dp, AppColors.gold),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp),
                 ) {
-                    Text(
-                        text       = "Sweet!",
-                        fontWeight = FontWeight.Bold,
-                        fontSize   = 16.sp,
-                        color      = Color.White,
-                        modifier   = Modifier.padding(vertical = 4.dp),
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            "Sweet!",
+                            color = AppColors.gold,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
             }
         }
