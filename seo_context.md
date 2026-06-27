@@ -4,15 +4,16 @@
 
 | Item | Priority | Due / Status |
 |---|---|---|
-| Musician Wave "8 Best Rhythm Training Apps" outreach | Low | Sent 2026-06-05 - allow until 2026-06-19 before follow-up |
-| Orchestra Central "5 Best Tuner Apps" follow-up | Low | Sent 2026-06-05 to bobbyfisco@gmail.com - allow until 2026-06-19 |
-| BeatIt.tv "Top 5 Metronome Apps" follow-up | Low | Sent 2026-06-04 - allow until 2026-06-18 |
+| Musician Wave "8 Best Rhythm Training Apps" outreach | Low | OVERDUE 4 days. UNBLOCKED (v5.9 public) - send; Groove Check is the rhythm-training hook |
+| Orchestra Central "5 Best Tuner Apps" follow-up | Low | OVERDUE 4 days. UNBLOCKED (v5.9 public) - send; noisy-room tuner now live |
+| BeatIt.tv "Top 5 Metronome Apps" follow-up | Low | OVERDUE 5 days. UNBLOCKED (v5.9 public) - send; drummer hook = new Cowbell sound + Groove Check |
 | Reddit: find correct subreddit for Gnotes/app post | Medium | r/WeAreTheMusicMakers ruled out. Draft ready. Candidates: r/androidapps, r/androiddev, r/musicproduction. r/androidapps rules not confirmable via web search (2026-06-12); check the subreddit sidebar/wiki directly (many subs restrict self-promo to a weekly thread) |
 | Code: Surface installed-days loyalty bonus to users | Medium | Not done |
 | r/drums re-entry | Medium | Eligible (13+ days clear since 2026-05-22) |
 | r/learnmusic first post | Medium | Never posted |
-| Musician Wave "10 Best Metronome Apps" follow-up | Low | Now due (2026-06-12 reached). Lead with the article-age angle (last updated July 6, 2023) |
-| Android Authority follow-up | Low | Allow until 2026-06-16 |
+| Musician Wave "10 Best Metronome Apps" follow-up | Low | OVERDUE 11 days. Lead with the article-age angle (last updated July 6, 2023). UNBLOCKED (v5.9 now public) - send |
+| RELEASE GATE: promote v5.9 to production | Done 2026-06-23 | v5.9 / versionCode 55 published public 2026-06-23. Gate cleared; all outreach hooks now live |
+| Android Authority follow-up | Done | Follow-up sent 2026-06-17 (confirmed by dev 2026-06-23). Awaiting response |
 | GSC: pull impression/query data from Search Console | High | Indexing confirmed June 6. Now baseline-critical after the 2026-06-12 canonical fix + on-page overhaul. Data requested in 2026-06-12 report |
 | GSC: Validate Fix on homepage "Duplicate, Google chose different canonical" | High | Fixed 2026-06-12 (vercel.app now 301s to metrognome.co.za). Submit Validate Fix and re-inspect the homepage; expect Google-selected canonical to flip over coming crawls |
 | Content: flip "How to Improve Your Timing" blog to present tense | Done 2026-06-12 | Done on master (commit 09ec535): Groove Check now public per dev. NOTE: confirm Play Store versionCode/date and update the "v5.6 NOT in production" lines in the App + Core features sections to match |
@@ -25,7 +26,8 @@
 - **Canonical issue found + fixed 2026-06-12:** GSC reported the homepage as "Duplicate, Google chose different canonical than user", Google-selected canonical = `https://metro-gnome-gilt.vercel.app/`. The canonical TAG was correct, but the .vercel.app default domain was fully indexable and served identical content, so Google overrode it. Fix: host-conditional 301/308 from metro-gnome-gilt.vercel.app to metrognome.co.za (plus /index.html, /blog, /blog/index.html normalisation), placed in **landing/vercel.json** (root-level vercel.json is ignored; Root Directory = landing). All redirects verified live. GSC "Validate Fix" still to submit.
 - **On-page SEO overhaul 2026-06-12 (live):** showcase rebuilt with 6 current screenshots (4-tab nav); features expanded to 6 pillars (adds Speed Trainer, Practice & Streaks, Rewards & Collectibles); FAQPage structured data added (was none); SoftwareApplication featureList added; meta + OG descriptions refreshed; Twitter Card tags added; new visible speed-trainer FAQ. Widened coverage of the speed-trainer / practice / rewards keyword clusters.
 - Fix applied: GSC Request Indexing submitted for all 8 pages on 2026-06-03 - worked within 3 days
-- Next step: fetch GSC Performance data (queries + pages + positions) to baseline against today's changes
+- GSC baseline captured 2026-06-17: 17 impressions / 0 clicks over 28 days; top query "is google metronome accurate" (5 impr), drumming queries 8 of 17. Zero clicks expected at <2 weeks indexed (positions 20+).
+- CONTENT IDEA (caution): "Is Google's Metronome Accurate?" targets the top query. Build ONLY if scoped tightly to the branded Google-built-in-metronome comparison and cross-linked to the two existing accuracy posts (how-accurate-is-your-metronome-app.html, why-your-metronome-app-might-be-lying-to-you.html). A generic accuracy post would cannibalise both - do not write that.
 
 ## App
 - Name: Metro Gnome: Metronome & Tuner
@@ -34,9 +36,9 @@
 - Website: http://www.metrognome.co.za
 - Category: Music & Audio
 - Current installs: 1,000+
-- Last updated (production / Play Store): June 1 2026 (v5.1 / versionCode 38)
-- NEXT RELEASE: v5.6 - shipping this week (committed to v5.0 branch, NOT yet on Play Store). Headline feature: Groove Check (see Core features). Blog teaser already published 2026-06-11.
-- seo_context last updated: 2026-06-12
+- Last updated (production / Play Store): **2026-06-23, v5.9 / versionCode 55** (public). Bundles v5.6 -> v5.9: Groove Check, time signatures w/ accents, noisy-room tuner + frequency rail, Rhythm-page gamification + poll, Italian tempo labels, Kalimba + Cowbell premium sounds, instrument-affinity icons, ad/review-prompt rework.
+- Live site + how-to-improve-your-timing.html now MATCH production: Groove Check present-tense copy is accurate, and the outreach hooks (Groove Check, noisy-room tuner, Cowbell) all reference live features. Outreach follow-ups are unblocked.
+- seo_context last updated: 2026-06-23
 - Rating: not yet established at scale
 
 ## Core features (all free)
@@ -51,7 +53,7 @@
 - Adjustable reference pitch (A=415-466 Hz) for period or alternate tuning standards
 - Practice streak tracker - builds daily habit, shown in MetronomeScreen streak pill
 - Tap tempo
-- Multiple sound styles: click, hi-hat, woodblock, warm, bell (premium sounds available)
+- Multiple sound styles: click, hi-hat, woodblock, warm (free); premium sounds: bell, crystal bowl, kalimba (calming), cowbell (drummer-targeted). Instrument-affinity icons show which instruments each sound suits.
 - Animated gnome character (Metro) with cosmetic item catalog unlockable via Gnotes
 - Background play
 
@@ -96,7 +98,7 @@
 - Metronome Beats (Stonekick): 26M installs, 4.8 stars - no tuner, ad-heavy, has a free speed trainer (BPM ramp, v7.1.4 June 3 2026, added MIDI control + preset backup/sync via sign-in) - NOT uncontested; Metro Gnome differentiates on structured steps + descending ramp + mic accuracy (coming) + all-in-one free app + no account/sign-in required
 - Pro Metronome (EUMLab): 7.3M installs, 3.84 stars - angry users over subscription bait-and-switch, outdated Android port, last Android updates: Jan 12, 2026 and April 14, 2026 (bug fixes: Stage mode scroll + Android 15 compat - no new features); tempo trainer is paywalled and buggy
 - Music Tempo Trainer (musicutils): dedicated tempo training app, no tuner, no rhythm game, updated March 2026. Modes: Constant, Increase/Decrease, Step Training (80-160 BPM), session tracking.
-- Soundbrenner: 10M+ installs, updated June 3 2026 - added playback counter (auto-pause after N bars or duration). Now has paid practice tracking (~$6/mo Premium). Metro Gnome's practice tools (streak, Gnotes, timer) are entirely free - direct differentiator.
+- Soundbrenner: 10M+ installs, latest **v1.33.0 (June 8 2026)** - routine maintenance bump, no new headline feature surfaced. Earlier June 3 build added a playback counter (auto-pause after N bars/duration). Has paid practice tracking (~$6/mo Premium). Metro Gnome's practice tools (streak, Gnotes, timer) are entirely free - direct differentiator.
 - Takt: surfaced in 2026 metronome roundups (found 2026-06-12), "recommended first" in one as "a metronome that does more than count time". Not yet scanned - research installs/features/price/last-update on next session.
 
 ## SEO decisions already made (do not revisit)

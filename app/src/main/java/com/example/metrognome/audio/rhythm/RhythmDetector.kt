@@ -9,7 +9,6 @@ import android.media.audiofx.AcousticEchoCanceler
 import android.os.SystemClock
 import androidx.annotation.RequiresPermission
 import com.example.metrognome.audio.dsp.ClapDetector
-import com.example.metrognome.audio.dsp.OnsetDetector
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,7 +35,7 @@ import kotlin.math.sqrt
  * ## Timing — the heart of the engine
  * Detection accuracy is dominated by *when* an onset is timestamped:
  *
- *  - Onsets are localised to ~6 ms inside each buffer by [OnsetDetector],
+ *  - Onsets are localised to ~6 ms inside each buffer by [ClapDetector],
  *    not quantised to the 20–80 ms audio buffer.
  *  - Each buffer's frames are mapped to real time by [FrameClock] using
  *    [AudioRecord.getTimestamp], which reports the precise capture instant of
@@ -47,19 +46,13 @@ import kotlin.math.sqrt
  *    the exact clock the game loop uses — so there is zero cross-clock drift.
  *    (The old design mixed wall-clock time, which can jump on NTP/DST changes.)
  *
- * ## Click rejection — two modes
- * Default ([classifyClaps] = false): an amplitude [OnsetDetector] reports every
- * transient and [suppressUntilMs] gates the metronome click temporally — a wide
- * window when AEC is unavailable, a narrow one when AEC is active. Used by the
- * timing-bonus path (Speed Trainer, Practice).
- *
- * Spectral ([classifyClaps] = true): a [ClapDetector] tells the click apart from a
- * clap by its 1100 Hz signature and emits **only claps**, so a leaked click never
- * scores even when AEC misses it — and an on-beat clap, which a time window would
- * have wrongly suppressed, still lands. [suppressUntilMs] is ignored in this mode.
- * Used by the Rhythm Game.
+ * ## Click rejection — spectral
+ * A [ClapDetector] tells the metronome click apart from a clap by its 1100 Hz
+ * signature and emits **only claps**, so a leaked click never scores even when AEC
+ * misses it — and an on-beat clap, which a time window would have wrongly suppressed,
+ * still lands. All three mic features (Rhythm Game, Speed Trainer, Practice) use it.
  */
-class RhythmDetector(private val classifyClaps: Boolean = false) {
+class RhythmDetector {
 
     companion object {
         /** Tried in order until one initialises. 44.1 kHz first — universally supported. */
@@ -89,29 +82,23 @@ class RhythmDetector(private val classifyClaps: Boolean = false) {
     private var _capturing = false
 
     /**
-     * Drop onsets before this [SystemClock.elapsedRealtime] ms. Set per-beat by
-     * the game to gate the metronome click — the game narrows the window when
-     * [echoCancellationActive] is true.
-     */
-    @Volatile
-    var suppressUntilMs: Long = 0L
-
-    /**
-     * Debug-only callback fired for onsets that were dropped by [suppressUntilMs].
-     * Null in production — set by the caller in debug builds to feed MicDiagnosticsBuffer.
-     * Delete this property and the [debugOnSuppressed]?.invoke() call below to remove.
-     */
-    @Volatile
-    var debugOnSuppressed: ((onsetMs: Long) -> Unit)? = null
-
-    /**
      * Debug-only callback fired for transients the spectral classifier judged to be the
-     * metronome click (classifyClaps mode) and therefore dropped. Null in production — set in
+     * metronome click and therefore dropped. Null in production — set in
      * debug builds to feed MicDiagnosticsBuffer. Carries the [ClapDetector.Onset] so the log
      * can show the click-vs-clap band margin that justified the rejection.
      */
     @Volatile
     var debugOnClickRejected: ((onset: ClapDetector.Onset, onsetMs: Long) -> Unit)? = null
+
+    /**
+     * Debug-only tap on the raw capture buffer, fired once per [AudioRecord.read] with the exact
+     * PCM the detectors see (and the chosen sampleRate). Null in production — set in debug builds
+     * to record the session to a WAV the developer can play back by ear. The callback MUST copy the
+     * data it needs synchronously: buffer is reused on the next read. Delete this property and the
+     * single invoke below to remove the feature.
+     */
+    @Volatile
+    var debugOnPcm: ((buffer: ShortArray, count: Int, sampleRate: Int) -> Unit)? = null
 
     /** Whether hardware echo cancellation is running. When true, suppression is moot. */
     var echoCancellationActive: Boolean = false
@@ -141,8 +128,7 @@ class RhythmDetector(private val classifyClaps: Boolean = false) {
         } else null
         echoCancellationActive = echoCanceler?.enabled == true
 
-        val onsetDetector = if (classifyClaps) null else OnsetDetector(sampleRate)
-        val clapDetector = if (classifyClaps) ClapDetector(sampleRate) else null
+        val clapDetector = ClapDetector(sampleRate)
         rec.startRecording()
         _capturing = true
 
@@ -152,7 +138,7 @@ class RhythmDetector(private val classifyClaps: Boolean = false) {
             val buf = ShortArray(READ_CHUNK)
             val timestamp = AudioTimestamp()
             val clock = FrameClock(sampleRate)
-            var appFrames = 0L   // total frames read — the OnsetDetector's index space
+            var appFrames = 0L   // total frames read — the detector's index space
 
             try {
                 while (isActive) {
@@ -164,28 +150,20 @@ class RhythmDetector(private val classifyClaps: Boolean = false) {
                     // Visualizer amplitude — raw wideband RMS over this chunk.
                     _amplitude.value = (rawRms(buf, read) * AMPLITUDE_GAIN).coerceIn(0f, 1f)
 
+                    // Debug: hand the raw PCM to the session recorder (null/no-op in production).
+                    debugOnPcm?.invoke(buf, read, sampleRate)
+
                     // Re-anchor the frame→time clock against the hardware audio
                     // timestamp, folding in any overrun frame-drops since last buffer.
                     appFrames += read
                     clock.update(rec, timestamp, appFrames)
 
-                    if (clapDetector != null) {
-                        // Spectral mode: reject the metronome click by its signature and emit
-                        // only claps. No time window, so an on-beat clap still scores.
-                        for (onset in clapDetector.process(buf, read)) {
-                            val onsetMs = clock.onsetMs(onset.sampleIndex)
-                            if (onset.isClap) _detections.tryEmit(onsetMs)
-                            else debugOnClickRejected?.invoke(onset, onsetMs)
-                        }
-                    } else {
-                        for (onsetIndex in onsetDetector!!.process(buf, read)) {
-                            val onsetMs = clock.onsetMs(onsetIndex)
-                            if (onsetMs >= suppressUntilMs) {
-                                _detections.tryEmit(onsetMs)
-                            } else {
-                                debugOnSuppressed?.invoke(onsetMs)
-                            }
-                        }
+                    // Reject the metronome click by its spectral signature and emit only
+                    // claps. No time window, so an on-beat clap still scores.
+                    for (onset in clapDetector.process(buf, read)) {
+                        val onsetMs = clock.onsetMs(onset.sampleIndex)
+                        if (onset.isClap) _detections.tryEmit(onsetMs)
+                        else debugOnClickRejected?.invoke(onset, onsetMs)
                     }
                 }
             } catch (_: Exception) {
@@ -241,7 +219,7 @@ class RhythmDetector(private val classifyClaps: Boolean = false) {
     }
 
     /**
-     * Maps an [OnsetDetector] sample index to a timestamp on the
+     * Maps a [ClapDetector] sample index to a timestamp on the
      * [SystemClock.elapsedRealtime] timebase, anchored each buffer to the
      * hardware audio clock.
      *
@@ -251,7 +229,7 @@ class RhythmDetector(private val classifyClaps: Boolean = false) {
      * unavailable, the chunk's final frame is assumed captured ≈ now.
      *
      * ### Overrun drift
-     * [OnsetDetector] indices count only the frames the app actually read. When
+     * [ClapDetector] indices count only the frames the app actually read. When
      * the capture buffer overruns, the hardware discards frames the app never
      * sees, so that count falls behind the hardware frame position — and a
      * naïve mapping would then skew every later onset by the lost span.
@@ -321,7 +299,7 @@ class RhythmDetector(private val classifyClaps: Boolean = false) {
             }
         }
 
-        /** Map an [OnsetDetector] sample index to elapsedRealtime ms. */
+        /** Map a [ClapDetector] sample index to elapsedRealtime ms. */
         fun onsetMs(appIndex: Long): Long {
             val streamFrame = appIndex + streamDrift
             return (anchorMs + (streamFrame - anchorFrame) * 1000.0 / sampleRate).toLong()

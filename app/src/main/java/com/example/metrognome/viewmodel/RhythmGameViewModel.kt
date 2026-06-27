@@ -28,9 +28,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import androidx.core.content.edit
-import com.example.metrognome.BuildConfig
+import com.example.metrognome.dev.DevEasterEgg
 import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.debug.mic.MicDiagnosticsBuffer
+import com.example.metrognome.debug.mic.SessionAudioRecorder
 
 // ── Enums ──────────────────────────────────────────────────────────────────────
 
@@ -125,7 +126,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private val engine = MetronomeEngine()
     private val itemTracker = MetroItemTracker(app)
     private val dailyLog    = com.example.metrognome.points.DailyActivityLog(app)
-    val detector = RhythmDetector(classifyClaps = true)
+    val detector = RhythmDetector()
 
     // ── Public state flows ────────────────────────────────────────────────────
 
@@ -165,6 +166,10 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Live mic amplitude 0..1. Non-zero only while mic mode is active. */
     val micAmplitude: StateFlow<Float> = detector.amplitude
+
+    // Live room-noise indicator: a passive observer of the amplitude. See RoomNoiseIndicator.
+    private val roomNoiseMonitor = com.example.metrognome.audio.rhythm.RoomNoiseMonitor()
+    val roomNoisy: StateFlow<Boolean> = roomNoiseMonitor.noisy
 
     private val _unlockQueue = MutableStateFlow<List<MetroItemEntry>>(emptyList())
     val unlockQueue: StateFlow<List<MetroItemEntry>> = _unlockQueue.asStateFlow()
@@ -211,15 +216,19 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private var gameLoopJob: Job? = null
     private var micJob: Job? = null
 
+    /** Dev tooling (mic diagnostics + session recording) is available in debug builds or when the
+     *  user has manually unlocked dev mode - matching Practice / Speed Trainer. */
+    private val isDevMode get() = DevEasterEgg.isDevModeActive(getApplication())
+
     // Output-latency correction for mic onsets, from the device self-test constant via
     // MicCalibration (the single source of truth). 0 when uncalibrated (dev). Set per game.
     private var micLatencyMs = 0L
 
     init {
         engine.onBeat = { beat ->
-            // The detector rejects the metronome click spectrally (classifyClaps), so no
+            // The detector rejects the metronome click spectrally, so no
             // time-suppression window is set here - an on-beat clap is no longer blocked.
-            if (BuildConfig.DEBUG && _useMic.value) {
+            if (isDevMode && _useMic.value) {
                 val now = SystemClock.elapsedRealtime()
                 MicDiagnosticsBuffer.logBeat(beat, now, now)
             }
@@ -261,7 +270,10 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun stopGame() {
-        if (BuildConfig.DEBUG && _useMic.value) MicDiagnosticsBuffer.endSession()
+        if (isDevMode && _useMic.value) {
+            MicDiagnosticsBuffer.endSession()
+            SessionAudioRecorder.finish(getApplication())
+        }
         cancelJobs()
         engine.stop(); detector.stop()
         _phase.value = GamePhase.IDLE
@@ -336,15 +348,29 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
         if (micReady) {
             micLatencyMs = cal.latencyMs.toLong()
+            roomNoiseMonitor.reset()
             detector.start()
-            if (BuildConfig.DEBUG) {
-                MicDiagnosticsBuffer.startSession("RhythmGame", detector.echoCancellationActive)
+            // In debug, log spectral click rejections to the Mic Timing Log dev viewer.
+            if (isDevMode) {
                 detector.debugOnClickRejected = { onset, onsetMs ->
-                    MicDiagnosticsBuffer.logClickRejected(onsetMs, onset.lowRms, onset.highRms, onset.peakRatio)
+                    MicDiagnosticsBuffer.logClickRejected(onsetMs, onset.lowRms, onset.highRms, onset.peakRatio, onset.flatness)
                 }
-                viewModelScope.launch { detector.amplitude.collect { MicDiagnosticsBuffer.updateAmplitude(it) } }
+                SessionAudioRecorder.begin(getApplication())
+                detector.debugOnPcm = { buf, n, sr -> SessionAudioRecorder.append(buf, n, sr) }
             }
+            if (isDevMode) {
+                MicDiagnosticsBuffer.startSession("RhythmGame", detector.echoCancellationActive)
+            }
+            micJob?.cancel()
+            // All per-session collectors are children of micJob so stopGame cancels them together.
+            // The detector is long-lived and reused across games, so an uncancelled amplitude
+            // collector from a prior game would keep feeding roomNoiseMonitor on the next one.
             micJob = viewModelScope.launch {
+                // Feed the live room-noise monitor (production), plus the dev diagnostics buffer.
+                launch { detector.amplitude.collect { roomNoiseMonitor.update(it) } }
+                if (isDevMode) {
+                    launch { detector.amplitude.collect { MicDiagnosticsBuffer.updateAmplitude(it) } }
+                }
                 detector.detections.collect { onsetElapsedMs ->
                     // Guard the whole body: a single bad onset must never cancel this collector
                     // and silently kill clap input for the rest of the game. Cancellation is
@@ -357,7 +383,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
                         // Only the small mic input latency applies here; we leave it uncorrected and
                         // let the widened hit windows absorb it.
                         val clapSongMs = onsetElapsedMs - gameStartElapsedMs
-                        if (BuildConfig.DEBUG) {
+                        if (isDevMode) {
                             // raw = what we now score against; cal = the old full-round-trip value,
                             // kept for comparison in the Mic Timing Log.
                             val nearest = notes.filter { it.state == NoteState.ACTIVE }
@@ -550,7 +576,10 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun endGame() {
         if (_phase.value == GamePhase.RESULT) return
-        if (BuildConfig.DEBUG && _useMic.value) MicDiagnosticsBuffer.endSession()
+        if (isDevMode && _useMic.value) {
+            MicDiagnosticsBuffer.endSession()
+            SessionAudioRecorder.finish(getApplication())
+        }
         engine.stop(); detector.stop()
         val finalScore = _score.value
         val isNew = currentDifficultyName.isNotEmpty() &&
@@ -584,6 +613,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         _result.value =
             GameResult(finalScore, maxCombo, countPerfect, countGood, countBad, countMiss, isNew)
         AnalyticsTracker.logGameCompleted(currentDifficultyName, finalScore, countPerfect, countGood, countBad, countMiss, isNew)
+
         _phase.value = GamePhase.RESULT
     }
 
@@ -633,6 +663,5 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         engine.stop(); detector.stop()
-        super.onCleared()
     }
 }

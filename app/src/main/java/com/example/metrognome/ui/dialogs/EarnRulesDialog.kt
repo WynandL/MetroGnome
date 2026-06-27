@@ -31,8 +31,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -40,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.metrognome.BuildConfig
+import com.example.metrognome.dev.DevEasterEgg
 import com.example.metrognome.points.EarnRule
 import com.example.metrognome.points.EARN_RULES
 import com.example.metrognome.points.PointsConfig
@@ -48,6 +50,9 @@ import com.example.metrognome.ui.theme.AppColors
 
 @Composable
 fun EarnRulesDialog(onDismiss: () -> Unit) {
+    // Same gate as every other dev tool: visible in a debug build OR when dev mode is unlocked.
+    val context = LocalContext.current
+    val isDevMode = remember { DevEasterEgg.isDevModeActive(context) }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -113,7 +118,7 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
                     // ── Footer ───────────────────────────────────────────────
                     HorizontalDivider(color = AppColors.surfaceVariant, modifier = Modifier.padding(top = 4.dp))
 
-                    if (BuildConfig.DEBUG) {
+                    if (isDevMode) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -138,7 +143,7 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
                         text     = "All limits reset at midnight each day.",
                         color    = AppColors.textMuted,
                         fontSize = 10.sp,
-                        modifier = Modifier.padding(top = if (BuildConfig.DEBUG) 1.dp else 8.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(top = if (isDevMode) 1.dp else 8.dp, bottom = 4.dp),
                     )
                 }
 

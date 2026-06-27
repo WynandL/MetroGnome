@@ -1,65 +1,14 @@
 package com.example.metrognome.groove
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests for [GrooveScorer] - verifies the consistency-first, bias-lenient grading and the
- * decoupled length-bounded Gnotes bonus.
+ * Unit tests for [GrooveScorer] - the decoupled length-bounded Gnotes bonus and the nearest-beat
+ * folding helper. Session grading itself lives in (and is tested via) [SessionAnalyzer].
  */
 class GrooveScorerTest {
-
-    @Test
-    fun tooFewHitsIsUnqualified() {
-        val r = GrooveScorer.score(listOf(0f, 5f, 2f))   // 3 < MIN_HITS
-        assertFalse(r.qualified)
-        assertEquals(0, r.grooveScore)
-        assertEquals(3, r.hitCount)
-    }
-
-    @Test
-    fun tightOnTheBeatScoresNearPerfect() {
-        val r = GrooveScorer.score(listOf(2f, -3f, 1f, 0f, -2f, 3f))
-        assertTrue(r.qualified)
-        assertTrue("expected high score, got ${r.grooveScore}", r.grooveScore >= 95)
-        assertEquals("Locked in", r.read)
-    }
-
-    @Test
-    fun consistentButLateStillScoresWell() {
-        // The "friend's case": tightly clustered but ~140ms behind the beat. The old absolute
-        // curve gave ~0; consistency-first grading should credit the steadiness.
-        val r = GrooveScorer.score(listOf(135f, 140f, 145f, 138f, 142f, 140f))
-        assertTrue(r.qualified)
-        assertTrue("expected a solid score for steady-but-late, got ${r.grooveScore}", r.grooveScore in 60..80)
-        assertEquals("Steady but behind the beat", r.read)
-        assertTrue(r.biasMs > 100f)
-        assertTrue("jitter should be small", r.jitterMs < 10f)
-    }
-
-    @Test
-    fun scatteredTimingScoresLow() {
-        val r = GrooveScorer.score(listOf(-150f, 150f, -120f, 130f, -140f, 160f))
-        assertTrue("expected a low score for scattered hits, got ${r.grooveScore}", r.grooveScore <= 25)
-        assertEquals("Loose timing", r.read)
-    }
-
-    @Test
-    fun aheadOfTheBeatReadsAhead() {
-        val r = GrooveScorer.score(listOf(-130f, -140f, -135f, -138f, -142f, -136f))
-        assertEquals("Steady but ahead of the beat", r.read)
-        assertTrue(r.biasMs < 0f)
-    }
-
-    @Test
-    fun grooveScoreIsLengthIndependent() {
-        // The same playing quality grades identically regardless of how many hits / how long.
-        val short = GrooveScorer.score(List(6) { 5f })
-        val long = GrooveScorer.score(List(200) { 5f })
-        assertEquals(short.grooveScore, long.grooveScore)
-    }
 
     @Test
     fun bonusScalesWithMinutesNotQuality() {
@@ -78,5 +27,57 @@ class GrooveScorerTest {
     fun unqualifiedOrZeroEarnsNothing() {
         assertEquals(0, GrooveScorer.bonusGnotes(0.9f, hitCount = 3, sessionMinutes = 5))   // too few hits
         assertEquals(0, GrooveScorer.bonusGnotes(0f, hitCount = 50, sessionMinutes = 5))     // graded zero
+    }
+
+    // ── nearestBeatDeviation: the nearest-beat folding both timing-bonus paths use ──────────────
+
+    private val tol = 0.001f
+
+    @Test
+    fun clapJustAfterTheBeatStaysSmallPositive() {
+        // 120 BPM -> 500 ms interval. A clap 30 ms behind the beat reads as +30.
+        assertEquals(30f, GrooveScorer.nearestBeatDeviation(30f, 500f), tol)
+    }
+
+    @Test
+    fun clapAnticipatingNextBeatReadsEarlyNotVeryLate() {
+        // 120 BPM. A clap 30 ms BEFORE the next beat lands 470 ms after the last beat. Previous-beat
+        // math logged +470 (a wildly late hit); folding gives the true -30 (early).
+        assertEquals(-30f, GrooveScorer.nearestBeatDeviation(470f, 500f), tol)
+    }
+
+    @Test
+    fun exactlyOnTheBeatIsZero() {
+        assertEquals(0f, GrooveScorer.nearestBeatDeviation(0f, 500f), tol)
+    }
+
+    @Test
+    fun earlyClapAtSlowTempoNoLongerRejected() {
+        // 40 BPM -> 1500 ms interval. A clap 100 ms ahead of a beat lands 1400 ms after the prior
+        // beat. Previous-beat math gave +1400, which the +/-500 ms accept gate discarded entirely.
+        // Folding gives -100, comfortably inside the window.
+        val folded = GrooveScorer.nearestBeatDeviation(1400f, 1500f)
+        assertEquals(-100f, folded, tol)
+        assertTrue("a 100 ms-early clap must be accepted at 40 BPM", kotlin.math.abs(folded) <= 500f)
+    }
+
+    @Test
+    fun foldedDeviationNeverExceedsHalfTheInterval() {
+        val interval = 500f
+        var d = -2000f
+        while (d <= 2000f) {
+            val folded = GrooveScorer.nearestBeatDeviation(d, interval)
+            assertTrue(
+                "delta $d folded to $folded, outside +/- interval/2",
+                kotlin.math.abs(folded) <= interval / 2f + tol,
+            )
+            d += 7f   // walk a non-divisor step so we sample many phases
+        }
+    }
+
+    @Test
+    fun nonPositiveIntervalIsSafeNoOp() {
+        assertEquals(123f, GrooveScorer.nearestBeatDeviation(123f, 0f), tol)
+        assertEquals(123f, GrooveScorer.nearestBeatDeviation(123f, -10f), tol)
     }
 }

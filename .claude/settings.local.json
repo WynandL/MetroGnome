@@ -34,7 +34,29 @@
       "Bash(./gradlew :app:compileDebugKotlin -q)",
       "WebSearch",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:unpkg.com)"
+      "WebFetch(domain:unpkg.com)",
+      "Bash(ls landing/blog/)",
+      "Bash(git ls-tree *)",
+      "Bash(git reset *)",
+      "Bash(git clean *)",
+      "Bash(./gradlew test *)",
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.example.metrognome.groove.GrooveScorerTest\" --tests \"com.example.metrognome.audio.dsp.ClapDetectorTest\")",
+      "Bash(./gradlew :app:compileDebugKotlin :app:testDebugUnitTest --tests \"com.example.metrognome.audio.rhythm.AmbientLevelMonitorTest\" --tests \"com.example.metrognome.groove.GrooveScorerTest\" --tests \"com.example.metrognome.audio.dsp.ClapDetectorTest\")",
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "Bash(./gradlew :app:compileDebugKotlin :app:testDebugUnitTest --tests \"com.example.metrognome.audio.dsp.ClapDetectorTest\" --tests \"com.example.metrognome.groove.GrooveScorerTest\" --tests \"com.example.metrognome.audio.rhythm.AmbientLevelMonitorTest\")",
+      "Bash(./gradlew testDebugUnitTest --tests \"com.example.metrognome.audio.dsp.ClapDetectorTest\")",
+      "Bash(./gradlew testDebugUnitTest --tests \"com.example.metrognome.audio.rhythm.AmbientLevelMonitorTest\" --tests \"com.example.metrognome.audio.dsp.ClapDetectorTest\")",
+      "Bash(/c/Users/wlambrechts/AppData/Local/Android/Sdk/platform-tools/adb.exe devices *)",
+      "Bash(/c/Users/wlambrechts/AppData/Local/Android/Sdk/emulator/emulator.exe *)",
+      "Bash(/c/Users/wlambrechts/AppData/Local/Android/Sdk/platform-tools/adb.exe install *)",
+      "Bash(/c/Users/wlambrechts/AppData/Local/Android/Sdk/platform-tools/adb.exe shell *)",
+      "Bash(/c/Users/wlambrechts/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 emu kill)",
+      "Bash(./gradlew testDebugUnitTest --tests \"com.example.metrognome.audio.rhythm.RoomNoiseMonitorTest\")",
+      "Bash(./gradlew testDebugUnitTest)",
+      "Bash(./gradlew testDebugUnitTest --tests \"com.example.metrognome.groove.SessionAnalyzerTest\")",
+      "Bash(git check-ignore *)",
+      "Bash(./gradlew testDebugUnitTest --tests \"com.example.metrognome.groove.*\" -q)",
+      "Bash(./gradlew testDebugUnitTest --tests \"com.example.metrognome.groove.*\")"
     ]
   }
 }

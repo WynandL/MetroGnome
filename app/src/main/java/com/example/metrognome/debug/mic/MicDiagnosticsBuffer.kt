@@ -39,12 +39,24 @@ object MicDiagnosticsBuffer {
     private val _sessionStartMs = MutableStateFlow(0L)
     val sessionStartMs: StateFlow<Long> = _sessionStartMs.asStateFlow()
 
+    // The EXACT analysis the user-facing result used, stashed by the ViewModel at session end. The
+    // dev log shows this (not a re-derivation from the capped event buffer) so the dev number is
+    // guaranteed identical to what the player saw. Null until a graded session completes.
+    private val _lastAnalysis = MutableStateFlow<com.example.metrognome.groove.SessionAnalyzer.Analysis?>(null)
+    val lastAnalysis: StateFlow<com.example.metrognome.groove.SessionAnalyzer.Analysis?> = _lastAnalysis.asStateFlow()
+
+    /** Called by the ViewModel right after it grades a session, with the authoritative analysis. */
+    fun setLastAnalysis(analysis: com.example.metrognome.groove.SessionAnalyzer.Analysis) {
+        _lastAnalysis.value = analysis
+    }
+
     // ── Session lifecycle ─────────────────────────────────────────────────────
 
     fun startSession(source: String, aecActive: Boolean) {
         val now = SystemClock.elapsedRealtime()
         _events.value = emptyList()
         _ampHistory.value = emptyList()
+        _lastAnalysis.value = null
         _source.value = source
         _aecActive.value = aecActive
         _sessionStartMs.value = now
@@ -69,8 +81,8 @@ object MicDiagnosticsBuffer {
         append(MicDiagnosticsEvent.OnsetRejected(onsetMs, rawDev))
     }
 
-    fun logClickRejected(onsetMs: Long, lowRms: Double, highRms: Double, peakRatio: Double) {
-        append(MicDiagnosticsEvent.ClickRejected(onsetMs, lowRms, highRms, peakRatio))
+    fun logClickRejected(onsetMs: Long, lowRms: Double, highRms: Double, peakRatio: Double, flatness: Double) {
+        append(MicDiagnosticsEvent.ClickRejected(onsetMs, lowRms, highRms, peakRatio, flatness))
     }
 
     // ── Amplitude ─────────────────────────────────────────────────────────────

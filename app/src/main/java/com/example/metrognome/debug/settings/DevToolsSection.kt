@@ -1,6 +1,10 @@
 package com.example.metrognome.debug.settings
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,14 +13,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -32,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.window.Dialog
 import com.example.metrognome.ads.AdEngineConfig
 import com.example.metrognome.ads.AdPlacement
@@ -53,8 +56,6 @@ import com.example.metrognome.poll.ALL_POLLS
 import com.example.metrognome.points.PointsBannerQueue
 import com.example.metrognome.ui.components.PollBanner
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
-import com.example.metrognome.ui.components.metro_items.UnlockCondition
-import com.example.metrognome.ui.components.metro_items.displayText
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.whatsnew.AppWhatsNew
@@ -86,6 +87,18 @@ fun DevToolsSection(
 ) {
     val context = LocalContext.current
 
+    // RECORD_AUDIO state for the "Real mic" dev button: forcing a calibration pass arms mic mode,
+    // but the session captures nothing without this permission - and that silent gap once cost a
+    // confusing debugging session. The button reflects the state and requests it on tap when missing.
+    var micPermRefresh by remember { mutableIntStateOf(0) }
+    val hasMicPerm = remember(micPermRefresh) {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+    }
+    val micPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { micPermRefresh++ }
+
     val cheatModeEnabled by vm.cheatModeEnabled.collectAsStateWithLifecycle()
     val purchasedSoundIds by vm.purchasedSoundIds.collectAsStateWithLifecycle()
     val purchasedItemProductIds by vm.purchasedItemProductIds.collectAsStateWithLifecycle()
@@ -105,7 +118,6 @@ fun DevToolsSection(
                 .getBoolean("answered_${poll.id}", false)
         } ?: false
     }
-    var showUnlockRules by remember { mutableStateOf(false) }
     var showAdPolicy by remember { mutableStateOf(false) }
     var showMicSelfTest by remember { mutableStateOf(false) }
     var showMicTimingLog by remember { mutableStateOf(false) }
@@ -158,17 +170,6 @@ fun DevToolsSection(
                 )
             }
         }
-        Spacer(Modifier.height(6.dp))
-
-        OutlinedButton(
-            onClick = { showUnlockRules = true },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-            border = BorderStroke(1.dp, AppColors.devBlueBorder)
-        ) {
-            Text("Show Unlock Rules", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
-
         Spacer(Modifier.height(6.dp))
 
         OutlinedButton(
@@ -496,6 +497,12 @@ fun DevToolsSection(
         Row(modifier = Modifier.fillMaxWidth()) {
             OutlinedButton(
                 onClick = {
+                    // Without RECORD_AUDIO the real mic can't capture - request it first instead of
+                    // silently arming a dead mic. Once granted, a second tap forces the pass.
+                    if (!hasMicPerm) {
+                        micPermLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        return@OutlinedButton
+                    }
                     val store = SelfTestCalibrationStore(context)
                     val route = AudioRouteMonitor(context).currentRoute()
                     store.devForcePass((45..95).random().toFloat(), route)
@@ -503,10 +510,17 @@ fun DevToolsSection(
                     onMicStateChanged()
                 },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = BorderStroke(1.dp, AppColors.devBlueBorder)
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (hasMicPerm) AppColors.devBlue else AppColors.devRed
+                ),
+                border = BorderStroke(1.dp, if (hasMicPerm) AppColors.devBlueBorder else AppColors.devRedBorder)
             ) {
-                Text("Real mic", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text(
+                    if (hasMicPerm) "Real mic" else "Real mic ⚠",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
             }
 
             Spacer(Modifier.width(8.dp))
@@ -530,7 +544,8 @@ fun DevToolsSection(
         Text(
             "Both force a calibration pass and turn mic mode on. \"Real mic\" uses your actual mic, " +
                 "so a bad mic earns 0 bonus. \"Simulate\" fakes plausible timing so a bonus appears " +
-                "with no real input. A genuine saved calibration is never overwritten.",
+                "with no real input. A genuine saved calibration is never overwritten." +
+                (if (!hasMicPerm) " Real mic shows ⚠ until RECORD_AUDIO is granted; tap it to request." else ""),
             color = AppColors.textMuted,
             fontSize = 9.sp,
             lineHeight = 12.sp,
@@ -622,53 +637,6 @@ fun DevToolsSection(
 
     if (showAdPolicy) {
         AdPolicyDialog(onDismiss = { showAdPolicy = false })
-    }
-
-    if (showUnlockRules) {
-        AlertDialog(
-            onDismissRequest = { showUnlockRules = false },
-            containerColor = AppColors.surfaceDeep,
-            titleContentColor = AppColors.gold,
-            textContentColor = AppColors.textSecondary,
-            title = { Text("Unlock Rules", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(modifier = Modifier
-                    .heightIn(max = 380.dp)
-                    .verticalScroll(rememberScrollState())) {
-                    METRO_ITEM_REGISTRY.sortedBy { entry ->
-                        when (val c = entry.condition) {
-                            is UnlockCondition.MetronomeSeconds          -> c.required.toDouble()
-                            is UnlockCondition.TunerSeconds              -> c.required.toDouble()
-                            is UnlockCondition.RhythmGamesCompleted      -> c.required * 300.0
-                            is UnlockCondition.DaysSinceFirstLaunch      -> c.required * 86_400.0
-                            is UnlockCondition.LoyaltyDays               -> c.required * 86_400.0
-                            is UnlockCondition.PracticeSessionsCompleted -> c.required * 1_200.0
-                            is UnlockCondition.TunerFeedbackGiven              -> c.required * 60.0
-                            is UnlockCondition.SpeedTrainingSessionsCompleted  -> c.required * 900.0
-                            UnlockCondition.Always                             -> -1.0
-                        }
-                    }.forEach { entry ->
-                        Text(
-                            text = entry.item.displayName,
-                            color = AppColors.textAccent,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                        )
-                        Text(
-                            text = entry.condition.displayText(),
-                            fontSize = 12.sp,
-                            color = AppColors.textSecondary,
-                        )
-                        Spacer(Modifier.height(10.dp))
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showUnlockRules = false }) {
-                    Text("OK", color = AppColors.textAccent, fontWeight = FontWeight.Bold)
-                }
-            }
-        )
     }
 }
 

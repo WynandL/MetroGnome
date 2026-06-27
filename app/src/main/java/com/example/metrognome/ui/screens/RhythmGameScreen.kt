@@ -89,6 +89,7 @@ import com.example.metrognome.points.PointsSnapshot
 import com.example.metrognome.points.UsageDayTracker
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.components.MicTimingNudge
+import com.example.metrognome.ui.components.RoomNoiseIndicator
 import com.example.metrognome.ui.components.LOYALTY_MILESTONES
 import com.example.metrognome.ui.components.LoyaltyMilestonePath
 import com.example.metrognome.ui.components.StreakWeekCard
@@ -148,6 +149,7 @@ fun RhythmGameScreen(
     val beatsRemaining by vm.beatsRemaining.collectAsStateWithLifecycle()
     val highScores by vm.highScores.collectAsStateWithLifecycle()
     val visibleNotes by vm.visibleNotes.collectAsStateWithLifecycle()
+    val roomNoisy by vm.roomNoisy.collectAsStateWithLifecycle()
 
     val unlockQueue  by vm.unlockQueue.collectAsStateWithLifecycle()
     val gnoteCount   by metronomeVm.gnoteCount.collectAsStateWithLifecycle()
@@ -213,6 +215,16 @@ fun RhythmGameScreen(
             AdBannerView(modifier = Modifier.fillMaxWidth())
         }
     }
+
+    // Live room-noise indicator, shown only during play (the live complement to the enable-time mic
+    // self-test): a small tappable amber glyph in the top corner. Never affects detection or scoring.
+    RoomNoiseIndicator(
+        visible = phase == GamePhase.PLAYING && roomNoisy,
+        modifier = Modifier
+            .align(Alignment.TopEnd)
+            .statusBarsPadding()
+            .padding(top = 8.dp, end = 12.dp),
+    )
 
     unlockQueue.firstOrNull()?.let { entry ->
         UnlockCelebrationOverlay(

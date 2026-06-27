@@ -13,7 +13,9 @@ import com.example.metrognome.speedtrainer.SpeedTrainerPrefs
 import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.dev.DevEasterEgg
 import com.example.metrognome.debug.mic.MicDiagnosticsBuffer
+import com.example.metrognome.debug.mic.SessionAudioRecorder
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -96,6 +98,11 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     private val _greatHit = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
     val greatHit: SharedFlow<Unit> = _greatHit.asSharedFlow()
 
+    // Live room-noise indicator: a passive observer of the detector amplitude (never touches
+    // detection). True while the room is too noisy for reliable clap timing. See RoomNoiseIndicator.
+    private val roomNoiseMonitor = com.example.metrognome.audio.rhythm.RoomNoiseMonitor()
+    val roomNoisy: StateFlow<Boolean> = roomNoiseMonitor.noisy
+
     // ── Internal session bookkeeping ──────────────────────────────────────────
 
     private var steps: List<Int> = emptyList()
@@ -124,8 +131,15 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     // Feeds the per-hit Timing Bonus score so one wild hit can't sink an otherwise-good run.
     private val sessionDeviations = mutableListOf<Float>()
 
+    // Raw accepted-onset and beat timestamps (elapsedRealtime) for the post-session SessionAnalyzer,
+    // which does the rhythm/inlier statistics on the COMPLETE session rather than per-hit deviations.
+    private val sessionOnsetTimes = mutableListOf<Long>()
+    private val sessionBeatTimes = mutableListOf<Long>()
+
     // Mic
     private var detector: RhythmDetector? = null
+    /** Parent of all per-session mic collectors; cancelled in [stopMic] so they don't leak. */
+    private var micJob: Job? = null
 
     private val isDevMode get() = DevEasterEgg.isDevModeActive(getApplication())
 
@@ -180,9 +194,11 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         stepStats.clear()
         currentStepDeviations.clear()
         sessionDeviations.clear()
+        sessionOnsetTimes.clear()
+        sessionBeatTimes.clear()
 
         sessionStartMs = SystemClock.elapsedRealtime()
-        SessionFlags.speedTrainerActive = true
+        roomNoiseMonitor.reset()
         _sessionState.value = TrainerSessionState.Countdown(
             config = cfg,
             steps = steps,
@@ -203,7 +219,6 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun cancelSession() {
-        SessionFlags.speedTrainerActive = false
         stopMic()
         countdownBeatsLeft = 0
         AnalyticsTracker.logSpeedTrainerCancelled(
@@ -221,8 +236,9 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onBeat(beat: Int) {
         lastBeatMs = SystemClock.elapsedRealtime()
+        sessionBeatTimes.add(lastBeatMs)
 
-        // The detector rejects the metronome click spectrally (classifyClaps), so there is no
+        // The detector rejects the metronome click spectrally, so there is no
         // time-suppression window any more; a hit landing on the beat still scores.
         if (isDevMode) {
             MicDiagnosticsBuffer.logBeat(
@@ -285,7 +301,12 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     // ── Mic onset callback (called from coroutine collecting detector.detections) ──
 
     fun onOnset(onsetMs: Long) {
-        val rawDeviation = (onsetMs - lastBeatMs).toFloat()
+        // Fold onto the nearest beat (not just the previous one): a clap that anticipates the beat
+        // reads as early, not as a near-full-interval-late hit. See GrooveScorer.nearestBeatDeviation.
+        val stepBpm = steps.getOrElse(currentStepIndex) { 0 }.coerceAtLeast(1)
+        val intervalMs = 60_000f / stepBpm
+        val rawDeviation = com.example.metrognome.groove.GrooveScorer
+            .nearestBeatDeviation((onsetMs - lastBeatMs).toFloat(), intervalMs)
 
         // Reject anything outside a generous ±500ms window around the beat.
         if (abs(rawDeviation) > 500f) {
@@ -312,6 +333,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
 
                 currentStepDeviations.add(deviation)
                 sessionDeviations.add(deviation)
+                sessionOnsetTimes.add(onsetMs)
 
                 val cfg = _config.value
                 val goodHits = recentDeviations.count { abs(it) <= cfg.autoAdvanceWindowMs }
@@ -361,7 +383,6 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         private set
 
     private fun completeSession() {
-        SessionFlags.speedTrainerActive = false
         stopMic()
         val elapsedSeconds = (SystemClock.elapsedRealtime() - sessionStartMs) / 1000L
         lastSessionDurationSeconds = elapsedSeconds.toInt().coerceAtLeast(0)
@@ -394,11 +415,24 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
-        // Adaptive Groove Check grade from the SIGNED per-hit deviations (consistency-first; see
-        // groove/GrooveScorer). The grooveScore (0..100) is shown to the player; the Gnotes bonus
-        // is a separate, length-bounded reward. Single source shared with Practice.
-        val totalHits = sessionDeviations.size
-        val realGroove = com.example.metrognome.groove.GrooveScorer.score(sessionDeviations.toList())
+        // Adaptive Groove Check grade from the COMPLETE session via SessionAnalyzer (post-session
+        // rhythm statistics: estimates the player's own pulse, rejects ambient outliers, grades
+        // self-consistency - so steady-but-off-the-click still scores). Adapted into the shared
+        // GrooveScorer.Result shape so the bonus + result UI are unchanged. grooveScore (0..100) is
+        // shown to the player; the Gnotes bonus is a separate, length-bounded reward.
+        val totalHits = sessionOnsetTimes.size
+        val analysis = com.example.metrognome.groove.SessionAnalyzer
+            .analyze(sessionOnsetTimes.toList(), sessionBeatTimes.toList())
+        val realGroove = com.example.metrognome.groove.GrooveScorer.Result(
+            grooveScore = analysis.grooveScore,
+            fraction = analysis.fraction,
+            biasMs = analysis.gridBiasMs,
+            jitterMs = analysis.selfConsistencyMs,
+            hitCount = analysis.validInputs,
+            qualified = analysis.confident,
+            read = analysis.read,
+        )
+        if (isDevMode) MicDiagnosticsBuffer.setLastAnalysis(analysis)
 
         // Dev "simulate timing": with no real hits on a device/emulator that has no usable mic,
         // synthesize a plausible grade so the bonus + result UI can still be exercised. Only the
@@ -483,26 +517,40 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
 
     @Suppress("MissingPermission")
     private fun startMic() {
+        micJob?.cancel()
         detector?.stop()
         // Spectral mode: rejects the metronome click by signature and emits only claps, so an
         // on-beat hit still counts (the old time-suppression window dropped those).
-        val det = RhythmDetector(classifyClaps = true)
+        val det = RhythmDetector()
         detector = det
         det.start()
-        viewModelScope.launch {
-            det.detections.collect { onsetMs -> onOnset(onsetMs) }
-        }
         if (isDevMode) {
             MicDiagnosticsBuffer.startSession("SpeedTrainer", det.echoCancellationActive)
-            viewModelScope.launch { det.amplitude.collect { MicDiagnosticsBuffer.updateAmplitude(it) } }
             det.debugOnClickRejected = { onset, onsetMs ->
-                MicDiagnosticsBuffer.logClickRejected(onsetMs, onset.lowRms, onset.highRms, onset.peakRatio)
+                MicDiagnosticsBuffer.logClickRejected(onsetMs, onset.lowRms, onset.highRms, onset.peakRatio, onset.flatness)
+            }
+            SessionAudioRecorder.begin(getApplication())
+            det.debugOnPcm = { buf, n, sr -> SessionAudioRecorder.append(buf, n, sr) }
+        }
+        // All per-session collectors are children of micJob so stopMic cancels them together
+        // (collecting flows that never close, they would otherwise leak the detector each session).
+        micJob = viewModelScope.launch {
+            launch { det.detections.collect { onsetMs -> onOnset(onsetMs) } }
+            // Feed the live room-noise monitor (production) and, in dev, the diagnostics buffer.
+            launch { det.amplitude.collect { roomNoiseMonitor.update(it) } }
+            if (isDevMode) {
+                launch { det.amplitude.collect { MicDiagnosticsBuffer.updateAmplitude(it) } }
             }
         }
     }
 
     private fun stopMic() {
-        if (isDevMode) MicDiagnosticsBuffer.endSession()
+        micJob?.cancel()
+        micJob = null
+        if (isDevMode) {
+            MicDiagnosticsBuffer.endSession()
+            SessionAudioRecorder.finish(getApplication())
+        }
         detector?.stop()
         detector = null
     }

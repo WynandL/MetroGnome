@@ -47,7 +47,7 @@ sealed class MicDiagnosticsEvent {
     ) : MicDiagnosticsEvent()
 
     /**
-     * A transient the spectral classifier judged to be the metronome click (classifyClaps mode)
+     * A transient the spectral classifier judged to be the metronome click
      * and dropped before it could be scored. [lowRms]/[highRms] are the integrated band levels;
      * a healthy reject is strongly low-band dominant (the 1100 Hz click sine). [peakRatio] is the
      * largest single-hop high/low burst seen. Shows the margin by which the click was caught.
@@ -57,6 +57,8 @@ sealed class MicDiagnosticsEvent {
         val lowRms: Double,
         val highRms: Double,
         val peakRatio: Double,
+        /** Spectral flatness of the rejected transient (0..1). A healthy click reject is tonal (low). */
+        val flatness: Double = 0.0,
     ) : MicDiagnosticsEvent()
 
     /** One raw-deviation reading collected during the count-in calibration phase. */

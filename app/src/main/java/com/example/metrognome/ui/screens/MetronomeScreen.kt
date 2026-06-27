@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -167,6 +168,8 @@ fun MetronomeScreen(
     // ── Speed Trainer ──────────────────────────────────────────────────────────
     val trainerConfig by trainerVm.config.collectAsStateWithLifecycle()
     val trainerState by trainerVm.sessionState.collectAsStateWithLifecycle()
+    val practiceRoomNoisy by vm.roomNoisy.collectAsStateWithLifecycle()
+    val trainerRoomNoisy by trainerVm.roomNoisy.collectAsStateWithLifecycle()
     var showTrainerDialog by remember { mutableStateOf(false) }
     var showCancelTrainerDialog  by remember { mutableStateOf(false) }
     var showCancelPracticeDialog by remember { mutableStateOf(false) }
@@ -584,6 +587,20 @@ fun MetronomeScreen(
             onDismiss  = { showGnotesInfo = false },
         )
     }
+
+    // Live room-noise indicator while a mic session runs (Practice or Speed Trainer): a small amber
+    // glyph in the top corner, tappable for an explanation. The live complement to the enable-time
+    // mic self-test. Purely informational; never affects scoring and never covers the gnome.
+    val micSessionActive = isPracticeActive ||
+        trainerState is TrainerSessionState.Running ||
+        trainerState is TrainerSessionState.Countdown
+    com.example.metrognome.ui.components.RoomNoiseIndicator(
+        visible = micSessionActive && (practiceRoomNoisy || trainerRoomNoisy),
+        modifier = Modifier
+            .align(Alignment.TopEnd)
+            .statusBarsPadding()
+            .padding(top = 8.dp, end = 12.dp),
+    )
 
     } // close outer Box
 }

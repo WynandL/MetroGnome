@@ -52,7 +52,17 @@ class MetroItemTracker(context: Context) {
 
     // ── Writers (called by engine / game) ─────────────────────────────────────
 
-    /** Add [seconds] to the cumulative metronome play-time. */
+    /**
+     * Add [seconds] to the cumulative metronome play-time. This is the single sink for metronome
+     * usage, feeding both the "Metronome" Gnotes category and the metronome-seconds item unlocks.
+     *
+     * POLICY (one source of truth): metronome time is credited whenever the metronome is playing, and
+     * that INCLUDES while a Practice or Speed Trainer session is running. The two structured sessions
+     * are treated identically: the player is actively using the metronome, and some items unlock on
+     * cumulative metronome seconds, so that active use should count even though the session also earns
+     * its own Practice / Speed Trainer Gnotes. (An earlier SessionFlags gate excluded Speed Trainer
+     * time here; it was removed so the two sessions stay consistent and active use always counts.)
+     */
     fun addMetronomeSeconds(seconds: Long) {
         val current = prefs.getLong(KEY_METRONOME_SECONDS, 0L)
         prefs.edit { putLong(KEY_METRONOME_SECONDS, current + seconds) }
