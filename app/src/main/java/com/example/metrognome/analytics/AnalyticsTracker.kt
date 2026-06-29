@@ -161,14 +161,6 @@ object AnalyticsTracker {
         }
     }
 
-    // ── Free feature enables ──────────────────────────────────────────────────
-
-    fun logFeatureEnabled(feature: String) {
-        Firebase.analytics.logEvent("feature_enabled") {
-            param("feature", feature)
-        }
-    }
-
     // ── Items ─────────────────────────────────────────────────────────────────
 
     fun logItemUnlocked(itemId: String, itemName: String) {

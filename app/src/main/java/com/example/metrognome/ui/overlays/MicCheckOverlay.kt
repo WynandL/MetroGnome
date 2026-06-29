@@ -90,7 +90,12 @@ import com.example.metrognome.ui.theme.AppColors
  */
 @SuppressLint("MissingPermission")
 @Composable
-fun MicCheckOverlay(onDismiss: () -> Unit) {
+fun MicCheckOverlay(
+    onDismiss: () -> Unit,
+    /** Fired once per resolved run (any verdict). Lets the caller credit the run toward
+     *  item unlocks without this overlay knowing anything about the item system. */
+    onRunCompleted: () -> Unit = {},
+) {
     val context = LocalContext.current
     val selfTest = remember { MicSelfTest(context) }
     val ui by selfTest.state.collectAsStateWithLifecycle()
@@ -125,6 +130,7 @@ fun MicCheckOverlay(onDismiss: () -> Unit) {
         report?.let {
             MicCheckReporter.submit(it)
             AnalyticsTracker.logMicCheckCompleted(it.verdict.name, it.grade.name)
+            onRunCompleted()
         }
     }
 

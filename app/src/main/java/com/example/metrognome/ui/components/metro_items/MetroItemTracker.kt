@@ -38,6 +38,7 @@ class MetroItemTracker(context: Context) {
         private const val KEY_SPEED_TRAINING_SESSIONS = "speed_training_sessions"
         private const val KEY_SPEED_TRAINER_SECONDS   = "speed_trainer_seconds"
         private const val KEY_PERFORMANCE_BONUS       = "performance_bonus_points"
+        private const val KEY_MIC_CHECKS_COMPLETED    = "mic_checks_completed"
 
         // Mirrors PracticeSessionManager key — read-only here, written only by PracticeSessionManager
         private const val KEY_PRACTICE_TOTAL = "total_sessions"
@@ -116,6 +117,12 @@ class MetroItemTracker(context: Context) {
         prefs.edit { putLong(KEY_SPEED_TRAINER_SECONDS, current + seconds) }
     }
 
+    /** Increment the completed-mic-check ("Groove Check") counter by 1, on any verdict. */
+    fun recordMicCheckCompleted() {
+        val current = prefs.getInt(KEY_MIC_CHECKS_COMPLETED, 0)
+        prefs.edit { putInt(KEY_MIC_CHECKS_COMPLETED, current + 1) }
+    }
+
     /** Accumulate [points] into the lifetime graded timing-bonus total (used for Gnotes). */
     fun addPerformanceBonus(points: Int) {
         if (points <= 0) return
@@ -135,6 +142,7 @@ class MetroItemTracker(context: Context) {
     fun speedTrainingSessionsCompleted(): Int = prefs.getInt(KEY_SPEED_TRAINING_SESSIONS, 0)
     fun speedTrainerSeconds(): Long           = prefs.getLong(KEY_SPEED_TRAINER_SECONDS, 0L)
     fun performanceBonusPoints(): Int        = prefs.getInt(KEY_PERFORMANCE_BONUS, 0)
+    fun micChecksCompleted(): Int            = prefs.getInt(KEY_MIC_CHECKS_COMPLETED, 0)
     fun practiceSessionsCompleted(): Int = practicePrefs.getInt(KEY_PRACTICE_TOTAL, 0)
     /** Distinct calendar days on which the user has opened the app. */
     fun loyaltyDays(): Int = usageDayTracker.distinctDaysCount()
@@ -190,6 +198,7 @@ class MetroItemTracker(context: Context) {
             is UnlockCondition.PracticeSessionsCompleted -> practiceSessionsCompleted() >= condition.required
             is UnlockCondition.TunerFeedbackGiven              -> tunerFeedbackGiven() >= condition.required
             is UnlockCondition.SpeedTrainingSessionsCompleted  -> speedTrainingSessionsCompleted() >= condition.required
+            is UnlockCondition.MicChecksCompleted              -> micChecksCompleted() >= condition.required
             UnlockCondition.Always                             -> true
         }
     }
@@ -230,6 +239,7 @@ class MetroItemTracker(context: Context) {
             remove(KEY_SPEED_TRAINING_SESSIONS)
             remove(KEY_SPEED_TRAINER_SECONDS)
             remove(KEY_PERFORMANCE_BONUS)
+            remove(KEY_MIC_CHECKS_COMPLETED)
             // KEY_FORCE_UNLOCKED_IDS is intentionally preserved — it reflects real purchases
         }
     }

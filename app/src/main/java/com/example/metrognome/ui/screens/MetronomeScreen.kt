@@ -68,6 +68,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import com.example.metrognome.audio.selftest.SelfTestCalibrationStore
+import com.example.metrognome.ui.overlays.MicCheckOverlay
 import com.example.metrognome.ui.overlays.PracticeCompleteOverlay
 import com.example.metrognome.ui.dialogs.PresetDeleteDialog
 import com.example.metrognome.ui.dialogs.SavePresetDialog
@@ -81,6 +83,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.activity.compose.LocalActivity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.example.metrognome.ui.components.MicTimingNudge
@@ -103,9 +106,6 @@ import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.components.CollapsibleStreakCard
 import com.example.metrognome.ui.components.GnomeCanvas
 import com.example.metrognome.ui.components.PresetChipsRow
-import com.example.metrognome.ui.dialogs.FeatureEnableDialog
-import com.example.metrognome.ui.dialogs.ShowcaseFrame
-import com.example.metrognome.ui.dialogs.SpeedTrainerRampPreview
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
@@ -134,9 +134,6 @@ fun MetronomeScreen(
     val isMuted by vm.isMuted.collectAsStateWithLifecycle()
     val keepScreenOn by vm.keepScreenOn.collectAsStateWithLifecycle()
     val isAdFree by vm.isAdFree.collectAsStateWithLifecycle()
-    val isPresetsEnabled by vm.isPresetsEnabled.collectAsStateWithLifecycle()
-    val isPracticeEnabled by vm.isPracticeEnabled.collectAsStateWithLifecycle()
-    val isSpeedTrainerEnabled by vm.isSpeedTrainerEnabled.collectAsStateWithLifecycle()
     val presets by vm.presets.collectAsStateWithLifecycle()
     val isPracticeActive by vm.isPracticeActive.collectAsStateWithLifecycle()
     val practiceSecondsRemaining by vm.practiceSecondsRemaining.collectAsStateWithLifecycle()
@@ -156,14 +153,16 @@ fun MetronomeScreen(
 
     var tapHintShown by remember { mutableStateOf(false) }
     var showSavePresetDialog by remember { mutableStateOf(false) }
-    var showEnablePresetsDialog by remember { mutableStateOf(false) }
-    var showEnablePracticeDialog by remember { mutableStateOf(false) }
-    var showEnableTrainerDialog by remember { mutableStateOf(false) }
     var presetPendingDelete by remember { mutableStateOf<Pair<Int, BpmPreset>?>(null) }
     val presetLongPressHintSeen by vm.presetLongPressHintSeen.collectAsStateWithLifecycle()
     var showPracticeDialog by remember { mutableStateOf(false) }
+    // Groove Check launched in-place from the Practice / Speed Trainer setup nudge (onboarding).
+    var showMicCheck by remember { mutableStateOf(false) }
+    // Bumped when a check resolves so the open setup dialog's nudge re-reads its state in place.
+    var micCheckRefresh by remember { mutableIntStateOf(0) }
 
     val activity = LocalActivity.current
+    val context = LocalContext.current
 
     // ── Speed Trainer ──────────────────────────────────────────────────────────
     val trainerConfig by trainerVm.config.collectAsStateWithLifecycle()
@@ -303,13 +302,10 @@ fun MetronomeScreen(
         SecondaryControlsRow(
             isMuted = isMuted,
             keepScreenOn = keepScreenOn,
-            isOnSavedPreset = isPresetsEnabled && presets.any { it.bpm == bpm },
+            isOnSavedPreset = presets.any { it.bpm == bpm },
             isPracticeActive = isPracticeActive,
             isTrainerActive = trainerState is TrainerSessionState.Running || trainerState is TrainerSessionState.Countdown,
-            onSavePreset = {
-                if (isPresetsEnabled) showSavePresetDialog = true
-                else showEnablePresetsDialog = true
-            },
+            onSavePreset = { showSavePresetDialog = true },
             onToggleMute = {
                 vm.toggleMute()
                 val msg = if (isMuted) "Sound on" else "Muted"
@@ -325,22 +321,16 @@ fun MetronomeScreen(
                 val trainerBusy = trainerState is TrainerSessionState.Running ||
                                   trainerState is TrainerSessionState.Countdown
                 if (!isPracticeActive) {
-                    when {
-                        trainerBusy  -> Toast.makeText(activity, "Stop the Speed Trainer first", Toast.LENGTH_SHORT).show()
-                        isPracticeEnabled -> showPracticeDialog = true
-                        else         -> showEnablePracticeDialog = true
-                    }
+                    if (trainerBusy) Toast.makeText(activity, "Stop the Speed Trainer first", Toast.LENGTH_SHORT).show()
+                    else showPracticeDialog = true
                 }
             },
             onTrainer = {
                 val trainerIdle = trainerState !is TrainerSessionState.Running &&
                                   trainerState !is TrainerSessionState.Countdown
                 if (trainerIdle) {
-                    when {
-                        isPracticeActive      -> Toast.makeText(activity, "Stop the Practice session first", Toast.LENGTH_SHORT).show()
-                        isSpeedTrainerEnabled -> showTrainerDialog = true
-                        else                  -> showEnableTrainerDialog = true
-                    }
+                    if (isPracticeActive) Toast.makeText(activity, "Stop the Practice session first", Toast.LENGTH_SHORT).show()
+                    else showTrainerDialog = true
                 }
             },
             modifier = Modifier
@@ -387,7 +377,7 @@ fun MetronomeScreen(
                     .background(AppColors.background)
                     .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 4.dp)
             )
-        } else if (isPracticeEnabled || (isSpeedTrainerEnabled && practiceStreak > 0)) {
+        } else if (bestStreak > 0 || practicedEpochDays.isNotEmpty()) {
             CollapsibleStreakCard(
                 streak             = practiceStreak,
                 bestStreak         = bestStreak,
@@ -401,7 +391,7 @@ fun MetronomeScreen(
             )
         }
 
-        if (isPresetsEnabled && presets.isNotEmpty()) {
+        if (presets.isNotEmpty()) {
             PresetChipsRow(
                 presets = presets,
                 currentBpm = bpm,
@@ -486,6 +476,8 @@ fun MetronomeScreen(
                 trainerVm.beginSession(timeSig)
             },
             onDismiss = { showTrainerDialog = false },
+            onStartMicCheck = { showMicCheck = true },
+            micCheckRefresh = micCheckRefresh,
         )
     }
 
@@ -509,39 +501,6 @@ fun MetronomeScreen(
         )
     }
 
-    if (showEnablePresetsDialog) {
-        EnablePresetsDialog(
-            onEnable = {
-                vm.enablePresets()
-                showEnablePresetsDialog = false
-                showSavePresetDialog = true
-            },
-            onDismiss = { showEnablePresetsDialog = false },
-        )
-    }
-
-    if (showEnablePracticeDialog) {
-        EnablePracticeDialog(
-            onEnable = {
-                vm.enablePractice()
-                showEnablePracticeDialog = false
-                showPracticeDialog = true
-            },
-            onDismiss = { showEnablePracticeDialog = false },
-        )
-    }
-
-    if (showEnableTrainerDialog) {
-        EnableSpeedTrainerDialog(
-            onEnable = {
-                vm.enableSpeedTrainer()
-                showEnableTrainerDialog = false
-                showTrainerDialog = true
-            },
-            onDismiss = { showEnableTrainerDialog = false },
-        )
-    }
-
     presetPendingDelete?.let { (index, preset) ->
         PresetDeleteDialog(
             preset = preset,
@@ -559,7 +518,27 @@ fun MetronomeScreen(
                 showPracticeDialog = false
                 vm.startPractice(minutes)
             },
-            onDismiss = { showPracticeDialog = false }
+            onDismiss = { showPracticeDialog = false },
+            onStartMicCheck = { showMicCheck = true },
+            micCheckRefresh = micCheckRefresh,
+        )
+    }
+
+    if (showMicCheck) {
+        // Same flow Settings runs: a passing calibration enables mic timing; any resolved
+        // run credits the Groove Check item unlock and queues its celebration.
+        MicCheckOverlay(
+            onDismiss = {
+                showMicCheck = false
+                val store = SelfTestCalibrationStore(context)
+                if (store.isCalibrated) store.micModeEnabled = true
+                micCheckRefresh++   // reflect newly-active state on the open dialog
+            },
+            onRunCompleted = {
+                vm.itemTracker.recordMicCheckCompleted()
+                vm.checkForNewUnlocks()
+                micCheckRefresh++   // a resolved run clears the CTA even on a fail
+            },
         )
     }
 
@@ -971,6 +950,8 @@ private fun heartbeatCurve(t: Float): Float {
 private fun PracticeDurationDialog(
     onStart: (Int) -> Unit,
     onDismiss: () -> Unit,
+    onStartMicCheck: () -> Unit = {},
+    micCheckRefresh: Int = 0,
 ) {
     var selected by remember { mutableIntStateOf(15) }
 
@@ -1022,7 +1003,7 @@ private fun PracticeDurationDialog(
                     textAlign = TextAlign.Center,
                 )
 
-                MicTimingNudge()
+                MicTimingNudge(onStartCheck = onStartMicCheck, refreshKey = micCheckRefresh)
 
                 Spacer(Modifier.height(20.dp))
 
@@ -1060,100 +1041,6 @@ private fun PracticeDurationDialog(
 
 private fun formatPracticeTime(seconds: Int): String =
     "%d:%02d".format(seconds / 60, seconds % 60)
-
-@Composable
-private fun EnablePresetsDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {
-    FeatureEnableDialog(
-        title       = "BPM Presets",
-        description = "Stop dialing in the same tempos over and over. Save them once, recall them instantly.",
-        onEnable    = onEnable,
-        onDismiss   = onDismiss,
-        highlights  = listOf(
-            "Save up to 10 song tempos",
-            "Switch tempo in a single tap",
-            "Yours forever, no strings attached",
-        ),
-        previewContent = {
-            ShowcaseFrame(caption = "ONE-TAP TEMPO SWITCHING") {
-                PresetChipsRow(
-                    presets = remember {
-                        listOf(
-                            BpmPreset("♩ Ballad", 72),
-                            BpmPreset("Verse", 110),
-                            BpmPreset("Chorus", 140),
-                            BpmPreset("Guitar Solo", 168),
-                        )
-                    },
-                    currentBpm        = 110,
-                    showLongPressHint = false,
-                    onPresetTap       = {},
-                    onPresetLongPress = { _, _ -> },
-                )
-            }
-        },
-    )
-}
-
-@Composable
-private fun EnablePracticeDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {
-    FeatureEnableDialog(
-        title       = "Practice Sessions",
-        description = "Turn loose noodling into real, measurable progress - one focused session at a time.",
-        onEnable    = onEnable,
-        onDismiss   = onDismiss,
-        highlights  = listOf(
-            "Set a daily practice goal",
-            "Track your day-by-day streak",
-            "Every finished session celebrated",
-            "Practice unlocks exclusive gnome items",
-        ),
-        previewContent = {
-            ShowcaseFrame(caption = "YOUR LIVE PRACTICE TIMER") {
-                PracticeProgressRow(
-                    practiceSecondsRemaining = 150,
-                    practiceGoalSeconds      = 600,
-                    onCancelPractice         = {},
-                    modifier                 = Modifier.fillMaxWidth(),
-                )
-            }
-        },
-    )
-}
-
-@Composable
-private fun EnableSpeedTrainerDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {
-    FeatureEnableDialog(
-        title       = "Speed Trainer",
-        description = "Systematically build tempo from wherever you are to wherever you want to go.",
-        onEnable    = onEnable,
-        onDismiss   = onDismiss,
-        highlights  = listOf(
-            "Ramp any tempo to your target, automatically",
-            "Configure step size, bars per step, and repeats",
-            "Optional mic-powered accuracy bonus when playing in time",
-            "Tracks your improvement session to session",
-        ),
-        previewContent = {
-            ShowcaseFrame(caption = "YOUR TEMPO RAMP") {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    SpeedTrainerRampPreview(modifier = Modifier.fillMaxWidth())
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text("60 BPM", color = AppColors.textMutedBlue, fontSize = 10.sp)
-                        Text("120 BPM", color = AppColors.gold, fontSize = 10.sp)
-                    }
-                }
-            }
-        },
-    )
-}
 
 // ── Beat indicator ────────────────────────────────────────────────────────────
 

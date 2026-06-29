@@ -89,16 +89,6 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     val isPurchasing: StateFlow<Boolean>                 = billingManager.isPurchasing
     val isBillingConnecting: StateFlow<Boolean>          = billingManager.isConnecting
 
-    // Free feature gates — enabled once via first-use dialog, stored locally
-    private val _isPresetsEnabled = MutableStateFlow(prefs.getBoolean("feature_presets_enabled", false))
-    val isPresetsEnabled: StateFlow<Boolean> = _isPresetsEnabled.asStateFlow()
-
-    private val _isPracticeEnabled = MutableStateFlow(prefs.getBoolean("feature_practice_enabled", false))
-    val isPracticeEnabled: StateFlow<Boolean> = _isPracticeEnabled.asStateFlow()
-
-    private val _isSpeedTrainerEnabled = MutableStateFlow(prefs.getBoolean("feature_speed_trainer_enabled", false))
-    val isSpeedTrainerEnabled: StateFlow<Boolean> = _isSpeedTrainerEnabled.asStateFlow()
-
     private val _isPracticeActive          = MutableStateFlow(false)
     val isPracticeActive: StateFlow<Boolean>             = _isPracticeActive.asStateFlow()
 
@@ -172,24 +162,6 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     val itemPrices: StateFlow<Map<String, String?>>      = billingManager.itemPrices
     val availableItemProductIds: StateFlow<Set<String>>  = billingManager.availableItemProductIds
 
-    fun enablePresets() {
-        _isPresetsEnabled.value = true
-        prefs.edit { putBoolean("feature_presets_enabled", true) }
-        AnalyticsTracker.logFeatureEnabled("presets")
-    }
-
-    fun enablePractice() {
-        _isPracticeEnabled.value = true
-        prefs.edit { putBoolean("feature_practice_enabled", true) }
-        AnalyticsTracker.logFeatureEnabled("practice")
-    }
-
-    fun enableSpeedTrainer() {
-        _isSpeedTrainerEnabled.value = true
-        prefs.edit { putBoolean("feature_speed_trainer_enabled", true) }
-        AnalyticsTracker.logFeatureEnabled("speed_trainer")
-    }
-
     fun purchaseRemoveAds(activity: Activity) = billingManager.launchPurchaseFlow(activity)
     fun purchaseSound(activity: Activity, productId: String) =
         billingManager.launchSoundPurchaseFlow(activity, productId)
@@ -206,8 +178,6 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     fun debugResetReview() = com.example.metrognome.review.AppReviewManager(getApplication()).debugReset()
     fun debugClearAdFree() = billingManager.debugClearAdFree()
     fun debugClearPresets() {
-        _isPresetsEnabled.value = false
-        prefs.edit { putBoolean("feature_presets_enabled", false) }
         presetsManager.debugClear()
         _presets.value = emptyList()
     }
@@ -379,18 +349,11 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun debugClearPracticeMode() {
-        _isPracticeEnabled.value = false
-        prefs.edit { putBoolean("feature_practice_enabled", false) }
         practiceManager.debugClear()
         cancelPractice()
         _practiceStreak.value = 0
         _bestStreak.value = 0
         _practicedEpochDays.value = emptySet()
-    }
-
-    fun debugClearSpeedTrainer() {
-        _isSpeedTrainerEnabled.value = false
-        prefs.edit { putBoolean("feature_speed_trainer_enabled", false) }
     }
 
     private fun startPracticeTimer() {
@@ -631,20 +594,6 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val tapTimes = ArrayDeque<Long>(8)
 
     init {
-        // One-time migration: users who purchased presets or practice mode in v4.x get
-        // auto-enabled in v5.0 so they never see the Enable dialog for something they paid for.
-        val oldBilling = app.getSharedPreferences("billing_state", Context.MODE_PRIVATE)
-        if (!prefs.getBoolean("feature_presets_enabled", false) &&
-            oldBilling.getBoolean("presets_unlocked", false)) {
-            prefs.edit { putBoolean("feature_presets_enabled", true) }
-            _isPresetsEnabled.value = true
-        }
-        if (!prefs.getBoolean("feature_practice_enabled", false) &&
-            oldBilling.getBoolean("practice_mode_unlocked", false)) {
-            prefs.edit { putBoolean("feature_practice_enabled", true) }
-            _isPracticeEnabled.value = true
-        }
-
         val savedType = _soundType.value
         val requiredProduct = PREMIUM_SOUND_REGISTRY.find { it.soundTypeIndex == savedType }?.productId
         if (requiredProduct != null && requiredProduct !in billingManager.purchasedSoundIds.value) {

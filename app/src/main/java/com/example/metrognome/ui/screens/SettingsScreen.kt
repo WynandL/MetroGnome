@@ -356,14 +356,22 @@ fun SettingsScreen(
             }
 
             if (showMicCheck) {
-                MicCheckOverlay(onDismiss = {
-                    showMicCheck = false
-                    // Enable the toggle iff the check left a passing calibration; an X or a
-                    // fail leaves it off ("read from the engine").
-                    val store = com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context)
-                    if (store.isCalibrated) store.micModeEnabled = true
-                    micCheckRefresh++
-                })
+                MicCheckOverlay(
+                    onDismiss = {
+                        showMicCheck = false
+                        // Enable the toggle iff the check left a passing calibration; an X or a
+                        // fail leaves it off ("read from the engine").
+                        val store = com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context)
+                        if (store.isCalibrated) store.micModeEnabled = true
+                        micCheckRefresh++
+                    },
+                    // Credit any resolved run toward the Groove Check item unlock. Queues the
+                    // celebration; it surfaces when the user next visits the Gnome/Rhythm screen.
+                    onRunCompleted = {
+                        vm.itemTracker.recordMicCheckCompleted()
+                        vm.checkForNewUnlocks()
+                    },
+                )
             }
 
             if (showRecalPrompt) {
@@ -622,7 +630,10 @@ private fun RemoveAdsSection(
 ) {
     Column(modifier = Modifier.padding(bottom = 4.dp)) {
         Text(
-            text = "Go ad-free",
+            // CTA before purchase; a settled confirmation after it, so owners are not shown the
+            // same "Go ad-free" pitch they already paid for. Styling stays identical to the other
+            // owned surfaces (e.g. Glissie) for consistency: only the words change.
+            text = if (isAdFree) "You're ad-free" else "Go ad-free",
             color = AppColors.textPrimary,
             modifier = Modifier.padding(bottom = 4.dp),
         )

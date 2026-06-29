@@ -55,6 +55,8 @@ fun SpeedTrainerDialog(
     onConfigChange: (SpeedTrainerConfig.() -> SpeedTrainerConfig) -> Unit,
     onBeginTraining: () -> Unit,
     onDismiss: () -> Unit,
+    onStartMicCheck: () -> Unit = {},
+    micCheckRefresh: Int = 0,
 ) {
     val ascending = config.ascending
     val animatedStart by animateIntAsState(config.startBpm, label = "startBpm")
@@ -264,7 +266,7 @@ fun SpeedTrainerDialog(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        MicTimingNudge()
+        MicTimingNudge(onStartCheck = onStartMicCheck, refreshKey = micCheckRefresh)
 
         Spacer(Modifier.height(16.dp))
 
@@ -289,7 +291,7 @@ fun SpeedTrainerDialog(
                         modifier = Modifier.size(18.dp),
                     )
                     Text(
-                        "BEGIN TRAINING",
+                        "START TRAINING",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -414,13 +416,6 @@ private fun RampArc(config: SpeedTrainerConfig, modifier: Modifier = Modifier) {
                 }
             },
     )
-}
-
-/** Demo ramp for the Speed Trainer enable dialog — fixed 60→120 BPM at +5 BPM steps. */
-@Composable
-internal fun SpeedTrainerRampPreview(modifier: Modifier = Modifier) {
-    val demoConfig = remember { SpeedTrainerConfig(startBpm = 60, targetBpm = 120, stepSize = 5f) }
-    RampArc(config = demoConfig, modifier = modifier)
 }
 
 // ── Config tile ───────────────────────────────────────────────────────────────

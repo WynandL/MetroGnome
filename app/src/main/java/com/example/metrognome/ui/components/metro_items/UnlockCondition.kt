@@ -43,6 +43,13 @@ sealed class UnlockCondition {
      */
     data class SpeedTrainingSessionsCompleted(val required: Int) : UnlockCondition()
 
+    /**
+     * Number of microphone "Groove Check" runs that resolved to an outcome (any verdict
+     * — PASS, FAIL, or fixable ABORT). Rewards the player for trying the check at all,
+     * which also surfaces the otherwise-buried feature. Monotonically increasing.
+     */
+    data class MicChecksCompleted(val required: Int) : UnlockCondition()
+
     /** Always unlocked — used for developer preview / cheat mode. */
     object Always : UnlockCondition()
 }
@@ -88,5 +95,8 @@ fun UnlockCondition.displayText(): String = when (this) {
         else "Submit $required tuner feedback ratings"
     is UnlockCondition.SpeedTrainingSessionsCompleted ->
         "Complete $required speed training session${if (required != 1) "s" else ""}"
+    is UnlockCondition.MicChecksCompleted ->
+        if (required == 1) "Run a microphone Groove Check"
+        else "Run $required microphone Groove Checks"
     UnlockCondition.Always -> "Always available"
 }

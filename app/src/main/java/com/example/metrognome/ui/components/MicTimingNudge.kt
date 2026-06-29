@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,10 +9,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,28 +23,55 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.audio.selftest.MicCalibration
+import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.ui.theme.AppColors
 
 /**
- * Small reminder that the app-wide microphone timing feature is currently active.
+ * Dual-state microphone-timing strip for the mic-scoring surfaces (Speed Trainer,
+ * Practice, Rhythm Game). One component, two jobs, driven by the single master flag
+ * [MicCalibration.isActive] plus whether a Groove Check has ever been run:
  *
- * Shown in the three mic-scoring surfaces (Speed Trainer, Practice, Rhythm Game) so a
- * user always has an in-app signal that the mic is in use here — not only the system
- * mic icon in the status bar. It is informational: the single control lives in
- * Settings, and this just points there.
+ *  - **Active** (opted in AND calibrated): an informational reminder that mic timing
+ *    is on, pointing to the single control in Settings. Always available; pass no
+ *    [onStartCheck] and this is all you get (e.g. the Rhythm card).
+ *  - **Never checked** (not active AND zero completed checks) AND an [onStartCheck] is
+ *    supplied: a tappable onboarding CTA inviting the user to run the Groove Check
+ *    right here. This is how we surface an otherwise Settings-buried feature at the
+ *    moment it is relevant (the player is about to practise their timing).
+ *  - **Checked but off** (ran a check that did not enable it, e.g. a device that is not
+ *    a good fit): renders nothing. The CTA self-terminates after one run so a player is
+ *    never nagged to retry something their phone already declined.
  *
- * Reads the one master flag [MicCalibration.isActive] (the user's opt-in AND a passing
- * calibration). Renders nothing when the feature is off, so callers drop it in
+ * This is an inline layout element inside the host card/dialog, not the transient
+ * banner queue. Renders nothing when neither state applies, so callers drop it in
  * unconditionally; the leading spacing is only emitted when it actually shows.
- *
- * Rendered as a full-width banner so it reads as a deliberate status strip in the
- * Rhythm card, Practice setup, and Speed Trainer dialog rather than a stray pill.
  */
 @Composable
-fun MicTimingNudge(modifier: Modifier = Modifier) {
+fun MicTimingNudge(
+    modifier: Modifier = Modifier,
+    /** When supplied, enables the off-state onboarding CTA that launches the Groove Check. */
+    onStartCheck: (() -> Unit)? = null,
+    /**
+     * Bump this from the host after a Groove Check resolves so the strip re-reads its
+     * (non-reactive, SharedPreferences-backed) state in place. Without it Compose skips
+     * this subtree and a just-finished check would not clear the CTA until the host
+     * dialog is closed and reopened.
+     */
+    refreshKey: Int = 0,
+) {
     val context = LocalContext.current
-    if (!MicCalibration.read(context).isActive) return
+    val active = remember(refreshKey) { MicCalibration.read(context).isActive }
+    val checksDone = remember(refreshKey) { MetroItemTracker(context).micChecksCompleted() }
 
+    when {
+        active -> ActiveReminder(modifier)
+        onStartCheck != null && checksDone == 0 -> StartCheckCta(modifier, onStartCheck)
+        // Off and already checked once (or no CTA wanted here): stay silent.
+    }
+}
+
+@Composable
+private fun ActiveReminder(modifier: Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -68,6 +98,46 @@ fun MicTimingNudge(modifier: Modifier = Modifier) {
             "· change in Settings",
             color = AppColors.textMuted,
             fontSize = 10.sp,
+        )
+    }
+}
+
+@Composable
+private fun StartCheckCta(modifier: Modifier, onStartCheck: () -> Unit) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(AppColors.gold.copy(alpha = 0.12f))
+            .clickable(onClick = onStartCheck)
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Mic,
+            contentDescription = null,
+            tint = AppColors.gold,
+            modifier = Modifier.size(15.dp),
+        )
+        Text(
+            "Score your timing",
+            color = AppColors.textSecondary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            "· run a quick Groove Check",
+            color = AppColors.textMuted,
+            fontSize = 10.sp,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = AppColors.gold,
+            modifier = Modifier.size(16.dp),
         )
     }
 }

@@ -168,7 +168,7 @@ class PitchDetector(
      */
     fun presenceAt(window: FloatArray, targetHz: Float): Float {
         require(window.size == windowSize) { "expected $windowSize samples, got ${window.size}" }
-        if (targetHz < MIN_FREQUENCY || targetHz > MAX_FREQUENCY) return 0f
+        if (targetHz !in MIN_FREQUENCY..MAX_FREQUENCY) return 0f
         if (!loadWork(window)) return 0f
         if (denoisePresence && noiseReady) whitenWork()
         autocorrelate()
@@ -197,17 +197,6 @@ class PitchDetector(
         for (i in 0..half) noiseMag[i] = (noiseAccum[i] / noiseFrames).toFloat()
         noiseReady = true
     }
-
-    /** Discard the learned noise spectrum (e.g. at the start of a new capture session). */
-    fun resetNoise() {
-        noiseAccum.fill(0.0)
-        noiseMag.fill(0f)
-        noiseFrames = 0
-        noiseReady = false
-    }
-
-    /** True once a noise profile has been frozen and is available to [presenceAt]. */
-    val hasNoiseProfile: Boolean get() = noiseReady
 
     /** DC-remove [window] into [work]; returns false if the window is below the silence floor. */
     private fun loadWork(window: FloatArray): Boolean {

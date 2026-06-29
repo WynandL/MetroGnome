@@ -102,9 +102,6 @@ fun DevToolsSection(
     val cheatModeEnabled by vm.cheatModeEnabled.collectAsStateWithLifecycle()
     val purchasedSoundIds by vm.purchasedSoundIds.collectAsStateWithLifecycle()
     val purchasedItemProductIds by vm.purchasedItemProductIds.collectAsStateWithLifecycle()
-    val isPresetsEnabled by vm.isPresetsEnabled.collectAsStateWithLifecycle()
-    val isPracticeEnabled by vm.isPracticeEnabled.collectAsStateWithLifecycle()
-    val isSpeedTrainerEnabled by vm.isSpeedTrainerEnabled.collectAsStateWithLifecycle()
     val practiceStreak by vm.practiceStreak.collectAsStateWithLifecycle()
     val isAdFree by vm.isAdFree.collectAsStateWithLifecycle()
 
@@ -246,7 +243,7 @@ fun DevToolsSection(
             border = BorderStroke(1.dp, AppColors.devRedBorder)
         ) {
             Text(
-                if (isPresetsEnabled) "Clear Presets + Data" else "Presets Not Enabled",
+                "Clear Presets + Data",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -261,35 +258,18 @@ fun DevToolsSection(
             border = BorderStroke(1.dp, AppColors.devRedBorder)
         ) {
             Text(
-                if (isPracticeEnabled) "Clear Practice + Streak" else "Practice Not Enabled",
+                "Clear Practice + Streak",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
         }
 
-        if (isPracticeEnabled) {
-            Spacer(Modifier.height(6.dp))
-            StreakSimulator(
-                currentStreak = practiceStreak,
-                onApply       = { vm.debugSimulateStreak(it) },
-                onReset       = { vm.debugClearStreakSim() },
-            )
-        }
         Spacer(Modifier.height(6.dp))
-
-        OutlinedButton(
-            onClick = { vm.debugClearSpeedTrainer() },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-            border = BorderStroke(1.dp, AppColors.devRedBorder)
-        ) {
-            Text(
-                if (isSpeedTrainerEnabled) "Clear Speed Trainer Unlock" else "Speed Trainer Not Enabled",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
+        StreakSimulator(
+            currentStreak = practiceStreak,
+            onApply       = { vm.debugSimulateStreak(it) },
+            onReset       = { vm.debugClearStreakSim() },
+        )
         Spacer(Modifier.height(6.dp))
 
         OutlinedButton(

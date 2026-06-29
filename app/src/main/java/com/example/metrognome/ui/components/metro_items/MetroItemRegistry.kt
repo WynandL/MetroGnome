@@ -14,6 +14,7 @@ import com.example.metrognome.ui.components.metro_items.items.MusicStand
 import com.example.metrognome.ui.components.metro_items.items.TuningFork
 import com.example.metrognome.ui.components.metro_items.items.HatFeather
 import com.example.metrognome.ui.components.metro_items.items.LapelPin
+import com.example.metrognome.ui.components.metro_items.items.StudioMic
 
 /**
  * Single source of truth for every cosmetic item and its unlock condition.
@@ -75,6 +76,12 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     //   1 h    =   3 600 s
     //   3 h    =  10 800 s
     MetroItemEntry(HatFeather, UnlockCondition.TunerSeconds(900)),  // 15 min — head-attached plume
+
+    // ── Groove Check reward — earned by running the microphone self-test ──────
+    // Unlocks on the first completed run of any verdict (PASS / FAIL / fixable ABORT),
+    // both rewarding the attempt and surfacing an otherwise-buried feature. Drawn after
+    // GoldChain so the mic sits on top of the right lapel when worn.
+    MetroItemEntry(StudioMic, UnlockCondition.MicChecksCompleted(1)),
 
     // ── Speed Trainer rewards — unlocked by completing sessions ───────────────
     // Earn-only: rewards consistent structured practice. No purchase path.
