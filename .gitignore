@@ -21,5 +21,9 @@ google-services.json
 *.aab
 *.apk
 
+# Claude Code per-machine local settings (permissions etc.); the shared .claude/settings.json,
+# if added, stays tracked.
+.claude/settings.local.json
+
 # Local-only tuner test-tone harness (generator + large WAV + manifest); regenerated on demand
 /tools/tuner_test_tones/
