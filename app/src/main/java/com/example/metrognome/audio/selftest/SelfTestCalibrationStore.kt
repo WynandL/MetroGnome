@@ -29,13 +29,40 @@ class SelfTestCalibrationStore(context: Context) {
         get() = if (isCalibrated) prefs.getFloat(KEY_LATENCY_MS, 0f) else null
 
     /**
+     * The device-tuned clap/click ratio threshold from the passing run, or null to use the
+     * detector's portable default. Placed inside this hardware's measured click/clap margins
+     * by the self-test (see MicSelfTest.deviceClapBandRatio).
+     */
+    val clapBandRatio: Float?
+        get() = if (prefs.contains(KEY_CLAP_RATIO)) prefs.getFloat(KEY_CLAP_RATIO, 0f) else null
+
+    /**
+     * The device-tuned clap flatness threshold from the passing run, or null to use the
+     * detector's portable default. The classifier accepts a clap on flatness OR ratio, so
+     * both thresholds are calibrated together (see MicSelfTest.deviceClapFlatnessMin).
+     */
+    val clapFlatnessMin: Float?
+        get() = if (prefs.contains(KEY_CLAP_FLATNESS)) prefs.getFloat(KEY_CLAP_FLATNESS, 0f) else null
+
+    /**
      * The verdict of the most recent finished run, or null if the test has never
      * produced a definitive result. Only PASS and FAIL are stored - an ABORT is
      * user-fixable and transient, so it never overwrites this.
+     *
+     * A FAIL is only reported if it was produced by the current gate rubric
+     * ([SelfTestThresholds.GATE_LOGIC_VERSION]): only the verdict is persisted, not the raw
+     * measurements, so an old FAIL cannot be re-graded against loosened gates - instead it is
+     * treated as never tested and the device is offered the check again. A PASS is trusted
+     * regardless of version (its latency constant demonstrably worked).
      */
     val lastVerdict: CheckStatus?
-        get() = prefs.getString(KEY_VERDICT, null)
-            ?.let { runCatching { CheckStatus.valueOf(it) }.getOrNull() }
+        get() {
+            val verdict = prefs.getString(KEY_VERDICT, null)
+                ?.let { runCatching { CheckStatus.valueOf(it) }.getOrNull() }
+                ?: return null
+            val stale = prefs.getInt(KEY_GATE_VERSION, 0) < SelfTestThresholds.GATE_LOGIC_VERSION
+            return if (verdict == CheckStatus.FAIL && stale) null else verdict
+        }
 
     /**
      * The user's single app-wide opt-in for mic mode. Independent of the calibration
@@ -69,13 +96,25 @@ class SelfTestCalibrationStore(context: Context) {
         micModeEnabled = true
     }
 
-    /** Store a passing calibration: the constant, the route it was measured on, and the verdict. */
-    fun save(latencyMs: Float, route: AudioRoute) {
+    /**
+     * Store a passing calibration: the latency constant, the route it was measured on, the
+     * verdict, and - when the run produced them - the device-tuned detector thresholds. A
+     * null threshold clears any stale value so the detector falls back to its portable default.
+     */
+    fun save(
+        latencyMs: Float,
+        route: AudioRoute,
+        clapBandRatio: Float? = null,
+        clapFlatnessMin: Float? = null,
+    ) {
         prefs.edit {
             putFloat(KEY_LATENCY_MS, latencyMs)
             putString(KEY_ROUTE, route.name)
             putLong(KEY_TIMESTAMP, System.currentTimeMillis())
             putString(KEY_VERDICT, CheckStatus.PASS.name)
+            putInt(KEY_GATE_VERSION, SelfTestThresholds.GATE_LOGIC_VERSION)
+            if (clapBandRatio != null) putFloat(KEY_CLAP_RATIO, clapBandRatio) else remove(KEY_CLAP_RATIO)
+            if (clapFlatnessMin != null) putFloat(KEY_CLAP_FLATNESS, clapFlatnessMin) else remove(KEY_CLAP_FLATNESS)
         }
     }
 
@@ -88,8 +127,11 @@ class SelfTestCalibrationStore(context: Context) {
         prefs.edit {
             remove(KEY_LATENCY_MS)
             remove(KEY_ROUTE)
+            remove(KEY_CLAP_RATIO)
+            remove(KEY_CLAP_FLATNESS)
             putLong(KEY_TIMESTAMP, System.currentTimeMillis())
             putString(KEY_VERDICT, CheckStatus.FAIL.name)
+            putInt(KEY_GATE_VERSION, SelfTestThresholds.GATE_LOGIC_VERSION)
         }
     }
 
@@ -105,5 +147,8 @@ class SelfTestCalibrationStore(context: Context) {
         private const val KEY_VERDICT = "last_verdict"
         private const val KEY_MIC_ENABLED = "mic_mode_enabled"
         private const val KEY_DEV_SIMULATE = "dev_simulate_timing"
+        private const val KEY_CLAP_RATIO = "clap_band_ratio"
+        private const val KEY_CLAP_FLATNESS = "clap_flatness_min"
+        private const val KEY_GATE_VERSION = "gate_logic_version"
     }
 }

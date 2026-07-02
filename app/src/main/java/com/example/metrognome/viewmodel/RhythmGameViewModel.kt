@@ -348,6 +348,8 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
         if (micReady) {
             micLatencyMs = cal.latencyMs.toLong()
+            detector.clapBandRatio = cal.clapBandRatio?.toDouble()
+            detector.clapFlatnessMin = cal.clapFlatnessMin?.toDouble()
             roomNoiseMonitor.reset()
             detector.start()
             // In debug, log spectral click rejections to the Mic Timing Log dev viewer.

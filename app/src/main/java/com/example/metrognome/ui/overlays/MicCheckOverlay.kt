@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
@@ -53,6 +52,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -65,6 +65,8 @@ import com.example.metrognome.audio.selftest.SelfTestPhase
 import com.example.metrognome.audio.selftest.SelfTestThresholds
 import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.cloud.MicCheckReporter
+import com.example.metrognome.ui.components.Seal
+import com.example.metrognome.ui.components.SealStyle
 import com.example.metrognome.ui.components.rememberMediaVolumeFraction
 import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.theme.AppColors
@@ -281,7 +283,9 @@ private fun phaseProgress(phase: SelfTestPhase): Float = when (phase) {
 
 @Composable
 private fun PassContent(onDone: () -> Unit) {
-    ResultIcon(AppColors.gold, AppColors.gold.copy(alpha = 0.12f), Icons.Filled.Check)
+    // The pass gets the seal's full entrance - the one moment in the app where the
+    // word is literal: the device has just been certified to follow the player's timing.
+    Seal(modifier = Modifier.size(56.dp), style = SealStyle.Emblem, entrance = true)
     Spacer(Modifier.height(12.dp))
     Text("You're all set", color = Color.White, fontSize = 18.sp,
         fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
@@ -395,6 +399,24 @@ private fun PrimaryButton(
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(label, color = tint, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+/**
+ * Tooling-only: the pass card as the user sees it, for exercising the VerifiedSeal
+ * animation via Start Interactive Preview (an emulator cannot reach PASS - the
+ * loopback needs a real speaker/mic path).
+ */
+@Preview
+@Composable
+private fun PassContentPreview() {
+    Surface(shape = RoundedCornerShape(24.dp), color = AppColors.surfaceDeep) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            PassContent(onDone = {})
         }
     }
 }

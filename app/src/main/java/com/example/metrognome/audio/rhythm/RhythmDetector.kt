@@ -104,6 +104,18 @@ class RhythmDetector {
     var echoCancellationActive: Boolean = false
         private set
 
+    /**
+     * Optional per-device clap/click ratio threshold from the mic self-test (MicCalibration).
+     * Null uses the detector's portable default. Set before [start]; it is read once when the
+     * capture detector is built, so it takes effect on the next session, not mid-session.
+     */
+    @Volatile
+    var clapBandRatio: Double? = null
+
+    /** Optional per-device clap flatness threshold, same contract as [clapBandRatio]. */
+    @Volatile
+    var clapFlatnessMin: Double? = null
+
     private var record: AudioRecord? = null
     private var echoCanceler: AcousticEchoCanceler? = null
     private var scope: CoroutineScope? = null
@@ -128,7 +140,11 @@ class RhythmDetector {
         } else null
         echoCancellationActive = echoCanceler?.enabled == true
 
-        val clapDetector = ClapDetector(sampleRate)
+        val clapDetector = ClapDetector(
+            sampleRate,
+            clapBandRatio = clapBandRatio ?: ClapDetector.CLAP_BAND_RATIO,
+            clapFlatnessMin = clapFlatnessMin ?: ClapDetector.CLAP_FLATNESS_MIN,
+        )
         rec.startRecording()
         _capturing = true
 

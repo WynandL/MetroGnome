@@ -58,14 +58,25 @@ object MicCheckReporter {
         "system_volume_fraction" to r.systemVolumeFraction.cloud(),
 
         // ── Speaker path (latency constant) ──
-        "speaker_path"      to r.speakerPath.name,
-        "latency_ms"        to r.latencyMs.cloud(),
-        "latency_jitter_ms" to r.latencyJitterMs.cloud(),
+        "speaker_path"           to r.speakerPath.name,
+        "latency_ms"             to r.latencyMs.cloud(),
+        "latency_jitter_ms"      to r.latencyJitterMs.cloud(),
+        // Reproducibility of the constant across the run - the actual speaker-path trust gate.
+        "latency_split_delta_ms" to r.latencyDetail?.splitDeltaMs.cloud(),
 
         // ── Click vs clap discrimination ──
         "discrimination"    to r.discrimination.name,
         "click_reject_rate" to r.clickRejectRate.cloud(),
         "clap_detect_rate"  to r.clapDetectRate.cloud(),
+        // Spectral margins on BOTH acceptance axes (a click can leak via flatness OR ratio):
+        // tells "inseparable" (overlap on both) apart from "leaks at default, calibratable"
+        // (a gap). A threshold can sit anywhere between click-max and clap-min per axis.
+        "click_integrated_max" to r.spectralMargins?.clickIntegratedMax.cloud(),
+        "clap_integrated_min"  to r.spectralMargins?.clapIntegratedMin.cloud(),
+        "click_flatness_max"   to r.spectralMargins?.clickFlatnessMax.cloud(),
+        "clap_flatness_min"    to r.spectralMargins?.clapFlatnessMin.cloud(),
+        "click_peak_max"       to r.spectralMargins?.clickPeakMax.cloud(),
+        "clap_peak_min"        to r.spectralMargins?.clapPeakMin.cloud(),
 
         // ── Detection reliability ──
         "detection_recall"      to r.detectionRecall.cloud(),

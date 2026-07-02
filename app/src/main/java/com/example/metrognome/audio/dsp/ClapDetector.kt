@@ -56,7 +56,24 @@ import kotlin.math.sqrt
  * Pure DSP over sample indices - deterministic and unit-testable, like the
  * detectors it sits beside.
  */
-class ClapDetector(sampleRate: Int) {
+class ClapDetector(
+    sampleRate: Int,
+    /**
+     * Integrated high/tonal ratio above which a transient is a clap. Defaults to the portable
+     * [CLAP_BAND_RATIO]; the mic self-test can override it with a threshold placed inside THIS
+     * device's measured click/clap margins (see SelfTestReport.SpectralMargins), moving the
+     * decision to where this speaker/mic actually separates the two. A device that leaks clicks
+     * at the shipped default but separates cleanly is made to work rather than being rejected.
+     */
+    private val clapBandRatio: Double = CLAP_BAND_RATIO,
+    /**
+     * Spectral flatness at or above which a transient is a clap. Defaults to the portable
+     * [CLAP_FLATNESS_MIN]; the mic self-test can override it per device exactly like
+     * [clapBandRatio]. A click can leak through EITHER acceptance branch (flat OR ratio), so
+     * honest per-device calibration has to be able to move both thresholds.
+     */
+    private val clapFlatnessMin: Double = CLAP_FLATNESS_MIN,
+) {
 
     /**
      * A classified transient. [isClap] false = a click that was rejected.
@@ -310,7 +327,7 @@ class ClapDetector(sampleRate: Int) {
         // A clap is broadband (flat) OR clap-band dominant. The legacy ratio still catches a
         // bright, HF-rich clap; flatness adds the cupped/low-hump clap the ratio misses. A pure
         // click/accent fails BOTH (low flatness, low ratio), so neither path re-leaks it.
-        val isClap = flatness >= CLAP_FLATNESS_MIN || high >= tonal * CLAP_BAND_RATIO
+        val isClap = flatness >= clapFlatnessMin || high >= tonal * clapBandRatio
 
         if (!isClap) {
             // A rejected click/accent opens a tail window: a clap masked by its decay

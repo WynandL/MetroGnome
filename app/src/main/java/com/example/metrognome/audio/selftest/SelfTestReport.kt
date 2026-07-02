@@ -74,13 +74,20 @@ data class LatencyDetail(
 
 /**
  * Click-vs-clap separation actually measured on this device, for tuning the detector's
- * thresholds from one run. For honest scoring the integrated decision threshold must sit
- * between [clickIntegratedMax] and [clapIntegratedMin], and the burst threshold between
- * [clickPeakMax] and [clapPeakMin]; a small gap means the thresholds are marginal here.
+ * thresholds from one run. The classifier accepts a clap on EITHER of two axes (spectral
+ * flatness OR integrated band ratio), so a click leaks if it beats *either* one - honest
+ * margins therefore cover both: the ratio threshold should sit between
+ * [clickIntegratedMax] and [clapIntegratedMin], and the flatness threshold between
+ * [clickFlatnessMax] and [clapFlatnessMin]. Null click values mean the clicks never even
+ * registered as onset candidates (the best possible case, trivially separable).
+ * [clickPeakMax]/[clapPeakMin] (the single-hop burst ratio) are diagnostic only - real
+ * devices proved they overlap, which is why the burst is not part of the decision.
  */
 data class SpectralMargins(
     val clickIntegratedMax: Float? = null,
     val clapIntegratedMin: Float? = null,
+    val clickFlatnessMax: Float? = null,
+    val clapFlatnessMin: Float? = null,
     val clickPeakMax: Float? = null,
     val clapPeakMin: Float? = null,
 )
@@ -197,6 +204,24 @@ data class SelfTestReport(
  */
 object SelfTestThresholds {
 
+    /**
+     * Version of the pass/fail rubric (these thresholds plus the gate logic in [MicSelfTest]
+     * and [SelfTestReport.grade]). Bump it whenever a change could flip a device's outcome.
+     *
+     * A stored FAIL is only trusted if it was produced by the *current* rubric: a device that
+     * failed an older, stricter version is reported as never tested, so it is offered the check
+     * again instead of being remembered as unfit forever. A PASS is never invalidated this way -
+     * its latency constant demonstrably worked, and tightening the bars retroactively would
+     * punish users whose scoring is fine.
+     *
+     *  1 - v5.11 original gates (hard jitter FAIL, reject-rate discrimination FAIL).
+     *  2 - jitter and split-drift demoted to notes; discrimination fails only on genuine
+     *      inseparability across BOTH spectral axes (ratio and flatness); tuned clap
+     *      ratio + flatness thresholds persisted (2026-07-02).
+     */
+    const val GATE_LOGIC_VERSION = 2
+
+
     // ── Environment (ABORT, not FAIL - user-fixable) ──
     /**
      * Above this learned ambient floor (normalised RMS) the room is too loud to test.
@@ -216,13 +241,33 @@ object SelfTestThresholds {
     /** Plausible acoustic round-trip (emission→capture). Outside → unreliable clock. */
     const val MIN_LATENCY_MS = 2f
     const val MAX_LATENCY_MS = 400f
-    /** Per-click latency spread above this means the device clock can't be trusted. */
+    /**
+     * Per-click latency spread above this is *surfaced as a note*, not failed. The scoring
+     * sweep runs on the derived latency constant and is the real proof it works; and as a
+     * stddev over <=8 claps this number is outlier-dominated anyway (a device measuring
+     * "42 ms jitter" here produced 5 ms scoring residuals).
+     */
     const val MAX_LATENCY_JITTER_MS = 15f
-    /** First-half vs second-half latency medians must agree within this, else the constant isn't reproducible. */
+    /**
+     * First-half vs second-half latency medians disagreeing by more than this is *surfaced
+     * as a note*, not failed. A constant that actually drifted shows up directly in the
+     * scoring residuals (the residual includes the constant), which the grade bars already
+     * bound - and medians of 4-vs-4 claps are too fragile to be a hard gate. The only hard
+     * speaker-path failures are: no output timestamp, implausible latency, too few claps.
+     */
     const val MAX_LATENCY_SPLIT_DRIFT_MS = 8f
 
     // ── Discrimination ──
+    /**
+     * Reject rate below this is *advisory*, not a failure: it only means the shipped detector
+     * thresholds sit wrong for this hardware. Discrimination fails only on genuine
+     * inseparability: some clap cannot be told from the clicks on EITHER axis (its flatness
+     * and its band ratio both sit at or below the clicks' maxima in [SpectralMargins]), so no
+     * threshold pair can accept it without also leaking clicks. Anything short of that is a
+     * calibration target, not an unfit device.
+     */
     const val MIN_CLICK_REJECT_RATE = 0.95f
+    /** Claps caught below this in the discrimination probe means the device can't register claps at all. */
     const val MIN_CLAP_DETECT_RATE = 0.95f
 
     // ── Detection ──

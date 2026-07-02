@@ -168,6 +168,18 @@ fun StreakWeekCard(
             label = "pulseAlpha",
         )
 
+    // Slow spin for the scalloped halo on practiced days - much slower than the shimmer,
+    // a lazy drift rather than a glint, on the seal asset's shared app-wide period. One
+    // transition shared by all dots; each dot adds its own phase offset so the rosettes
+    // don't rotate in lockstep.
+    val sealSpin by rememberInfiniteTransition(label = "streak_seal_spin")
+        .animateFloat(
+            initialValue  = 0f,
+            targetValue   = 360f,
+            animationSpec = infiniteRepeatable(tween(SEAL_DRIFT_PERIOD_MS, easing = LinearEasing)),
+            label         = "sealSpinAngle",
+        )
+
     Column(modifier = modifier) {
         if (showHeader) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -202,6 +214,7 @@ fun StreakWeekCard(
                         shimmerPhaseOffset = i * (360f / 7f),
                         sparkleAngleDeg    = sparkleAngles[i],
                         todayPulse         = pulse,
+                        sealSpinAngle      = sealSpin + i * (360f / 7f),
                         modifier           = Modifier.size(26.dp),
                     )
                     Spacer(Modifier.height(3.dp))
@@ -255,6 +268,9 @@ private fun StreakHeaderText(
 
 // ── Day dot Canvas ────────────────────────────────────────────────────────────
 
+/** The seal's halo form in the streak's amber, at the flat halo circle's old alpha (0x28). */
+private val STREAK_HALO_STYLE = SealStyle.halo(color = Color(0xFFF59E0B), alpha = 0.16f)
+
 @Composable
 private fun StreakDayDot(
     isPracticed: Boolean,
@@ -265,6 +281,7 @@ private fun StreakDayDot(
     modifier: Modifier = Modifier,
     shimmerPhaseOffset: Float = 0f,
     sparkleAngleDeg: Float = 45f,    // degrees clockwise from top (12 o'clock)
+    sealSpinAngle: Float = 0f,       // slow rotation of the scalloped halo, phase included
 ) {
     Canvas(modifier = modifier) {
         val r      = size.minDimension / 2f
@@ -272,7 +289,16 @@ private fun StreakDayDot(
 
         when {
             isPracticed -> {
-                drawCircle(color = Color(0x28F59E0B), radius = r * 1.4f, center = center)
+                // The halo band (disc edge r to r*1.4) carries the app-wide seal in its
+                // translucent halo form, drifting slowly - an achieved day reads as a tiny
+                // certification mark. Same soft alpha the flat halo circle had; only the
+                // silhouette (and its lazy drift) is new.
+                drawSeal(
+                    style       = STREAK_HALO_STYLE,
+                    center      = center,
+                    radius      = r * 1.4f,
+                    rotationDeg = sealSpinAngle,
+                )
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(Color(0xFFFDE68A), Color(0xFFF59E0B)),

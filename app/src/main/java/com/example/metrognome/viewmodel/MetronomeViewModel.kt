@@ -271,6 +271,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         // Spectral mode: the detector rejects the metronome click by its signature, so a hit
         // landing on the beat still counts (the old time-suppression window dropped those).
         val det = RhythmDetector()
+        det.clapBandRatio = micCal.clapBandRatio?.toDouble()
+        det.clapFlatnessMin = micCal.clapFlatnessMin?.toDouble()
         practiceMicJob?.cancel()
         practiceDetector = det
         det.start()
@@ -334,8 +336,15 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         _pendingPracticeResult.value = null
     }
 
+    // Dev-only: while true, checkForNewUnlocks leaves the streak flows alone. It re-reads
+    // them from the store on every screen entry, which silently wiped an in-memory
+    // simulation on the first navigation to the Gnome tab. Cleared whenever real streak
+    // data is written (a completed practice session, or either dev reset).
+    private var streakSimActive = false
+
     // In-memory only — SharedPrefs untouched, real data survives app restart.
     fun debugSimulateStreak(days: Int) {
+        streakSimActive = true
         _practiceStreak.value = days
         _bestStreak.value = maxOf(_bestStreak.value, days)
         val today = PracticeSessionManager.currentEpochDay()
@@ -343,12 +352,14 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun debugClearStreakSim() {
+        streakSimActive = false
         _practiceStreak.value = practiceManager.getCurrentStreak()
         _bestStreak.value = practiceManager.getBestStreak()
         _practicedEpochDays.value = practiceManager.getPracticedEpochDays()
     }
 
     fun debugClearPracticeMode() {
+        streakSimActive = false
         practiceManager.debugClear()
         cancelPractice()
         _practiceStreak.value = 0
@@ -472,6 +483,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
 
         _isPracticeActive.value = false
+        streakSimActive = false   // a real session's data always wins over a dev simulation
         _practiceStreak.value = newStreak
         _bestStreak.value = practiceManager.getBestStreak()
         _practicedEpochDays.value = practiceManager.getPracticedEpochDays()
@@ -665,9 +677,11 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun checkForNewUnlocks() {
-        _practiceStreak.value = practiceManager.getCurrentStreak()
-        _bestStreak.value = practiceManager.getBestStreak()
-        _practicedEpochDays.value = practiceManager.getPracticedEpochDays()
+        if (!streakSimActive) {
+            _practiceStreak.value = practiceManager.getCurrentStreak()
+            _bestStreak.value = practiceManager.getBestStreak()
+            _practicedEpochDays.value = practiceManager.getPracticedEpochDays()
+        }
         _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
         val celebrated = itemTracker.celebratedIds()
         _unlockQueue.value = _unlockQueue.value.filter { it.item.id in _activeItemIds.value && it.item.id !in celebrated }

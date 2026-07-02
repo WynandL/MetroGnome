@@ -46,14 +46,19 @@ import kotlin.time.Duration.Companion.milliseconds
  *
  * so any *constant* bias in the timestamps cancels: scoring accuracy depends only
  * on the path and clock being **stable**, not on the latency being measured to an
- * absolute truth. Jitter - not offset - is what fails a device, which is exactly
- * the honest criterion.
+ * absolute truth. Stability itself is judged end to end: the scoring sweep runs on
+ * the derived constant, and its residuals are the proof it worked. Spread metrics
+ * from the latency phase (jitter, split drift) are surfaced as notes, never hard
+ * failures - real devices showed them outlier-dominated (42 ms "jitter" alongside
+ * 5 ms residuals).
  *
- * ## AEC is off by design
- * The capture path runs with no AcousticEchoCanceler. The click is rejected
- * *spectrally* by [ClapDetector], not cancelled - this is the production config
- * we are validating, and it lets the loopback faithfully impersonate an external
- * clap (which AEC would never touch).
+ * ## AEC is off by design (the conservative case, NOT the production config)
+ * The capture path runs with no AcousticEchoCanceler; production [RhythmDetector]
+ * *enables* AEC when available. The mismatch is deliberate and conservative: AEC
+ * would attenuate our looped-back stimuli, so click rejection measured here is a
+ * lower bound on production behaviour, while an external clap is untouched by AEC
+ * in both configs. The ratio/flatness features are level-relative, so thresholds
+ * calibrated here transfer.
  *
  * Debug-only entry point today; the same engine backs the production calibration
  * flow later. One instance per run.
@@ -78,8 +83,9 @@ class MicSelfTest(context: Context) {
     private data class CapOnset(
         val bootMs: Double,
         val isClap: Boolean,
-        val ratio: Double,      // window-integrated high/low (drives the integrated decision)
-        val peakRatio: Double,  // largest single-hop high/low (the burst test)
+        val ratio: Double,      // window-integrated high/low (one acceptance axis)
+        val peakRatio: Double,  // largest single-hop high/low (diagnostic only)
+        val flatness: Double,   // spectral flatness (the other acceptance axis)
     )
 
     // ── Public API ──────────────────────────────────────────────────────────────
@@ -164,9 +170,12 @@ class MicSelfTest(context: Context) {
         }
         val latencyMs = latency.latencyMs
         val jitterMs = latency.jitterMs
-        val speakerOk = latencyMs in SelfTestThresholds.MIN_LATENCY_MS..SelfTestThresholds.MAX_LATENCY_MS &&
-            jitterMs <= SelfTestThresholds.MAX_LATENCY_JITTER_MS &&
-            latency.splitDeltaMs <= SelfTestThresholds.MAX_LATENCY_SPLIT_DRIFT_MS
+        // Neither jitter nor split drift gates the speaker path: the scoring sweep below
+        // runs on the derived latency constant and is the real proof it works (a genuinely
+        // drifted constant surfaces as residual bias, which the grade bars bound). Both
+        // spread metrics are surfaced as notes. The only hard speaker-path failures are no
+        // output timestamp (handled above) and an implausible latency.
+        val speakerOk = latencyMs in SelfTestThresholds.MIN_LATENCY_MS..SelfTestThresholds.MAX_LATENCY_MS
         if (jitterMs > SelfTestThresholds.MAX_LATENCY_JITTER_MS) {
             notes += "Speaker/mic timing is jittery (±${jitterMs.toInt()} ms), likely the audio route or codec."
         }
@@ -190,9 +199,24 @@ class MicSelfTest(context: Context) {
         if (overrunSeen) notes += "Capture buffer overran during the test. Timing may degrade under load."
 
         // ── Verdicts ────────────────────────────────────────────────────────────
-        val discStatus = if ((disc.clickRejectRate >= SelfTestThresholds.MIN_CLICK_REJECT_RATE) &&
-            (disc.clapDetectRate >= SelfTestThresholds.MIN_CLAP_DETECT_RATE)
-        ) CheckStatus.PASS else CheckStatus.FAIL
+        // Discrimination fails only when click and clap are genuinely *inseparable*: some
+        // clap cannot beat the clicks on either acceptance axis (flatness or band ratio), so
+        // no threshold pair can accept it without also leaking clicks. A low reject rate on a
+        // separable device is just the shipped thresholds sitting wrong for this hardware - a
+        // calibration offset (fixed by the per-device thresholds saved on PASS), not an unfit
+        // device - so it is noted, not failed.
+        val discStatus = if (disc.separable && disc.clapDetectRate >= SelfTestThresholds.MIN_CLAP_DETECT_RATE) {
+            CheckStatus.PASS
+        } else CheckStatus.FAIL
+        if (!disc.separable) {
+            notes += "Click and clap could not be separated: their spectral signatures overlap on " +
+                "both axes (flatness and band ratio), so no detector threshold reliably tells them apart."
+        } else if (disc.clickRejectRate < SelfTestThresholds.MIN_CLICK_REJECT_RATE) {
+            notes += "Click leaked past the detector at the default thresholds " +
+                "(${(disc.clickRejectRate * 100).toInt()}% rejected), but click and clap separate " +
+                "cleanly here, so this is a calibration offset rather than a device that can't tell " +
+                "them apart."
+        }
 
         // Scoring is gated on what makes a score honest: claps clear of the beat must be
         // caught, and timing must stay within the GOOD window. On-beat masking is handled
@@ -258,11 +282,59 @@ class MicSelfTest(context: Context) {
     private fun persistAndPublish(report: SelfTestReport, latencyMs: Float?, route: AudioRoute) {
         val store = SelfTestCalibrationStore(appContext)
         when (report.verdict) {
-            CheckStatus.PASS -> if (latencyMs != null) store.save(latencyMs, route)
+            CheckStatus.PASS -> if (latencyMs != null) {
+                store.save(
+                    latencyMs, route,
+                    clapBandRatio = deviceClapBandRatio(report.spectralMargins),
+                    clapFlatnessMin = deviceClapFlatnessMin(report.spectralMargins),
+                )
+            }
             CheckStatus.FAIL -> store.recordFailure()
             else -> { /* transient */ }
         }
         _state.value = SelfTestUiState(phase = SelfTestPhase.DONE, running = false, report = report)
+    }
+
+    /**
+     * The device-tuned clap/click ratio threshold to persist, or null (no click onsets were
+     * even registered) to keep the detector's portable [ClapDetector.CLAP_BAND_RATIO] default.
+     *
+     * With a clean gap the threshold sits at its geometric midpoint (ratios are multiplicative,
+     * so the geometric mean is central). Without a gap it sits just above the clicks' maximum:
+     * discrimination only PASSes when every clap beats the clicks on at least one axis, so any
+     * clap this cuts off on the ratio axis is guaranteed accepted by the flatness axis - click
+     * rejection must not be compromised to chase it. Floor keeps the threshold above 1 (high
+     * must exceed the tonal band); deliberately NO ceiling, because capping below the clicks'
+     * maximum would re-leak clicks, and a very high threshold merely defers claps to flatness.
+     */
+    private fun deviceClapBandRatio(margins: SpectralMargins?): Float? {
+        val clickMax = margins?.clickIntegratedMax ?: return null
+        val clapMin = margins.clapIntegratedMin
+        val threshold = if (clapMin != null && clapMin > clickMax) {
+            sqrt(clickMax.toDouble().coerceAtLeast(0.0) * clapMin.toDouble()).toFloat()
+        } else {
+            clickMax * RATIO_NO_GAP_BUMP
+        }
+        return threshold.coerceAtLeast(CLAP_RATIO_MIN)
+    }
+
+    /**
+     * The device-tuned clap flatness threshold to persist, or null (no click onsets) to keep
+     * the portable [ClapDetector.CLAP_FLATNESS_MIN] default. Same placement policy as the
+     * ratio: arithmetic midpoint of a clean gap (flatness is a bounded 0..1 scale), else just
+     * above the clicks' maximum, with separability guaranteeing any clap cut off here is
+     * accepted on the ratio axis. Clamped to a physical band: below the floor the threshold
+     * would accept broadband room noise; the ceiling stays below flatness's hard limit of 1.
+     */
+    private fun deviceClapFlatnessMin(margins: SpectralMargins?): Float? {
+        val clickMax = margins?.clickFlatnessMax ?: return null
+        val clapMin = margins.clapFlatnessMin
+        val threshold = if (clapMin != null && clapMin > clickMax) {
+            (clickMax + clapMin) / 2f
+        } else {
+            clickMax + FLAT_NO_GAP_BUMP
+        }
+        return threshold.coerceIn(FLAT_THRESHOLD_MIN, FLAT_THRESHOLD_MAX)
     }
 
     // ── Phases ──────────────────────────────────────────────────────────────────
@@ -338,6 +410,15 @@ class MicSelfTest(context: Context) {
         val clickRejectRate: Float,
         val clapDetectRate: Float,
         val margins: SpectralMargins,
+        /**
+         * True when a threshold pair exists that rejects every click yet accepts every clap.
+         * The classifier accepts on flatness OR ratio, so a click is rejected only when BOTH
+         * its axes sit below their thresholds - meaning each threshold must clear the clicks'
+         * maximum on its axis, and every clap must beat the clicks' maximum on at least one
+         * axis. Evaluated per clap (not from aggregates), so mixed coverage counts: one clap
+         * may separate on flatness while another separates on ratio.
+         */
+        val separable: Boolean,
     )
 
     /** Emit click+clap pairs (clap well after click); measure rejection + detection. */
@@ -356,7 +437,8 @@ class MicSelfTest(context: Context) {
             clapFrames += base + clapGap
         }
         val total = pad + DISC_PAIRS * spacing + stim.maxStimulusFrames + pad
-        val anchor = playAndAnchor(stim, events, total) ?: return DiscResult(0f, 0f, SpectralMargins())
+        val anchor = playAndAnchor(stim, events, total)
+            ?: return DiscResult(0f, 0f, SpectralMargins(), separable = false)
 
         val claps = capturedClapsCopy()
         val expClaps = clapFrames.map { stim.emissionBootMs(it, anchor) }
@@ -371,19 +453,33 @@ class MicSelfTest(context: Context) {
         val rejectRate = (DISC_PAIRS - leaked).toFloat() / DISC_PAIRS
         val detectRate = detected.toFloat() / DISC_PAIRS
 
-        // Spectral separation diagnostics: read the band ratios of the onset nearest each
-        // emitted stimulus (any class) so the click/clap thresholds can be tuned from one
-        // run. The decision thresholds must sit between click-max and clap-min.
+        // Spectral separation diagnostics: read both acceptance axes (flatness and band
+        // ratio) of the onset nearest each emitted stimulus (any class) so the click/clap
+        // thresholds can be tuned from one run.
         val all = capturedAllCopy()
         val clickOnsets = expClicks.mapNotNull { nearestAny(all, it + latencyMs) }
         val clapOnsets = expClaps.mapNotNull { nearestAny(all, it + latencyMs) }
         val margins = SpectralMargins(
             clickIntegratedMax = clickOnsets.maxOfOrNull { it.ratio }?.toFloat(),
             clapIntegratedMin = clapOnsets.minOfOrNull { it.ratio }?.toFloat(),
+            clickFlatnessMax = clickOnsets.maxOfOrNull { it.flatness }?.toFloat(),
+            clapFlatnessMin = clapOnsets.minOfOrNull { it.flatness }?.toFloat(),
             clickPeakMax = clickOnsets.maxOfOrNull { it.peakRatio }?.toFloat(),
             clapPeakMin = clapOnsets.minOfOrNull { it.peakRatio }?.toFloat(),
         )
-        return DiscResult(rejectRate.coerceIn(0f, 1f), detectRate.coerceIn(0f, 1f), margins)
+
+        // Exact separability, per clap: a clap is tellable from the clicks if it beats the
+        // clicks' maximum on at least one axis (a threshold can then sit between them).
+        // Null click maxima mean the clicks never even registered as onset candidates - the
+        // best possible case, trivially separable. No claps registering is NOT separable
+        // (and also fails via detect rate).
+        val clickRatioMax = clickOnsets.maxOfOrNull { it.ratio }
+        val clickFlatMax = clickOnsets.maxOfOrNull { it.flatness }
+        val separable = clapOnsets.isNotEmpty() && clapOnsets.all { clap ->
+            (clickFlatMax == null || clap.flatness > clickFlatMax) ||
+                (clickRatioMax == null || clap.ratio > clickRatioMax)
+        }
+        return DiscResult(rejectRate.coerceIn(0f, 1f), detectRate.coerceIn(0f, 1f), margins, separable)
     }
 
     private data class ScoringResult(
@@ -528,7 +624,7 @@ class MicSelfTest(context: Context) {
                             SystemClock.elapsedRealtime().toDouble()
                         }
                         val ratio = if (onset.lowRms > 0.0) onset.highRms / onset.lowRms else 0.0
-                        captured.add(CapOnset(bootMs, onset.isClap, ratio, onset.peakRatio))
+                        captured.add(CapOnset(bootMs, onset.isClap, ratio, onset.peakRatio, onset.flatness))
                     }
                 }
             } catch (_: Exception) {
@@ -718,6 +814,17 @@ class MicSelfTest(context: Context) {
         private const val LATENCY_WARMUP_CLAPS = 3
         private const val DISC_PAIRS = 12
         private const val DISC_CLAP_GAP_MS = 120
+
+        // Device-tuned threshold placement (see deviceClapBandRatio / deviceClapFlatnessMin).
+        /** Ratio threshold floor: high must exceed the tonal band to be a clap. No ceiling by design. */
+        private const val CLAP_RATIO_MIN = 1.1f
+        /** No-gap placement: ratio threshold sits this factor above the clicks' maximum. */
+        private const val RATIO_NO_GAP_BUMP = 1.15f
+        /** No-gap placement: flatness threshold sits this far above the clicks' maximum. */
+        private const val FLAT_NO_GAP_BUMP = 0.03f
+        /** Flatness threshold band: floor rejects broadband room noise, ceiling stays below the hard 1.0. */
+        private const val FLAT_THRESHOLD_MIN = 0.60f
+        private const val FLAT_THRESHOLD_MAX = 0.98f
         private const val SCORING_REPS = 3
         private val SCORING_OFFSETS_MS = floatArrayOf(-120f, -80f, -40f, -20f, 0f, 20f, 40f, 80f, 120f)
     }

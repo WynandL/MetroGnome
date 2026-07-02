@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material3.HorizontalDivider
@@ -33,6 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,6 +42,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.points.pointsEquivalent
 import com.example.metrognome.ui.components.ItemProgressBar
+import com.example.metrognome.ui.components.Seal
+import com.example.metrognome.ui.components.SealStyle
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
@@ -239,16 +242,22 @@ private fun ItemCard(
                         )
                     }
                 } else {
-                    // Gold checkmark in top-right corner
+                    // Gold seal in top-right corner - same certification mark as the
+                    // Groove Check pass, in its small drifting badge form. Per-item
+                    // rotation phase so a grid of unlocked cards doesn't spin in lockstep.
+                    val phase = remember(entry.item.id) {
+                        (((entry.item.id.hashCode() % 360) + 360) % 360).toFloat()
+                    }
                     Box(
                         modifier         = Modifier.matchParentSize().padding(6.dp),
                         contentAlignment = Alignment.TopEnd,
                     ) {
-                        Icon(
-                            imageVector        = Icons.Filled.CheckCircle,
-                            contentDescription = "Unlocked",
-                            tint               = AppColors.gold,
-                            modifier           = Modifier.size(16.dp),
+                        Seal(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .semantics { contentDescription = "Unlocked" },
+                            style            = SealStyle.Badge,
+                            rotationPhaseDeg = phase,
                         )
                     }
                 }

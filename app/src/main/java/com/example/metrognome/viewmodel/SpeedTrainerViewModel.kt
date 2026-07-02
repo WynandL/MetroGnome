@@ -523,6 +523,10 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         // on-beat hit still counts (the old time-suppression window dropped those).
         val det = RhythmDetector()
         detector = det
+        // Use this device's tuned clap/click thresholds when the self-test measured them.
+        val cal = MicCalibration.read(getApplication())
+        det.clapBandRatio = cal.clapBandRatio?.toDouble()
+        det.clapFlatnessMin = cal.clapFlatnessMin?.toDouble()
         det.start()
         if (isDevMode) {
             MicDiagnosticsBuffer.startSession("SpeedTrainer", det.echoCancellationActive)
