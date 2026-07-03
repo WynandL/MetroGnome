@@ -56,6 +56,7 @@ import com.example.metrognome.poll.ALL_POLLS
 import com.example.metrognome.points.PointsBannerQueue
 import com.example.metrognome.ui.components.PollBanner
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
+import com.example.metrognome.ui.overlays.MetroAvatarDialog
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.whatsnew.AppWhatsNew
@@ -122,6 +123,7 @@ fun DevToolsSection(
     var showTunerReadingLog by remember { mutableStateOf(false) }
     var showProfileRoundTrip by remember { mutableStateOf(false) }
     var recordReadings by remember { mutableStateOf(TunerReadingLog.recording) }
+    var showMetroAvatar by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxWidth()) {
         // ── DEV ONLY ──────────────────────────────────────────────────────────
@@ -167,6 +169,17 @@ fun DevToolsSection(
                 )
             }
         }
+        Spacer(Modifier.height(6.dp))
+
+        OutlinedButton(
+            onClick = { showMetroAvatar = true },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.mediumPurple),
+            border = BorderStroke(1.dp, AppColors.deepPurple)
+        ) {
+            Text("Metro Avatar Preview", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+
         Spacer(Modifier.height(6.dp))
 
         OutlinedButton(
@@ -617,6 +630,10 @@ fun DevToolsSection(
 
     if (showAdPolicy) {
         AdPolicyDialog(onDismiss = { showAdPolicy = false })
+    }
+
+    if (showMetroAvatar) {
+        MetroAvatarDialog(onDismiss = { showMetroAvatar = false })
     }
 }
 

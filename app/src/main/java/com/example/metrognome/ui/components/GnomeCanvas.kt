@@ -240,10 +240,13 @@ private fun DrawScope.drawBackground(twinkle: Float) {
 // Head group: neck, head, hair, beard, face features, and hat all move together
 // on each beat — a cool, confident head-bob nod.
 
-private fun DrawScope.drawGnome(
-    pendulumAngle: Float,
-    beatBounce: Float,
-    breathOffset: Float,
+// internal (not private): also drawn by MetroAvatar.kt as the single shared source of
+// Metro's likeness. Any change here updates both the animated on-screen gnome and every
+// static avatar use — do not fork this function.
+internal fun DrawScope.drawGnome(
+    pendulumAngle: Float = 0f,
+    beatBounce: Float = 0f,
+    breathOffset: Float = 0f,
     bodyItems: List<MetroItem> = emptyList(),
     u: Float = size.height / 17f,
     cx: Float = size.width / 2f,
