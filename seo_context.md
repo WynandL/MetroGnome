@@ -4,18 +4,21 @@
 
 | Item | Priority | Due / Status |
 |---|---|---|
-| Musician Wave "8 Best Rhythm Training Apps" outreach | Low | OVERDUE 4 days. UNBLOCKED (v5.9 public) - send; Groove Check is the rhythm-training hook |
-| Orchestra Central "5 Best Tuner Apps" follow-up | Low | OVERDUE 4 days. UNBLOCKED (v5.9 public) - send; noisy-room tuner now live |
-| BeatIt.tv "Top 5 Metronome Apps" follow-up | Low | OVERDUE 5 days. UNBLOCKED (v5.9 public) - send; drummer hook = new Cowbell sound + Groove Check |
+| Musician Wave "8 Best Rhythm Training Apps" outreach | Done | Sent 2026-07-03. Awaiting response |
+| Orchestra Central "5 Best Tuner Apps" follow-up | Done | Sent 2026-07-03. Awaiting response |
+| BeatIt.tv "Top 5 Metronome Apps" follow-up | Done | Sent 2026-07-03. Awaiting response |
 | Reddit: find correct subreddit for Gnotes/app post | Medium | r/WeAreTheMusicMakers ruled out. Draft ready. Candidates: r/androidapps, r/androiddev, r/musicproduction. r/androidapps rules not confirmable via web search (2026-06-12); check the subreddit sidebar/wiki directly (many subs restrict self-promo to a weekly thread) |
 | Code: Surface installed-days loyalty bonus to users | Medium | Not done |
-| r/drums re-entry | Medium | Eligible (13+ days clear since 2026-05-22) |
+| r/drums re-entry | Low | Eligible (42+ days clear since 2026-05-22) but user is not doing Reddit outreach for now (2026-07-03) - revisit later, do not propose again unless asked |
 | r/learnmusic first post | Medium | Never posted |
-| Musician Wave "10 Best Metronome Apps" follow-up | Low | OVERDUE 11 days. Lead with the article-age angle (last updated July 6, 2023). UNBLOCKED (v5.9 now public) - send |
-| RELEASE GATE: promote v5.9 to production | Done 2026-06-23 | v5.9 / versionCode 55 published public 2026-06-23. Gate cleared; all outreach hooks now live |
+| Musician Wave "10 Best Metronome Apps" follow-up | Done | Sent 2026-07-03. Awaiting response |
+| Colin Dorman outreach | Low | Message drafted 2026-07-03, ready to send. No public email - contact is via form at colindorman.com/biography/contact-me/ (Name/Email/Topic/Subject/Message). Not yet submitted. |
+| Build: "Groove Score Challenge" shareable result card | High | NEW 2026-07-03. Add a share button to `PracticeCompleteOverlay.kt` (~line 144) and `SpeedTrainerResultOverlay.kt` next to the dismiss button, gated on `grooveScore > 0`. Renders a `Bitmap` card (score + Metro + Seal stamp from `Seal.kt`) via `Intent.ACTION_SEND`. Fixed 90 BPM / 4/4 / 20s challenge preset for comparability. Rationale: matches the currently-trending "only 1% can stay on beat" TikTok/Reddit rhythm-challenge template with zero new detection code - reuses `GrooveScorer`/`SessionAnalyzer` as-is. See seo_reports/2026-07-03.md for full spec. No share-intent code exists in the app yet. |
+| Risk: brand-name search collision | Medium | REVISED 2026-07-03 with real GSC data (see below): the app IS indexed and appearing for "metrognome" (14 impr in the top-queries pull), so this is NOT an indexing/visibility miss as first suspected from a generic web search. It's a ranking-position problem shared across every query (avg position 14.6, see Website Indexing Status) - two older namesake apps likely hold the higher slots. Fix is the same as the CTR problem below: backlinks/authority, not a separate technical fix. The share-card idea (above) is parked per dev - not pursuing now. |
+| GSC: pull fresh impression/query data from Search Console | Done 2026-07-03 | Pulled 3-month Performance snapshot: 340 impressions, 1 click, 0.3% CTR, avg position 14.6. Top queries: drum metronome app (27), metrognome (14), is google metronome accurate (9), best metronome app for drummers (9). Confirms real impression growth (~4.5x+ vs the 06-17 baseline of 17) but conversion is blocked by position, not indexing. See Website Indexing Status. |
+| GSC: Validate Fix on homepage "Duplicate, Google chose different canonical" | Done 2026-07-03 | Validate Fix submitted and passed; canonical issue resolved in GSC |
+| RELEASE GATE: promote v5.9 to production | Done 2026-06-23 | v5.9 / versionCode 55 published public 2026-06-23. Gate cleared; all outreach hooks now live. Production has since advanced to v5.12 / versionCode 62 (2026-07-03) |
 | Android Authority follow-up | Done | Follow-up sent 2026-06-17 (confirmed by dev 2026-06-23). Awaiting response |
-| GSC: pull impression/query data from Search Console | High | Indexing confirmed June 6. Now baseline-critical after the 2026-06-12 canonical fix + on-page overhaul. Data requested in 2026-06-12 report |
-| GSC: Validate Fix on homepage "Duplicate, Google chose different canonical" | High | Fixed 2026-06-12 (vercel.app now 301s to metrognome.co.za). Submit Validate Fix and re-inspect the homepage; expect Google-selected canonical to flip over coming crawls |
 | Content: flip "How to Improve Your Timing" blog to present tense | Done 2026-06-12 | Done on master (commit 09ec535): Groove Check now public per dev. NOTE: confirm Play Store versionCode/date and update the "v5.6 NOT in production" lines in the App + Core features sections to match |
 | Vercel: confirm 2026-06-11 master deploy landed | Done 2026-06-12 | Blog post verified live; webhook had missed it, fixed via empty trigger commit. Webhook misses recur intermittently (remedy: empty commit). Website config lives in landing/vercel.json (Root Directory = landing) |
 
@@ -27,7 +30,9 @@
 - **On-page SEO overhaul 2026-06-12 (live):** showcase rebuilt with 6 current screenshots (4-tab nav); features expanded to 6 pillars (adds Speed Trainer, Practice & Streaks, Rewards & Collectibles); FAQPage structured data added (was none); SoftwareApplication featureList added; meta + OG descriptions refreshed; Twitter Card tags added; new visible speed-trainer FAQ. Widened coverage of the speed-trainer / practice / rewards keyword clusters.
 - Fix applied: GSC Request Indexing submitted for all 8 pages on 2026-06-03 - worked within 3 days
 - GSC baseline captured 2026-06-17: 17 impressions / 0 clicks over 28 days; top query "is google metronome accurate" (5 impr), drumming queries 8 of 17. Zero clicks expected at <2 weeks indexed (positions 20+).
-- CONTENT IDEA (caution): "Is Google's Metronome Accurate?" targets the top query. Build ONLY if scoped tightly to the branded Google-built-in-metronome comparison and cross-linked to the two existing accuracy posts (how-accurate-is-your-metronome-app.html, why-your-metronome-app-might-be-lying-to-you.html). A generic accuracy post would cannibalise both - do not write that.
+- **GSC snapshot 2026-07-03 (3-month window, effectively ~4 weeks of real data since indexing started June 6):** 340 total impressions, 1 total click, 0.3% avg CTR, **14.6 avg position**. Top queries: drum metronome app (27 impr), metrognome (14 impr, brand term - confirms the site IS appearing for its own name, just not on page 1), is google metronome accurate (9), best metronome app for drummers (9), best metronome for drummers (6), drummer metronome app (3), metronome drum app / best drum metronome app / best metronome app / best metronome apps for drummers (2 each). All queries 0 clicks. Diagnosis: impressions are growing strongly (~4.5x+ since 06-17) and clustering correctly around the drummer-intent keyword set, but avg position ~14-15 (bottom of page 2) means near-zero CTR is expected and not a snippet/technical problem - the single lever that moves this is backlink authority (the queued roundup outreach), which raises position, which is what converts impressions to clicks. Re-check position specifically (not just impressions) on the next pull to see if outreach links are moving the needle.
+- **Impressions timeline (chart reviewed 2026-07-03):** flat at ~0 until indexing kicked in ~03/06, fluctuated 5-27/day through mid-late June, then a clear sustained climb from ~28/06 to 03/07 (roughly 20 -> 35+/day). The climb start (28/06) lines up one day after the "Time Signatures Explained" blog post went live on master (`3901f9b`, 2026-06-27) - plausible driver: new indexable content adding query-matching surface area. The single click (of 1 total, 3-month window) also lands at the very end of this range, not spread out - n=1, don't over-read it, but directionally consistent with position slowly improving. Takeaway: publishing content visibly moves impressions within about a week; worth doing more of it, and the outreach emails should go out now while the curve is climbing rather than after it plateaus.
+- CONTENT IDEA (caution): "Is Google's Metronome Accurate?" targets the top query. Build ONLY if scoped tightly to the branded Google-built-in-metronome comparison and cross-linked to the two existing accuracy posts (how-accurate-is-your-metronome-app.html, why-your-metronome-app-might-be-lying-to-you.html). A generic accuracy post would cannibalise both - do not write that. User plans to draft this one using Fable (2026-07-03) - not started by Sonnet.
 
 ## App
 - Name: Metro Gnome: Metronome & Tuner
@@ -36,10 +41,11 @@
 - Website: http://www.metrognome.co.za
 - Category: Music & Audio
 - Current installs: 1,000+
-- Last updated (production / Play Store): **2026-06-23, v5.9 / versionCode 55** (public). Bundles v5.6 -> v5.9: Groove Check, time signatures w/ accents, noisy-room tuner + frequency rail, Rhythm-page gamification + poll, Italian tempo labels, Kalimba + Cowbell premium sounds, instrument-affinity icons, ad/review-prompt rework.
-- Live site + how-to-improve-your-timing.html now MATCH production: Groove Check present-tense copy is accurate, and the outreach hooks (Groove Check, noisy-room tuner, Cowbell) all reference live features. Outreach follow-ups are unblocked.
-- seo_context last updated: 2026-06-23
+- Last updated (production / Play Store): **2026-07-03, v5.12 / versionCode 62**. Bundles v5.9 -> v5.12: ad-manager cleanup, premium sounds (Kalimba/Cowbell) + instrument-affinity icons, batch mic scoring (SessionAnalyzer) + spectral clap rejection, Groove Check reward + onboarding nudge, free-feature gate removal, mic self-test calibration-first gates, app-wide Seal asset. This window (2026-06-23 to 2026-07-03) was pure engine/quality work - zero outreach or marketing activity occurred; see Open Action Items for the growing overdue queue.
+- Live site + how-to-improve-your-timing.html now MATCH production: Groove Check present-tense copy is accurate, and the outreach hooks (Groove Check, noisy-room tuner, Cowbell) all reference live features. Outreach follow-ups are unblocked (but not yet sent - see Open Action Items).
+- seo_context last updated: 2026-07-03
 - Rating: not yet established at scale
+- Brand-name search collision found 2026-07-03: two unrelated older apps ("MetroGnome" com.josmith42.metrognome, "Metrognome" com.jeremiahroque.metrognome) outrank this app for its own name in general web search - see Open Action Items
 
 ## Core features (all free)
 - Hardware-timed precision metronome (sample-accurate, drift-free)
@@ -82,13 +88,13 @@
 - r/guitarlessons - "can't subdivide the beat" thread - queued for 2026-05-23
 
 ## Roundup Outreach Log
-- Musician Wave "10 Best Metronome Apps" - emailed hello@musicianwave.com - 2026-05-29 - awaiting response (allow until 2026-06-12 before follow-up). Note: article last updated July 6, 2023 - very stale; follow-up should acknowledge article age
-- Musician Wave "8 Best Rhythm Training Apps" - outreach planned for 2026-06-05 (Friday)
-- Android Authority "Best Metronome Apps for Android" - emailed joseph.hindy@androidauthority.com - 2026-06-02 - awaiting response (allow until 2026-06-16 before follow-up)
+- Musician Wave "10 Best Metronome Apps" - emailed hello@musicianwave.com - 2026-05-29, follow-up sent 2026-07-03 - awaiting response
+- Musician Wave "8 Best Rhythm Training Apps" - emailed hello@musicianwave.com - 2026-07-03 - awaiting response
+- Android Authority "Best Metronome Apps for Android" - emailed joseph.hindy@androidauthority.com - 2026-06-02, follow-up sent 2026-06-17 (confirmed) - awaiting response
 - Melodics "Best Metronome Apps for Drummers" - DO NOT contact - they have their own built-in metronome; they are a competitor, not an independent reviewer
 - Practis Blog (pract.is) - DO NOT contact - Practis is a competitor app ("Music Practice Tracker, Timer & Metronome"); their roundup articles drive traffic to their own product, not independent reviews
-- BeatIt.tv "Top 5 Metronome Apps" - drummer-focused editorial site, independent reviewer. Metro Gnome absent. Outreach sent 2026-06-04 to info@beatit.tv - allow until 2026-06-18 before follow-up
-- Orchestra Central "5 Best Tuner Apps in 2026" (orchestracentral.com/best-tuner-apps/) - author Bobby Fisco (bobbyfisco@gmail.com). Independent site, covers iPhone and Android. Audience: strings, brass, woodwinds. Apps listed: TonalEnergy ($3.99), iStroboSoft ($9.99), Tunable ($3.99), BOSS Tuner (free), Pano Tuner (free). Metro Gnome absent. Outreach sent 2026-06-05 - lead angles: ambient noise detection (unique in his list), reference pitch 415-466Hz (period tuning), free. Allow until 2026-06-19 before follow-up.
+- BeatIt.tv "Top 5 Metronome Apps" - drummer-focused editorial site, independent reviewer. Metro Gnome absent. Outreach sent 2026-06-04, follow-up sent 2026-07-03 to info@beatit.tv - awaiting response
+- Orchestra Central "5 Best Tuner Apps in 2026" (orchestracentral.com/best-tuner-apps/) - author Bobby Fisco (bobbyfisco@gmail.com). Independent site, covers iPhone and Android. Audience: strings, brass, woodwinds. Apps listed: TonalEnergy ($3.99), iStroboSoft ($9.99), Tunable ($3.99), BOSS Tuner (free), Pano Tuner (free). Metro Gnome absent. Outreach sent 2026-06-05, follow-up sent 2026-07-03 - awaiting response.
 - American Songwriter "The Best Guitar Tuner Apps, Tested and Reviewed [2026]" (americansongwriter.com/best-guitar-tuner-apps/) - author Nick Stockton. Covers Android. Apps listed: GuitarTuna, Simply Tune, Fender Tune, BOSS Tuner, Positive Grid Bias FX 2, Pitched Tuner, Chordify. Metro Gnome absent. No direct author email on page - check americansongwriter.com/contact before outreach. Lower priority than Orchestra Central.
 - colindorman.com "Apps for Musicians: 25+ Tuners, Metronomes, and more" - found 2026-06-12. Music educator's mega-list, 25+ entries, teacher/student audience. Metro Gnome absent. BEST new target: a 25+ list has a low bar to inclusion. Full email drafted in 2026-06-12 report; need contact (check site footer / contact page). Angle: free all-in-one (metronome + tuner + speed trainer + rhythm game), no account, offline.
 - guitarmetrics.com "Best Free Guitar Tuner Apps for Beginners in 2026" - found 2026-06-12. Tuner-focused, beginner audience. Metro Gnome absent. Angle: free chromatic tuner that works in noisy rooms, adjustable reference pitch.
