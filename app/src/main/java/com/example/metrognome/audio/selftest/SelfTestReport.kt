@@ -225,11 +225,11 @@ object SelfTestThresholds {
     // ── Environment (ABORT, not FAIL - user-fixable) ──
     /**
      * Above this learned ambient floor (normalised RMS) the room is too loud to test.
-     * Loosened from 0.060: a moderately noisy room is fine because loud playback + the
-     * spectral clap/click discrimination tolerate broadband background noise; demanding
-     * near-silence just frustrates the user.
+     * Loosened from 0.060, then from 0.10: a moderately noisy room is fine because loud
+     * playback + the spectral clap/click discrimination tolerate broadband background
+     * noise; demanding near-silence just frustrates the user.
      */
-    const val MAX_AMBIENT_FLOOR = 0.10f
+    const val MAX_AMBIENT_FLOOR = 0.13f
     /**
      * Below this fraction of max system volume the speaker is too quiet to hear back.
      * Raised from 0.30: a loud, clean playback matters far more to a reliable loopback
