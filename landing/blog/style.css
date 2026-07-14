@@ -69,7 +69,10 @@ img { display: block; max-width: 100%; }
   font-size: 1rem;
   letter-spacing: -0.01em;
   color: var(--text);
+  flex-shrink: 0;
 }
+
+.site-nav .brand span { white-space: nowrap; }
 
 .site-nav .brand img {
   width: 28px;
@@ -93,6 +96,20 @@ img { display: block; max-width: 100%; }
 .site-nav .nav-links a.blog-nav:hover { color: var(--gold-light); }
 .site-nav .nav-links a.tools-nav { color: var(--gold); }
 .site-nav .nav-links a.tools-nav:hover { color: var(--gold-light); }
+
+/* Five nav links plus the brand no longer fit one row on a phone
+   (this broke when Tools was added) - wrap nav-links onto their own
+   centered row instead of clipping past the viewport edge. */
+@media (max-width: 640px) {
+  .site-nav .inner { flex-wrap: wrap; row-gap: 0.6rem; }
+  .site-nav .nav-links {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.7rem 1rem;
+    font-size: 0.85rem;
+  }
+}
 
 /* ── Breadcrumb ────────────────────────────────────────────────────── */
 .breadcrumb {
