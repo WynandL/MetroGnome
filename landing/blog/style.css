@@ -16,6 +16,7 @@
   --text-muted:   #8080AA;  /* AppColors.textMuted */
   --radius:       14px;
   --max:          720px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 html { scroll-behavior: smooth; }
@@ -90,6 +91,8 @@ img { display: block; max-width: 100%; }
 .site-nav .nav-links a:hover { color: var(--text); }
 .site-nav .nav-links a.blog-nav { color: var(--gold); }
 .site-nav .nav-links a.blog-nav:hover { color: var(--gold-light); }
+.site-nav .nav-links a.tools-nav { color: var(--gold); }
+.site-nav .nav-links a.tools-nav:hover { color: var(--gold-light); }
 
 /* ── Breadcrumb ────────────────────────────────────────────────────── */
 .breadcrumb {
@@ -377,3 +380,219 @@ footer {
 footer a { color: var(--text-muted); margin: 0 0.75rem; }
 footer a:hover { color: var(--text); }
 footer .footer-links { margin-bottom: 0.75rem; }
+
+/* ── Tools: interactive tool panel (tap tempo, future tools) ────────── */
+.tool-panel {
+  background: linear-gradient(160deg, var(--surface) 0%, var(--surface-deep) 100%);
+  border: 1px solid var(--surface-up);
+  border-radius: 20px;
+  padding: 2rem 1.5rem 1.75rem;
+  margin-bottom: 2.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.tool-panel::before {
+  content: "";
+  position: absolute;
+  inset: -40% -10% auto -10%;
+  height: 220px;
+  background: radial-gradient(ellipse closest-side, rgba(123,77,176,0.35), transparent 70%);
+  pointer-events: none;
+}
+
+.metro-wrap {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 0.75rem;
+}
+.metro-wrap img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--surface-deep);
+  box-shadow: 0 0 0 2px var(--surface-up), 0 8px 24px rgba(0,0,0,0.35);
+  transform-origin: 50% 85%;
+  transition: transform 0.06s ease-out;
+}
+.metro-wrap img.bump { transform: scale(1.08) rotate(-3deg); }
+
+.bpm-readout {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(3.5rem, 16vw, 5rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--gold);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.15rem;
+}
+.bpm-unit {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.marking {
+  margin-top: 0.6rem;
+  font-size: 0.95rem;
+  color: var(--purple-light);
+  font-weight: 700;
+  min-height: 1.4em;
+}
+
+.tap-pad {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  margin: 1.5rem auto 0.6rem;
+  width: 100%;
+  max-width: 340px;
+  padding: 1.15rem 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--purple);
+  background: var(--purple-dark);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.06s;
+}
+.tap-pad:hover { background: var(--purple); }
+.tap-pad:active, .tap-pad.pressed { transform: scale(0.97); background: var(--purple-light); color: #1a0a2e; }
+.tap-pad:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+.tool-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+.btn-ghost {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--surface-up);
+  border-radius: 50px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--purple); }
+.btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-ghost.playing { color: var(--gold); border-color: var(--gold); }
+.btn-ghost:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.tool-hint {
+  margin-top: 0.9rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.tool-hint kbd {
+  font-family: var(--mono);
+  background: var(--surface-up);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+/* ── Tools: reference / data table (tempo markings, etc.) ───────────── */
+.data-table-wrap { overflow-x: auto; margin: 1.5rem 0 2rem; }
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  min-width: 420px;
+}
+.data-table th {
+  text-align: left;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--surface-up);
+}
+.data-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--surface-up);
+}
+.data-table td:first-child { font-weight: 700; }
+.data-table td.range {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-light);
+  white-space: nowrap;
+}
+.data-table tr.current-row td { background: rgba(255, 215, 0, 0.08); }
+.data-table tr.current-row td:first-child {
+  position: relative;
+  padding-left: 1.1rem;
+}
+.data-table tr.current-row td:first-child::before {
+  content: "";
+  position: absolute;
+  left: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metro-wrap img, .tap-pad, .btn-play { transition: none; }
+}
+
+/* ── FAQ (details/summary), matches landing/index.html's FAQ section ── */
+.faq-list {
+  margin: 1.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+details {
+  background: var(--surface-deep);
+  border: 1px solid var(--surface-up);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+details[open] { border-color: var(--purple); }
+
+summary {
+  cursor: pointer;
+  padding: 1.1rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  user-select: none;
+}
+summary::-webkit-details-marker { display: none; }
+summary::after {
+  content: '+';
+  font-size: 1.3rem;
+  font-weight: 300;
+  color: var(--gold);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+details[open] summary::after { transform: rotate(45deg); }
+
+.faq-answer {
+  padding: 0 1.25rem 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
