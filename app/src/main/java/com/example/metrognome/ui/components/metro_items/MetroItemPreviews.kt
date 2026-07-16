@@ -23,6 +23,7 @@ import com.example.metrognome.ui.components.metro_items.items.LuxuryWatch
 import com.example.metrognome.ui.components.metro_items.items.MoonAndStars
 import com.example.metrognome.ui.components.metro_items.items.MusicStand
 import com.example.metrognome.ui.components.metro_items.items.StudioMic
+import com.example.metrognome.ui.components.metro_items.items.CheekTattoo
 import com.example.metrognome.ui.components.metro_items.items.TorchPost
 import com.example.metrognome.ui.components.metro_items.items.TuningFork
 import com.example.metrognome.ui.overlays.ItemPreviewCanvas
@@ -91,6 +92,10 @@ private fun LapelPinPreview() = ItemPreview(LapelPin)
 @Preview(name = "Studio Microphone")
 @Composable
 private fun StudioMicPreview() = ItemPreview(StudioMic)
+
+@Preview(name = "Music Note Tattoo")
+@Composable
+private fun CheekTattooPreview() = ItemPreview(CheekTattoo)
 
 @Preview(name = "Streak Icon - large")
 @Composable

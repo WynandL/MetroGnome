@@ -15,6 +15,7 @@ import com.example.metrognome.ui.components.metro_items.items.TuningFork
 import com.example.metrognome.ui.components.metro_items.items.HatFeather
 import com.example.metrognome.ui.components.metro_items.items.LapelPin
 import com.example.metrognome.ui.components.metro_items.items.StudioMic
+import com.example.metrognome.ui.components.metro_items.items.CheekTattoo
 
 /**
  * Single source of truth for every cosmetic item and its unlock condition.
@@ -83,6 +84,12 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     // GoldChain so the mic sits on top of the right lapel when worn.
     MetroItemEntry(StudioMic, UnlockCondition.MicChecksCompleted(1)),
 
+    // ── Loyalty ink — the long-horizon endgame wearable ───────────────────────
+    // A tattoo is permanent, so it is earned by real commitment: 30 distinct days
+    // opened, not 30 calendar days elapsed. Extends the collection past ForestTree
+    // (30 d since install), which was previously the last earnable free item.
+    MetroItemEntry(CheekTattoo, UnlockCondition.LoyaltyDays(30)),
+
     // ── Speed Trainer rewards — unlocked by completing sessions ───────────────
     // Earn-only: rewards consistent structured practice. No purchase path.
     // Thresholds: 1 session = first time, 5 = habit-forming, 10 = dedicated
@@ -91,12 +98,11 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     // MetroItemEntry(SpeedHalo,       UnlockCondition.SpeedTrainingSessionsCompleted(10)),  // 10 sessions
 
     // ── Future wearables — add entries here as new files are created ──────────
-    // MetroItemEntry(ArmBracelet,   UnlockCondition.MetronomeSeconds(7_200)),    // 2 h
-    // MetroItemEntry(LapelPin,      UnlockCondition.MetronomeSeconds(10_800)),   // 3 h
+    // (WristTattoo + ArmBracelet dropped: sleeves cover wrists and arms.
+    //  LapelPin shipped as LoyaltyDays(7). CheekTattoo shipped as LoyaltyDays(30).)
     // MetroItemEntry(TieBar,        UnlockCondition.MetronomeSeconds(18_000)),   // 5 h
     // MetroItemEntry(PinkyRing,     UnlockCondition.MetronomeSeconds(36_000)),   // 10 h
     // MetroItemEntry(DiamondShades, UnlockCondition.MetronomeSeconds(54_000)),   // 15 h
-    // MetroItemEntry(WristTattoo,   UnlockCondition.MetronomeSeconds(72_000)),   // 20 h
     // MetroItemEntry(WalkingCane,   UnlockCondition.MetronomeSeconds(108_000)),  // 30 h
     // ── Future forest / companions ────────────────────────────────────────────
     // MetroItemEntry(Bambi,         UnlockCondition.DaysSinceFirstLaunch(7)),    // 1 week

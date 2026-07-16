@@ -214,7 +214,7 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
             .mapNotNull { id -> METRO_ITEM_REGISTRY.find { entry -> entry.item.id == id } }
             .forEach { entry ->
                 _newlyUnlocked.tryEmit(entry)
-                AnalyticsTracker.logItemUnlocked(entry.item.id, entry.item.id)
+                AnalyticsTracker.logItemUnlocked(entry.item.id, entry.item.displayName)
             }
     }
 

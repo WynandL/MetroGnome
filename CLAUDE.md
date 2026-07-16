@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-**MetroGnome** is an Android metronome app with a rhythm game. Single-module Kotlin/Compose project targeting SDK 36, min SDK 24.
+**MetroGnome** is an Android metronome app with a rhythm game. Single-module Kotlin/Compose project targeting SDK 37, min SDK 24.
 
 ### Layer Structure
 
@@ -82,7 +82,7 @@ Item-specific colors that are unique to one file (mushroom teal, firefly glow, f
 
 ### Dependencies
 
-Versions managed via `gradle/libs.versions.toml`. Key: Compose BOM 2026.03.01, AGP 9.1.0, Kotlin 2.3.20, coroutines 1.10.2, Google Play Ads 25.1.0.
+Versions managed via `gradle/libs.versions.toml`. Key: Compose BOM 2026.06.01, AGP 9.3.0, Kotlin 2.4.10, coroutines 1.11.0, Google Play Ads 25.4.0. Note: `implementation(platform(bom))` and `androidTestImplementation(platform(bom))` are both required (BOMs pin per configuration) — the IDE's duplicate-dependency warning on this is a false positive.
 
 ### Release Signing
 
