@@ -181,8 +181,8 @@ fun GnomeCanvas(
             drawFireworkBurst(burst.progress.value, burst.center, u, burst.seed)
         }
 
-        // Background items (scene decoration — not body-attached)
-        activeItems.filter { !it.isBodyAttached }.forEach { item ->
+        // Background items (scene decoration — not body-attached), behind Metro
+        activeItems.filter { !it.isBodyAttached && !it.isForeground }.forEach { item ->
             with(item) { draw(u, canvasCx, canvasBaseY) }
         }
 
@@ -199,6 +199,11 @@ fun GnomeCanvas(
             cx = canvasCx,
             baseY = canvasBaseY
         )
+
+        // Foreground background items — drawn last so they appear in front of Metro's body/shoes.
+        activeItems.filter { !it.isBodyAttached && it.isForeground }.forEach { item ->
+            with(item) { draw(u, canvasCx, canvasBaseY) }
+        }
     }
 }
 

@@ -178,6 +178,9 @@ fun MetroGnomeApp() {
                         activity?.let { adManager.maybeShow(AdPlacement.METRONOME_STOP, it, false, sessionS) {} }
                     }
                 },
+                onWatchRewardedAd = { onDone ->
+                    activity?.let { metronomeVm.rewardedAdManager.show(it, onDone) } ?: onDone()
+                },
             )
             AppTab.RHYTHM -> RhythmGameScreen(
                 vm = rhythmVm,

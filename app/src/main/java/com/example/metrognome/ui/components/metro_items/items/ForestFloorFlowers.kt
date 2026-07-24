@@ -8,10 +8,16 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
 import com.example.metrognome.ui.components.metro_items.MetroItem
+import kotlin.random.Random
 
 /**
- * A cheerful patch of wildflowers at Metro's left side, just past his shoe tips.
+ * A cheerful patch of wildflowers spanning the full width of the canvas at ground level.
  * Ground-level background item — no body-attachment needed.
+ *
+ * The layout (position, colour, scale, petal count, lean of every bloom) is generated once
+ * from a fixed seed at class-init, not re-rolled per frame or recomposition. That keeps the
+ * patch stable while the metronome runs, but varied enough that it doesn't read as a repeating
+ * tile — every bloom's position is jittered within its slot rather than sitting on a grid.
  */
 object ForestFloorFlowers : MetroItem {
 
@@ -20,15 +26,25 @@ object ForestFloorFlowers : MetroItem {
     override val description    = "A cheerful patch of wildflowers that sprouted beside Metro."
     override val earnedMessage  = "You've been with Metro for 3 days! The forest floor is starting to bloom! These little wildflowers sprouted up beside his shoes to welcome you back."
     override val isBodyAttached  = false
+    // Drawn after Metro so the patch reads in front of his shoes rather than tucked behind them.
+    override val isForeground    = true
 
-    // Flowers span ~9-33% of screen width — approximation for tap detection
-    override fun hitCenter(u: Float) = Offset(-2.1f * u, -0.5f * u)
+    // GnomeCanvas defines u = canvas height / 17 and baseY = canvas height * 0.97 — the gap between
+    // baseY and the literal bottom edge is exactly (1 - 0.97) * 17 = 0.51 units, in any canvas size.
+    // Dropping the patch's ground line by this amount plants it flush against the canvas bottom.
+    private const val GROUND_DROP = 0.51f
+
+    // Tap detection stays a modest circle near canvas centre rather than the full visual span —
+    // widening it to match the full-width bloom would swallow taps meant for other items whose
+    // hit circles sit further up the body (MusicStand, TuningFork, LapelPin, StudioMic, etc.),
+    // since this item is checked earlier in the registry than those.
+    override fun hitCenter(u: Float) = Offset(0f, (GROUND_DROP - 0.5f) * u)
     override fun hitRadius(u: Float) = u * 1.8f
 
-    // Show a few flowers close-up: centre on the left of the patch, mid-stem height
+    // Show a cluster of blooms close-up, centred on the patch
     override fun previewCenter(canvasW: Float, canvasH: Float, u: Float, baseY: Float) =
-        Offset(canvasW * 0.21f, baseY - 0.6f * u)
-    override fun previewRadius(u: Float) = u * 2.0f
+        Offset(canvasW * 0.5f, baseY + (GROUND_DROP - 0.6f) * u)
+    override fun previewRadius(u: Float) = u * 2.2f
 
     private val stemGreen   = Color(0xFF4A7C3F)
     private val yellow      = Color(0xFFFFE066)
@@ -39,27 +55,77 @@ object ForestFloorFlowers : MetroItem {
     private val leafGreen   = Color(0xFF5E9E52)
     private val centerDark  = Color(0xFFCC7000)   // stamen dots
 
+    private val colorPairs = listOf(
+        white to orange,
+        yellow to centerDark,
+        pink to lightYellow,
+        yellow to lightYellow,
+        pink to orange,
+        white to lightYellow,
+        yellow to orange,
+    )
+
+    private class BloomSpec(
+        val xFrac: Float, val isBud: Boolean,
+        val petalColor: Color, val centerColor: Color,
+        val scale: Float, val petals: Int, val lean: Float,
+    )
+
+    // Fixed seed so the scatter is deterministic (same layout every launch) but not a visible grid.
+    private val blooms: List<BloomSpec> = run {
+        val rng = Random(20260724L)
+        val slots = 20
+        (0 until slots).map { i ->
+            val slotW   = 1f / slots
+            val jitter  = (rng.nextFloat() - 0.5f) * slotW * 0.8f
+            val xFrac   = ((i + 0.5f) * slotW + jitter).coerceIn(0.015f, 0.985f)
+            val (petal, center) = colorPairs[rng.nextInt(colorPairs.size)]
+            BloomSpec(
+                xFrac       = xFrac,
+                isBud       = rng.nextFloat() < 0.18f,
+                petalColor  = petal,
+                centerColor = center,
+                scale       = 0.40f + rng.nextFloat() * 0.28f,
+                petals      = if (rng.nextBoolean()) 5 else 6,
+                lean        = (rng.nextFloat() - 0.5f) * 0.10f,
+            )
+        }
+    }
+
+    private class GrassCluster(val xFrac: Float, val heights: List<Float>)
+
+    // Height range for individual grass blades — capped at GRASS_MAX_HEIGHT so no blade towers
+    // over the flowers, but varied blade-to-blade so the tuft doesn't read as a mowed hedge.
+    private const val GRASS_MIN_HEIGHT = 0.32f
+    private const val GRASS_MAX_HEIGHT = 0.78f
+
+    private val grassClusters: List<GrassCluster> = run {
+        val rng = Random(20260724L + 1)
+        val slots = 28
+        (0 until slots).map { i ->
+            val slotW  = 1f / slots
+            val jitter = (rng.nextFloat() - 0.5f) * slotW * 0.9f
+            val xFrac  = ((i + 0.5f) * slotW + jitter).coerceIn(0f, 1f)
+            val heights = List(4) { GRASS_MIN_HEIGHT + rng.nextFloat() * (GRASS_MAX_HEIGHT - GRASS_MIN_HEIGHT) }
+            GrassCluster(xFrac, heights)
+        }
+    }
+
     override fun DrawScope.draw(u: Float, cx: Float, baseY: Float) {
-        // Grass tufts first (behind flowers). Narrower band: ~9%-33%.
-        drawGrassBlades(u, size.width * 0.10f, baseY)
-        drawGrassBlades(u, size.width * 0.165f, baseY)
-        drawGrassBlades(u, size.width * 0.235f, baseY)
-        drawGrassBlades(u, size.width * 0.30f, baseY)
-        drawGrassBlades(u, size.width * 0.33f, baseY)
+        val groundY = baseY + GROUND_DROP * u
 
-        // A couple of buds for variety, tucked among the blooms
-        drawBud(u, size.width * 0.11f, baseY, pink,   0.46f)
-        drawBud(u, size.width * 0.285f, baseY, yellow, 0.42f)
+        // Grass tufts first (behind blooms), spread across the full width.
+        grassClusters.forEach { c -> drawGrassBlades(u, size.width * c.xFrac, groundY, c.heights) }
 
-        // Blooms — denser, narrower, slightly shorter than before, with varied petal counts
-        drawFlower(u, size.width * 0.09f,  baseY, white,  orange,      0.42f, 5, -0.04f)
-        drawFlower(u, size.width * 0.125f, baseY, yellow, centerDark,  0.58f, 6,  0.03f)
-        drawFlower(u, size.width * 0.16f,  baseY, pink,   lightYellow, 0.64f, 5, -0.03f)
-        drawFlower(u, size.width * 0.195f, baseY, white,  orange,      0.50f, 6,  0.04f)
-        drawFlower(u, size.width * 0.23f,  baseY, yellow, lightYellow, 0.60f, 5, -0.02f)
-        drawFlower(u, size.width * 0.265f, baseY, pink,   orange,      0.54f, 6,  0.03f)
-        drawFlower(u, size.width * 0.30f,  baseY, white,  lightYellow, 0.46f, 5, -0.03f)
-        drawFlower(u, size.width * 0.33f,  baseY, yellow, orange,      0.42f, 6, -0.04f)
+        // Buds and blooms, left to right across the full width.
+        blooms.forEach { b ->
+            val x = size.width * b.xFrac
+            if (b.isBud) {
+                drawBud(u, x, groundY, b.petalColor, b.scale * 0.78f)
+            } else {
+                drawFlower(u, x, groundY, b.petalColor, b.centerColor, b.scale, b.petals, b.lean)
+            }
+        }
     }
 
     private fun DrawScope.drawFlower(
@@ -145,13 +211,14 @@ object ForestFloorFlowers : MetroItem {
         drawOval(white.copy(alpha = 0.35f), topLeft = Offset(x - 0.05f * s, topY - 0.14f * s), size = Size(0.06f * s, 0.12f * s))
     }
 
-    private fun DrawScope.drawGrassBlades(u: Float, x: Float, groundY: Float) {
+    private fun DrawScope.drawGrassBlades(u: Float, x: Float, groundY: Float, heights: List<Float>) {
         val offsets = listOf(-0.15f, 0f, 0.18f, -0.08f)
-        offsets.forEach { dx ->
+        offsets.forEachIndexed { i, dx ->
+            val height = heights.getOrElse(i) { 0.55f }
             drawLine(
                 color = leafGreen,
                 start = Offset(x + dx * u, groundY),
-                end   = Offset(x + dx * u + 0.1f * u, groundY - 0.55f * u),
+                end   = Offset(x + dx * u + 0.1f * u, groundY - height * u),
                 strokeWidth = 0.07f * u,
                 cap = StrokeCap.Round
             )

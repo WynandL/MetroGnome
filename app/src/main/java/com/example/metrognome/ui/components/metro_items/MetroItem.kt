@@ -13,6 +13,9 @@ interface MetroItem {
     val earnedMessage: String       // shown when the user taps the item on Metro
     val isBodyAttached: Boolean     // true = drawn inside the withTransform block; false = background layer
     val isHeadAttached: Boolean get() = false  // true = moves with the head-bob transform
+    /** Background items only. True = drawn after Metro, so the item appears in front of his body/shoes
+     *  instead of behind them. Ignored when [isBodyAttached] is true. */
+    val isForeground: Boolean get() = false
 
     /**
      * Center of the tap target in body coordinates (after translate(cx, baseY)).

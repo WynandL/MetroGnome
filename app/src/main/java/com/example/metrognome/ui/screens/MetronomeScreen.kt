@@ -120,6 +120,7 @@ fun MetronomeScreen(
     /** Fired when the user manually taps the stop button (not on practice/trainer auto-stop).
      *  Fire-and-forget: nothing waits for this to complete. */
     onBeforeManualStop: () -> Unit = {},
+    onWatchRewardedAd: (onDone: () -> Unit) -> Unit = { it() },
 ) {
     val bpm by vm.bpm.collectAsStateWithLifecycle()
     val isPlaying by vm.isPlaying.collectAsStateWithLifecycle()
@@ -145,6 +146,7 @@ fun MetronomeScreen(
     val pendingPracticeResult by vm.pendingPracticeResult.collectAsStateWithLifecycle()
 
     val gnoteCount by vm.gnoteCount.collectAsStateWithLifecycle()
+    val rewardedAdLoaded by vm.rewardedAdLoaded.collectAsStateWithLifecycle()
     var showGnotesInfo by remember { mutableStateOf(false) }
 
     var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
@@ -561,9 +563,16 @@ fun MetronomeScreen(
     // Mic self-test now lives in Settings (dev tools) as the single canonical launcher.
 
     if (showGnotesInfo) {
+        val pointsSnapshot = remember(gnoteCount) {
+            com.example.metrognome.points.PointsManager(context, vm.rewardedAdManager).getSnapshot()
+        }
         com.example.metrognome.ui.dialogs.GnotesInfoDialog(
-            gnoteCount = gnoteCount,
-            onDismiss  = { showGnotesInfo = false },
+            snapshot          = pointsSnapshot,
+            canWatchAdToday   = remember(gnoteCount) { vm.rewardedAdManager.canWatch() },
+            adReady           = rewardedAdLoaded,
+            remainingToday    = remember(gnoteCount) { vm.rewardedAdManager.remainingToday() },
+            onWatchRewardedAd = onWatchRewardedAd,
+            onDismiss         = { showGnotesInfo = false },
         )
     }
 
