@@ -205,6 +205,10 @@ private fun ReportCard(report: SelfTestReport, onRunAgain: () -> Unit) {
         Spacer(Modifier.height(6.dp))
         Text(report.deviceModel + "  ·  " + report.route.label, color = AppColors.textMuted,
             fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+        // Raw enum names alongside the friendly banner above, so this matches 1:1 with the
+        // "grade"/"verdict" fields Firestore stores for the same run.
+        Text("grade=${report.grade.name}  verdict=${report.verdict.name}", color = AppColors.textDim,
+            fontFamily = FontFamily.Monospace, fontSize = 9.sp)
 
         Spacer(Modifier.height(14.dp))
 
@@ -220,7 +224,8 @@ private fun ReportCard(report: SelfTestReport, onRunAgain: () -> Unit) {
                 add("latency ${report.latencyMs.toInt()} ms   (median of ${d.used}/${d.emitted} claps; ${d.warmupClaps} warm-up discarded)")
                 add("jitter +-${report.latencyJitterMs?.toInt() ?: 0} ms   (limit <= ${SelfTestThresholds.MAX_LATENCY_JITTER_MS.toInt()})")
                 add("split-half ${d.firstHalfMs.toInt()} vs ${d.secondHalfMs.toInt()} ms · drift ${d.splitDeltaMs.toInt()} ms   (limit <= ${SelfTestThresholds.MAX_LATENCY_SPLIT_DRIFT_MS.toInt()})")
-                add("plausible range ${SelfTestThresholds.MIN_LATENCY_MS.toInt()} to ${SelfTestThresholds.MAX_LATENCY_MS.toInt()} ms")
+                add("plausible range ${SelfTestThresholds.MIN_LATENCY_MS.toInt()} to ${SelfTestThresholds.MAX_LATENCY_MS.toInt()} ms" +
+                    "   (marginal warn >= ${(SelfTestThresholds.MAX_LATENCY_MS * SelfTestThresholds.LATENCY_CEILING_WARN_FRACTION).toInt()})")
             } else if (report.speakerPath == CheckStatus.FAIL) {
                 add("no output timestamp from this device · timing not measurable")
             } else {
@@ -231,11 +236,21 @@ private fun ReportCard(report: SelfTestReport, onRunAgain: () -> Unit) {
         CheckBlock("DISCRIMINATION", report.discrimination, buildList {
             if (report.clickRejectRate != null) {
                 add("from ${report.discPairs} click + clap pairs")
-                add("click rejected ${pct(report.clickRejectRate)}   (min ${(SelfTestThresholds.MIN_CLICK_REJECT_RATE * 100).toInt()}%)")
-                add("clap detected ${pct(report.clapDetectRate)}   (min ${(SelfTestThresholds.MIN_CLAP_DETECT_RATE * 100).toInt()}%)")
+                // The two values that actually gate PASS/FAIL for this phase.
+                add("clap onset recall ${pct(report.discOnsetRecallRate)}   (min ${(SelfTestThresholds.MIN_CLAP_ONSET_RECALL * 100).toInt()}%)")
+                add("claps separable ${pct(report.discSeparableFraction)} of registered   (min ${(SelfTestThresholds.SEPARABILITY_MIN_FRACTION * 100).toInt()}%)")
+                // Classified-as-clap rates at the DEFAULT thresholds - advisory only (a low
+                // reading here is a calibration offset note, not a failure; see NOTES below).
+                add("click rejected ${pct(report.clickRejectRate)}   (advisory target ${(SelfTestThresholds.MIN_CLICK_REJECT_RATE * 100).toInt()}%)")
+                add("clap detected ${pct(report.clapDetectRate)}   (advisory target ${(SelfTestThresholds.MIN_CLAP_DETECT_RATE * 100).toInt()}%)")
                 val m = report.spectralMargins
                 if (m != null) {
-                    add("integrated ratio: click<=${ratioStr(m.clickIntegratedMax)} · clap>=${ratioStr(m.clapIntegratedMin)}   (split at ${"%.1f".format(ClapDetector.CLAP_BAND_RATIO)}, used)")
+                    add("integrated ratio: click<=${ratioStr(m.clickIntegratedMax)} · clap>=${ratioStr(m.clapIntegratedMin)}   " +
+                        "(default ${"%.1f".format(ClapDetector.CLAP_BAND_RATIO)}; this device's tuned split " +
+                        "${report.tunedClapBandRatio?.let { "%.2f".format(it) } ?: "n/a"}${tunedSuffix(report.tunedClapBandRatio)})")
+                    add("flatness: click<=${ratioStr(m.clickFlatnessMax)} · clap>=${ratioStr(m.clapFlatnessMin)}   " +
+                        "(default ${"%.2f".format(ClapDetector.CLAP_FLATNESS_MIN)}; this device's tuned split " +
+                        "${report.tunedClapFlatnessMin?.let { "%.2f".format(it) } ?: "n/a"}${tunedSuffix(report.tunedClapFlatnessMin)})")
                     add("burst ratio: click<=${ratioStr(m.clickPeakMax)} · clap>=${ratioStr(m.clapPeakMin)}   (diagnostic only, not used)")
                 }
             } else add("not run")
@@ -244,6 +259,8 @@ private fun ReportCard(report: SelfTestReport, onRunAgain: () -> Unit) {
         CheckBlock("SCORING", report.scoring, buildList {
             if (report.meanAbsResidualMs != null || report.detectionRecall != null) {
                 val offsets = report.scoringPoints.size.coerceAtLeast(1)
+                val tuned = report.tunedClapBandRatio != null || report.tunedClapFlatnessMin != null
+                add("classified with: ${if (tuned) "this device's tuned thresholds" else "default (shipped) thresholds"}")
                 add("${report.scoringTrials} trials (${report.scoringTrials / offsets} x ${report.scoringPoints.size} offsets)")
                 add("recall ${pct(report.detectionRecall)} overall · ${pct(report.outOfBandRecall)} clear of beat   (min ${(SelfTestThresholds.OUT_OF_BAND_MIN_RECALL * 100).toInt()}%)")
                 add("on-beat dead zone ${report.maskingHalfWidthMs?.toInt() ?: 0} ms   (good <= ${SelfTestThresholds.GRADE_GOOD_MASK_MS.toInt()})")
@@ -282,9 +299,9 @@ private fun ReportCard(report: SelfTestReport, onRunAgain: () -> Unit) {
             Spacer(Modifier.height(4.dp))
             report.notes.forEach { note ->
                 Row(modifier = Modifier.padding(vertical = 2.dp)) {
-                    Text("•", color = abortColor, fontFamily = FontFamily.Monospace, fontSize = 10.sp,
-                        modifier = Modifier.width(12.dp))
-                    Text(note, color = AppColors.textSecondary, fontFamily = FontFamily.Monospace,
+                    Text(note.id, color = abortColor, fontFamily = FontFamily.Monospace, fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold, modifier = Modifier.width(24.dp))
+                    Text(note.text, color = AppColors.textSecondary, fontFamily = FontFamily.Monospace,
                         fontSize = 10.sp, lineHeight = 13.sp)
                 }
             }
@@ -391,4 +408,6 @@ private fun CloseButton(onDismiss: () -> Unit) {
 
 private fun fmt(ms: Float) = "${if (ms >= 0f) "+" else ""}${ms.toInt()}"
 private fun pct(f: Float?) = f?.let { "${(it * 100).toInt()}%" } ?: "-"
-private fun ratioStr(r: Float?) = r?.let { "%.1f".format(it) } ?: "-"
+private fun ratioStr(r: Float?) = r?.let { "%.2f".format(it) } ?: "-"
+/** ", used for scoring" when a per-device threshold was actually derived; otherwise a clear reason. */
+private fun tunedSuffix(tuned: Float?) = if (tuned != null) ", used for scoring" else " (not separable enough to tune - default used)"

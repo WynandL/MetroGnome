@@ -4,6 +4,10 @@ import android.os.Build
 import com.example.metrognome.BuildConfig
 import com.example.metrognome.audio.selftest.CheckStatus
 import com.example.metrognome.audio.selftest.SelfTestReport
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 /**
  * Reports the outcome of one user-facing microphone check to Firestore, anonymously.
@@ -77,6 +81,14 @@ object MicCheckReporter {
         "clap_flatness_min"    to r.spectralMargins?.clapFlatnessMin.cloud(),
         "click_peak_max"       to r.spectralMargins?.clickPeakMax.cloud(),
         "clap_peak_min"        to r.spectralMargins?.clapPeakMin.cloud(),
+        // The two values that actually gate `discrimination` (click_reject_rate /
+        // clap_detect_rate above are advisory only, see SelfTestReport.kt).
+        "disc_onset_recall_rate"    to r.discOnsetRecallRate.cloud(),
+        "disc_separable_fraction"   to r.discSeparableFraction.cloud(),
+        // This device's own derived thresholds, applied to the scoring sweep below and
+        // persisted on PASS - null means the shipped default was used instead.
+        "tuned_clap_band_ratio"     to r.tunedClapBandRatio.cloud(),
+        "tuned_clap_flatness_min"   to r.tunedClapFlatnessMin.cloud(),
 
         // ── Detection reliability ──
         "detection_recall"      to r.detectionRecall.cloud(),
@@ -90,12 +102,30 @@ object MicCheckReporter {
         "p95_abs_residual_ms"  to r.p95AbsResidualMs.cloud(),
 
         // ── Context ──
-        "notes"               to r.notes,
+        // Codes only (e.g. "D2") to keep rows short and scannable side by side -
+        // see NoteCode for what each one means.
+        "notes"               to r.notes.map { it.id },
+        // When the test itself finished (MicSelfTest builds the report at this instant).
+        // Submission to Firestore follows within milliseconds with no queue or retry in
+        // between (see CloudReporter), so a separate "submitted at" would never
+        // meaningfully differ - one honest timestamp instead of two identical ones.
         "report_timestamp_ms" to r.timestampMs,
-        "submitted_ms"        to System.currentTimeMillis(),
+        "report_at"           to r.timestampMs.readableSast(),
     )
 
     /** NaN/Infinity-safe Float -> Double? so Firestore never stores a non-finite value. */
     private fun Float?.cloud(): Double? =
         this?.takeIf { !it.isNaN() && !it.isInfinite() }?.toDouble()
+
+    /**
+     * Human-readable SAST (UTC+2, no DST) timestamp alongside the raw epoch-ms field, for
+     * quick scanning - these reports are read from South Africa, not the submitting device's
+     * own timezone, so the readable string is fixed to the reader's zone rather than the
+     * device's local time.
+     */
+    private fun Long.readableSast(): String {
+        val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+        fmt.timeZone = TimeZone.getTimeZone("Africa/Johannesburg")
+        return fmt.format(Date(this)) + " SAST"
+    }
 }

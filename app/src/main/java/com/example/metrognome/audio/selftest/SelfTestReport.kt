@@ -117,9 +117,30 @@ data class SelfTestReport(
 
     // ── Click-vs-clap discrimination ──
     val discrimination: CheckStatus,
+    /** Classified-as-clap rate at the *default* thresholds. Advisory only (see [SelfTestThresholds.MIN_CLICK_REJECT_RATE]) - does not gate [discrimination]. */
     val clickRejectRate: Float?,
+    /** Classified-as-clap rate at the *default* thresholds. Advisory only (see [SelfTestThresholds.MIN_CLAP_DETECT_RATE]) - does not gate [discrimination]. */
     val clapDetectRate: Float?,
     val spectralMargins: SpectralMargins? = null,
+    /**
+     * Fraction of claps that registered as ANY onset at all, before classification. The actual
+     * hard recall floor behind [discrimination] - see [SelfTestThresholds.MIN_CLAP_ONSET_RECALL].
+     */
+    val discOnsetRecallRate: Float? = null,
+    /**
+     * Fraction of registered claps that individually separated from the clicks. The other hard
+     * gate behind [discrimination] - see [SelfTestThresholds.SEPARABILITY_MIN_FRACTION]. Null
+     * when no clap registered as an onset at all (already covered by [discOnsetRecallRate]).
+     */
+    val discSeparableFraction: Float? = null,
+    /**
+     * This run's own per-device integrated-ratio threshold, derived from [spectralMargins] when
+     * discrimination was separable - null otherwise (falls back to the shipped default). This is
+     * what the scoring sweep below was actually classified with, and what gets persisted on PASS.
+     */
+    val tunedClapBandRatio: Float? = null,
+    /** This run's own per-device flatness threshold - see [tunedClapBandRatio]. */
+    val tunedClapFlatnessMin: Float? = null,
 
     // ── Detection reliability across the scoring sweep ──
     val detectionRecall: Float?,
@@ -143,8 +164,8 @@ data class SelfTestReport(
     val meanAbsResidualMs: Float?,
     val p95AbsResidualMs: Float?,
 
-    /** Plain-language observations about behaviour traced to hardware limits. */
-    val notes: List<String>,
+    /** Diagnostic codes observed this run - see [NoteCode] for what each one means. */
+    val notes: List<NoteCode>,
 
     // ── Engineering detail (defaults keep the early-exit report paths simple) ──
     val latencyDetail: LatencyDetail? = null,
@@ -218,8 +239,22 @@ object SelfTestThresholds {
      *  2 - jitter and split-drift demoted to notes; discrimination fails only on genuine
      *      inseparability across BOTH spectral axes (ratio and flatness); tuned clap
      *      ratio + flatness thresholds persisted (2026-07-02).
+     *  3 - discrimination's clap-side gate now mirrors the click-side one: a low
+     *      *classified* clap-detect rate is a calibration offset (noted, not failed) as
+     *      long as claps are separable AND actually registering as onsets at all; only a
+     *      genuine acoustic miss (below [MIN_CLAP_ONSET_RECALL] before classification even
+     *      applies) still fails discrimination (2026-07-27).
+     *  4 - the scoring phase is graded against onsets reclassified with THIS run's own
+     *      just-derived per-device thresholds (not the shipped defaults it ran capture
+     *      with), so a device is judged on what it will actually do once calibrated, not
+     *      on its out-of-the-box fit; [SEPARABILITY_MIN_FRACTION] tolerates ~10% outlier
+     *      claps instead of one stray sample branding a device inseparable forever;
+     *      [MIN_CLAP_ONSET_RECALL] and [OUT_OF_BAND_MIN_RECALL] loosened from a
+     *      zero-tolerance 0.95 (effectively demanding a perfect 12/12) to 0.85 (one miss
+     *      tolerated), since a hard sample size of 12 makes "perfect" a fragile bar
+     *      (2026-07-27).
      */
-    const val GATE_LOGIC_VERSION = 2
+    const val GATE_LOGIC_VERSION = 4
 
 
     // ── Environment (ABORT, not FAIL - user-fixable) ──
@@ -231,11 +266,24 @@ object SelfTestThresholds {
      */
     const val MAX_AMBIENT_FLOOR = 0.13f
     /**
+     * At or above this fraction of [MAX_AMBIENT_FLOOR] is *surfaced as a note*, not failed:
+     * the room passed, but is close enough to the ceiling that a slightly noisier session
+     * next time could tip it into an ABORT. A clean PASS with nothing near a limit stays
+     * silent; this is what lets a good run still flag "passed, but by a hair."
+     */
+    const val AMBIENT_CEILING_WARN_FRACTION = 0.9f
+    /**
      * Below this fraction of max system volume the speaker is too quiet to hear back.
      * Raised from 0.30: a loud, clean playback matters far more to a reliable loopback
      * than a perfectly quiet room, so we ask for a genuinely high volume.
      */
     const val MIN_VOLUME_FRACTION = 0.60f
+    /**
+     * At or below this fraction ABOVE [MIN_VOLUME_FRACTION] is *surfaced as a note*: the
+     * volume cleared the floor, but with little headroom. Mirrors [AMBIENT_CEILING_WARN_FRACTION]
+     * for the opposite kind of limit (a floor instead of a ceiling).
+     */
+    const val VOLUME_FLOOR_WARN_FRACTION = 1.1f
 
     // ── Speaker path ──
     /** Plausible acoustic round-trip (emission→capture). Outside → unreliable clock. */
@@ -256,27 +304,79 @@ object SelfTestThresholds {
      * speaker-path failures are: no output timestamp, implausible latency, too few claps.
      */
     const val MAX_LATENCY_SPLIT_DRIFT_MS = 8f
+    /**
+     * Latency at or above this fraction of [MAX_LATENCY_MS] is *surfaced as a note*: the
+     * device still technically clears the hard ceiling, but is close enough to it that the
+     * fit is marginal (a device sitting at 395/400 ms is not the same confidence level as
+     * one at 60/400 ms).
+     */
+    const val LATENCY_CEILING_WARN_FRACTION = 0.9f
 
     // ── Discrimination ──
     /**
-     * Reject rate below this is *advisory*, not a failure: it only means the shipped detector
-     * thresholds sit wrong for this hardware. Discrimination fails only on genuine
-     * inseparability: some clap cannot be told from the clicks on EITHER axis (its flatness
-     * and its band ratio both sit at or below the clicks' maxima in [SpectralMargins]), so no
-     * threshold pair can accept it without also leaking clicks. Anything short of that is a
-     * calibration target, not an unfit device.
+     * Reject/detect rate below this on either side is *advisory*, not a failure: it only
+     * means the shipped detector thresholds sit wrong for this hardware on that axis.
+     * Discrimination fails only when either (a) some clap is genuinely inseparable from the
+     * clicks on EITHER axis (its flatness and its band ratio both sit at or below the clicks'
+     * maxima in [SpectralMargins]), so no threshold pair can accept it without also leaking
+     * clicks, or (b) claps aren't registering as onsets at all - see [MIN_CLAP_ONSET_RECALL].
+     * A low [MIN_CLICK_REJECT_RATE] (click leaks through) or low [MIN_CLAP_DETECT_RATE] (clap
+     * gets classified as non-clap) alone, on an otherwise-separable device, is a calibration
+     * target - fixed by the per-device thresholds saved on PASS - not an unfit device.
      */
     const val MIN_CLICK_REJECT_RATE = 0.95f
-    /** Claps caught below this in the discrimination probe means the device can't register claps at all. */
+    /** Claps classified as "clap" by the *default* detector below this: informational only (see above). */
     const val MIN_CLAP_DETECT_RATE = 0.95f
+    /**
+     * Claps registering as ANY onset at all (before the clap/click classifier even runs)
+     * below this means the mic genuinely isn't hearing them - no threshold tuning fixes a
+     * clap that was never captured as an onset in the first place. This is the one hard
+     * recall floor for discrimination.
+     *
+     * Set to tolerate exactly one miss out of [MicSelfTest]'s 12 discrimination pairs
+     * (11/12 = 0.917 passes, 10/12 = 0.833 fails) rather than demanding a literally
+     * perfect run: requiring zero misses across only 12 samples is fragile to one stray
+     * noise burst or vibration, and would fail a device for hardware noise rather than
+     * genuine insensitivity.
+     */
+    const val MIN_CLAP_ONSET_RECALL = 0.85f
+    /**
+     * Fraction of registered claps that must individually separate from the clicks (beat
+     * the clicks' maximum on at least one axis) for the device to count as separable.
+     * Below 1.0 by design: a single outlier clap - one noisy sample out of a small run -
+     * should not alone brand an otherwise-workable device "inseparable" forever. The
+     * per-device threshold placement ([MicSelfTest.deviceClapBandRatio] /
+     * [MicSelfTest.deviceClapFlatnessMin]) already degrades gracefully when the "gap" this
+     * implies is thin or absent, so tolerating a minority of outliers here doesn't produce
+     * a bad threshold - it just stops one fluke from being treated as proof of a hardware
+     * limit.
+     */
+    const val SEPARABILITY_MIN_FRACTION = 0.9f
+    /**
+     * Ratio axis: the clap minimum must clear the click maximum by at least this multiple
+     * (ratios are multiplicative, per [SpectralMargins]) to count as a *comfortable* margin
+     * rather than a thin one - see [MicSelfTest.hasComfortableMargin].
+     */
+    const val RATIO_MARGIN_COMFORT_FACTOR = 2.0f
+    /**
+     * Flatness axis: the clap minimum must clear the click maximum by at least this much
+     * (flatness is additively bounded 0..1) to count as comfortable rather than thin.
+     */
+    const val FLATNESS_MARGIN_COMFORT = 0.10f
 
     // ── Detection ──
     /**
      * Recall required on claps clear of the beat (|offset| beyond [MASKING_BAND_MS]).
      * These cannot be excused by masking, so falling short here is a real detection
-     * failure and the one recall bar that produces NOT_FIT.
+     * failure and the one recall bar that produces NOT_FIT. Measured against onsets
+     * reclassified with THIS run's own derived per-device thresholds where discrimination
+     * was separable ([MicSelfTest] passes them into the scoring phase), so a device is
+     * graded on what it will actually do once calibrated - not on the shipped defaults it
+     * is about to stop using. Set to tolerate one miss out of 12 out-of-band trials
+     * (11/12 = 0.917 passes), matching [MIN_CLAP_ONSET_RECALL]'s reasoning: demanding a
+     * perfect run from only 12 samples fails a device for noise, not incapability.
      */
-    const val OUT_OF_BAND_MIN_RECALL = 0.95f
+    const val OUT_OF_BAND_MIN_RECALL = 0.85f
     /** |offset| within this is masking-susceptible; misses here characterize the dead zone rather than fail. */
     const val MASKING_BAND_MS = 40f
     /** |offset| at or beyond this is "clear of the beat" and feeds [OUT_OF_BAND_MIN_RECALL]. */

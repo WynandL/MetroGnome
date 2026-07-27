@@ -198,7 +198,7 @@ fun MicCheckOverlay(
                     )
 
                     else -> FixableContent(   // ABORT / PENDING - user-fixable, coach and retry
-                        message = report.notes.firstOrNull()
+                        message = report.notes.firstOrNull()?.text
                             ?: "The check was interrupted. Find a quiet spot, turn the volume up, and try again.",
                         onRetry = { start() },
                         onCancel = onDismiss,
