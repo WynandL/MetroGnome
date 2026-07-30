@@ -8,6 +8,10 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+# Machine-specific: holds the local JDK name (temurin-21 vs jbr-21), which
+# flips whenever Android Studio picks a different JDK and shows up as a
+# spurious diff on every branch switch.
+/.idea/misc.xml
 .DS_Store
 /build
 /captures
