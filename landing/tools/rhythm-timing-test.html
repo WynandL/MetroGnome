@@ -167,6 +167,7 @@
       <h2>What this rhythm test actually measures</h2>
       <p>The test plays a steady click at 100 BPM. The first four beats are a count-in and are not scored. From the fifth beat on, every tap you make is timestamped and matched to the nearest beat, and the test records how far off it was and in which direction.</p>
       <p>At the end you get three numbers. <strong>Spread</strong> is how tightly your taps clustered, in milliseconds, and it is the one that drives your score. <strong>Average offset</strong> is whether you sat ahead of or behind the click on average. <strong>Beats counted</strong> is how many of your taps were close enough to a beat to be scored at all, because a tap that lands more than half a beat away cannot be attributed to any particular beat with confidence.</p>
+      <p>If your offset comes back consistently negative you are rushing, and if it comes back consistently positive you are dragging. Both are habits with identifiable causes and specific fixes, which is the subject of <a href="/blog/why-you-rush-when-you-play.html">why you rush when you play, and why it gets worse at slow tempos</a>.</p>
 
       <h2>Why consistency beats accuracy</h2>
       <p>Most online rhythm tests score you on raw closeness to the beat. That is the wrong measurement to take through a browser, and here is why: between the click leaving your speaker, travelling to your ears, and your tap being registered by the page, there is a fixed delay made of audio output latency, Bluetooth buffering if you are on wireless headphones, and input handling. On some setups that adds up to a few milliseconds. On others it is well over a hundred.</p>
@@ -185,10 +186,10 @@
             <tr><th>Score</th><th>Spread</th><th>What it sounds like</th></tr>
           </thead>
           <tbody id="bandTableBody">
-            <tr data-min="85" data-max="100"><td>Tight</td><td class="range">85&ndash;100</td><td>Under ~38 ms. Reads as locked in. This is where a recorded take stops needing edits.</td></tr>
-            <tr data-min="65" data-max="84"><td>Solid</td><td class="range">65&ndash;84</td><td>~38&ndash;55 ms. Normal for a practised amateur. Fine in a band, audible under a click.</td></tr>
-            <tr data-min="40" data-max="64"><td>Developing</td><td class="range">40&ndash;64</td><td>~55&ndash;76 ms. The pulse is there but wanders. Usually a subdivision problem, not a talent problem.</td></tr>
-            <tr data-min="0" data-max="39"><td>Loose</td><td class="range">0&ndash;39</td><td>Over ~76 ms. Clearly early or late to a listener. Very common on a first attempt, and the fastest band to improve out of.</td></tr>
+            <tr data-min="85" data-max="100"><td>Tight</td><td class="range">85-100</td><td>Under ~38 ms. Reads as locked in. This is where a recorded take stops needing edits.</td></tr>
+            <tr data-min="65" data-max="84"><td>Solid</td><td class="range">65-84</td><td>~38-55 ms. Normal for a practised amateur. Fine in a band, audible under a click.</td></tr>
+            <tr data-min="40" data-max="64"><td>Developing</td><td class="range">40-64</td><td>~55-76 ms. The pulse is there but wanders. Usually a subdivision problem, not a talent problem.</td></tr>
+            <tr data-min="0" data-max="39"><td>Loose</td><td class="range">0-39</td><td>Over ~76 ms. Clearly early or late to a listener. Very common on a first attempt, and the fastest band to improve out of.</td></tr>
           </tbody>
         </table>
       </div>
@@ -272,6 +273,10 @@
           <div class="related-card">
             <p class="rc-label">Accuracy</p>
             <a href="/blog/how-accurate-is-your-metronome-app.html">How Accurate Is Your Metronome App?</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Rush or drag</p>
+            <a href="/blog/why-you-rush-when-you-play.html">Why You Rush When You Play (And Why It Gets Worse at Slow Tempos)</a>
           </div>
         </div>
       </div>
