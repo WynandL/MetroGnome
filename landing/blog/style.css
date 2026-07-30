@@ -564,8 +564,60 @@ table.data-table {
   background: var(--gold);
 }
 
+/* ── Tools: rhythm test (beat dots, result stats, verdict) ──────────── */
+.beat-dots {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 1.1rem;
+  min-height: 10px;
+}
+.beat-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--surface-up);
+  transition: background 0.12s, transform 0.12s;
+}
+.beat-dot.hit-ok    { background: var(--purple-light); }
+.beat-dot.hit-great { background: var(--gold); transform: scale(1.25); }
+
+.tap-pad.is-live { background: var(--purple); border-color: var(--purple-light); }
+
+.stat-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+  margin: 1.4rem 0 0.2rem;
+}
+.stat { display: flex; flex-direction: column; align-items: center; min-width: 88px; }
+.stat-value {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+.stat-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.verdict {
+  margin: 1rem auto 0;
+  max-width: 44ch;
+  font-size: 0.9rem;
+  color: var(--text);
+  opacity: 0.9;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .metro-wrap img, .tap-pad, .btn-play { transition: none; }
+  .metro-wrap img, .tap-pad, .btn-play, .beat-dot { transition: none; }
 }
 
 /* ── FAQ (details/summary), matches landing/index.html's FAQ section ── */

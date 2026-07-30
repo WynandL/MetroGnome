@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rhythm Test: How Good Is Your Timing? - Metro Gnome</title>
+  <meta name="description" content="Free online rhythm test. Tap along to a click for 16 beats and get a 0-100 timing score based on consistency, not luck. Shows your spread in milliseconds and whether you rush or drag. No download, no sign up.">
+  <link rel="icon" type="image/webp" href="/favicon.webp">
+  <link rel="apple-touch-icon" href="/favicon.webp">
+  <link rel="canonical" href="https://metrognome.co.za/tools/rhythm-timing-test.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Rhythm Test: How Good Is Your Timing? - Metro Gnome">
+  <meta property="og:description" content="Tap along to a click for 16 beats and get a 0-100 timing score based on consistency, not luck. Free, in your browser.">
+  <meta property="og:url" content="https://metrognome.co.za/tools/rhythm-timing-test.html">
+  <meta property="og:image" content="https://metrognome.co.za/metro.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Rhythm Test: How Good Is Your Timing? - Metro Gnome">
+  <meta name="twitter:description" content="Tap along to a click for 16 beats and get a 0-100 timing score based on consistency, not luck.">
+  <meta name="twitter:image" content="https://metrognome.co.za/metro.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Rhythm Test: How Good Is Your Timing?",
+    "url": "https://metrognome.co.za/tools/rhythm-timing-test.html",
+    "applicationCategory": "MusicApplication",
+    "operatingSystem": "Any (runs in browser)",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "description": "Free browser rhythm test that scores your timing from 0 to 100 based on how consistently you tap against a click, and reports your spread in milliseconds plus whether you rush or drag.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Metro Gnome",
+      "url": "https://metrognome.co.za/"
+    }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is a good rhythm test score?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "On this test, 85 and above means your taps land within about 38 ms of each other, which reads as tight to a listener. 65 to 84 is solid and normal for a practised amateur. Under 40 means a spread wider than about 76 ms, which is audible as rushing or dragging. The score is built from consistency, so it does not reward a lucky beat or punish an unlucky one."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does the test score consistency instead of accuracy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Every phone, laptop, browser and pair of headphones adds its own delay between the click leaving the speaker and your tap being registered. That delay shifts every single tap by roughly the same amount, so raw closeness to the beat measures your hardware as much as your playing. The spread between your taps is not affected by a constant delay, which makes it the honest measure of timing skill."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it mean anything if the test says I am ahead of the beat?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Only loosely, in a browser. Your average offset mixes real anticipation with device latency, so treat it as a hint rather than a verdict. If it says you are 90 ms ahead, some of that is you and some of it is your hardware. Repeat the test on the same device and watch whether the number moves, rather than trusting one reading."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can rhythm be improved, or are you born with it?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It improves with practice. Timing is a feedback skill: you get better at it when something tells you, immediately and objectively, whether you were early or late. Playing along to a click without ever measuring the result is why many players plateau, because the ear forgives its own mistakes in real time."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is this rhythm test free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. It runs entirely in your browser, needs no download, account or payment, and nothing you tap is uploaded anywhere."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="stylesheet" href="../blog/style.css">
+</head>
+<body>
+
+  <nav class="site-nav" aria-label="Primary">
+    <div class="inner">
+      <a href="/" class="brand" aria-label="Metro Gnome home">
+        <img src="/metro.png" alt="">
+        <span>Metro Gnome</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/#features">Features</a>
+        <a href="/blog/" class="blog-nav">Blog</a>
+        <a href="/tools/" class="tools-nav">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="sep">&rsaquo;</span>
+      <a href="/tools/">Tools</a>
+      <span class="sep">&rsaquo;</span>
+      <span>Rhythm Test</span>
+    </nav>
+
+    <header class="article-header">
+      <div class="post-meta">
+        <span class="post-category">Free tool</span>
+        <span>Takes 20 seconds</span>
+        <span>Nothing leaves your device</span>
+      </div>
+      <h1>Rhythm Test: How Good Is Your Timing?</h1>
+      <p class="article-intro">
+        Tap along with a click for sixteen beats. This free rhythm test scores your timing out of 100, tells you how far apart your taps landed in milliseconds, and says whether you tend to rush or drag. It grades consistency rather than luck, which is the same way Metro Gnome grades a real practice session.
+      </p>
+    </header>
+
+    <section class="tool-panel" aria-label="Interactive rhythm and timing test">
+      <div class="metro-wrap">
+        <img id="metroImg" src="/metro.png" alt="Metro the gnome, bobs on every beat">
+      </div>
+
+      <div class="bpm-readout" id="mainReadout">--</div>
+      <div class="bpm-unit" id="mainUnit">groove score</div>
+      <div class="marking" id="statusLabel">Ready when you are</div>
+
+      <div class="beat-dots" id="beatDots" aria-hidden="true"></div>
+
+      <button class="tap-pad" id="tapPad" type="button">START TEST</button>
+
+      <div class="stat-row" id="statRow" hidden>
+        <div class="stat">
+          <span class="stat-value" id="jitterValue">--</span>
+          <span class="stat-label">Spread (consistency)</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" id="biasValue">--</span>
+          <span class="stat-label">Average offset</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" id="hitsValue">--</span>
+          <span class="stat-label">Beats counted</span>
+        </div>
+      </div>
+
+      <p class="verdict" id="verdict" hidden></p>
+
+      <div class="tool-controls">
+        <button class="btn-ghost" id="retryBtn" type="button" hidden>Try again</button>
+      </div>
+
+      <p class="tool-hint">Use <kbd>Space</kbd> or tap the button. Headphones give a cleaner result than speakers. Four count-in beats come first, then sixteen scored beats at 100 BPM.</p>
+    </section>
+
+    <article class="prose">
+      <h2>What this rhythm test actually measures</h2>
+      <p>The test plays a steady click at 100 BPM. The first four beats are a count-in and are not scored. From the fifth beat on, every tap you make is timestamped and matched to the nearest beat, and the test records how far off it was and in which direction.</p>
+      <p>At the end you get three numbers. <strong>Spread</strong> is how tightly your taps clustered, in milliseconds, and it is the one that drives your score. <strong>Average offset</strong> is whether you sat ahead of or behind the click on average. <strong>Beats counted</strong> is how many of your taps were close enough to a beat to be scored at all, because a tap that lands more than half a beat away cannot be attributed to any particular beat with confidence.</p>
+
+      <h2>Why consistency beats accuracy</h2>
+      <p>Most online rhythm tests score you on raw closeness to the beat. That is the wrong measurement to take through a browser, and here is why: between the click leaving your speaker, travelling to your ears, and your tap being registered by the page, there is a fixed delay made of audio output latency, Bluetooth buffering if you are on wireless headphones, and input handling. On some setups that adds up to a few milliseconds. On others it is well over a hundred.</p>
+      <p>That delay shifts <em>every</em> tap by roughly the same amount. It makes a metronomically perfect player look consistently late, and it makes a comparison between two people on different devices close to meaningless.</p>
+
+      <div class="callout">
+        <strong>The spread survives what the offset does not.</strong> A constant delay moves all your taps together, so it changes your average offset but leaves the distance between your taps untouched. That is why this test grades the spread. It is the part of the measurement that is genuinely about you, and it is the same reasoning behind how Metro Gnome scores a practice session on your phone rather than simply reporting how close each hit was to the click.
+      </div>
+
+      <h2>What your score means</h2>
+      <p>The scale is built from the same two thresholds the app uses. A spread of about 25 ms or tighter earns full marks, a spread of about 110 ms or wider earns none, and everything in between scales smoothly across that range.</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Score</th><th>Spread</th><th>What it sounds like</th></tr>
+          </thead>
+          <tbody id="bandTableBody">
+            <tr data-min="85" data-max="100"><td>Tight</td><td class="range">85&ndash;100</td><td>Under ~38 ms. Reads as locked in. This is where a recorded take stops needing edits.</td></tr>
+            <tr data-min="65" data-max="84"><td>Solid</td><td class="range">65&ndash;84</td><td>~38&ndash;55 ms. Normal for a practised amateur. Fine in a band, audible under a click.</td></tr>
+            <tr data-min="40" data-max="64"><td>Developing</td><td class="range">40&ndash;64</td><td>~55&ndash;76 ms. The pulse is there but wanders. Usually a subdivision problem, not a talent problem.</td></tr>
+            <tr data-min="0" data-max="39"><td>Loose</td><td class="range">0&ndash;39</td><td>Over ~76 ms. Clearly early or late to a listener. Very common on a first attempt, and the fastest band to improve out of.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>One reading is a snapshot, not a diagnosis. Tiredness, an unfamiliar device, and simply not having warmed up all cost you points. Run it three times and take the best, which is closer to what you are actually capable of than any single attempt.</p>
+
+      <h2>Three things that move the number</h2>
+      <p><strong>Subdivide out loud.</strong> Most wandering pulses come from counting only the beat. Count the eighths or sixteenths between beats, out loud or in your head, and the gaps stop being guesswork.</p>
+      <p><strong>Practise at a slow tempo, not a comfortable one.</strong> Slow tempos are harder because the gaps are longer and there is more room to drift. If your spread is wide, it will be widest at 60 BPM, which is exactly why that is the useful place to work.</p>
+      <p><strong>Measure the result, every time.</strong> Playing along with a click while never checking the outcome is the plateau most players get stuck on, because in the moment your ear quietly forgives what it just did. Objective feedback after the fact is what breaks that loop, and it is the whole idea behind <a href="/blog/how-to-improve-your-timing.html">the feedback loop practice usually misses</a>.</p>
+
+      <h2>Take the same test with your instrument</h2>
+      <p>Tapping a key measures your timing through a browser. Playing measures your timing. Metro Gnome's Groove Check does the same analysis on your phone but listens through the microphone instead, so you can clap, play a drum, or pick a string and be scored on what actually came out of your instrument. It separates your playing from the click by frequency rather than volume, corrects for your specific device's audio delay with a one-time calibration, then grades the whole session on the same consistency principle described above. It runs entirely on your device and there is no account.</p>
+
+      <h3>Questions about rhythm and timing tests</h3>
+      <div class="faq-list">
+        <details>
+          <summary>What is a good rhythm test score?</summary>
+          <div class="faq-answer">
+            85 and above means your taps landed within about 38 ms of each other, which reads as tight to a listener. 65 to 84 is solid and normal for a practised amateur. Under 40 means a spread wider than about 76 ms, which is audible as rushing or dragging. Because the score is built from consistency, it does not reward one lucky beat or punish one unlucky one.
+          </div>
+        </details>
+        <details>
+          <summary>Why does the test score consistency instead of accuracy?</summary>
+          <div class="faq-answer">
+            Every phone, laptop, browser and pair of headphones adds its own delay between the click leaving the speaker and your tap being registered. That delay shifts every tap by roughly the same amount, so raw closeness to the beat measures your hardware as much as your playing. The spread between your taps is unaffected by a constant delay, which makes it the honest measure of skill.
+          </div>
+        </details>
+        <details>
+          <summary>Does it mean anything if the test says I am ahead of the beat?</summary>
+          <div class="faq-answer">
+            Only loosely, in a browser. Your average offset mixes real anticipation with device latency, so treat it as a hint rather than a verdict. If it says you are 90 ms ahead, some of that is you and some of it is your hardware. Repeat the test on the same device and watch whether the number moves, rather than trusting a single reading.
+          </div>
+        </details>
+        <details>
+          <summary>Can rhythm be improved, or are you born with it?</summary>
+          <div class="faq-answer">
+            It improves with practice. Timing is a feedback skill: you get better at it when something tells you, immediately and objectively, whether you were early or late. Playing along to a click without ever measuring the result is why many players plateau, because the ear forgives its own mistakes in real time.
+          </div>
+        </details>
+        <details>
+          <summary>Do Bluetooth headphones affect the result?</summary>
+          <div class="faq-answer">
+            They add a large fixed delay, often 100 to 300 ms, which will skew your average offset badly. Your spread, and therefore your score, is largely unaffected. Wired headphones or your device's own speaker give a more meaningful offset reading.
+          </div>
+        </details>
+        <details>
+          <summary>Is this rhythm test free?</summary>
+          <div class="faq-answer">
+            Yes. It runs entirely in your browser, needs no download, account or payment, and nothing you tap is uploaded anywhere.
+          </div>
+        </details>
+      </div>
+
+      <div class="cta-box">
+        <h3>Now score your playing, not your tapping.</h3>
+        <p>Metro Gnome's Groove Check listens through the microphone and grades a full practice session on the same consistency scale. Free, no account, no subscription.</p>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome" class="btn-play">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M3 20.5v-17c0-.83 1-.83 1.5-.5l14 8.5c.5.3.5 1 0 1.3L4.5 21c-.5.33-1.5.33-1.5-.5z"/>
+          </svg>
+          Get it Free on Google Play
+        </a>
+      </div>
+
+      <div class="related">
+        <h3>Also useful</h3>
+        <div class="related-grid">
+          <div class="related-card">
+            <p class="rc-label">Timing</p>
+            <a href="/blog/how-to-improve-your-timing.html">How to Improve Your Timing (The Feedback Loop Practice Usually Misses)</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Tempo</p>
+            <a href="/tools/tap-tempo-bpm-finder.html">Tap Tempo &amp; BPM Finder</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Practice</p>
+            <a href="/blog/how-to-practice-increasing-bpm.html">How to Practice Increasing BPM (And Why One Tempo Is Never Enough)</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Accuracy</p>
+            <a href="/blog/how-accurate-is-your-metronome-app.html">How Accurate Is Your Metronome App?</a>
+          </div>
+        </div>
+      </div>
+
+    </article>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Metro Gnome</a>
+        <a href="/blog/">Blog</a>
+        <a href="/tools/">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Play Store</a>
+        <a href="mailto:accesscommsa@gmail.com">Contact</a>
+      </div>
+      <p>&copy; 2026 Metro Gnome &middot; Crafted for musicians</p>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    var tapPad     = document.getElementById('tapPad');
+    var retryBtn   = document.getElementById('retryBtn');
+    var mainReadout= document.getElementById('mainReadout');
+    var mainUnit   = document.getElementById('mainUnit');
+    var statusLabel= document.getElementById('statusLabel');
+    var beatDots   = document.getElementById('beatDots');
+    var statRow    = document.getElementById('statRow');
+    var jitterValue= document.getElementById('jitterValue');
+    var biasValue  = document.getElementById('biasValue');
+    var hitsValue  = document.getElementById('hitsValue');
+    var verdict    = document.getElementById('verdict');
+    var metroImg   = document.getElementById('metroImg');
+    var bandRows   = Array.prototype.slice.call(document.querySelectorAll('#bandTableBody tr'));
+
+    /* Same tuning constants the app grades a session with:
+       spread <= TIGHT earns full credit, >= LOOSE earns none. */
+    var TIGHT_MS   = 25;
+    var LOOSE_MS   = 110;
+    var BIAS_GRACE = 60;
+    var MIN_HITS   = 5;
+
+    var BPM        = 100;
+    var COUNT_IN   = 4;
+    var SCORED     = 16;
+    var interval   = 60 / BPM;              // seconds per beat
+
+    var audioCtx = null;
+    var state = 'idle';                     // idle | running | done
+    var beatPerfTimes = [];                 // scored beats, in performance.now() ms
+    var taps = [];
+    var schedulerTimer = null;
+    var nextBeatTime = 0;
+    var beatIndex = 0;                      // beats scheduled so far
+    var ctxToPerf = 0;                      // performance.now() ms for audioCtx time 0
+
+    var LOOKAHEAD_MS = 25;
+    var SCHEDULE_AHEAD_S = 0.12;
+
+    /* ── dots ─────────────────────────────────────────────────────────── */
+    function buildDots() {
+      beatDots.innerHTML = '';
+      for (var i = 0; i < SCORED; i++) {
+        var d = document.createElement('span');
+        d.className = 'beat-dot';
+        beatDots.appendChild(d);
+      }
+    }
+    function markDot(i, cls) {
+      var d = beatDots.children[i];
+      if (d) d.className = 'beat-dot ' + cls;
+    }
+    buildDots();
+
+    /* ── audio clock <-> performance clock ────────────────────────────── */
+    function syncClocks() {
+      var perfNow = performance.now();
+      var ctxNow  = audioCtx.currentTime;
+      if (typeof audioCtx.getOutputTimestamp === 'function') {
+        var ts = audioCtx.getOutputTimestamp();
+        if (ts && ts.contextTime > 0 && ts.performanceTime > 0) {
+          ctxToPerf = ts.performanceTime - ts.contextTime * 1000;
+          return;
+        }
+      }
+      /* Fallback: assume the reported output latency, else no correction. */
+      var lat = (typeof audioCtx.outputLatency === 'number' && isFinite(audioCtx.outputLatency))
+        ? audioCtx.outputLatency : 0;
+      ctxToPerf = perfNow - ctxNow * 1000 + lat * 1000;
+    }
+    function ctxTimeToPerf(t) { return t * 1000 + ctxToPerf; }
+
+    /* ── click voice: 1100 Hz like the app, 1800 Hz on the downbeat ───── */
+    function playClick(time, accent) {
+      var osc  = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = accent ? 1800 : 1100;
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.exponentialRampToValueAtTime(accent ? 0.4 : 0.32, time + 0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.045);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(time);
+      osc.stop(time + 0.05);
+
+      var delayMs = Math.max(0, (time - audioCtx.currentTime) * 1000);
+      setTimeout(bump, delayMs);
+    }
+
+    function bump() {
+      metroImg.classList.remove('bump');
+      void metroImg.offsetWidth;
+      metroImg.classList.add('bump');
+      setTimeout(function () { metroImg.classList.remove('bump'); }, 90);
+    }
+
+    /* ── scheduler ────────────────────────────────────────────────────── */
+    function scheduler() {
+      while (nextBeatTime < audioCtx.currentTime + SCHEDULE_AHEAD_S) {
+        var total = COUNT_IN + SCORED;
+        if (beatIndex >= total) {
+          /* let the final beat's window close before scoring */
+          var endsIn = Math.max(0, (nextBeatTime - audioCtx.currentTime) * 1000);
+          clearInterval(schedulerTimer);
+          schedulerTimer = null;
+          setTimeout(finish, endsIn + interval * 500 + 120);
+          return;
+        }
+        var isCountIn = beatIndex < COUNT_IN;
+        playClick(nextBeatTime, beatIndex % 4 === 0);
+        if (!isCountIn) beatPerfTimes.push(ctxTimeToPerf(nextBeatTime));
+
+        if (isCountIn) {
+          var n = COUNT_IN - beatIndex;
+          (function (label, t) {
+            setTimeout(function () {
+              if (state === 'running') statusLabel.textContent = label > 0 ? String(label) : '';
+            }, Math.max(0, (t - audioCtx.currentTime) * 1000));
+          })(n, nextBeatTime);
+        } else if (beatIndex === COUNT_IN) {
+          (function (t) {
+            setTimeout(function () {
+              if (state === 'running') statusLabel.textContent = 'Tap every beat';
+            }, Math.max(0, (t - audioCtx.currentTime) * 1000));
+          })(nextBeatTime);
+        }
+
+        beatIndex++;
+        nextBeatTime += interval;
+      }
+    }
+
+    /* ── run control ──────────────────────────────────────────────────── */
+    function start() {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      state = 'running';
+      taps = [];
+      beatPerfTimes = [];
+      beatIndex = 0;
+      buildDots();
+      statRow.hidden = true;
+      verdict.hidden = true;
+      retryBtn.hidden = true;
+      bandRows.forEach(function (r) { r.classList.remove('current-row'); });
+      mainReadout.textContent = '--';
+      mainUnit.textContent = 'groove score';
+      tapPad.textContent = 'TAP';
+      tapPad.classList.add('is-live');
+      statusLabel.textContent = 'Listen...';
+
+      syncClocks();
+      nextBeatTime = audioCtx.currentTime + 0.35;
+      schedulerTimer = setInterval(scheduler, LOOKAHEAD_MS);
+      scheduler();
+
+      /* getOutputTimestamp can read as zero on a context that has only just
+         started. Re-sync during the count-in, well before the first scored
+         beat is scheduled, so the beat times the score is built from use the
+         real output clock rather than the fallback estimate. */
+      setTimeout(function () { if (state === 'running') syncClocks(); }, 400);
+      setTimeout(function () { if (state === 'running') syncClocks(); }, 1200);
+    }
+
+    function registerTap() {
+      if (state !== 'running') return;
+      var t = performance.now();
+      taps.push(t);
+      bump();
+
+      /* live dot feedback for the nearest beat, if it is close enough */
+      var best = -1, bestAbs = Infinity;
+      for (var i = 0; i < beatPerfTimes.length; i++) {
+        var d = Math.abs(t - beatPerfTimes[i]);
+        if (d < bestAbs) { bestAbs = d; best = i; }
+      }
+      if (best >= 0 && bestAbs <= interval * 500) {
+        markDot(best, bestAbs <= 50 ? 'hit-great' : 'hit-ok');
+      }
+    }
+
+    /* ── scoring ──────────────────────────────────────────────────────── */
+    function median(xs) {
+      var s = xs.slice().sort(function (a, b) { return a - b; });
+      var m = Math.floor(s.length / 2);
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+    }
+
+    /* Robust spread: scaled median absolute deviation, so one stray tap
+       cannot dominate the result the way a plain standard deviation would. */
+    function robustSpread(xs) {
+      if (xs.length < 2) return 0;
+      var med = median(xs);
+      var mad = median(xs.map(function (x) { return Math.abs(x - med); }));
+      return 1.4826 * mad;
+    }
+
+    function finish() {
+      state = 'done';
+      tapPad.classList.remove('is-live');
+      tapPad.textContent = 'START TEST';
+      retryBtn.hidden = false;
+
+      /* Fold every tap onto its nearest beat; anything further than half a
+         beat away cannot be attributed to a beat and is dropped. */
+      var devs = [];
+      var used = {};
+      for (var i = 0; i < taps.length; i++) {
+        var best = -1, bestAbs = Infinity, bestDev = 0;
+        for (var j = 0; j < beatPerfTimes.length; j++) {
+          var dev = taps[i] - beatPerfTimes[j];
+          if (Math.abs(dev) < bestAbs) { bestAbs = Math.abs(dev); best = j; bestDev = dev; }
+        }
+        if (best >= 0 && bestAbs <= interval * 500 && !used[best]) {
+          used[best] = true;
+          devs.push(bestDev);
+        }
+      }
+
+      if (devs.length < MIN_HITS) {
+        mainReadout.textContent = '--';
+        mainUnit.textContent = 'not enough taps';
+        statusLabel.textContent = 'Give it another go';
+        statRow.hidden = true;          /* never leave the previous run's stats on screen */
+        verdict.hidden = false;
+        verdict.textContent = 'Only ' + devs.length + ' tap' + (devs.length === 1 ? '' : 's') +
+          ' landed close enough to a beat to be counted. The test needs at least ' + MIN_HITS +
+          '. Start it again and tap on every single beat, including the ones that feel obvious.';
+        return;
+      }
+
+      var spread = robustSpread(devs);
+      var bias   = devs.reduce(function (a, b) { return a + b; }, 0) / devs.length;
+      var frac   = Math.min(1, Math.max(0, (LOOSE_MS - spread) / (LOOSE_MS - TIGHT_MS)));
+      var score  = Math.round(frac * 100);
+
+      mainReadout.textContent = score;
+      mainUnit.textContent = 'groove score';
+      statusLabel.textContent = bandName(score);
+      statRow.hidden = false;
+      jitterValue.textContent = Math.round(spread) + ' ms';
+      biasValue.textContent = (bias >= 0 ? '+' : '') + Math.round(bias) + ' ms';
+      hitsValue.textContent = devs.length + '/' + SCORED;
+
+      bandRows.forEach(function (r) {
+        var lo = Number(r.getAttribute('data-min'));
+        var hi = Number(r.getAttribute('data-max'));
+        r.classList.toggle('current-row', score >= lo && score <= hi);
+      });
+
+      verdict.hidden = false;
+      verdict.textContent = readOut(score, spread, bias, devs.length);
+    }
+
+    function bandName(score) {
+      if (score >= 85) return 'Tight';
+      if (score >= 65) return 'Solid';
+      if (score >= 40) return 'Developing';
+      return 'Loose';
+    }
+
+    function readOut(score, spread, bias, counted) {
+      var s = '';
+      if (score >= 85) {
+        s = 'Tight. Your taps sat within about ' + Math.round(spread) + ' ms of each other, which is the range where timing stops being the thing holding a take back.';
+      } else if (score >= 65) {
+        s = 'Solid. A spread of about ' + Math.round(spread) + ' ms is a good, usable pulse. Closing it further is mostly a matter of subdividing at slower tempos.';
+      } else if (score >= 40) {
+        s = 'Developing. Your pulse is there, but it moved by about ' + Math.round(spread) + ' ms across the test. That is almost always a subdivision gap rather than a talent one.';
+      } else {
+        s = 'Loose, on this attempt. A spread of about ' + Math.round(spread) + ' ms is audible to a listener, and it is also the band that improves fastest with deliberate practice.';
+      }
+      if (Math.abs(bias) > BIAS_GRACE) {
+        s += ' You also sat ' + Math.round(Math.abs(bias)) + ' ms ' + (bias < 0 ? 'ahead of' : 'behind') +
+             ' the click on average, though on a browser some of that offset is your device rather than you.';
+      }
+      if (counted < SCORED * 0.6) {
+        s += ' Note that only ' + counted + ' of ' + SCORED + ' beats were counted, so this reads more like a sample than a full result. Tap every beat for a score you can trust.';
+      }
+      return s;
+    }
+
+    /* ── input ────────────────────────────────────────────────────────── */
+    tapPad.addEventListener('click', function () {
+      if (state === 'running') registerTap(); else start();
+    });
+    retryBtn.addEventListener('click', start);
+
+    window.addEventListener('keydown', function (e) {
+      if (e.code !== 'Space' || e.repeat) return;
+      e.preventDefault();
+      tapPad.classList.add('pressed');
+      if (state === 'running') registerTap(); else start();
+    });
+    window.addEventListener('keyup', function (e) {
+      if (e.code === 'Space') tapPad.classList.remove('pressed');
+    });
+  })();
+  </script>
+
+</body>
+</html>
