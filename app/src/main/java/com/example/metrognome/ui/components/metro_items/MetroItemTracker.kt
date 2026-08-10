@@ -3,6 +3,8 @@ package com.example.metrognome.ui.components.metro_items
 import android.content.Context
 import androidx.core.content.edit
 import com.example.metrognome.points.UsageDayTracker
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -42,6 +44,13 @@ class MetroItemTracker(context: Context) {
 
         // Mirrors PracticeSessionManager key — read-only here, written only by PracticeSessionManager
         private const val KEY_PRACTICE_TOTAL = "total_sessions"
+
+        // App-wide signal, not per-instance: MetronomeScreen, RhythmGameScreen, and
+        // SettingsScreen each hold their own MetroItemTracker (same underlying prefs
+        // file), so this lives on the companion object to reach a single collector
+        // (MainActivity) regardless of which screen's celebration fired it.
+        private val _celebrationDismissed = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+        val celebrationDismissed: SharedFlow<Unit> = _celebrationDismissed
     }
 
     init {
@@ -219,6 +228,7 @@ class MetroItemTracker(context: Context) {
     fun markCelebrated(id: String) {
         val current = celebratedIds()
         prefs.edit { putStringSet(KEY_CELEBRATED_IDS, current + id) }
+        _celebrationDismissed.tryEmit(Unit)
     }
 
     fun celebratedIds(): Set<String> =

@@ -41,11 +41,15 @@ import com.example.metrognome.ui.components.LoyaltyMilestoneBanner
 import com.example.metrognome.ui.components.PointsEarnedBanner
 import com.example.metrognome.ui.components.RhythmPulseIcon
 import com.example.metrognome.ui.components.TunerNeedleIcon
+import com.example.metrognome.ui.components.metro_items.MetroItemTracker
+import com.example.metrognome.ui.dialogs.NotificationOptInDialog
 import com.example.metrognome.ui.screens.MetronomeScreen
 import com.example.metrognome.ui.screens.RhythmGameScreen
 import com.example.metrognome.ui.screens.SettingsScreen
 import com.example.metrognome.ui.screens.TunerScreen
 import com.example.metrognome.ui.theme.MetroGnomeTheme
+import com.example.metrognome.notifications.NotificationOptInTracker
+import com.example.metrognome.notifications.rememberNotificationPermissionState
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.viewmodel.RhythmGameViewModel
 import com.example.metrognome.viewmodel.SpeedTrainerViewModel
@@ -118,6 +122,22 @@ fun MetroGnomeApp() {
                 "🎉 ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME} maxed! Ad-free for ${com.example.metrognome.points.rewards.RewardConfig.AD_FREE_DAYS} days - you've earned it.",
                 android.widget.Toast.LENGTH_LONG,
             ).show()
+        }
+    }
+
+    // The one strategic notification-permission ask: fired from the first item-unlock
+    // celebration on ANY tab (Gnome, Rhythm, Settings all funnel through the same
+    // MetroItemTracker.markCelebrated -> celebrationDismissed signal). Shown at most
+    // once ever - see NotificationOptInTracker and NotificationOptInDialog.
+    val notificationPermission = rememberNotificationPermissionState()
+    val notificationOptInTracker = remember { NotificationOptInTracker(context) }
+    var showNotificationAsk by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        MetroItemTracker.celebrationDismissed.collect {
+            if (!notificationOptInTracker.hasShownContextualAsk && !notificationPermission.granted) {
+                notificationOptInTracker.hasShownContextualAsk = true
+                showNotificationAsk = true
+            }
         }
     }
 
@@ -209,12 +229,23 @@ fun MetroGnomeApp() {
                 onTriggerFeedback = tunerVm::debugTriggerFeedback,
                 onSimulateTuner = tunerVm::debugCycleSimulatedReading,
                 onStopTunerSimulation = tunerVm::debugStopSimulation,
+                notificationPermission = notificationPermission,
             )
         }
     }
     PointsEarnedBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
     LoyaltyMilestoneBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
     AdBreakBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
+
+    if (showNotificationAsk) {
+        NotificationOptInDialog(
+            onEnable = {
+                showNotificationAsk = false
+                notificationPermission.request()
+            },
+            onDismiss = { showNotificationAsk = false },
+        )
+    }
     } // end Box
     } // end CompositionLocalProvider
 }

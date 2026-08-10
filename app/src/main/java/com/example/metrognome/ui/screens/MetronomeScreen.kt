@@ -1,7 +1,13 @@
 package com.example.metrognome.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import com.example.metrognome.audio.selftest.MicCalibration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -176,7 +182,48 @@ fun MetronomeScreen(
     var showCancelPracticeDialog by remember { mutableStateOf(false) }
 
     // Mic mode is a single app-wide toggle in Settings; features read the calibration
-    // result and run the mic automatically, so no per-feature permission flow here.
+    // result and run the mic automatically. BUT the toggle can be on (isActive) while the
+    // OS permission is actually missing (e.g. an uninstall/reinstall restores the opt-in
+    // flag via SharedPreferences backup without restoring the RECORD_AUDIO grant) - so
+    // starting Practice/Speed Trainer routes through startWithMicPermissionCheck below,
+    // which re-requests permission right at the moment of starting rather than leaving the
+    // session to silently run without mic scoring.
+    var micGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var micPermanentlyDenied by remember { mutableStateOf(false) }
+    var pendingMicStart by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val micPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        micGranted = granted
+        if (granted) {
+            SelfTestCalibrationStore(context).micModeEnabled = true
+            micCheckRefresh++
+        } else if (activity != null) {
+            micPermanentlyDenied = !androidx.core.app.ActivityCompat
+                .shouldShowRequestPermissionRationale(activity, Manifest.permission.RECORD_AUDIO)
+        }
+        pendingMicStart?.invoke()
+        pendingMicStart = null
+    }
+    // Wrap a session-start action: if Groove Check is opted in but the OS grant is missing
+    // (and not permanently blocked, where re-launching would silently no-op), ask for
+    // permission first and only actually start once that resolves - either way, so the
+    // session that's about to begin already reflects the fresh grant instead of needing a
+    // second attempt.
+    fun startWithMicPermissionCheck(start: () -> Unit) {
+        val cal = MicCalibration.read(context)
+        if (cal.isActive && !micGranted && !micPermanentlyDenied) {
+            pendingMicStart = start
+            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        } else {
+            start()
+        }
+    }
 
     // Forward BPM requests from trainer to the metronome engine
     LaunchedEffect(trainerVm) {
@@ -474,8 +521,10 @@ fun MetronomeScreen(
             timeSig = timeSig,
             onConfigChange = { trainerVm.updateConfig(it) },
             onBeginTraining = {
-                showTrainerDialog = false
-                trainerVm.beginSession(timeSig)
+                startWithMicPermissionCheck {
+                    showTrainerDialog = false
+                    trainerVm.beginSession(timeSig)
+                }
             },
             onDismiss = { showTrainerDialog = false },
             onStartMicCheck = { showMicCheck = true },
@@ -517,8 +566,10 @@ fun MetronomeScreen(
     if (showPracticeDialog) {
         PracticeDurationDialog(
             onStart = { minutes ->
-                showPracticeDialog = false
-                vm.startPractice(minutes)
+                startWithMicPermissionCheck {
+                    showPracticeDialog = false
+                    vm.startPractice(minutes)
+                }
             },
             onDismiss = { showPracticeDialog = false },
             onStartMicCheck = { showMicCheck = true },

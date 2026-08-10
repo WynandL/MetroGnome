@@ -1,5 +1,10 @@
 package com.example.metrognome.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -77,6 +82,7 @@ import com.example.metrognome.ui.components.instruments.InstrumentAffinityRow
 import com.example.metrognome.ui.components.instruments.InstrumentAffinityBadges
 import com.example.metrognome.ui.dialogs.ShowcaseFrame
 import com.example.metrognome.ui.dialogs.GrooveCheckRecalibrateDialog
+import com.example.metrognome.notifications.NotificationPermissionState
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import kotlin.math.roundToInt
@@ -91,8 +97,10 @@ fun SettingsScreen(
     onTriggerFeedback: () -> Unit = {},
     onSimulateTuner: () -> Unit = {},
     onStopTunerSimulation: () -> Unit = {},
+    notificationPermission: NotificationPermissionState? = null,
 ) {
     val context = LocalContext.current
+    val activity = LocalActivity.current
     val bpm by vm.bpm.collectAsStateWithLifecycle()
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
     val timeSigDenom by vm.timeSigDenom.collectAsStateWithLifecycle()
@@ -110,12 +118,39 @@ fun SettingsScreen(
         com.example.metrognome.audio.selftest.MicCalibration.read(context)
     }
 
+    // Live RECORD_AUDIO state, checked fresh (not trusted from the stored micModeEnabled
+    // flag): after an uninstall/reinstall, Android restores SharedPreferences via backup
+    // but never restores runtime permission grants, so micModeEnabled can read true while
+    // the OS permission is actually gone. This is what lets the toggle notice that and
+    // route back through a real permission request instead of silently no-op'ing.
+    var micGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                    == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var micPermanentlyDenied by remember { mutableStateOf(false) }
+    val micPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        micGranted = granted
+        if (granted) {
+            // The device was already calibrated before (isCalibrated survives the same
+            // backup restore that brought micModeEnabled back) - permission was the only
+            // real gap, so there is nothing left to re-check.
+            com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context).micModeEnabled = true
+            micCheckRefresh++
+        } else if (activity != null) {
+            micPermanentlyDenied = !androidx.core.app.ActivityCompat
+                .shouldShowRequestPermissionRationale(activity, Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
     val isAdFree by vm.isAdFree.collectAsStateWithLifecycle()
     val removeAdsPriceText by vm.removeAdsPriceText.collectAsStateWithLifecycle()
     val isBillingAvailable by vm.isBillingAvailable.collectAsStateWithLifecycle()
     val isPurchasing by vm.isPurchasing.collectAsStateWithLifecycle()
     val isBillingConnecting by vm.isBillingConnecting.collectAsStateWithLifecycle()
-    val activity = LocalActivity.current
 
     val purchasedSoundIds by vm.purchasedSoundIds.collectAsStateWithLifecycle()
     val soundPrices by vm.soundPrices.collectAsStateWithLifecycle()
@@ -254,8 +289,11 @@ fun SettingsScreen(
             // runs first and the toggle reflects the outcome (so the X / a fail leaves it
             // off).
             MicOptIn(
-                enabled = micCal.isActive,
-                hasMicPermission = true,   // the check dialog handles permission itself
+                // ANDed with live permission: if the OS grant is gone (stale post-reinstall
+                // state) the switch reads as off, so the "permission required" copy and the
+                // onRequestPermission path actually engage instead of silently no-op'ing.
+                enabled = micCal.isActive && micGranted,
+                hasMicPermission = micGranted,
                 onToggle = {
                     val store = com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context)
                     when {
@@ -266,7 +304,26 @@ fun SettingsScreen(
                         else                -> showMicCheck = true
                     }
                 },
-                onRequestPermission = {},
+                onRequestPermission = {
+                    if (micCal.isCalibrated) {
+                        // Reinstall recovery: this device already proved itself: only the OS
+                        // grant is missing, so go straight for it (no need to re-run the check).
+                        if (micPermanentlyDenied) {
+                            context.startActivity(
+                                android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = android.net.Uri.fromParts("package", context.packageName, null)
+                                }
+                            )
+                        } else {
+                            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    } else {
+                        // Never calibrated: let MicCheckOverlay explain itself and request
+                        // permission together, same first-run flow as always.
+                        showMicCheck = true
+                    }
+                },
+                isPermanentlyDenied = micPermanentlyDenied,
             )
 
             Spacer(Modifier.height(8.dp))
@@ -279,6 +336,15 @@ fun SettingsScreen(
                 checked = flashOnBeat,
                 onChecked = { vm.setFlashOnBeat(it) }
             )
+
+            if (notificationPermission != null) {
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider(color = AppColors.surfaceVariant)
+                Spacer(Modifier.height(8.dp))
+
+                SettingsSectionTitle("Notifications")
+                NotificationsRow(state = notificationPermission)
+            }
 
             Spacer(Modifier.height(8.dp))
             HorizontalDivider(color = AppColors.surfaceVariant)
@@ -801,6 +867,61 @@ private fun SettingsSwitchRow(
         Switch(
             checked = checked,
             onCheckedChange = onChecked,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = AppColors.gold,
+                checkedTrackColor = AppColors.primaryPurple,
+                uncheckedThumbColor = AppColors.controlInactive,
+                uncheckedTrackColor = AppColors.surfaceVariant
+            )
+        )
+    }
+}
+
+/**
+ * Self-serve entry point for the notification permission - always live, never a stored
+ * flag (that's exactly the bug the mic toggle had after a reinstall). The switch always
+ * reflects the real OS permission, checked fresh on every recomposition via
+ * [NotificationPermissionState.granted].
+ *
+ * Since an app cannot revoke its own POST_NOTIFICATIONS grant, tapping while already
+ * granted opens the system per-app notification screen instead of pretending to toggle
+ * something locally - the OS is the single source of truth either direction.
+ */
+@Composable
+private fun NotificationsRow(state: NotificationPermissionState) {
+    val context = LocalContext.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Notifications", color = AppColors.textPrimary, fontWeight = FontWeight.Medium)
+            Text(
+                when {
+                    state.granted -> "New sounds, features, and app news"
+                    state.permanentlyDenied -> "Blocked. Tap to open App Settings."
+                    else -> "Get notified about new sounds and features"
+                },
+                color = if (state.permanentlyDenied) AppColors.gold.copy(alpha = 0.8f) else AppColors.textMuted,
+                fontSize = 12.sp,
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Switch(
+            checked = state.granted,
+            onCheckedChange = {
+                if (state.granted) {
+                    context.startActivity(
+                        android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        }
+                    )
+                } else {
+                    state.request()
+                }
+            },
             colors = SwitchDefaults.colors(
                 checkedThumbColor = AppColors.gold,
                 checkedTrackColor = AppColors.primaryPurple,

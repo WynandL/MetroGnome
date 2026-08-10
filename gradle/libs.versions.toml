@@ -14,7 +14,7 @@ playServicesAds = "25.4.0"
 coroutines = "1.11.0"
 billing = "9.1.0"
 reviewKtx = "2.0.2"
-firebaseBom = "34.16.0"
+firebaseBom = "34.17.0"
 googleServices = "4.5.0"
 firebaseCrashlyticsPlugin = "3.0.7"
 
@@ -48,6 +48,7 @@ firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

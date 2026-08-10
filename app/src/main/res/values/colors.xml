@@ -1,3 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Mirrors AppColors.gold (ui/theme/Color.kt) — used as the FCM default
+         notification accent, which XML resources must supply outside Compose. -->
+    <color name="notification_accent">#FFFFD700</color>
 </resources>
