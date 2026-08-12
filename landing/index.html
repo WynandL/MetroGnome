@@ -535,6 +535,64 @@
     }
     .post-card .read-more:hover { color: var(--gold-light); }
 
+    /* ── Blog topic index (the rest of the posts, grouped) ──────────── */
+    .topics-head {
+      margin: 3rem 0 1.5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--surface-up);
+    }
+    .topics-head h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.4rem;
+    }
+    .topics-head p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      max-width: 56ch;
+    }
+
+    .topics {
+      display: grid;
+      gap: 1.1rem;
+    }
+    @media (min-width: 640px)  { .topics { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 980px)  { .topics { grid-template-columns: repeat(3, 1fr); } }
+
+    .topic-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-up);
+      border-radius: var(--radius);
+      padding: 1.35rem 1.4rem;
+    }
+    .topic-card h4 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.9rem;
+    }
+    .topic-card ul { list-style: none; display: flex; flex-direction: column; gap: 0.75rem; }
+    .topic-card li a {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.35;
+      transition: color 0.15s;
+    }
+    .topic-card li a:hover { color: var(--gold-light); }
+    .topic-card li .topic-hook {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+      line-height: 1.4;
+    }
+
     /* ── No subscription banner ────────────────────────────────────── */
     #promise {
       padding: 3rem 0;
@@ -965,6 +1023,97 @@
           <p>Rushing and dragging are measurable habits, not character flaws. How to find out whether you play ahead of or behind the beat, why 60 BPM exposes what 160 BPM hides, and five fixes that move the number.</p>
           <a class="read-more" href="/blog/why-you-rush-when-you-play.html">Read article →</a>
         </article>
+
+      </div>
+
+      <div class="topics-head">
+        <h3>Or dig into the full library, by topic.</h3>
+        <p>Fifteen guides on timing, tuning, and practice, sorted so you can jump straight to what you're working on.</p>
+      </div>
+
+      <div class="topics">
+
+        <div class="topic-card">
+          <h4>Timing &amp; Feel</h4>
+          <ul>
+            <li>
+              <a href="/blog/how-accurate-is-your-metronome-app.html">How Accurate Is Your Metronome App?</a>
+              <span class="topic-hook">Why audio-clock timing beats a timer-based click at fast tempos.</span>
+            </li>
+            <li>
+              <a href="/blog/how-to-improve-your-timing.html">How to Improve Your Timing</a>
+              <span class="topic-hook">The feedback loop most practice sessions are missing entirely.</span>
+            </li>
+            <li>
+              <a href="/blog/why-your-metronome-app-might-be-lying-to-you.html">Why Your Metronome App Might Be Lying to You</a>
+              <span class="topic-hook">How to tell if your click is quietly drifting mid-session.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="topic-card">
+          <h4>Tuning</h4>
+          <ul>
+            <li>
+              <a href="/blog/how-accurate-is-your-tuner-app.html">How Accurate Is Your Phone Tuner?</a>
+              <span class="topic-hook">Why the pitch-detection algorithm matters more than the hardware.</span>
+            </li>
+            <li>
+              <a href="/blog/best-free-chromatic-tuner-android.html">Best Free Chromatic Tuner App for Android</a>
+              <span class="topic-hook">What separates a genuinely free tuner from a freemium trap.</span>
+            </li>
+            <li>
+              <a href="/blog/guitar-tuner-showing-wrong-note.html">Why Is My Guitar Tuner Showing the Wrong Note?</a>
+              <span class="topic-hook">How harmonics fool tuner apps, and how to get a clean reading.</span>
+            </li>
+            <li>
+              <a href="/blog/tuning-guitar-noisy-room.html">How to Tune Your Guitar in a Noisy Room</a>
+              <span class="topic-hook">Using a chromatic tuner that works in a noisy room, without a false lock.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="topic-card">
+          <h4>By Instrument &amp; Style</h4>
+          <ul>
+            <li>
+              <a href="/blog/metronome-app-for-drummers.html">Best Metronome App for Drummers</a>
+              <span class="topic-hook">Click sound, subdivisions, and accents in a real drum metronome app.</span>
+            </li>
+            <li>
+              <a href="/blog/metronome-app-for-jazz-musicians.html">Best Metronome App for Jazz Musicians</a>
+              <span class="topic-hook">Why a jazz metronome app needs swing feel and 2-and-4 practice.</span>
+            </li>
+            <li>
+              <a href="/blog/metronome-app-music-teachers.html">Metronome Apps for Music Teachers</a>
+              <span class="topic-hook">Building a practice habit with a metronome app for music teachers.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="topic-card">
+          <h4>Practice &amp; Theory</h4>
+          <ul>
+            <li>
+              <a href="/blog/how-to-practice-increasing-bpm.html">How to Practice Increasing BPM</a>
+              <span class="topic-hook">Structuring a tempo trainer routine that actually builds real speed.</span>
+            </li>
+            <li>
+              <a href="/blog/time-signatures-explained.html">Time Signatures Explained</a>
+              <span class="topic-hook">Simple, compound, and odd meters, without the jargon.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="topic-card">
+          <h4>About Metro</h4>
+          <ul>
+            <li>
+              <a href="/blog/meet-metro-the-gnome-behind-the-metronome.html">Meet Metro: The Gnome Behind the Metronome</a>
+              <span class="topic-hook">The engineering, and the whimsy, behind the app's mascot.</span>
+            </li>
+          </ul>
+        </div>
 
       </div>
     </div>
