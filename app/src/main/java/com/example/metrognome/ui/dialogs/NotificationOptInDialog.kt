@@ -27,12 +27,13 @@ import androidx.compose.ui.unit.sp
 import com.example.metrognome.ui.theme.AppColors
 
 /**
- * The one strategic ask for notification permission: shown once, after the user's
- * first item-unlock celebration (a positive, already-engaged moment), never on first
- * launch. This is a soft pre-ask - a plain custom dialog - shown before the real
- * system permission dialog, so a "Not now" here costs nothing (Android limits how many
- * times the system dialog itself can be shown before requiring App Settings, so this
- * keeps that budget for a user who has already signalled interest).
+ * The one strategic ask for notification permission: shown once, the first time the
+ * user opens the app on a 2nd distinct calendar day (a real, if modest, sign of
+ * intent to keep using the app), never on first launch. This is a soft pre-ask - a
+ * plain custom dialog - shown before the real system permission dialog, so a
+ * "Not now" here costs nothing (Android limits how many times the system dialog
+ * itself can be shown before requiring App Settings, so this keeps that budget for
+ * a user who has already signalled interest).
  *
  * After this one showing, [onDismiss] with no [onEnable] leaves the door open only via
  * the Notifications row in Settings - this dialog does not reappear automatically.

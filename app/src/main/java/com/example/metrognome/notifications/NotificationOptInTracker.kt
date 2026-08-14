@@ -5,8 +5,8 @@ import androidx.core.content.edit
 
 /**
  * Tracks whether the user has already been shown the one contextual notification
- * soft-ask (fired from the first item-unlock celebration - see [MetroFcmService] doc
- * and MainActivity). We only ever spend that strategic ask once, on purpose - a
+ * soft-ask (fired the first time the app is opened on a 2nd distinct calendar day -
+ * see MainActivity). We only ever spend that strategic ask once, on purpose - a
  * "not now" answer is not re-litigated by nagging the user again later; from then on
  * the Notifications row in Settings is the only way back in.
  *

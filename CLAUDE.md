@@ -81,7 +81,7 @@ Audio Engine + Game Logic (Coroutines on Dispatchers.Default)
 - `NotificationOptInTracker` — one-shot flag for whether the contextual soft-ask (below) has ever been shown.
 
 **Permission ask, two paths, deliberately not more:**
-1. **Contextual, once ever** — fired from `MetroItemTracker.celebrationDismissed` (first item-unlock celebration on any screen). Shows `ui/dialogs/NotificationOptInDialog.kt` (a plain "Enable / Not now" card) before ever spending the real system permission dialog. Never re-shown automatically after that.
+1. **Contextual, once ever** — fired the first time the app is opened on a 2nd distinct calendar day (`UsageDayTracker.distinctDaysCount() >= 2`, checked in `MainActivity`'s `ON_RESUME` effect - the same counter `LoyaltyDays` items use). Chosen 2026-08-14 over the original first-item-unlock trigger: that one only reached users who engaged with the cosmetic-item system, so plain-metronome users and anyone who already owned every item before this feature shipped could never be asked. Shows `ui/dialogs/NotificationOptInDialog.kt` (a plain "Enable / Not now" card) before ever spending the real system permission dialog. Never re-shown automatically after that.
 2. **Self-serve, always available** — the "Notifications" row in `SettingsScreen`, always reading the live OS permission (never a stored flag — tapping while granted opens the system per-app notification screen, since an app can't revoke its own grant).
 
 ### Color System

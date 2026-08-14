@@ -42,7 +42,6 @@ import com.example.metrognome.ui.components.LoyaltyMilestoneBanner
 import com.example.metrognome.ui.components.PointsEarnedBanner
 import com.example.metrognome.ui.components.RhythmPulseIcon
 import com.example.metrognome.ui.components.TunerNeedleIcon
-import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.ui.dialogs.NotificationOptInDialog
 import com.example.metrognome.ui.screens.MetronomeScreen
 import com.example.metrognome.ui.screens.RhythmGameScreen
@@ -147,14 +146,36 @@ fun MetroGnomeApp(
 
     LaunchedEffect(Unit) { AnalyticsTracker.updateUserTier(adManager.userTier()) }
 
+    // The one strategic notification-permission ask: fired the first time the user opens
+    // the app on a 2nd distinct calendar day (see UsageDayTracker, the same "distinct days
+    // opened" counter LoyaltyDays items use - reused directly rather than adding a second,
+    // possibly-diverging day-boundary calculation). Chosen over the old first-item-unlock
+    // trigger 2026-08-14: that one only fired for users who engaged with the cosmetic-item
+    // system at all, so plain-metronome users and users who already owned every item before
+    // this feature shipped could never be asked. "Came back at all" is a faster, universal
+    // signal that doesn't depend on unrelated item-unlock pacing. Shown at most once ever -
+    // see NotificationOptInTracker and NotificationOptInDialog.
+    val notificationPermission = rememberNotificationPermissionState()
+    val notificationOptInTracker = remember { NotificationOptInTracker(context) }
+    val usageDayTracker = remember { com.example.metrognome.points.UsageDayTracker(context) }
+    var showNotificationAsk by remember { mutableStateOf(false) }
+
     // Re-query Play Store for owned purchases every time the app returns to foreground.
     // This handles: switching devices, purchasing on one device then opening another,
     // and any case where the local cache drifts from Play's source of truth. Also count
-    // this as a distinct day opened (drives loyalty, which gates review eligibility).
+    // this as a distinct day opened (drives loyalty, which gates review eligibility, and
+    // now also the notification ask above).
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         metronomeVm.reconcilePurchases()
         metronomeVm.refreshReward()
         metronomeVm.recordUsageDay()
+        if (!notificationOptInTracker.hasShownContextualAsk &&
+            !notificationPermission.granted &&
+            usageDayTracker.distinctDaysCount() >= 2
+        ) {
+            notificationOptInTracker.hasShownContextualAsk = true
+            showNotificationAsk = true
+        }
     }
 
     // The Play review prompt is requested only on navigation to the Tuner/Settings tabs
@@ -170,22 +191,6 @@ fun MetroGnomeApp(
                 "🎉 ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME} maxed! Ad-free for ${com.example.metrognome.points.rewards.RewardConfig.AD_FREE_DAYS} days - you've earned it.",
                 android.widget.Toast.LENGTH_LONG,
             ).show()
-        }
-    }
-
-    // The one strategic notification-permission ask: fired from the first item-unlock
-    // celebration on ANY tab (Gnome, Rhythm, Settings all funnel through the same
-    // MetroItemTracker.markCelebrated -> celebrationDismissed signal). Shown at most
-    // once ever - see NotificationOptInTracker and NotificationOptInDialog.
-    val notificationPermission = rememberNotificationPermissionState()
-    val notificationOptInTracker = remember { NotificationOptInTracker(context) }
-    var showNotificationAsk by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        MetroItemTracker.celebrationDismissed.collect {
-            if (!notificationOptInTracker.hasShownContextualAsk && !notificationPermission.granted) {
-                notificationOptInTracker.hasShownContextualAsk = true
-                showNotificationAsk = true
-            }
         }
     }
 
