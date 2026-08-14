@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -43,9 +44,12 @@ import com.example.metrognome.ui.theme.AppColors
  *    state - it only reads the persisted opt-in flag, which (unlike the OS grant) survives
  *    an uninstall/reinstall via SharedPreferences backup. Without this branch the pill
  *    would just vanish silently the moment permission is missing, which is exactly what
- *    made the mic being dead invisible during a session. Reuses [onStartCheck] where the
- *    caller offers it (it re-requests permission as part of MicCheckOverlay); otherwise a
- *    non-interactive note pointing at Settings (the Rhythm card has no CTA slot here).
+ *    made the mic being dead invisible during a session. Tapping calls [onFixPermission]
+ *    where the caller offers it - a lightweight re-request (see
+ *    [com.example.metrognome.ui.components.MicPermissionRecovery.fixPermission]), NOT the
+ *    full Groove Check: the device already proved itself once, so re-running the whole
+ *    onboarding flow here would be a needless, confusing detour. No [onFixPermission] means
+ *    a non-interactive note pointing at Settings instead.
  *  - **Never checked** (not active AND zero completed checks) AND an [onStartCheck] is
  *    supplied: a tappable onboarding CTA inviting the user to run the Groove Check
  *    right here. This is how we surface an otherwise Settings-buried feature at the
@@ -61,10 +65,17 @@ import com.example.metrognome.ui.theme.AppColors
 @Composable
 fun MicTimingNudge(
     modifier: Modifier = Modifier,
+    /**
+     * Fixes a live-permission gap on an already-calibrated device: a lightweight
+     * re-request (or a hop to App Settings if permanently denied), never the full
+     * Groove Check. See [com.example.metrognome.ui.components.MicPermissionRecovery].
+     */
+    onFixPermission: (() -> Unit)? = null,
     /** When supplied, enables the off-state onboarding CTA that launches the Groove Check. */
     onStartCheck: (() -> Unit)? = null,
     /**
-     * Bump this from the host after a Groove Check resolves so the strip re-reads its
+     * Bump this from the host after a Groove Check resolves, or after
+     * [MicPermissionRecovery.fixPermission] resolves, so the strip re-reads its
      * (non-reactive, SharedPreferences-backed) state in place. Without it Compose skips
      * this subtree and a just-finished check would not clear the CTA until the host
      * dialog is closed and reopened.
@@ -81,7 +92,7 @@ fun MicTimingNudge(
 
     when {
         cal.isActive && micGranted -> ActiveReminder(modifier)
-        cal.isActive && !micGranted -> PermissionNeededReminder(modifier, onStartCheck)
+        cal.isActive && !micGranted -> PermissionNeededReminder(modifier, onFixPermission)
         onStartCheck != null && checksDone == 0 -> StartCheckCta(modifier, onStartCheck)
         // Off and already checked once (or no CTA wanted here): stay silent.
     }
@@ -128,28 +139,41 @@ private fun PermissionNeededReminder(modifier: Modifier, onFix: (() -> Unit)?) {
             .clip(RoundedCornerShape(14.dp))
             .background(AppColors.gold.copy(alpha = 0.12f))
             .let { if (onFix != null) it.clickable(onClick = onFix) else it }
-            .padding(horizontal = 14.dp, vertical = 11.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(
             imageVector = Icons.Filled.Mic,
             contentDescription = null,
             tint = AppColors.gold,
-            modifier = Modifier.size(14.dp),
+            modifier = Modifier.size(16.dp),
         )
-        Text(
-            "Groove Check needs microphone access",
-            color = AppColors.textSecondary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            if (onFix != null) "· tap to fix" else "· fix in Settings",
-            color = AppColors.textMuted,
-            fontSize = 10.sp,
-        )
+        // Title + subtitle stack instead of one wrapping row: the "tap to fix" hint
+        // gets its own line so it can't end up stranded at an odd height once the
+        // headline wraps to two lines on narrower screens or larger text scale.
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "Groove Check needs microphone access",
+                color = AppColors.textSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                if (onFix != null) "Tap to fix" else "Fix in Settings",
+                color = AppColors.textMuted,
+                fontSize = 10.sp,
+                modifier = Modifier.padding(top = 1.dp),
+            )
+        }
+        if (onFix != null) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = AppColors.gold,
+                modifier = Modifier.size(16.dp),
+            )
+        }
     }
 }
 

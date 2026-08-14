@@ -379,7 +379,7 @@ internal fun TunerScreenContent(
         }
 
         Spacer(Modifier.height(10.dp))
-        AmbientPanel(ambient, ambientLevel, onSetAmbientLevel)
+        AmbientPanel(ambient, ambientLevel, onSetAmbientLevel, micGranted = micGranted)
 
         Spacer(Modifier.height(12.dp))
         CalibrationCard(
@@ -711,6 +711,7 @@ private fun AmbientPanel(
     report: AmbientReport,
     ambientLevel: AmbientTuning.Level = AmbientTuning.Level.MAX,
     onSetAmbientLevel: (AmbientTuning.Level) -> Unit = {},
+    micGranted: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val chevronDeg by animateFloatAsState(if (expanded) 180f else 0f, label = "chevron")
@@ -836,8 +837,16 @@ private fun AmbientPanel(
                     // Held status — what the tuner is seeing and what to do, in plain
                     // words. Fed only by the debounced [shown], so it sits still long
                     // enough to read; it crossfades when the words actually change.
+                    // Without mic permission the engine never leaves its idle report
+                    // ("Getting ready…", implying it's about to start) - that reads as
+                    // stuck rather than blocked. Swap in a plain informational line
+                    // instead; the fix action itself lives in the banner above, not here.
+                    val statusText = if (!micGranted)
+                        "Microphone access needed" to "Grant access above to see live room analysis."
+                    else
+                        shown.headline to shown.guidance
                     Crossfade(
-                        targetState = shown.headline to shown.guidance,
+                        targetState = statusText,
                         animationSpec = tween(250),
                         label = "ambientStatus",
                     ) { (headline, guidance) ->

@@ -59,11 +59,12 @@ private enum class PollStep { RATING, THANKING }
  * the visual style of TunerFeedbackCard.
  *
  * [onResponse] fires with "up", "down", "dismissed", or "auto_dismissed".
- * The caller handles PollManager.markAnswered + PollReporter.submit and then
+ * The caller handles PollManager.recordResponse + PollReporter.submit and then
  * calls [onDismiss] to remove the banner from its parent.
  *
  * Auto-dismisses after 25 s if the user never interacts, which counts as
- * "auto_dismissed" so the poll is never shown again.
+ * "auto_dismissed" - PollManager re-asks this a day later rather than
+ * retiring it outright, since a silent timeout likely means it went unseen.
  */
 @Composable
 fun PollBanner(

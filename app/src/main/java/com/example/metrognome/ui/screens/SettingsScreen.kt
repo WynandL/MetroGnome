@@ -1,10 +1,5 @@
 package com.example.metrognome.ui.screens
 
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -74,6 +69,7 @@ import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
 import com.example.metrognome.ui.overlays.ItemPreviewCanvas
 import com.example.metrognome.ui.overlays.MicCheckOverlay
 import com.example.metrognome.ui.components.MicOptIn
+import com.example.metrognome.ui.components.rememberMicPermissionRecovery
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.billing.PurchasableItemDef
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
@@ -114,36 +110,20 @@ fun SettingsScreen(
     var showRecalPrompt by remember { mutableStateOf(false) }
     // Bumped when the mic check closes (or is reset) so the toggle re-reads engine state.
     var micCheckRefresh by remember { mutableIntStateOf(0) }
-    val micCal = remember(micCheckRefresh) {
-        com.example.metrognome.audio.selftest.MicCalibration.read(context)
-    }
 
     // Live RECORD_AUDIO state, checked fresh (not trusted from the stored micModeEnabled
     // flag): after an uninstall/reinstall, Android restores SharedPreferences via backup
     // but never restores runtime permission grants, so micModeEnabled can read true while
     // the OS permission is actually gone. This is what lets the toggle notice that and
-    // route back through a real permission request instead of silently no-op'ing.
-    var micGranted by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
-                    == PackageManager.PERMISSION_GRANTED
-        )
-    }
-    var micPermanentlyDenied by remember { mutableStateOf(false) }
-    val micPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        micGranted = granted
-        if (granted) {
-            // The device was already calibrated before (isCalibrated survives the same
-            // backup restore that brought micModeEnabled back) - permission was the only
-            // real gap, so there is nothing left to re-check.
-            com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context).micModeEnabled = true
-            micCheckRefresh++
-        } else if (activity != null) {
-            micPermanentlyDenied = !androidx.core.app.ActivityCompat
-                .shouldShowRequestPermissionRationale(activity, Manifest.permission.RECORD_AUDIO)
-        }
+    // route back through a real permission request instead of silently no-op'ing. Shared
+    // with Practice/Speed Trainer/Rhythm Game via MicPermissionRecovery.
+    val micRecovery = rememberMicPermissionRecovery()
+
+    // Re-reads on either a full Groove Check resolving (micCheckRefresh) or a lightweight
+    // permission fix resolving (micRecovery.refreshKey) - both are monotonic counters, so
+    // the sum changes whenever either one fires.
+    val micCal = remember(micCheckRefresh + micRecovery.refreshKey) {
+        com.example.metrognome.audio.selftest.MicCalibration.read(context)
     }
 
     val isAdFree by vm.isAdFree.collectAsStateWithLifecycle()
@@ -234,6 +214,40 @@ fun SettingsScreen(
 
             SettingsSectionTitle("Sound")
 
+            // The single, app-wide mic-mode toggle. Speed Trainer, Practice, and the
+            // Rhythm Game all use the result; there is no per-feature toggle. Turning it on
+            // requires a passing self-test — if the device is not calibrated yet, the check
+            // runs first and the toggle reflects the outcome (so the X / a fail leaves it
+            // off). Kept first under Sound so it's seen before the click-sound chips rather
+            // than after, since mic mode overrides the effective sound type when active.
+            MicOptIn(
+                // ANDed with live permission: if the OS grant is gone (stale post-reinstall
+                // state) the switch reads as off, so the "permission required" copy and the
+                // onRequestPermission path actually engage instead of silently no-op'ing.
+                enabled = micCal.isActive && micRecovery.micGranted,
+                hasMicPermission = micRecovery.micGranted,
+                onToggle = {
+                    val store = com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context)
+                    when {
+                        micCal.isActive    -> { store.micModeEnabled = false; micCheckRefresh++ }
+                        // Already calibrated and turning back on: ask whether to re-enable as-is
+                        // or re-run the check, rather than silently re-enabling.
+                        micCal.isCalibrated -> showRecalPrompt = true
+                        else                -> showMicCheck = true
+                    }
+                },
+                onRequestPermission = {
+                    // Reinstall recovery: this device already proved itself, so if it's
+                    // calibrated only the OS grant is missing - go straight for it (or App
+                    // Settings if permanently denied) instead of re-running the whole check.
+                    if (micCal.isCalibrated) micRecovery.fixPermission()
+                    else showMicCheck = true
+                },
+                isPermanentlyDenied = micRecovery.micPermanentlyDenied,
+            )
+
+            Spacer(Modifier.height(10.dp))
+
             // Sound type chips, with the instrument-affinity nudge inline in the heading row:
             // the instruments the selected sound suits glow gold, the rest stay dim.
             SettingsRow(
@@ -283,49 +297,6 @@ fun SettingsScreen(
                 onValueChange = { vm.setVolume(it) },
             )
 
-            // The single, app-wide mic-mode toggle. Speed Trainer, Practice, and the
-            // Rhythm Game all use the result; there is no per-feature toggle. Turning it on
-            // requires a passing self-test — if the device is not calibrated yet, the check
-            // runs first and the toggle reflects the outcome (so the X / a fail leaves it
-            // off).
-            MicOptIn(
-                // ANDed with live permission: if the OS grant is gone (stale post-reinstall
-                // state) the switch reads as off, so the "permission required" copy and the
-                // onRequestPermission path actually engage instead of silently no-op'ing.
-                enabled = micCal.isActive && micGranted,
-                hasMicPermission = micGranted,
-                onToggle = {
-                    val store = com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context)
-                    when {
-                        micCal.isActive    -> { store.micModeEnabled = false; micCheckRefresh++ }
-                        // Already calibrated and turning back on: ask whether to re-enable as-is
-                        // or re-run the check, rather than silently re-enabling.
-                        micCal.isCalibrated -> showRecalPrompt = true
-                        else                -> showMicCheck = true
-                    }
-                },
-                onRequestPermission = {
-                    if (micCal.isCalibrated) {
-                        // Reinstall recovery: this device already proved itself: only the OS
-                        // grant is missing, so go straight for it (no need to re-run the check).
-                        if (micPermanentlyDenied) {
-                            context.startActivity(
-                                android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                    data = android.net.Uri.fromParts("package", context.packageName, null)
-                                }
-                            )
-                        } else {
-                            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        }
-                    } else {
-                        // Never calibrated: let MicCheckOverlay explain itself and request
-                        // permission together, same first-run flow as always.
-                        showMicCheck = true
-                    }
-                },
-                isPermanentlyDenied = micPermanentlyDenied,
-            )
-
             Spacer(Modifier.height(8.dp))
             HorizontalDivider(color = AppColors.surfaceVariant)
             Spacer(Modifier.height(8.dp))
@@ -342,7 +313,7 @@ fun SettingsScreen(
                 HorizontalDivider(color = AppColors.surfaceVariant)
                 Spacer(Modifier.height(8.dp))
 
-                SettingsSectionTitle("Notifications")
+                SettingsSectionTitle("System")
                 NotificationsRow(state = notificationPermission)
             }
 

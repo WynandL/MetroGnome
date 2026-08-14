@@ -1,13 +1,7 @@
 package com.example.metrognome.ui.screens
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.view.WindowManager
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
-import com.example.metrognome.audio.selftest.MicCalibration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -93,6 +87,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.example.metrognome.ui.components.MicTimingNudge
+import com.example.metrognome.ui.components.rememberMicPermissionRecovery
 import com.example.metrognome.ui.components.SpeedTrainerCountdownHud
 import com.example.metrognome.ui.components.SpeedTrainerHud
 import com.example.metrognome.ui.dialogs.AppDialog
@@ -185,45 +180,10 @@ fun MetronomeScreen(
     // result and run the mic automatically. BUT the toggle can be on (isActive) while the
     // OS permission is actually missing (e.g. an uninstall/reinstall restores the opt-in
     // flag via SharedPreferences backup without restoring the RECORD_AUDIO grant) - so
-    // starting Practice/Speed Trainer routes through startWithMicPermissionCheck below,
-    // which re-requests permission right at the moment of starting rather than leaving the
-    // session to silently run without mic scoring.
-    var micGranted by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
-                PackageManager.PERMISSION_GRANTED
-        )
-    }
-    var micPermanentlyDenied by remember { mutableStateOf(false) }
-    var pendingMicStart by remember { mutableStateOf<(() -> Unit)?>(null) }
-    val micPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        micGranted = granted
-        if (granted) {
-            SelfTestCalibrationStore(context).micModeEnabled = true
-            micCheckRefresh++
-        } else if (activity != null) {
-            micPermanentlyDenied = !androidx.core.app.ActivityCompat
-                .shouldShowRequestPermissionRationale(activity, Manifest.permission.RECORD_AUDIO)
-        }
-        pendingMicStart?.invoke()
-        pendingMicStart = null
-    }
-    // Wrap a session-start action: if Groove Check is opted in but the OS grant is missing
-    // (and not permanently blocked, where re-launching would silently no-op), ask for
-    // permission first and only actually start once that resolves - either way, so the
-    // session that's about to begin already reflects the fresh grant instead of needing a
-    // second attempt.
-    fun startWithMicPermissionCheck(start: () -> Unit) {
-        val cal = MicCalibration.read(context)
-        if (cal.isActive && !micGranted && !micPermanentlyDenied) {
-            pendingMicStart = start
-            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-        } else {
-            start()
-        }
-    }
+    // starting Practice/Speed Trainer routes through micRecovery.startWithMicPermissionCheck
+    // below, which re-requests permission right at the moment of starting rather than
+    // leaving the session to silently run without mic scoring. See MicPermissionRecovery.
+    val micRecovery = rememberMicPermissionRecovery()
 
     // Forward BPM requests from trainer to the metronome engine
     LaunchedEffect(trainerVm) {
@@ -521,14 +481,15 @@ fun MetronomeScreen(
             timeSig = timeSig,
             onConfigChange = { trainerVm.updateConfig(it) },
             onBeginTraining = {
-                startWithMicPermissionCheck {
+                micRecovery.startWithMicPermissionCheck {
                     showTrainerDialog = false
                     trainerVm.beginSession(timeSig)
                 }
             },
             onDismiss = { showTrainerDialog = false },
             onStartMicCheck = { showMicCheck = true },
-            micCheckRefresh = micCheckRefresh,
+            onFixMicPermission = micRecovery.fixPermission,
+            micCheckRefresh = micCheckRefresh + micRecovery.refreshKey,
         )
     }
 
@@ -566,14 +527,15 @@ fun MetronomeScreen(
     if (showPracticeDialog) {
         PracticeDurationDialog(
             onStart = { minutes ->
-                startWithMicPermissionCheck {
+                micRecovery.startWithMicPermissionCheck {
                     showPracticeDialog = false
                     vm.startPractice(minutes)
                 }
             },
             onDismiss = { showPracticeDialog = false },
             onStartMicCheck = { showMicCheck = true },
-            micCheckRefresh = micCheckRefresh,
+            onFixMicPermission = micRecovery.fixPermission,
+            micCheckRefresh = micCheckRefresh + micRecovery.refreshKey,
         )
     }
 
@@ -1011,6 +973,7 @@ private fun PracticeDurationDialog(
     onStart: (Int) -> Unit,
     onDismiss: () -> Unit,
     onStartMicCheck: () -> Unit = {},
+    onFixMicPermission: () -> Unit = {},
     micCheckRefresh: Int = 0,
 ) {
     var selected by remember { mutableIntStateOf(15) }
@@ -1063,7 +1026,11 @@ private fun PracticeDurationDialog(
                     textAlign = TextAlign.Center,
                 )
 
-                MicTimingNudge(onStartCheck = onStartMicCheck, refreshKey = micCheckRefresh)
+                MicTimingNudge(
+                    onFixPermission = onFixMicPermission,
+                    onStartCheck = onStartMicCheck,
+                    refreshKey = micCheckRefresh,
+                )
 
                 Spacer(Modifier.height(20.dp))
 

@@ -1,11 +1,5 @@
 package com.example.metrognome.ui.screens
 
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.LocalActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -63,7 +57,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -96,6 +89,7 @@ import com.example.metrognome.points.PointsSnapshot
 import com.example.metrognome.points.UsageDayTracker
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.components.MicTimingNudge
+import com.example.metrognome.ui.components.rememberMicPermissionRecovery
 import com.example.metrognome.ui.components.RoomNoiseIndicator
 import com.example.metrognome.ui.components.LOYALTY_MILESTONES
 import com.example.metrognome.ui.components.LoyaltyMilestonePath
@@ -105,8 +99,6 @@ import com.example.metrognome.poll.PollConfig
 import com.example.metrognome.poll.PollManager
 import com.example.metrognome.ui.components.PollBanner
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
-import com.example.metrognome.audio.selftest.MicCalibration
-import com.example.metrognome.audio.selftest.SelfTestCalibrationStore
 import com.example.metrognome.ui.dialogs.EarnRulesDialog
 import com.example.metrognome.ui.dialogs.ItemCatalogDialog
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
@@ -250,7 +242,7 @@ fun RhythmGameScreen(
             visible  = phase == GamePhase.IDLE && !pollDismissed,
             poll     = poll,
             onResponse = { response ->
-                pollManager.markAnswered(poll.id)
+                pollManager.recordResponse(poll.id, response)
                 PollReporter.submit(poll.id, response, gnoteCount)
                 pollDismissed = true
             },
@@ -406,46 +398,13 @@ private fun GameCard(
     dailyEarned: Int = 0,
     dailyCap: Int = 0,
 ) {
-    val context = LocalContext.current
-    val activity = LocalActivity.current
-
     // Groove Check can read as opted-in (MicCalibration.isActive, a SharedPreferences flag
     // that survives an uninstall/reinstall via backup) while the OS RECORD_AUDIO grant is
-    // actually gone. Starting a game routes through startWithMicPermissionCheck so that gap
-    // gets a real permission prompt right when the player taps a difficulty, instead of the
-    // game silently running in tap-only mode with no explanation.
-    var micGranted by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
-                PackageManager.PERMISSION_GRANTED
-        )
-    }
-    var micPermanentlyDenied by remember { mutableStateOf(false) }
-    var pendingMicStart by remember { mutableStateOf<(() -> Unit)?>(null) }
-    var micCheckRefresh by remember { mutableIntStateOf(0) }
-    val micPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        micGranted = granted
-        if (granted) {
-            SelfTestCalibrationStore(context).micModeEnabled = true
-            micCheckRefresh++
-        } else if (activity != null) {
-            micPermanentlyDenied = !androidx.core.app.ActivityCompat
-                .shouldShowRequestPermissionRationale(activity, Manifest.permission.RECORD_AUDIO)
-        }
-        pendingMicStart?.invoke()
-        pendingMicStart = null
-    }
-    fun startWithMicPermissionCheck(start: () -> Unit) {
-        val cal = MicCalibration.read(context)
-        if (cal.isActive && !micGranted && !micPermanentlyDenied) {
-            pendingMicStart = start
-            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-        } else {
-            start()
-        }
-    }
+    // actually gone. Starting a game routes through micRecovery.startWithMicPermissionCheck
+    // so that gap gets a real permission prompt right when the player taps a difficulty,
+    // instead of the game silently running in tap-only mode with no explanation. See
+    // MicPermissionRecovery.
+    val micRecovery = rememberMicPermissionRecovery()
 
     val pendingStart = remember { mutableStateOf<(() -> Unit)?>(null) }
 
@@ -568,7 +527,7 @@ private fun GameCard(
                     Surface(
                         onClick = {
                             val start = {
-                                startWithMicPermissionCheck {
+                                micRecovery.startWithMicPermissionCheck {
                                     vm.setDifficulty(d.bpm, d.beats, d.name)
                                     vm.startGame()
                                 }
@@ -618,7 +577,10 @@ private fun GameCard(
             Spacer(Modifier.height(12.dp))
             DailyTargetMeter(earned = dailyEarned, cap = dailyCap)
 
-            MicTimingNudge(refreshKey = micCheckRefresh)
+            MicTimingNudge(
+                onFixPermission = micRecovery.fixPermission,
+                refreshKey = micRecovery.refreshKey,
+            )
 
         }
     }

@@ -91,20 +91,6 @@ fun MicOptIn(
                     color = AppColors.textMuted,
                     fontSize = 12.sp,
                 )
-                // Only relevant if a caller offers this without permission already granted;
-                // the Settings toggle handles permission via the check dialog, so it stays hidden.
-                if (!hasMicPermission && !enabled) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        if (isPermanentlyDenied)
-                            "Permission blocked. Tap the switch to open App Settings."
-                        else
-                            "Microphone permission required",
-                        color = if (isPermanentlyDenied) AppColors.gold.copy(alpha = 0.8f)
-                                else AppColors.textSubtle,
-                        fontSize = 9.sp,
-                    )
-                }
             }
             Spacer(Modifier.width(12.dp))
             Switch(
@@ -134,6 +120,21 @@ fun MicOptIn(
                         .background(AppColors.surfaceVariant),
                 )
                 Spacer(Modifier.height(10.dp))
+                // Only relevant if a caller offers this without permission already granted;
+                // the Settings toggle handles permission via the check dialog, so it stays hidden.
+                if (!hasMicPermission && !enabled) {
+                    Text(
+                        if (isPermanentlyDenied)
+                            "Permission blocked. Tap the switch above to open App Settings."
+                        else
+                            "Microphone permission required to use this feature.",
+                        color = if (isPermanentlyDenied) AppColors.gold.copy(alpha = 0.8f)
+                                else AppColors.textSubtle,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
                 Text(
                     "Metro listens through the microphone to measure how closely your claps or " +
                         "taps land on the beat in the Speed Trainer, Practice, and Rhythm Game, " +

@@ -25,6 +25,6 @@ val ALL_POLLS: List<PollConfig> = listOf(
         id        = "leaderboard_v1",
         question  = "Want a Gnotes leaderboard?",
         subtext   = "A free account would be needed",
-        minGnotes = 500,
+        minGnotes = 250,
     ),
 )

@@ -56,6 +56,7 @@ fun SpeedTrainerDialog(
     onBeginTraining: () -> Unit,
     onDismiss: () -> Unit,
     onStartMicCheck: () -> Unit = {},
+    onFixMicPermission: () -> Unit = {},
     micCheckRefresh: Int = 0,
 ) {
     val ascending = config.ascending
@@ -266,7 +267,11 @@ fun SpeedTrainerDialog(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        MicTimingNudge(onStartCheck = onStartMicCheck, refreshKey = micCheckRefresh)
+        MicTimingNudge(
+            onFixPermission = onFixMicPermission,
+            onStartCheck = onStartMicCheck,
+            refreshKey = micCheckRefresh,
+        )
 
         Spacer(Modifier.height(16.dp))
 
