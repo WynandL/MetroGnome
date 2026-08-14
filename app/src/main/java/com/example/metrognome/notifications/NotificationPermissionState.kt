@@ -36,6 +36,7 @@ class NotificationPermissionState internal constructor(
     val permanentlyDenied: Boolean get() = permanentlyDeniedState.value
 
     fun request() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
         if (permanentlyDenied) openSettings()
         else launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
@@ -57,7 +58,7 @@ fun rememberNotificationPermissionState(): NotificationPermissionState {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         grantedState.value = isGranted
-        if (!isGranted && activity != null) {
+        if (!isGranted && activity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permanentlyDeniedState.value = !ActivityCompat
                 .shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
         }

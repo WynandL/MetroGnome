@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.example.metrognome.ui.theme.AppColors
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -128,7 +129,7 @@ fun Seal(
                 )
             }
             launch {
-                delay(CHECK_DELAY_MS)   // let the stamp land first
+                delay(CHECK_DELAY)   // let the stamp land first
                 check.animateTo(1f, tween(CHECK_DRAW_MS, easing = FastOutSlowInEasing))
             }
         }
@@ -244,7 +245,7 @@ private const val TWO_PI = (Math.PI * 2).toFloat()
 private const val STAMP_ROTATION_DEG = -50f
 
 /** Pause before the entrance check strokes in, letting the stamp mostly land. */
-private const val CHECK_DELAY_MS = 260L
+private val CHECK_DELAY = 260.milliseconds
 
 /** Duration of the entrance's tip-to-tail check draw. */
 private const val CHECK_DRAW_MS = 340

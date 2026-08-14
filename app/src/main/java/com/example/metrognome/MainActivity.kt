@@ -118,17 +118,6 @@ fun MetroGnomeApp(
 ) {
     var currentTab by rememberSaveable { mutableStateOf(AppTab.GNOME) }
 
-    // Apply a notification deep link once it arrives (see MainActivity.pendingOpenTab), then
-    // consume it. Consuming (resetting the source back to null) rather than just reading it once
-    // is what lets a second notification tap for the same tab re-apply, since the LaunchedEffect
-    // key only changes on a null -> value transition.
-    LaunchedEffect(openTab) {
-        if (openTab != null) {
-            currentTab = openTab
-            onOpenTabConsumed()
-        }
-    }
-
     val metronomeVm: MetronomeViewModel = viewModel()
     val rhythmVm: RhythmGameViewModel = viewModel()
     val tunerVm: TunerViewModel = viewModel()
@@ -145,6 +134,34 @@ fun MetroGnomeApp(
     val hapticEngine  = remember { HapticEngine(context) }
 
     LaunchedEffect(Unit) { AnalyticsTracker.updateUserTier(adManager.userTier()) }
+
+    // Single path for changing tabs, used by both the nav bar's onClick below AND a
+    // notification deep link (LaunchedEffect(openTab) further down) - extracted so a
+    // deep link can never skip the RHYTHM-leave guard or the review-prompt trigger the
+    // way a direct `currentTab = tab` assignment would.
+    fun switchTab(tab: AppTab) {
+        if (currentTab == AppTab.RHYTHM && tab != AppTab.RHYTHM) {
+            rhythmVm.stopGame()
+        }
+        // Ask for a review when the user lands on a calm, ad-free tab (Tuner/Settings)
+        // from elsewhere, never if an ad showed recently.
+        val landingOnCalmTab = tab != currentTab && (tab == AppTab.TUNER || tab == AppTab.SETTINGS)
+        currentTab = tab
+        if (landingOnCalmTab && !adManager.recentlyShowedAd()) {
+            activity?.let { reviewManager.maybeRequestReview(it) }
+        }
+    }
+
+    // Apply a notification deep link once it arrives (see MainActivity.pendingOpenTab), then
+    // consume it. Consuming (resetting the source back to null) rather than just reading it once
+    // is what lets a second notification tap for the same tab re-apply, since the LaunchedEffect
+    // key only changes on a null -> value transition.
+    LaunchedEffect(openTab) {
+        if (openTab != null) {
+            switchTab(openTab)
+            onOpenTabConsumed()
+        }
+    }
 
     // The one strategic notification-permission ask: fired the first time the user opens
     // the app on a 2nd distinct calendar day (see UsageDayTracker, the same "distinct days
@@ -179,7 +196,7 @@ fun MetroGnomeApp(
     }
 
     // The Play review prompt is requested only on navigation to the Tuner/Settings tabs
-    // (see the tab onClick below): ad-free surfaces, guarded against recent ads, so a
+    // (see switchTab above): ad-free surfaces, guarded against recent ads, so a
     // rating sheet can never stack with an interstitial. Eligibility (loyalty >= 3 days,
     // once per day) lives inside AppReviewManager.
 
@@ -210,19 +227,7 @@ fun MetroGnomeApp(
                     },
                     label = { Text(tab.label) },
                     selected = tab == currentTab,
-                    onClick = {
-                        if (currentTab == AppTab.RHYTHM && tab != AppTab.RHYTHM) {
-                            rhythmVm.stopGame()
-                        }
-                        // Ask for a review when the user lands on a calm, ad-free tab
-                        // (Tuner/Settings) from elsewhere, never if an ad showed recently.
-                        val landingOnCalmTab =
-                            tab != currentTab && (tab == AppTab.TUNER || tab == AppTab.SETTINGS)
-                        currentTab = tab
-                        if (landingOnCalmTab && !adManager.recentlyShowedAd()) {
-                            activity?.let { reviewManager.maybeRequestReview(it) }
-                        }
-                    }
+                    onClick = { switchTab(tab) }
                 )
             }
         }

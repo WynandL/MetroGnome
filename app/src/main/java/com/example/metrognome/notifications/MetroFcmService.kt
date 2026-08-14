@@ -1,6 +1,7 @@
 package com.example.metrognome.notifications
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -28,16 +29,40 @@ import com.google.firebase.messaging.RemoteMessage
  * data-payload key, `openTab` included, onto the launch Intent's extras itself, so no
  * separate handling is needed for that path.
  *
- * No token handling: broadcasting to everyone is done via topic subscription
- * ([NotificationTopics]), not per-device tokens, so there is nothing to upload
- * or store.
+ * No per-device token handling: broadcasting to everyone is done via topic subscription
+ * ([NotificationTopics]), so there is nothing to upload or store. [onRegistered] exists only
+ * to keep that topic subscription current (see its own doc), not to track individual devices.
  */
+@SuppressLint("MissingFirebaseInstanceTokenRefresh") // false positive: lint's built-in check
+// only recognises the deprecated onNewToken() by name and doesn't know about the
+// onRegistered()/onUnregistered() pair that replaced it in firebase-messaging 25.1.1 - see
+// onRegistered's doc below, which implements the same intent (keep the topic subscription
+// current) via the current, non-deprecated API.
 class MetroFcmService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         val title = message.notification?.title ?: message.data["title"] ?: return
         val body = message.notification?.body ?: message.data["body"]
         showNotification(title, body, message.data["openTab"])
+    }
+
+    /**
+     * A re-registered Firebase Installation isn't automatically carried over to a topic
+     * subscription made under the old registration - Firebase's own guidance for topic-based
+     * (as opposed to per-device-token) apps is to re-subscribe here. [onNewToken] used to be
+     * the callback for this; it is `@Deprecated` in the resolved firebase-messaging 25.1.1
+     * (confirmed directly against the library bytecode, not just an IDE hint), superseded by
+     * this installation-scoped pair. Harmless to call unconditionally: subscribeToTopic is
+     * idempotent, and this stays gated on the live permission exactly like
+     * MetroGnomeApplication's own start-up sync, so a device that has since revoked
+     * notifications isn't resubscribed by a re-registration either.
+     */
+    override fun onRegistered(installationId: String) {
+        super.onRegistered(installationId)
+        val notificationsGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        if (notificationsGranted) NotificationTopics.subscribeToAllUsers()
     }
 
     private fun showNotification(title: String, body: String?, openTab: String?) {
