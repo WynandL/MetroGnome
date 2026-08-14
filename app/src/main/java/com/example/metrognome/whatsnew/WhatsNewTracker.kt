@@ -30,11 +30,14 @@ class WhatsNewTracker(context: Context) {
         }
 
         // Fresh-install guard: if no version has ever been confirmed (including via the
-        // migration above), this is a clean install on the current version.  Pre-mark every
-        // historical version so the user only sees the popup for the latest release.
-        // This ensures new users are never shown a cascade of back-version popups.
+        // migration above), this is a clean install. Pre-mark EVERY version, including the
+        // latest - a brand-new user has no "before" to compare a "NEW IN VERSION X" popup
+        // against, and first cold open is the worst place in the whole funnel to spend a
+        // blocking modal on one feature out of many they don't know about yet (changed
+        // 2026-08-14; used to leave the latest version showing as a de facto feature ad).
+        // An upgrading EXISTING user is unaffected: their prefs are never empty here.
         if (shownVersions().isEmpty()) {
-            AppWhatsNew.ALL.dropLast(1).forEach { markShown(it) }
+            AppWhatsNew.ALL.forEach { markShown(it) }
         }
     }
 
