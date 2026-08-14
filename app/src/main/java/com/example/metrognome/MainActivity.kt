@@ -1,5 +1,6 @@
 package com.example.metrognome
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
@@ -63,6 +64,15 @@ enum class AppTab(val label: String) {
 }
 
 class MainActivity : ComponentActivity() {
+
+    // Deep-link target from a tapped FCM notification (see EXTRA_OPEN_TAB / MetroFcmService).
+    // A plain Compose state field on the Activity, not inside MetroGnomeApp: onNewIntent is an
+    // Activity callback, fired before Compose recomposes, so it needs somewhere to land that
+    // both onCreate/onNewIntent and the composable can see. MetroGnomeApp consumes it (resets
+    // to null) once applied, so re-tapping a notification for the same tab while already on
+    // it still re-triggers - see the LaunchedEffect(openTab) there.
+    private var pendingOpenTab by mutableStateOf<AppTab?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Route the hardware volume keys to the media stream so they adjust the click /
@@ -70,17 +80,55 @@ class MainActivity : ComponentActivity() {
         // nothing is playing yet - e.g. while the mic-check dialog nudges "turn it up".
         volumeControlStream = android.media.AudioManager.STREAM_MUSIC
         enableEdgeToEdge()
+        pendingOpenTab = tabFromIntent(intent)
         setContent {
             MetroGnomeTheme {
-                MetroGnomeApp()
+                MetroGnomeApp(
+                    openTab = pendingOpenTab,
+                    onOpenTabConsumed = { pendingOpenTab = null },
+                )
             }
         }
+    }
+
+    // launchMode="singleTop" (AndroidManifest.xml) means a tapped notification while the app
+    // is already running/backgrounded reuses this instance via onNewIntent instead of a fresh
+    // onCreate - which matters here because a fresh onCreate would tear down and recreate every
+    // ViewModel, killing an in-progress metronome/tuner/rhythm session just to open a tab.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingOpenTab = tabFromIntent(intent)
+    }
+
+    private fun tabFromIntent(intent: Intent?): AppTab? {
+        val raw = intent?.getStringExtra(EXTRA_OPEN_TAB) ?: return null
+        return AppTab.entries.firstOrNull { it.name.equals(raw, ignoreCase = true) }
+    }
+
+    companion object {
+        /** Intent extra key for deep-linking to a tab; value is an [AppTab] name, e.g. "rhythm". */
+        const val EXTRA_OPEN_TAB = "openTab"
     }
 }
 
 @Composable
-fun MetroGnomeApp() {
+fun MetroGnomeApp(
+    openTab: AppTab? = null,
+    onOpenTabConsumed: () -> Unit = {},
+) {
     var currentTab by rememberSaveable { mutableStateOf(AppTab.GNOME) }
+
+    // Apply a notification deep link once it arrives (see MainActivity.pendingOpenTab), then
+    // consume it. Consuming (resetting the source back to null) rather than just reading it once
+    // is what lets a second notification tap for the same tab re-apply, since the LaunchedEffect
+    // key only changes on a null -> value transition.
+    LaunchedEffect(openTab) {
+        if (openTab != null) {
+            currentTab = openTab
+            onOpenTabConsumed()
+        }
+    }
 
     val metronomeVm: MetronomeViewModel = viewModel()
     val rhythmVm: RhythmGameViewModel = viewModel()

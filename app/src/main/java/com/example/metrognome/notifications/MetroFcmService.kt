@@ -21,6 +21,13 @@ import com.google.firebase.messaging.RemoteMessage
  * never called - that path only reaches [onMessageReceived] for data payloads or a
  * foregrounded app).
  *
+ * Deep link: an optional `openTab` data key ("gnome", "tuner", "rhythm", or "settings",
+ * case-insensitive) opens straight to that tab on tap - see [MainActivity.EXTRA_OPEN_TAB].
+ * Only wired up here for the [onMessageReceived] path; when the system posts the
+ * notification directly instead (the case above), FCM's SDK automatically copies every
+ * data-payload key, `openTab` included, onto the launch Intent's extras itself, so no
+ * separate handling is needed for that path.
+ *
  * No token handling: broadcasting to everyone is done via topic subscription
  * ([NotificationTopics]), not per-device tokens, so there is nothing to upload
  * or store.
@@ -30,10 +37,10 @@ class MetroFcmService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         val title = message.notification?.title ?: message.data["title"] ?: return
         val body = message.notification?.body ?: message.data["body"]
-        showNotification(title, body)
+        showNotification(title, body, message.data["openTab"])
     }
 
-    private fun showNotification(title: String, body: String?) {
+    private fun showNotification(title: String, body: String?, openTab: String?) {
         NotificationChannels.ensureCreated(this)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -48,6 +55,7 @@ class MetroFcmService : FirebaseMessagingService() {
             0,
             Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                if (openTab != null) putExtra(MainActivity.EXTRA_OPEN_TAB, openTab)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

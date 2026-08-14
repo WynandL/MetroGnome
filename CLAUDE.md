@@ -99,7 +99,9 @@ Item-specific colors that are unique to one file (mushroom teal, firefly glow, f
 
 ### Navigation
 
-`MainActivity` hosts a `NavigationSuiteScaffold` with 3 tabs: Gnome (metronome), Rhythm (game), Settings.
+`MainActivity` hosts a `NavigationSuiteScaffold` with 4 tabs (`AppTab`): Gnome (metronome), Tuner, Rhythm (game), Settings. No `NavController` - `currentTab` is a single `rememberSaveable` enum in `MetroGnomeApp`.
+
+**FCM deep links** (added 2026-08-14): an `openTab` data key on an FCM message (value = an `AppTab` name, e.g. `"rhythm"`, case-insensitive) opens straight to that tab on notification tap. `MainActivity.EXTRA_OPEN_TAB` is the intent-extra key; `MetroFcmService` attaches it to the `PendingIntent` when it builds the notification itself, and for the case where the system posts the notification directly instead (background app, notification+data payload - see that file's kdoc), the FCM SDK copies the data payload onto the launch intent automatically, so no separate handling is needed there either. `MainActivity` is `launchMode="singleTop"` specifically so a tapped notification while the app is already running reuses the instance via `onNewIntent` rather than tearing down and recreating every ViewModel (which would kill an in-progress metronome/tuner/rhythm session). `MetroGnomeApp(openTab, onOpenTabConsumed)` applies it via a `LaunchedEffect` and immediately consumes it (resets to null) so a second notification tap for the same tab still re-triggers.
 
 ### Dependencies
 
