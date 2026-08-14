@@ -76,12 +76,15 @@ object MeterTheory {
         return accents
     }
 
-    /** "Simple quadruple", "Compound duple", "Odd". "Odd" over the textbook "Irregular" -
-     *  it is the term musicians actually search for and the one used sitewide/in-listing. */
+    /** "Simple quadruple", "Compound duple", "Odd", "Irregular". "Odd" only applies when the
+     *  top number is actually odd (5, 7, 11, 13...) - that is the literal meaning of the term,
+     *  and the one used sitewide/in-listing. The IRREGULAR class also includes even top numbers
+     *  that are neither simple nor compound (8, 10, 14, 16...); calling those "odd" would be a
+     *  factual music-theory error, so they keep the textbook-safe "Irregular" label instead. */
     fun label(m: Meter): String = when (classify(m)) {
         MeterClass.SIMPLE    -> "Simple" + countWord(m.top).orEmptyPrefixed()
         MeterClass.COMPOUND  -> "Compound" + countWord(m.top / 3).orEmptyPrefixed()
-        MeterClass.IRREGULAR -> "Odd"
+        MeterClass.IRREGULAR -> if (m.top % 2 == 1) "Odd" else "Irregular"
     }
 
     /** Plain-English feel, e.g. "Felt in 2, beats split in three" or "Felt in 2+2+3". */

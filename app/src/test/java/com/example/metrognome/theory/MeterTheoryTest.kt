@@ -111,6 +111,12 @@ class MeterTheoryTest {
         assertEquals("Compound duple", MeterTheory.label(m(6, 8)))
         assertEquals("Compound quadruple", MeterTheory.label(m(12, 8)))
         assertEquals("Odd", MeterTheory.label(m(7, 8)))
+        assertEquals("Odd", MeterTheory.label(m(5, 4)))
+        assertEquals("Odd", MeterTheory.label(m(11, 8)))
+        // 8, 10, 14, 16 are irregular (neither simple nor compound) but NOT odd numbers -
+        // must not be mislabeled "Odd", a factual music-theory error a musician would catch.
+        assertEquals("Irregular", MeterTheory.label(m(8, 8)))
+        assertEquals("Irregular", MeterTheory.label(m(10, 8)))
     }
 
     @Test
