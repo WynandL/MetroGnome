@@ -15,25 +15,40 @@ object GnomeColors {
     val skin = Color(0xFFF0BC80)
     val skinHighlight = Color(0xFFFAD09A)
     val skinDark = Color(0xFFD8A060)
+    val skinShadow = Color(0xFFB07C46)   // deep fold — inside of the ear
 
     // Santa beard & moustache — off-white/cream with gray shadow
     val beard = Color(0xFFF2EEEA)
     val beardShade = Color(0xFFB8B0A8)  // grey shadow + eyebrow color
+    val beardLight = Color(0xFFFFFDFA)  // lit crown of the moustache (upper-left key light)
 
     // Red garden gnome hat — classic and iconic
     val hatRed = Color(0xFFCC1818)
     val hatRedLight = Color(0xFFDD3535)
     val hatRedDark = Color(0xFF881010)
+    // Hat form-shading layers (key light from the upper-left, matching head & baton)
+    val hatRedRim = Color(0xFFF07070)      // key-light rim along the lit left contour
+    val hatShadow = Color(0xFF4A0A0A)      // deep fold / underside shadow inside the felt
+    val hatContact = Color(0x73000000)     // shadow the brim casts onto hair & forehead
+    // Ambient bounce from the night sky along any shadow-side contour. Without it a dark
+    // edge against the dark blue sky loses its silhouette entirely — which matters most on
+    // the near-black suit, where it is doing nearly all the work of separating him from the
+    // background. Named for the sky, not for the hat that first needed it.
+    val skyRim = Color(0xFF8A8ACC)
 
     // Near-black pinstripe suit — corporate & metropolitan
     val jacket = Color(0xFF111115)
     val jacketLight = Color(0xFF1C1C22)
     val jacketDark = Color(0xFF08080C)
+    val jacketRim = Color(0xFF3A3A46)  // key light catching the lit edge of the cloth
     val pinstripe = Color(0x1ECCCCCC)  // subtle grey stripe
 
     // White dress shirt & accessories
     val shirt = Color(0xFFF8F4EE)
+    val shirtShade = Color(0xFFC6BEB2)   // shadow side of collar / pocket square
     val tie = Color(0xFFAA1E2E)  // deep red bow tie
+    val tieLight = Color(0xFFC93B4C)     // lit side of the bow tie
+    val tieDark = Color(0xFF63101B)      // shadow side of the bow tie
     val belt = Color(0xFF0A0A0E)
     val beltBuckle = Color(0xFFFFD700)
     val buttonGold = Color(0xFFFFD700)
@@ -44,6 +59,8 @@ object GnomeColors {
 
     // Red Oxford dress shoes
     val shoe = Color(0xFFBB1212)
+    val shoeLight = Color(0xFFD92B2B)
+    val shoeDark = Color(0xFF6B0A0A)
     val shoeSole = Color(0xFFF0F0EE)
     val shoeGloss = Color(0x44FF8888)
 
@@ -54,10 +71,15 @@ object GnomeColors {
     // Subtle cheek blush & nose
     val cheek = Color(0x28EBA080)
     val nosePink = Color(0xFFCC8868)
+    val noseShade = Color(0xFFAE6E4E)   // shadow side of the ball of the nose
+    // Nostrils need their own dark: skinDark is LIGHTER than the shaded lower half of the
+    // nose, so tinting with it there lifts the nostrils into light dots instead of holes.
+    val nostril = Color(0xFF7A4326)
 
     // Gold sunglasses — brand signature
     val glassFrame = Color(0xFFFFD700)
     val glassLens = Color(0xFF080818)
+    val glassLensLit = Color(0xFF23233F)   // lit side — dark glass still turns in the light
     val glassReflect = Color(0x664466AA)
 
     // Gold baton

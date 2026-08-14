@@ -120,6 +120,7 @@ private fun ActiveReminder(modifier: Modifier) {
             "Groove Check is on",
             color = AppColors.textSecondary,
             fontSize = 12.sp,
+            lineHeight = 12.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
@@ -152,11 +153,18 @@ private fun PermissionNeededReminder(modifier: Modifier, onFix: (() -> Unit)?) {
         // Title + subtitle stack instead of one wrapping row: the "tap to fix" hint
         // gets its own line so it can't end up stranded at an odd height once the
         // headline wraps to two lines on narrower screens or larger text scale.
+        //
+        // Every headline here sets lineHeight explicitly alongside fontSize. Material3
+        // provides Typography.bodyLarge as the ambient text style, and that carries a FIXED
+        // lineHeight of 24.sp to go with its 16.sp size. Overriding only fontSize leaves the
+        // 24.sp behind, so a 12.sp headline is laid out on double-height lines — invisible
+        // while it fits on one line, and a gaping hole the moment it wraps.
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 "Groove Check needs microphone access",
                 color = AppColors.textSecondary,
                 fontSize = 12.sp,
+                lineHeight = 12.sp,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
@@ -200,6 +208,7 @@ private fun StartCheckCta(modifier: Modifier, onStartCheck: () -> Unit) {
             "Score your timing",
             color = AppColors.textSecondary,
             fontSize = 12.sp,
+            lineHeight = 12.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Text(

@@ -108,6 +108,7 @@ import com.example.metrognome.ui.components.CollapsibleStreakCard
 import com.example.metrognome.ui.components.GnomeCanvas
 import com.example.metrognome.ui.components.PresetChipsRow
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
+import com.example.metrognome.ui.components.RaisedControl
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import androidx.compose.ui.tooling.preview.Preview
@@ -627,15 +628,13 @@ private fun BpmStepperRow(
         PlayPauseButton(isPlaying = isPlaying, onClick = onTogglePlay)
         BpmButton("+",  Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm + 1) }
         BpmButton("+5", Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm + 5) }
-        Surface(
+        RaisedControl(
             onClick = onTapTempo,
             shape = RoundedCornerShape(12.dp),
-            color = AppColors.primaryPurple,
+            tint = AppColors.primaryPurple,
             modifier = Modifier.weight(1f).height(44.dp)
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text("TAP", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            }
+            Text("TAP", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
         }
     }
 }
@@ -1216,15 +1215,13 @@ private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
 
 @Composable
 private fun BpmButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Surface(
+    RaisedControl(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        tint = MaterialTheme.colorScheme.surfaceVariant,
         modifier = modifier
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        }
+        Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
     }
 }
 
@@ -1234,20 +1231,18 @@ private fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
         targetValue = if (isPlaying) AppColors.danger else AppColors.primaryPurple,
         label = "playButtonColor"
     )
-    Surface(
+    RaisedControl(
         onClick = onClick,
         shape = CircleShape,
-        color = bgColor,
+        tint = bgColor,
         modifier = Modifier.size(64.dp)
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
-                tint = Color.White,
-                modifier = Modifier.size(36.dp)
-            )
-        }
+        Icon(
+            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            contentDescription = if (isPlaying) "Pause" else "Play",
+            tint = Color.White,
+            modifier = Modifier.size(36.dp)
+        )
     }
 }
 
