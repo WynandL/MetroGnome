@@ -76,11 +76,12 @@ object MeterTheory {
         return accents
     }
 
-    /** "Simple quadruple", "Compound duple", "Irregular". */
+    /** "Simple quadruple", "Compound duple", "Odd". "Odd" over the textbook "Irregular" -
+     *  it is the term musicians actually search for and the one used sitewide/in-listing. */
     fun label(m: Meter): String = when (classify(m)) {
         MeterClass.SIMPLE    -> "Simple" + countWord(m.top).orEmptyPrefixed()
         MeterClass.COMPOUND  -> "Compound" + countWord(m.top / 3).orEmptyPrefixed()
-        MeterClass.IRREGULAR -> "Irregular"
+        MeterClass.IRREGULAR -> "Odd"
     }
 
     /** Plain-English feel, e.g. "Felt in 2, beats split in three" or "Felt in 2+2+3". */

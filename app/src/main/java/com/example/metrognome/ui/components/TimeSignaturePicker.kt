@@ -83,7 +83,16 @@ fun TimeSignaturePicker(
         Spacer(Modifier.height(8.dp))
 
         // (The classification label, e.g. "Compound triple", is rendered by the caller next to
-        // the "Time Signature" heading, so it is intentionally not repeated here.)
+        // the "Time Signature" heading, so it is intentionally not repeated here.) The plain-
+        // English feel readout ("Felt in 2+2+3") sits here instead, right above the accent cells
+        // it explains - most useful on odd meters, where the grouping is not obvious from the
+        // fraction alone.
+        Text(
+            MeterTheory.description(meter),
+            color = AppColors.textMuted,
+            fontSize = 13.sp,
+        )
+        Spacer(Modifier.height(8.dp))
 
         // Reset sits beside the heading, not in the chip row, so it never shifts the chips. The
         // row is a fixed height so the button toggling in/out causes no layout jump. It appears

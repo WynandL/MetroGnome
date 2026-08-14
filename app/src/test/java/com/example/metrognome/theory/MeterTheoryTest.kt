@@ -110,7 +110,7 @@ class MeterTheoryTest {
         assertEquals("Simple triple", MeterTheory.label(m(3, 4)))
         assertEquals("Compound duple", MeterTheory.label(m(6, 8)))
         assertEquals("Compound quadruple", MeterTheory.label(m(12, 8)))
-        assertEquals("Irregular", MeterTheory.label(m(7, 8)))
+        assertEquals("Odd", MeterTheory.label(m(7, 8)))
     }
 
     @Test
