@@ -120,7 +120,7 @@ private fun ActiveReminder(modifier: Modifier) {
             "Groove Check is on",
             color = AppColors.textSecondary,
             fontSize = 12.sp,
-            lineHeight = 12.sp,
+            lineHeight = 16.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
@@ -208,7 +208,7 @@ private fun StartCheckCta(modifier: Modifier, onStartCheck: () -> Unit) {
             "Score your timing",
             color = AppColors.textSecondary,
             fontSize = 12.sp,
-            lineHeight = 12.sp,
+            lineHeight = 16.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Text(

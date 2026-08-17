@@ -48,7 +48,6 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material.icons.filled.TrackChanges
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -348,33 +347,13 @@ private fun RhythmDashboard(
     if (showWatchAdDialog) {
         val remaining = metronomeVm.rewardedAdManager.remainingToday()
         val earn = minOf(PointsConfig.REWARDED_GNOTES_PER_WATCH, remaining)
-        AlertDialog(
-            onDismissRequest  = { showWatchAdDialog = false },
-            containerColor    = AppColors.surfaceDeep,
-            titleContentColor = AppColors.gold,
-            textContentColor  = AppColors.textSecondary,
-            title = { Text("Metro's Daily Bonus", fontWeight = FontWeight.Bold) },
-            text  = {
-                Text(
-                    text = "Watch a short clip and Metro rewards you with $earn ${PointsConfig.CURRENCY_NAME}. " +
-                           "Three clips per day. Come back tomorrow for more.",
-                    fontSize   = 13.sp,
-                    lineHeight = 19.sp,
-                )
+        com.example.metrognome.ui.components.DailyBonusConfirmDialog(
+            earn      = earn,
+            onConfirm = {
+                showWatchAdDialog = false
+                onWatchRewardedAd {}
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    showWatchAdDialog = false
-                    onWatchRewardedAd {}
-                }) {
-                    Text("Claim Reward", color = AppColors.primaryPurple, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showWatchAdDialog = false }) {
-                    Text("Not now", color = AppColors.textMuted)
-                }
-            },
+            onDismiss = { showWatchAdDialog = false },
         )
     }
 
@@ -1341,28 +1320,33 @@ private fun PointsCard(
                     indication        = null,
                 ) { expanded = !expanded },
         ) {
-            Column(
-                modifier            = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer { scaleX = scale.value; scaleY = scale.value },
-                horizontalAlignment = Alignment.CenterHorizontally,
+            com.example.metrognome.ui.components.GnoteTickFlair(
+                count    = snapshot.total,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(
-                    text          = String.format(LocalConfiguration.current.locales[0], "%,d", animatedCount.value.toInt()),
-                    color         = AppColors.gold,
-                    fontSize      = 44.sp,
-                    fontWeight    = FontWeight.ExtraBold,
-                    lineHeight    = 44.sp,
-                    letterSpacing = (-1.5).sp,
-                )
-                Text(
-                    text          = PointsConfig.CURRENCY_NAME.uppercase(),
-                    color         = AppColors.gold.copy(alpha = 0.65f),
-                    fontSize      = 10.sp,
-                    fontWeight    = FontWeight.Bold,
-                    letterSpacing = 2.5.sp,
-                    modifier      = Modifier.padding(top = 2.dp),
-                )
+                Column(
+                    modifier            = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer { scaleX = scale.value; scaleY = scale.value },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text          = String.format(LocalConfiguration.current.locales[0], "%,d", animatedCount.value.toInt()),
+                        color         = AppColors.gold,
+                        fontSize      = 44.sp,
+                        fontWeight    = FontWeight.ExtraBold,
+                        lineHeight    = 44.sp,
+                        letterSpacing = (-1.5).sp,
+                    )
+                    Text(
+                        text          = PointsConfig.CURRENCY_NAME.uppercase(),
+                        color         = AppColors.gold.copy(alpha = 0.65f),
+                        fontSize      = 10.sp,
+                        fontWeight    = FontWeight.Bold,
+                        letterSpacing = 2.5.sp,
+                        modifier      = Modifier.padding(top = 2.dp),
+                    )
+                }
             }
             Icon(
                 imageVector        = Icons.Filled.ExpandMore,
@@ -1375,52 +1359,20 @@ private fun PointsCard(
             )
         }
 
-        // ── Daily bonus teaser ────────────────────────────────────────────────
-        val canTap = canWatchToday && adReady
+        // ── Daily bonus CTA ────────────────────────────────────────────────────
+        // Collapsed, this row is the last thing in the card, so it butts straight up
+        // against the card's own 18dp bottom padding (plus DailyBonusCta's 4dp internal
+        // padding = 22dp of trailing whitespace) - the gap above needs to match that, not
+        // the smaller 4dp used when expanded (where contributions follow below instead).
         Spacer(Modifier.height(6.dp))
         HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.5f))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(
-                    if (canTap) Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication        = null,
-                        onClick           = onWatchAdClick,
-                    ) else Modifier
-                )
-                .padding(top = 10.dp, bottom = 2.dp),
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Row(
-                verticalAlignment     = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-            ) {
-                Icon(
-                    imageVector        = Icons.Filled.MusicNote,
-                    contentDescription = null,
-                    tint               = if (canTap) AppColors.mediumPurple.copy(alpha = 0.75f) else AppColors.textSubtle,
-                    modifier           = Modifier.size(12.dp),
-                )
-                Text(
-                    text  = "Metro's daily bonus",
-                    color = if (canTap) AppColors.textSecondary else AppColors.textSubtle,
-                    fontSize = 12.sp,
-                )
-            }
-            val earn = minOf(PointsConfig.REWARDED_GNOTES_PER_WATCH, remainingToday)
-            Text(
-                text       = when {
-                    canTap         -> "+$earn  →"
-                    canWatchToday  -> "+$earn"
-                    else           -> "✓  Today"
-                },
-                color      = if (canTap) AppColors.mediumPurple.copy(alpha = 0.8f) else AppColors.textSubtle,
-                fontSize   = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
+        Spacer(Modifier.height(if (expanded) 4.dp else 18.dp))
+        com.example.metrognome.ui.components.DailyBonusCta(
+            canWatchToday  = canWatchToday,
+            adReady        = adReady,
+            remainingToday = remainingToday,
+            onClick        = onWatchAdClick,
+        )
 
         // ── Expandable body: contributions + How to earn ─────────────────────
         AnimatedVisibility(

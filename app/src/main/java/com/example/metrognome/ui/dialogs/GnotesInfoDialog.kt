@@ -2,8 +2,6 @@ package com.example.metrognome.ui.dialogs
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,8 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -54,7 +50,6 @@ fun GnotesInfoDialog(
     onDismiss: () -> Unit,
 ) {
     var showWatchAdConfirm by remember { mutableStateOf(false) }
-    val canTap = canWatchAdToday && adReady
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -157,51 +152,20 @@ fun GnotesInfoDialog(
                         }
                     }
 
-                    // ── Daily bonus teaser ────────────────────────────────────
+                    // ── Daily bonus CTA ────────────────────────────────────────
+                    // This is the last row in the scrolling body, so its bottom gap to the
+                    // footer divider is DailyBonusCta's 4dp internal padding plus this
+                    // Column's own 16dp bottom padding = 20dp; the gap above needs to match
+                    // that (4dp internal + 16dp spacer here), not a smaller ad-hoc value.
                     Spacer(Modifier.height(10.dp))
                     HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.6f))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .then(
-                                if (canTap) Modifier.clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication        = null,
-                                    onClick           = { showWatchAdConfirm = true },
-                                ) else Modifier
-                            )
-                            .padding(top = 10.dp),
-                        verticalAlignment     = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Row(
-                            verticalAlignment     = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        ) {
-                            Icon(
-                                imageVector        = Icons.Filled.MusicNote,
-                                contentDescription = null,
-                                tint               = if (canTap) AppColors.mediumPurple.copy(alpha = 0.75f) else AppColors.textSubtle,
-                                modifier           = Modifier.size(12.dp),
-                            )
-                            Text(
-                                text  = "Metro's daily bonus",
-                                color = if (canTap) AppColors.textSecondary else AppColors.textSubtle,
-                                fontSize = 12.sp,
-                            )
-                        }
-                        val earn = minOf(PointsConfig.REWARDED_GNOTES_PER_WATCH, remainingToday)
-                        Text(
-                            text       = when {
-                                canTap          -> "+$earn  →"
-                                canWatchAdToday -> "+$earn"
-                                else            -> "✓  Today"
-                            },
-                            color      = if (canTap) AppColors.mediumPurple.copy(alpha = 0.8f) else AppColors.textSubtle,
-                            fontSize   = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
+                    Spacer(Modifier.height(16.dp))
+                    com.example.metrognome.ui.components.DailyBonusCta(
+                        canWatchToday  = canWatchAdToday,
+                        adReady        = adReady,
+                        remainingToday = remainingToday,
+                        onClick        = { showWatchAdConfirm = true },
+                    )
                 }
 
                 // ── Footer ────────────────────────────────────────────────────
@@ -225,33 +189,13 @@ fun GnotesInfoDialog(
 
     if (showWatchAdConfirm) {
         val earn = minOf(PointsConfig.REWARDED_GNOTES_PER_WATCH, remainingToday)
-        AlertDialog(
-            onDismissRequest  = { showWatchAdConfirm = false },
-            containerColor    = AppColors.surfaceDeep,
-            titleContentColor = AppColors.gold,
-            textContentColor  = AppColors.textSecondary,
-            title = { Text("Metro's Daily Bonus", fontWeight = FontWeight.Bold) },
-            text  = {
-                Text(
-                    text = "Watch a short clip and Metro rewards you with $earn ${PointsConfig.CURRENCY_NAME}. " +
-                           "Three clips per day. Come back tomorrow for more.",
-                    fontSize   = 13.sp,
-                    lineHeight = 19.sp,
-                )
+        com.example.metrognome.ui.components.DailyBonusConfirmDialog(
+            earn      = earn,
+            onConfirm = {
+                showWatchAdConfirm = false
+                onWatchRewardedAd {}
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    showWatchAdConfirm = false
-                    onWatchRewardedAd {}
-                }) {
-                    Text("Claim Reward", color = AppColors.primaryPurple, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showWatchAdConfirm = false }) {
-                    Text("Not now", color = AppColors.textMuted)
-                }
-            },
+            onDismiss = { showWatchAdConfirm = false },
         )
     }
 }

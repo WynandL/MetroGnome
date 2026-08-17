@@ -277,14 +277,18 @@ fun MetronomeScreen(
             )
 
             if (gnoteCount > 0) {
-                com.example.metrognome.ui.components.GoldPill(
-                    text        = "$gnoteCount ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME}",
-                    leadingIcon = Icons.Filled.Bolt,
-                    onClick     = { showGnotesInfo = true },
-                    modifier    = Modifier
+                com.example.metrognome.ui.components.GnoteTickFlair(
+                    count    = gnoteCount,
+                    modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(start = 12.dp, top = 12.dp),
-                )
+                ) {
+                    com.example.metrognome.ui.components.GoldPill(
+                        text        = "$gnoteCount ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME}",
+                        leadingIcon = Icons.Filled.Bolt,
+                        onClick     = { showGnotesInfo = true },
+                    )
+                }
             }
         }
 

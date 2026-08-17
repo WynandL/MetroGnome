@@ -755,6 +755,11 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
                 itemTracker.addMetronomeSeconds(10)
                 _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
                 checkForNewUnlocks()
+                // Metronome-time Gnotes accrue silently in prefs above with no banner event to
+                // announce them (unlike Practice/Rhythm/Tuner completions), so this loop is the
+                // only place a free-run session's total ever changes - without this, gnoteCount
+                // stays stale until the next PointsBannerQueue event or app resume.
+                _gnoteCount.value = pointsManager.getSnapshot().total
             }
         }
     }
