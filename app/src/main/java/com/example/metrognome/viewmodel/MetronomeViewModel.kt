@@ -88,6 +88,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     val isBillingAvailable: StateFlow<Boolean>           = billingManager.isBillingAvailable
     val isPurchasing: StateFlow<Boolean>                 = billingManager.isPurchasing
     val isBillingConnecting: StateFlow<Boolean>          = billingManager.isConnecting
+    val purchaseError: StateFlow<String?>                = billingManager.purchaseError
+    fun clearPurchaseError() = billingManager.clearPurchaseError()
 
     private val _isPracticeActive          = MutableStateFlow(false)
     val isPracticeActive: StateFlow<Boolean>             = _isPracticeActive.asStateFlow()

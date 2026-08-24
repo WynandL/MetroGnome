@@ -70,6 +70,16 @@ class BillingManager(application: Application) {
     private val _isPurchasing = MutableStateFlow(false)
     val isPurchasing: StateFlow<Boolean> = _isPurchasing.asStateFlow()
 
+    /**
+     * Set whenever a purchase attempt fails for a reason the user can act on (network,
+     * store unavailable, etc). USER_CANCELED is not an error - the user did that on purpose.
+     * The UI shows this once (e.g. a Toast) then calls [clearPurchaseError].
+     */
+    private val _purchaseError = MutableStateFlow<String?>(null)
+    val purchaseError: StateFlow<String?> = _purchaseError.asStateFlow()
+
+    fun clearPurchaseError() { _purchaseError.value = null }
+
     private val _isBillingAvailable = MutableStateFlow(false)
     val isBillingAvailable: StateFlow<Boolean> = _isBillingAvailable.asStateFlow()
 
@@ -88,7 +98,7 @@ class BillingManager(application: Application) {
             // so the local cache reflects reality without requiring a manual restore.
             BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED ->
                 scope.launch { reconcileInBackground() }
-            else -> Unit
+            else -> _purchaseError.value = errorMessageFor(result.responseCode)
         }
     }
 
@@ -195,11 +205,13 @@ class BillingManager(application: Application) {
             )
             if (result.billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 _isPurchasing.value = false
+                _purchaseError.value = errorMessageFor(result.billingResult.responseCode)
                 return@launch
             }
             val productDetails = result.productDetailsList?.firstOrNull()
             if (productDetails == null) {
                 _isPurchasing.value = false
+                _purchaseError.value = errorMessageFor(BillingClient.BillingResponseCode.ITEM_UNAVAILABLE)
                 return@launch
             }
             val flowParams = BillingFlowParams.newBuilder()
@@ -219,8 +231,20 @@ class BillingManager(application: Application) {
             val billingResult = billingClient.launchBillingFlow(activity, flowParams)
             if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 _isPurchasing.value = false
+                _purchaseError.value = errorMessageFor(billingResult.responseCode)
             }
         }
+    }
+
+    /** User-facing text for a failed purchase attempt. USER_CANCELED never reaches this. */
+    private fun errorMessageFor(responseCode: Int): String = when (responseCode) {
+        BillingClient.BillingResponseCode.NETWORK_ERROR,
+        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+        BillingClient.BillingResponseCode.SERVICE_DISCONNECTED ->
+            "No connection to the store. Check your internet and try again."
+        BillingClient.BillingResponseCode.ITEM_UNAVAILABLE ->
+            "That item isn't available right now. Please try again later."
+        else -> "Something went wrong with the purchase. Please try again."
     }
 
     // ── Restore purchases ─────────────────────────────────────────────────────

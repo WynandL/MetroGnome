@@ -1,5 +1,5 @@
 [versions]
-agp = "9.3.1"
+agp = "9.3.2"
 coreKtx = "1.19.0"
 fragment = "1.9.0"
 junit = "4.13.2"
@@ -14,9 +14,9 @@ playServicesAds = "25.4.0"
 coroutines = "1.11.0"
 billing = "9.1.0"
 reviewKtx = "2.0.2"
-firebaseBom = "34.17.0"
+firebaseBom = "34.18.0"
 googleServices = "4.5.0"
-firebaseCrashlyticsPlugin = "3.0.7"
+firebaseCrashlyticsPlugin = "3.0.8"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

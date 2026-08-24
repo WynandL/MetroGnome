@@ -131,6 +131,13 @@ fun SettingsScreen(
     val isBillingAvailable by vm.isBillingAvailable.collectAsStateWithLifecycle()
     val isPurchasing by vm.isPurchasing.collectAsStateWithLifecycle()
     val isBillingConnecting by vm.isBillingConnecting.collectAsStateWithLifecycle()
+    val purchaseError by vm.purchaseError.collectAsStateWithLifecycle()
+
+    LaunchedEffect(purchaseError) {
+        val message = purchaseError ?: return@LaunchedEffect
+        android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+        vm.clearPurchaseError()
+    }
 
     val purchasedSoundIds by vm.purchasedSoundIds.collectAsStateWithLifecycle()
     val soundPrices by vm.soundPrices.collectAsStateWithLifecycle()
@@ -563,6 +570,18 @@ private fun PurchasableItemDialog(
         onRestore          = onRestore,
         onDismiss          = onDismiss,
         previewContent     = { ItemPreviewCanvas(entry = entry, modifier = Modifier.size(width = 220.dp, height = 170.dp)) },
+        belowDescription   = if (alreadyUnlocked) null else {
+            {
+                Text(
+                    text = def.unlockAlternative.replaceFirstChar { it.uppercase() },
+                    color = AppColors.textMuted,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
+                    fontStyle = FontStyle.Italic,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
+        },
     )
 }
 
