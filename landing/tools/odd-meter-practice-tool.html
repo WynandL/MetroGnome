@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Odd Meter Metronome & Counting Tool - Metro Gnome</title>
+  <meta name="description" content="Free odd meter practice tool. Pick any time signature from 5/4 to 13/8, hear the natural beat grouping click, and see exactly how to count it. No download, no sign up.">
+  <link rel="icon" type="image/webp" href="/favicon.webp">
+  <link rel="apple-touch-icon" href="/favicon.webp">
+  <link rel="canonical" href="https://metrognome.co.za/tools/odd-meter-practice-tool.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Odd Meter Metronome & Counting Tool - Metro Gnome">
+  <meta property="og:description" content="Pick any time signature from 5/4 to 13/8, hear the natural beat grouping click, and see exactly how to count it. Free, in your browser.">
+  <meta property="og:url" content="https://metrognome.co.za/tools/odd-meter-practice-tool.html">
+  <meta property="og:image" content="https://metrognome.co.za/metro.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Odd Meter Metronome & Counting Tool - Metro Gnome">
+  <meta name="twitter:description" content="Pick any time signature from 5/4 to 13/8, hear the natural beat grouping click, and see exactly how to count it.">
+  <meta name="twitter:image" content="https://metrognome.co.za/metro.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Odd Meter Metronome & Counting Tool",
+    "url": "https://metrognome.co.za/tools/odd-meter-practice-tool.html",
+    "applicationCategory": "MusicApplication",
+    "operatingSystem": "Any (runs in browser)",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "description": "Free browser tool that plays a click for any time signature with the natural accent grouping built in, and shows exactly how to count it, for odd meters like 5/4, 7/8, and 11/8.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Metro Gnome",
+      "url": "https://metrognome.co.za/"
+    }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is an odd meter?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "An odd meter is a time signature whose top number cannot be split evenly into groups of two or three, such as 5/4, 7/8, or 11/8. Instead of one even feel, the bar is counted as a mix of two-pulse and three-pulse groups, for example 7/8 as 2+2+3. That uneven final group is what gives odd meters their characteristic lurch."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do you count 7/8?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The most common grouping is 2+2+3: count 1-2, 1-2, 1-2-3, with an accent on the first pulse of each group. Some pieces group it 3+2+2 or 2+3+2 instead. This tool defaults to 2+2+3, the same convention Metro Gnome's metronome uses, but the grouping is a musical choice, not a fixed rule."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What's the difference between an odd meter and an irregular meter?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Odd meter specifically means the top number is odd, like 5, 7, 11, or 13. Meters like 8/8 or 10/8 also fail to divide into threes, so they are grouped the same lopsided way, but their top number is even, which makes odd the wrong word for them even though they feel similarly asymmetric. The accurate umbrella term for both is irregular meter."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is 5/4 the same as 5/8?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "They group the same way, usually 2+3, because the bottom number only says which note value carries one pulse and never changes how the bar is grouped. The difference is speed and notation: a 5/8 bar at a given tempo passes twice as fast as a 5/4 bar counted at the same pulse rate, since eighth notes are half the length of quarter notes."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can a normal metronome click out odd meters?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "A metronome that plays identical clicks for every pulse gives you no help in an odd meter, because there is nothing to tell you where each group starts. What actually helps is an accented click on the first pulse of every group, which is what this tool and the Metro Gnome app both do automatically for any time signature you pick."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is this odd meter tool free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. It runs entirely in your browser, needs no download, account, or payment, and works on any device with a modern browser."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="stylesheet" href="../blog/style.css">
+</head>
+<body>
+
+  <nav class="site-nav" aria-label="Primary">
+    <div class="inner">
+      <a href="/" class="brand" aria-label="Metro Gnome home">
+        <img src="/metro.png" alt="">
+        <span>Metro Gnome</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/#features">Features</a>
+        <a href="/blog/" class="blog-nav">Blog</a>
+        <a href="/tools/" class="tools-nav">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="sep">&rsaquo;</span>
+      <a href="/tools/">Tools</a>
+      <span class="sep">&rsaquo;</span>
+      <span>Odd Meter Tool</span>
+    </nav>
+
+    <header class="article-header">
+      <div class="post-meta">
+        <span class="post-category">Free tool</span>
+        <span>Works in your browser</span>
+        <span>No download needed</span>
+      </div>
+      <h1>Odd Meter Metronome &amp; Counting Tool</h1>
+      <p class="article-intro">
+        Odd meters like 5/4 and 7/8 are hard to count because the beat does not fall in a predictable place every bar. Pick any time signature below and this tool plays a click with the natural accent grouping already built in, the same grouping logic Metro Gnome's own metronome uses, so you can hear and see exactly where the strong beats land.
+      </p>
+    </header>
+
+    <section class="tool-panel" aria-label="Interactive odd meter practice tool">
+      <div class="metro-wrap">
+        <img id="metroImg" src="/metro.png" alt="Metro the gnome, bobs on every accented pulse">
+      </div>
+
+      <div class="bpm-readout" id="meterReadout">7/8</div>
+      <div class="bpm-unit">time signature</div>
+      <div class="marking" id="meterLabel">Odd &middot; Felt in 2+2+3</div>
+
+      <div class="group-viz" id="groupViz" aria-hidden="true"></div>
+
+      <div class="meter-controls">
+        <div class="stepper-group">
+          <span class="stepper-label">Beats</span>
+          <div class="stepper">
+            <button class="stepper-btn" id="topMinus" type="button" aria-label="Fewer beats">&minus;</button>
+            <span class="stepper-value" id="topValue">7</span>
+            <button class="stepper-btn" id="topPlus" type="button" aria-label="More beats">+</button>
+          </div>
+        </div>
+        <div class="stepper-group">
+          <span class="stepper-label">Note value</span>
+          <div class="denom-picker" id="denomPicker">
+            <button class="denom-btn" type="button" data-denom="2">2</button>
+            <button class="denom-btn" type="button" data-denom="4">4</button>
+            <button class="denom-btn active" type="button" data-denom="8">8</button>
+            <button class="denom-btn" type="button" data-denom="16">16</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="preset-row" id="presetRow">
+        <button class="preset-chip" type="button" data-top="4" data-bottom="4">4/4</button>
+        <button class="preset-chip" type="button" data-top="3" data-bottom="4">3/4</button>
+        <button class="preset-chip" type="button" data-top="6" data-bottom="8">6/8</button>
+        <button class="preset-chip" type="button" data-top="5" data-bottom="4">5/4</button>
+        <button class="preset-chip active" type="button" data-top="7" data-bottom="8">7/8</button>
+        <button class="preset-chip" type="button" data-top="9" data-bottom="8">9/8</button>
+        <button class="preset-chip" type="button" data-top="11" data-bottom="8">11/8</button>
+      </div>
+
+      <button class="tap-pad" id="playBtn" type="button">&#9654; PLAY</button>
+
+      <div class="bpm-control">
+        <button class="stepper-btn" id="bpmMinus" type="button" aria-label="Slower">&minus;</button>
+        <span class="bpm-control-value" id="bpmValue">80</span>
+        <span class="bpm-control-unit">BPM</span>
+        <button class="stepper-btn" id="bpmPlus" type="button" aria-label="Faster">+</button>
+      </div>
+
+      <p class="tool-hint">Change the time signature or tempo any time, even while it is playing. Turn your sound on. Each numbered pulse is the count within its group; the gold ones are the accents.</p>
+    </section>
+
+    <article class="prose">
+      <h2>Why odd meters need a different kind of click</h2>
+      <p>A metronome that plays identical clicks for every pulse is not much help in a meter like 7/8. Seven flat clicks give you no sense of where the bar starts or how it is grouped, so you end up counting in your head and fighting the click instead of riding it. What actually helps is an accent on the first pulse of every group, so the bar gets a shape you can lock onto instead of a featureless row of ticks.</p>
+      <p>That is what this tool does automatically for any time signature you pick. Choose your beats and note value, or tap a preset, and it works out the grouping, plays the accented click, and shows you which pulse is which as it plays.</p>
+
+      <h2>How the grouping is chosen</h2>
+      <p>Meters that split evenly into twos or threes are easy: a simple meter like 4/4 gets one steady pulse, a compound meter like 6/8 or 9/8 splits into even groups of three. Everything else, an irregular meter, is grouped in twos with a trailing three absorbing whatever pulse is left over, so 5 becomes 2+3, 7 becomes 2+2+3, and 11 becomes 2+2+2+2+3.</p>
+
+      <div class="callout">
+        <strong>This grouping is a sensible default, not a rule.</strong> Dave Brubeck's <em>Take Five</em>, the most famous 5/4 tune there is, actually groups its 5/4 bar 3+2, the opposite of this tool's default 2+3. The right grouping is a musical choice specific to the piece, which is exactly why Metro Gnome lets you override the accent on any individual beat by hand rather than forcing one grouping on every odd meter.
+      </div>
+
+      <h2>Odd meter or irregular meter? The distinction most sites skip</h2>
+      <p>"Odd meter" specifically means the top number is an odd number: 5, 7, 11, 13. A meter like 8/8 or 10/8 fails to divide into threes too, and gets grouped the same lopsided way (8/8 as 2+2+2+2, for instance), but its top number is even, so calling it "odd" is a factual mistake even though it feels similarly asymmetric to play. The accurate umbrella term covering both cases is <strong>irregular meter</strong>. This tool and the Metro Gnome app both make the distinction correctly.</p>
+
+      <h2>Common odd and irregular meters, grouped</h2>
+      <div class="data-table-wrap">
+        <table class="data-table" id="referenceTable">
+          <thead>
+            <tr><th>Time signature</th><th>Class</th><th>Counted as</th><th>Feel</th></tr>
+          </thead>
+          <tbody>
+            <tr data-top="4" data-bottom="4"><td>4/4</td><td>Simple quadruple</td><td>Even, no grouping</td><td>Steady, predictable</td></tr>
+            <tr data-top="3" data-bottom="4"><td>3/4</td><td>Simple triple</td><td>Even, no grouping</td><td>Steady, waltz-like</td></tr>
+            <tr data-top="6" data-bottom="8"><td>6/8</td><td>Compound duple</td><td>3+3</td><td>Rolling, two big pulses</td></tr>
+            <tr data-top="9" data-bottom="8"><td>9/8</td><td>Compound triple</td><td>3+3+3</td><td>Rolling, three big pulses</td></tr>
+            <tr data-top="5" data-bottom="4"><td>5/4</td><td>Odd</td><td>2+3</td><td>Limps slightly, a short pulse after a long one</td></tr>
+            <tr data-top="7" data-bottom="8"><td>7/8</td><td>Odd</td><td>2+2+3</td><td>Uneven, a hair-catch at the end of each bar</td></tr>
+            <tr data-top="8" data-bottom="8"><td>8/8</td><td>Irregular</td><td>2+2+2+2</td><td>Rolling four couplets, not odd despite the 8</td></tr>
+            <tr data-top="10" data-bottom="8"><td>10/8</td><td>Irregular</td><td>2+2+2+2+2</td><td>Five even couplets</td></tr>
+            <tr data-top="11" data-bottom="8"><td>11/8</td><td>Odd</td><td>2+2+2+2+3</td><td>A long uneven bar, a stretched Take Five feel</td></tr>
+            <tr data-top="13" data-bottom="8"><td>13/8</td><td>Odd</td><td>2+2+2+2+2+3</td><td>Very long, hard to track without subdividing</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Tap any row's time signature into the tool above (or use the steppers) to hear it played back with its own grouping.</p>
+
+      <h2>Three ways to practise a new odd meter</h2>
+      <p><strong>Count out loud before you play.</strong> Away from your instrument, say the numbers until the grouping comes without thinking, then clap the accents: for 7/8 as 2+2+3, clap loud on 1, 3, and 5, and light on the rest.</p>
+      <p><strong>Start well under tempo.</strong> An odd meter falls apart fastest at speed, precisely where there is no time left to think about the grouping. Get it solid slow first.</p>
+      <p><strong>Add the instrument last,</strong> keeping the same accents you clapped, so the shape you learned carries straight over instead of needing to be relearned with an instrument in your hands.</p>
+      <p>For the full theory behind why the bottom number never changes a meter's class, and how simple and compound meters work the same way, see <a href="/blog/time-signatures-explained.html">Time Signatures Explained</a>.</p>
+
+      <h3>Questions about odd meters</h3>
+      <div class="faq-list">
+        <details>
+          <summary>What is an odd meter?</summary>
+          <div class="faq-answer">
+            An odd meter is a time signature whose top number cannot be split evenly into groups of two or three, such as 5/4, 7/8, or 11/8. Instead of one even feel, the bar is counted as a mix of two-pulse and three-pulse groups, for example 7/8 as 2+2+3. That uneven final group is what gives odd meters their characteristic lurch.
+          </div>
+        </details>
+        <details>
+          <summary>How do you count 7/8?</summary>
+          <div class="faq-answer">
+            The most common grouping is 2+2+3: count 1-2, 1-2, 1-2-3, with an accent on the first pulse of each group. Some pieces group it 3+2+2 or 2+3+2 instead. This tool defaults to 2+2+3, the same convention Metro Gnome's metronome uses, but the grouping is a musical choice, not a fixed rule.
+          </div>
+        </details>
+        <details>
+          <summary>What's the difference between an odd meter and an irregular meter?</summary>
+          <div class="faq-answer">
+            Odd meter specifically means the top number is odd, like 5, 7, 11, or 13. Meters like 8/8 or 10/8 also fail to divide into threes, so they are grouped the same lopsided way, but their top number is even, which makes odd the wrong word for them even though they feel similarly asymmetric. The accurate umbrella term for both is irregular meter.
+          </div>
+        </details>
+        <details>
+          <summary>Is 5/4 the same as 5/8?</summary>
+          <div class="faq-answer">
+            They group the same way, usually 2+3, because the bottom number only says which note value carries one pulse and never changes how the bar is grouped. The difference is speed and notation: a 5/8 bar at a given tempo passes twice as fast as a 5/4 bar counted at the same pulse rate, since eighth notes are half the length of quarter notes.
+          </div>
+        </details>
+        <details>
+          <summary>Can a normal metronome click out odd meters?</summary>
+          <div class="faq-answer">
+            A metronome that plays identical clicks for every pulse gives you no help in an odd meter, because there is nothing to tell you where each group starts. What actually helps is an accented click on the first pulse of every group, which is what this tool and the Metro Gnome app both do automatically for any time signature you pick.
+          </div>
+        </details>
+        <details>
+          <summary>Is this odd meter tool free?</summary>
+          <div class="faq-answer">
+            Yes. It runs entirely in your browser, needs no download, account, or payment, and works on any device with a modern browser.
+          </div>
+        </details>
+      </div>
+
+      <div class="cta-box">
+        <h3>Take any odd meter into a real practice session.</h3>
+        <p>Metro Gnome's metronome supports any time signature from 1 to 16 beats with automatic accents, and you can override any beat's accent by hand for pieces that group it their own way. Free, no account, no subscription.</p>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome" class="btn-play">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M3 20.5v-17c0-.83 1-.83 1.5-.5l14 8.5c.5.3.5 1 0 1.3L4.5 21c-.5.33-1.5.33-1.5-.5z"/>
+          </svg>
+          Get it Free on Google Play
+        </a>
+      </div>
+
+      <div class="related">
+        <h3>Also useful</h3>
+        <div class="related-grid">
+          <div class="related-card">
+            <p class="rc-label">Theory</p>
+            <a href="/blog/time-signatures-explained.html">Time Signatures Explained: Simple, Compound, and Odd Meters</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Jazz</p>
+            <a href="/blog/metronome-app-for-jazz-musicians.html">Best Metronome App for Jazz Musicians (and Why Jazz Timing Is Different)</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Free tool</p>
+            <a href="/tools/rhythm-timing-test.html">Rhythm Test: How Good Is Your Timing?</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Free tool</p>
+            <a href="/tools/tap-tempo-bpm-finder.html">Tap Tempo &amp; BPM Finder</a>
+          </div>
+        </div>
+      </div>
+
+    </article>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Metro Gnome</a>
+        <a href="/blog/">Blog</a>
+        <a href="/tools/">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Play Store</a>
+        <a href="mailto:accesscommsa@gmail.com">Contact</a>
+      </div>
+      <p>&copy; 2026 Metro Gnome &middot; Crafted for musicians</p>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    var metroImg = document.getElementById('metroImg');
+    var meterReadout = document.getElementById('meterReadout');
+    var meterLabel = document.getElementById('meterLabel');
+    var groupViz = document.getElementById('groupViz');
+    var topValue = document.getElementById('topValue');
+    var topMinus = document.getElementById('topMinus');
+    var topPlus = document.getElementById('topPlus');
+    var denomPicker = document.getElementById('denomPicker');
+    var denomBtns = Array.prototype.slice.call(denomPicker.querySelectorAll('.denom-btn'));
+    var presetRow = document.getElementById('presetRow');
+    var presetBtns = Array.prototype.slice.call(presetRow.querySelectorAll('.preset-chip'));
+    var playBtn = document.getElementById('playBtn');
+    var bpmValue = document.getElementById('bpmValue');
+    var bpmMinus = document.getElementById('bpmMinus');
+    var bpmPlus = document.getElementById('bpmPlus');
+    var referenceRows = Array.prototype.slice.call(document.querySelectorAll('#referenceTable tbody tr'));
+
+    var TOP_MIN = 1, TOP_MAX = 16;
+    var BPM_MIN = 40, BPM_MAX = 160;
+
+    var top = 7, bottom = 8, bpm = 80;
+    var isPlaying = false;
+
+    /* ── Meter.kt, ported: classification, grouping, and labels ────────
+       Mirrors app/src/main/java/.../theory/Meter.kt exactly, so this page
+       can never disagree with what the app itself does with the same
+       time signature. */
+    function classify(t) {
+      if (t <= 1) return 'SIMPLE';
+      if (t >= 2 && t <= 4) return 'SIMPLE';
+      if (t % 3 === 0) return 'COMPOUND';
+      return 'IRREGULAR';
+    }
+
+    function irregularGroups(n) {
+      if (n <= 0) return [1];
+      var groups = [];
+      var remaining = n;
+      while (remaining >= 2) { groups.push(2); remaining -= 2; }
+      if (remaining === 1) {
+        if (groups.length) groups[groups.length - 1] = 3;
+        else groups.push(1);
+      }
+      return groups;
+    }
+
+    function beatGrouping(t) {
+      var cls = classify(t);
+      if (cls === 'SIMPLE') return [Math.max(t, 1)];
+      if (cls === 'COMPOUND') {
+        var n = t / 3, arr = [];
+        for (var i = 0; i < n; i++) arr.push(3);
+        return arr;
+      }
+      return irregularGroups(t);
+    }
+
+    function countWord(n) {
+      return { 2: 'duple', 3: 'triple', 4: 'quadruple', 5: 'quintuple', 6: 'sextuple' }[n] || null;
+    }
+
+    function label(t) {
+      var cls = classify(t);
+      if (cls === 'SIMPLE') { var w = countWord(t); return 'Simple' + (w ? ' ' + w : ''); }
+      if (cls === 'COMPOUND') { var w2 = countWord(t / 3); return 'Compound' + (w2 ? ' ' + w2 : ''); }
+      return (t % 2 === 1) ? 'Odd' : 'Irregular';
+    }
+
+    function description(t) {
+      var cls = classify(t);
+      if (cls === 'SIMPLE') return 'Felt in ' + Math.max(t, 1) + ', beats split in two';
+      if (cls === 'COMPOUND') return 'Felt in ' + (t / 3) + ', beats split in three';
+      return 'Felt in ' + beatGrouping(t).join('+');
+    }
+
+    /* ── visualisation ───────────────────────────────────────────────── */
+    var pulseEls = []; // flat, index = pulse position in the bar
+
+    function rebuildViz() {
+      groupViz.innerHTML = '';
+      pulseEls = [];
+      var groups = beatGrouping(top);
+      groups.forEach(function (size) {
+        var box = document.createElement('div');
+        box.className = 'group-box';
+        for (var i = 0; i < size; i++) {
+          var el = document.createElement('span');
+          el.className = 'group-pulse' + (i === 0 ? ' accent' : '');
+          el.textContent = String(i + 1);
+          box.appendChild(el);
+          pulseEls.push(el);
+        }
+        groupViz.appendChild(box);
+      });
+    }
+
+    function updateReadout() {
+      meterReadout.textContent = top + '/' + bottom;
+      meterLabel.textContent = label(top) + ' · ' + description(top);
+      topValue.textContent = String(top);
+      bpmValue.textContent = String(bpm);
+      denomBtns.forEach(function (b) { b.classList.toggle('active', Number(b.getAttribute('data-denom')) === bottom); });
+      presetBtns.forEach(function (b) {
+        b.classList.toggle('active', Number(b.getAttribute('data-top')) === top && Number(b.getAttribute('data-bottom')) === bottom);
+      });
+      referenceRows.forEach(function (r) {
+        r.classList.toggle('current-row', Number(r.getAttribute('data-top')) === top && Number(r.getAttribute('data-bottom')) === bottom);
+      });
+      rebuildViz();
+    }
+
+    function setTop(t) {
+      top = Math.max(TOP_MIN, Math.min(TOP_MAX, t));
+      updateReadout();
+      if (isPlaying) restart();
+    }
+    function setBottom(b) {
+      bottom = b;
+      updateReadout();
+      if (isPlaying) restart();
+    }
+    function setBpm(b) {
+      bpm = Math.max(BPM_MIN, Math.min(BPM_MAX, b));
+      updateReadout();
+      if (isPlaying) restart();
+    }
+
+    topMinus.addEventListener('click', function () { setTop(top - 1); });
+    topPlus.addEventListener('click', function () { setTop(top + 1); });
+    bpmMinus.addEventListener('click', function () { setBpm(bpm - 4); });
+    bpmPlus.addEventListener('click', function () { setBpm(bpm + 4); });
+
+    denomBtns.forEach(function (b) {
+      b.addEventListener('click', function () { setBottom(Number(b.getAttribute('data-denom'))); });
+    });
+    presetBtns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        top = Number(b.getAttribute('data-top'));
+        bottom = Number(b.getAttribute('data-bottom'));
+        updateReadout();
+        if (isPlaying) restart();
+      });
+    });
+
+    /* ── audio: lookahead scheduler on the Web Audio clock, same
+       discipline as the tap-tempo and rhythm-test tools, so playback
+       never drifts even though the poll interval itself is imprecise. */
+    var audioCtx = null;
+    var schedulerTimer = null;
+    var nextPulseTime = 0;
+    var barPulseIndex = 0; // 0-based position within the current bar
+    var LOOKAHEAD_MS = 25;
+    var SCHEDULE_AHEAD_S = 0.12;
+
+    function isAccentPulse(idx) {
+      var groups = beatGrouping(top);
+      var acc = 0, i = 0;
+      for (var g = 0; g < groups.length; g++) {
+        if (i === idx) return true;
+        i += groups[g];
+      }
+      return false;
+    }
+
+    function playPulse(time, accent) {
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = accent ? 1800 : 1100;
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.exponentialRampToValueAtTime(accent ? 0.4 : 0.32, time + 0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.045);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(time);
+      osc.stop(time + 0.05);
+
+      var pulseIdx = barPulseIndex;
+      var delayMs = Math.max(0, (time - audioCtx.currentTime) * 1000);
+      setTimeout(function () { flashPulse(pulseIdx); bump(); }, delayMs);
+    }
+
+    function flashPulse(idx) {
+      pulseEls.forEach(function (el) { el.classList.remove('playing'); });
+      var el = pulseEls[idx];
+      if (el) el.classList.add('playing');
+    }
+
+    function bump() {
+      metroImg.classList.remove('bump');
+      void metroImg.offsetWidth;
+      metroImg.classList.add('bump');
+      setTimeout(function () { metroImg.classList.remove('bump'); }, 90);
+    }
+
+    function scheduler() {
+      var secondsPerPulse = 60 / bpm;
+      var barLength = top;
+      while (nextPulseTime < audioCtx.currentTime + SCHEDULE_AHEAD_S) {
+        playPulse(nextPulseTime, isAccentPulse(barPulseIndex));
+        nextPulseTime += secondsPerPulse;
+        barPulseIndex = (barPulseIndex + 1) % barLength;
+      }
+    }
+
+    function start() {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      barPulseIndex = 0;
+      nextPulseTime = audioCtx.currentTime + 0.08;
+      schedulerTimer = setInterval(scheduler, LOOKAHEAD_MS);
+      scheduler();
+      isPlaying = true;
+      playBtn.innerHTML = '&#9632; STOP';
+      playBtn.classList.add('is-live');
+    }
+
+    function stop() {
+      if (schedulerTimer) clearInterval(schedulerTimer);
+      schedulerTimer = null;
+      isPlaying = false;
+      playBtn.innerHTML = '&#9654; PLAY';
+      playBtn.classList.remove('is-live');
+      pulseEls.forEach(function (el) { el.classList.remove('playing'); });
+    }
+
+    function restart() { stop(); start(); }
+
+    playBtn.addEventListener('click', function () { isPlaying ? stop() : start(); });
+
+    updateReadout();
+  })();
+  </script>
+
+</body>
+</html>

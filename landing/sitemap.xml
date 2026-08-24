@@ -32,7 +32,7 @@
   </url>
   <url>
     <loc>https://metrognome.co.za/blog/time-signatures-explained.html</loc>
-    <lastmod>2026-06-27</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -44,8 +44,14 @@
   </url>
   <url>
     <loc>https://metrognome.co.za/tools/</loc>
-    <lastmod>2026-07-30</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://metrognome.co.za/tools/odd-meter-practice-tool.html</loc>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
@@ -92,7 +98,7 @@
   </url>
   <url>
     <loc>https://metrognome.co.za/blog/metronome-app-for-jazz-musicians.html</loc>
-    <lastmod>2026-05-27</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
