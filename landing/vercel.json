@@ -27,6 +27,12 @@
       "permanent": true
     },
     {
+      "source": "/embed/",
+      "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
+      "destination": "https://metrognome.co.za/embed/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
       "destination": "https://metrognome.co.za/:path*",
@@ -36,6 +42,8 @@
     { "source": "/blog/index.html", "destination": "/blog/", "permanent": true },
     { "source": "/blog", "destination": "/blog/", "permanent": true },
     { "source": "/tools/index.html", "destination": "/tools/", "permanent": true },
-    { "source": "/tools", "destination": "/tools/", "permanent": true }
+    { "source": "/tools", "destination": "/tools/", "permanent": true },
+    { "source": "/embed/index.html", "destination": "/embed/", "permanent": true },
+    { "source": "/embed", "destination": "/embed/", "permanent": true }
   ]
 }
