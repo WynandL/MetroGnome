@@ -44,25 +44,31 @@
   </url>
   <url>
     <loc>https://metrognome.co.za/tools/</loc>
-    <lastmod>2026-08-24</lastmod>
+    <lastmod>2026-09-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://metrognome.co.za/embed/</loc>
+    <lastmod>2026-09-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://metrognome.co.za/tools/odd-meter-practice-tool.html</loc>
-    <lastmod>2026-08-24</lastmod>
+    <lastmod>2026-09-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://metrognome.co.za/tools/tap-tempo-bpm-finder.html</loc>
-    <lastmod>2026-07-14</lastmod>
+    <lastmod>2026-09-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://metrognome.co.za/tools/rhythm-timing-test.html</loc>
-    <lastmod>2026-07-30</lastmod>
+    <lastmod>2026-09-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

@@ -1,0 +1,56 @@
+/* Embed widget overrides.
+   Loaded AFTER /blog/style.css, which supplies every .tool-panel rule the
+   widgets use. Nothing is duplicated here: this file only strips the page
+   chrome the widgets do not have and adds the attribution line.
+
+   Do not fork the panel styling into this file. The widget must keep looking
+   like the tool it was generated from, and one stylesheet is what guarantees
+   that. */
+
+.embed-body {
+  /* Transparent, so the panel's own rounded dark card sits on whatever
+     background the host page has instead of painting a hard edge on it. */
+  background: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+.embed-body .tool-panel {
+  /* The full tool page spaces the panel away from the prose below it.
+     There is no prose here, so that margin would just be dead scroll. */
+  margin-bottom: 0;
+  /* Fill the iframe rather than centring in a container that no longer exists. */
+  max-width: none;
+}
+
+/* Sits INSIDE .tool-panel, on the panel's own dark gradient. It must never
+   be moved outside it: the body is transparent, so anything outside the
+   panel is painted on an unknown host-page background, and these colours
+   would vanish on a white one. */
+.embed-credit {
+  margin: 1.25rem 0 0;
+  padding: 0.85rem 0.5rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.embed-credit a {
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.embed-credit a:hover,
+.embed-credit a:focus-visible {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+/* Host pages size the iframe, and a short one must not clip the tool.
+   Let the widget scroll inside its own frame rather than overflow it. */
+@media (max-height: 560px) {
+  .embed-body { overflow-y: auto; }
+}

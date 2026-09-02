@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Metronome &amp; Rhythm Tool Embeds for Your Website - Metro Gnome</title>
+  <meta name="description" content="Embed a free metronome, tap tempo BPM finder or rhythm timing test on your own website. Copy one line of HTML. No sign up, no API key, no cost. Built for music teachers, studios and band programmes.">
+  <link rel="icon" type="image/webp" href="/favicon.webp">
+  <link rel="apple-touch-icon" href="/favicon.webp">
+  <link rel="canonical" href="https://metrognome.co.za/embed/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Free Metronome &amp; Rhythm Tool Embeds for Your Website">
+  <meta property="og:description" content="Embed a free metronome, tap tempo BPM finder or rhythm timing test on your own site. Copy one line of HTML. No sign up, no API key, no cost.">
+  <meta property="og:url" content="https://metrognome.co.za/embed/">
+  <meta property="og:image" content="https://metrognome.co.za/metro.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Free Metronome &amp; Rhythm Tool Embeds for Your Website">
+  <meta name="twitter:description" content="Embed a free metronome, tap tempo BPM finder or rhythm timing test on your own site. Copy one line of HTML.">
+  <meta name="twitter:image" content="https://metrognome.co.za/metro.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is the metronome embed really free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. There is no cost, no sign up and no API key. Copy the iframe code onto your page and it works. The only condition is that you keep the small attribution link that appears under each widget."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I have to credit Metro Gnome?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The credit line is already part of the widget, so there is nothing extra to add. Just do not edit it out of the embed code or hide it with CSS. That link is what pays for the tools being free."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Will an embedded metronome slow my page down?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Each widget is a single small HTML page with no external libraries, no tracking scripts and no fonts to download. The embed code includes loading=lazy, so the widget only loads once a visitor scrolls near it."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does the embedded metronome work on phones?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The widgets are responsive and work in any modern mobile or desktop browser. Sound uses the Web Audio API, so a visitor may need to tap once before audio starts, which is standard browser behaviour."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="stylesheet" href="/blog/style.css">
+  <style>
+    .embed-item { margin: 0 0 3.5rem; }
+    .embed-item h2 { margin-bottom: 0.35rem; }
+    .embed-item > p { color: var(--text-muted); margin-top: 0; }
+
+    /* Deliberately stacked, not side by side: the prose container is 720px
+       and a 480px widget preview beside a readable code box does not fit in
+       it, so a flex row would only ever wrap. The code box also reads far
+       better at full width, since the iframe snippet has long lines. */
+    .embed-demo { margin-top: 1.25rem; }
+    .embed-demo .frame-col {
+      width: 480px;
+      max-width: 100%;
+      margin: 0 auto 1.25rem;
+    }
+    .embed-demo iframe {
+      width: 100%;
+      display: block;
+      border: 0;
+      border-radius: 20px;
+      background: var(--surface-deep);
+    }
+    .frame-caption {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin: 0.5rem 0 0;
+    }
+
+    .code-box {
+      position: relative;
+      background: var(--surface-deep);
+      border: 1px solid var(--surface-up);
+      border-radius: var(--radius);
+      padding: 1rem 1rem 0.85rem;
+    }
+    .code-box pre {
+      margin: 0;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre;
+    }
+    .copy-btn {
+      margin-top: 0.75rem;
+      width: 100%;
+      background: var(--purple-dark);
+      color: var(--text);
+      border: 1px solid var(--purple);
+      border-radius: 10px;
+      padding: 0.55rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .copy-btn:hover { background: var(--purple); }
+    .copy-btn.copied { background: var(--gold); color: #1A1400; border-color: var(--gold); }
+
+    /* style.css has no inline-code rule, and this page uses <code> in prose. */
+    .prose code {
+      font-family: var(--mono);
+      font-size: 0.87em;
+      background: var(--surface-deep);
+      border: 1px solid var(--surface-up);
+      border-radius: 5px;
+      padding: 0.1em 0.35em;
+      color: var(--gold-light);
+    }
+
+    @media (max-width: 640px) {
+      .embed-demo .frame-col { margin-bottom: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="site-nav" aria-label="Primary">
+    <div class="inner">
+      <a href="/" class="brand" aria-label="Metro Gnome home">
+        <img src="/metro.png" alt="">
+        <span>Metro Gnome</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/#features">Features</a>
+        <a href="/blog/" class="blog-nav">Blog</a>
+        <a href="/tools/" class="tools-nav">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="blog-hero">
+    <div class="container">
+      <p class="post-category">Embeds</p>
+      <h1 style="margin-top:0.5rem;">Put a Free Metronome on Your Own Website</h1>
+      <p>Three practice tools you can drop straight into a lesson page, a studio site or a band programme. Copy one line of HTML. No sign up, no API key, no cost.</p>
+    </div>
+  </section>
+
+  <div class="container">
+    <article class="prose">
+
+      <p>If you teach, run a studio, or keep a resources page for your students, sending them off to a third-party site mid-lesson is a small friction that adds up. These widgets put the tool on your page instead. They are the same tools that run on this site, not cut-down versions, and they are free to use on any site, commercial or not.</p>
+
+      <div class="callout">
+        <strong>The one condition.</strong> Keep the small credit line under each widget. It is already built into the embed, so there is nothing for you to add, just do not delete it from the code or hide it with CSS. That link is the whole reason these can stay free with no ads and no sign-up wall.
+      </div>
+
+      <section class="embed-item">
+        <h2>Odd meter metronome</h2>
+        <p>Any time signature from 5/4 to 13/8, clicked with its natural accent grouping and counted on screen.</p>
+        <div class="embed-demo">
+          <div class="frame-col">
+            <iframe src="/embed/odd-meter.html" height="780"
+                    title="Odd meter metronome by Metro Gnome" loading="lazy"></iframe>
+            <p class="frame-caption">Live preview, try it</p>
+          </div>
+          <div class="code-box">
+<pre id="code-odd">&lt;iframe src="https://metrognome.co.za/embed/odd-meter.html"
+        width="100%" height="780" style="border:0;max-width:480px"
+        title="Odd meter metronome by Metro Gnome"
+        loading="lazy"&gt;&lt;/iframe&gt;</pre>
+            <button class="copy-btn" type="button" data-copy="code-odd">Copy embed code</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="embed-item">
+        <h2>Tap tempo &amp; BPM finder</h2>
+        <p>Tap along with any song and read the tempo live, matched to its tempo marking.</p>
+        <div class="embed-demo">
+          <div class="frame-col">
+            <iframe src="/embed/tap-tempo.html" height="560"
+                    title="Tap tempo BPM finder by Metro Gnome" loading="lazy"></iframe>
+            <p class="frame-caption">Live preview, try it</p>
+          </div>
+          <div class="code-box">
+<pre id="code-tap">&lt;iframe src="https://metrognome.co.za/embed/tap-tempo.html"
+        width="100%" height="560" style="border:0;max-width:480px"
+        title="Tap tempo BPM finder by Metro Gnome"
+        loading="lazy"&gt;&lt;/iframe&gt;</pre>
+            <button class="copy-btn" type="button" data-copy="code-tap">Copy embed code</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="embed-item">
+        <h2>Rhythm timing test</h2>
+        <p>Sixteen beats, a score out of 100, and whether the player rushes or drags. Useful as a first-lesson benchmark.</p>
+        <div class="embed-demo">
+          <div class="frame-col">
+            <iframe src="/embed/rhythm-test.html" height="645"
+                    title="Rhythm timing test by Metro Gnome" loading="lazy"></iframe>
+            <p class="frame-caption">Live preview, try it</p>
+          </div>
+          <div class="code-box">
+<pre id="code-rhythm">&lt;iframe src="https://metrognome.co.za/embed/rhythm-test.html"
+        width="100%" height="645" style="border:0;max-width:480px"
+        title="Rhythm timing test by Metro Gnome"
+        loading="lazy"&gt;&lt;/iframe&gt;</pre>
+            <button class="copy-btn" type="button" data-copy="code-rhythm">Copy embed code</button>
+          </div>
+        </div>
+      </section>
+
+      <h2>Sizing and placement</h2>
+      <p>The heights in the code above are measured at a widget width of 480 pixels, which is what <code>max-width:480px</code> in the snippet gives you. Everything inside scales to the width you allow, so leaving <code>width="100%"</code> and letting your own container decide is usually easiest.</p>
+      <p>Narrower means taller, because the controls wrap onto more rows. Measured heights at a 300 pixel sidebar width, if you want to size one exactly:</p>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Widget</th><th class="range">At 480px</th><th class="range">At 300px</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Odd meter metronome</td><td class="range">780</td><td class="range">970</td></tr>
+            <tr><td>Tap tempo &amp; BPM finder</td><td class="range">560</td><td class="range">560</td></tr>
+            <tr><td>Rhythm timing test</td><td class="range">645</td><td class="range">715</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Getting it wrong is not fatal either way. Each widget scrolls inside its own frame when the frame is shorter than its contents, so nothing is ever cut off, you just get a scrollbar.</p>
+
+      <h2>Terms, in plain English</h2>
+      <ul>
+        <li>Free to embed on any website, including commercial sites and paid course platforms.</li>
+        <li>Keep the credit link that ships inside the widget. Do not remove or hide it.</li>
+        <li>Do not copy the tool's code onto your own server. Point the iframe here so you always get fixes and improvements.</li>
+        <li>No warranty. These are practice aids, not measurement instruments, and browser audio timing varies by device.</li>
+      </ul>
+
+      <h2>Questions</h2>
+      <h3>Is it really free?</h3>
+      <p>Yes. No cost, no sign up, no API key. Metro Gnome is a free Android app funded by optional cosmetic purchases and a one-time ad removal, and these tools exist because they are useful, not as a trial for something paid.</p>
+
+      <h3>Will it slow my page down?</h3>
+      <p>No. Each widget is one small HTML page with no external libraries, no tracking scripts and no web fonts. The embed code includes <code>loading="lazy"</code>, so a widget below the fold does not load until a visitor scrolls near it.</p>
+
+      <h3>Does it work on phones?</h3>
+      <p>Yes, on any modern mobile or desktop browser. Sound uses the Web Audio API, so a visitor taps once to start audio, which is standard browser behaviour and applies to every audio tool on the web.</p>
+
+      <h3>Can I request a different tool?</h3>
+      <p>Yes, and it is genuinely useful to hear what is missing. <a href="mailto:accesscommsa@gmail.com">Email what you would use</a> and it will be considered for the next one.</p>
+
+      <div class="related">
+        <h3>Also useful</h3>
+        <div class="related-grid">
+          <div class="related-card">
+            <p class="rc-label">All tools</p>
+            <a href="/tools/">Free music practice tools</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Free tool</p>
+            <a href="/tools/odd-meter-practice-tool.html">Odd Meter Metronome &amp; Counting Tool</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Free tool</p>
+            <a href="/tools/rhythm-timing-test.html">Rhythm Test: How Good Is Your Timing?</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Teaching</p>
+            <a href="/blog/metronome-app-music-teachers.html">Metronome Apps for Music Teachers: Building Student Practice Habits</a>
+          </div>
+        </div>
+      </div>
+
+    </article>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Metro Gnome</a>
+        <a href="/blog/">Blog</a>
+        <a href="/tools/">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Play Store</a>
+        <a href="mailto:accesscommsa@gmail.com">Contact</a>
+      </div>
+      <p>&copy; 2026 Metro Gnome &middot; Crafted for musicians</p>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    var btns = Array.prototype.slice.call(document.querySelectorAll('.copy-btn'));
+    btns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var pre = document.getElementById(btn.getAttribute('data-copy'));
+        if (!pre) return;
+        var text = pre.textContent;
+
+        function done() {
+          btn.textContent = 'Copied';
+          btn.classList.add('copied');
+          setTimeout(function () {
+            btn.textContent = 'Copy embed code';
+            btn.classList.remove('copied');
+          }, 1800);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, fallback);
+        } else {
+          fallback();
+        }
+
+        /* Older browsers, and any page served over plain http, where the
+           async clipboard API is unavailable. Selecting the text is also a
+           usable outcome on its own if even this is blocked. */
+        function fallback() {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'absolute';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); done(); } catch (e) { /* leave selected */ }
+          document.body.removeChild(ta);
+        }
+      });
+    });
+  })();
+  </script>
+
+</body>
+</html>
