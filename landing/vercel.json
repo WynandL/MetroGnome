@@ -1,5 +1,4 @@
 {
-  "_comment_headers": "The widget pages under /embed/ are meant to be iframed by other sites. Nothing currently sets X-Frame-Options or a frame-ancestors CSP, so they already embed, but a live embed on somebody else's page breaks silently and permanently if that ever changes by default. Declared explicitly so it cannot.",
   "headers": [
     {
       "source": "/embed/(.*)",
