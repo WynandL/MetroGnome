@@ -66,8 +66,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -81,7 +79,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -102,6 +99,17 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.ui.components.AdBannerView
+import com.example.metrognome.billing.PREMIUM_DRONE_BLENDS
+import com.example.metrognome.billing.PREMIUM_DRONE_TIMBRES
+import com.example.metrognome.billing.PremiumDroneDef
+import com.example.metrognome.billing.PurchaseStore
+import com.example.metrognome.billing.premiumProductFor
+import com.example.metrognome.ui.dialogs.AudioShowcase
+import com.example.metrognome.ui.dialogs.PremiumPurchaseDialog
+import com.example.metrognome.ui.dialogs.PreviewActionButton
+import com.example.metrognome.audio.drone.DroneBlend
+import com.example.metrognome.audio.drone.DroneState
+import com.example.metrognome.audio.drone.DroneTimbre
 import com.example.metrognome.audio.tuner.AmbientLevel
 import com.example.metrognome.audio.tuner.AmbientReport
 import com.example.metrognome.audio.tuner.AmbientTuning
@@ -109,6 +117,8 @@ import com.example.metrognome.audio.tuner.ListeningState
 import com.example.metrognome.audio.NoteNames
 import com.example.metrognome.audio.tuner.Tuner
 import com.example.metrognome.ui.components.CircleButton
+import com.example.metrognome.ui.components.DronePanel
+import com.example.metrognome.ui.components.GoldSlider
 import com.example.metrognome.ui.components.GoldPill
 import com.example.metrognome.ui.components.LabelValueBadge
 import com.example.metrognome.ui.components.PrimaryButton
@@ -169,6 +179,9 @@ fun TunerScreen(
     keepScreenOn: Boolean = false,
     onSetKeepScreenOn: (Boolean) -> Unit = {},
     isAdFree: Boolean = false,
+    store: PurchaseStore = PurchaseStore(),
+    onPurchase: (String) -> Unit = {},
+    onRestore: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var micGranted by remember {
@@ -203,6 +216,8 @@ fun TunerScreen(
     val calibrationInfo by vm.calibrationInfo.collectAsStateWithLifecycle()
     val feedbackPrompt by vm.feedbackPrompt.collectAsStateWithLifecycle()
     val ambientLevel by vm.ambientLevel.collectAsStateWithLifecycle()
+    val droneState by vm.droneState.collectAsStateWithLifecycle()
+    val droneExpanded by vm.droneExpanded.collectAsStateWithLifecycle()
 
     val prefs = remember { context.getSharedPreferences("metrognome_prefs", Context.MODE_PRIVATE) }
     var nudgeDismissed by remember { mutableStateOf(prefs.getBoolean("tuner_calibration_nudge_shown", false)) }
@@ -255,6 +270,20 @@ fun TunerScreen(
             },
             ambientLevel = ambientLevel,
             onSetAmbientLevel = vm::setAmbientLevel,
+            droneState = droneState,
+            onToggleDrone = vm::toggleDrone,
+            onSetDroneNote = vm::setDroneNote,
+            onShiftDroneOctave = vm::shiftDroneOctave,
+            onSetDroneTimbre = vm::setDroneTimbre,
+            onSetDroneBlend = vm::setDroneBlend,
+            onSetDroneVolume = vm::setDroneVolume,
+            droneExpanded = droneExpanded,
+            onSetDroneExpanded = vm::setDroneExpanded,
+            store = store,
+            onPurchase = onPurchase,
+            onRestore = onRestore,
+            onPreviewDroneVoice = vm::previewDroneVoice,
+            onStopDronePreview = vm::stopDronePreview,
         )
 
         TunerFeedbackCard(
@@ -299,8 +328,36 @@ internal fun TunerScreenContent(
     onDismissCalibrationNudge: () -> Unit = {},
     ambientLevel: AmbientTuning.Level = AmbientTuning.Level.MAX,
     onSetAmbientLevel: (AmbientTuning.Level) -> Unit = {},
+    droneState: DroneState = DroneState(),
+    onToggleDrone: () -> Unit = {},
+    onSetDroneNote: (Int) -> Unit = {},
+    onShiftDroneOctave: (Int) -> Unit = {},
+    onSetDroneTimbre: (DroneTimbre) -> Unit = {},
+    onSetDroneBlend: (DroneBlend) -> Unit = {},
+    onSetDroneVolume: (Float) -> Unit = {},
+    droneExpanded: Boolean = true,
+    onSetDroneExpanded: (Boolean) -> Unit = {},
+    store: PurchaseStore = PurchaseStore(),
+    onPurchase: (String) -> Unit = {},
+    onRestore: () -> Unit = {},
+    onPreviewDroneVoice: (DroneTimbre, DroneBlend) -> Unit = { _, _ -> },
+    onStopDronePreview: () -> Unit = {},
 ) {
     val pendingReading = remember { mutableStateOf<Tuner.Reading?>(null) }
+    var dronePaywall by remember { mutableStateOf<DronePaywall?>(null) }
+
+    // Close the dialog the moment the purchase lands, and switch to the voice that was just
+    // bought - the same "you asked for this, so here it is" follow-through the premium
+    // click sounds have in SettingsScreen. Without it the user pays and then has to find
+    // and tap the chip again, which reads as the purchase not having worked.
+    LaunchedEffect(store.purchasedProductIds) {
+        val paywall = dronePaywall ?: return@LaunchedEffect
+        if (store.owns(paywall.def.productId)) {
+            onStopDronePreview()
+            dronePaywall = null
+            paywall.select()
+        }
+    }
     var pendingConfirm by remember { mutableStateOf<CalibrationMode?>(null) }
     var showClearCalibrationDialog by remember { mutableStateOf(false) }
 
@@ -379,7 +436,56 @@ internal fun TunerScreenContent(
         }
 
         Spacer(Modifier.height(10.dp))
-        AmbientPanel(ambient, ambientLevel, onSetAmbientLevel, micGranted = micGranted)
+        AmbientPanel(
+            ambient, ambientLevel, onSetAmbientLevel,
+            micGranted = micGranted,
+            listeningPaused = droneState.playing,
+        )
+
+        Spacer(Modifier.height(12.dp))
+        DronePanel(
+            state = droneState,
+            referenceHz = referenceHz,
+            onToggle = onToggleDrone,
+            onSetNote = onSetDroneNote,
+            onShiftOctave = onShiftDroneOctave,
+            onSetTimbre = { timbre ->
+                val def = PREMIUM_DRONE_TIMBRES[timbre]
+                if (def != null && !store.owns(def.productId)) {
+                    dronePaywall = DronePaywall(
+                        def = def,
+                        displayName = timbre.displayName,
+                        // Audition the locked timbre against the blend already chosen, which
+                        // is always one the user owns, so the audition is what they would
+                        // actually get rather than a second thing they have not bought.
+                        previewTimbre = timbre,
+                        previewBlend = droneState.blend,
+                        select = { onSetDroneTimbre(timbre) },
+                    )
+                } else {
+                    onSetDroneTimbre(timbre)
+                }
+            },
+            onSetBlend = { blend ->
+                val def = PREMIUM_DRONE_BLENDS[blend]
+                if (def != null && !store.owns(def.productId)) {
+                    dronePaywall = DronePaywall(
+                        def = def,
+                        displayName = blend.displayName,
+                        previewTimbre = droneState.timbre,
+                        previewBlend = blend,
+                        select = { onSetDroneBlend(blend) },
+                    )
+                } else {
+                    onSetDroneBlend(blend)
+                }
+            },
+            onSetVolume = onSetDroneVolume,
+            expanded = droneExpanded,
+            onExpandedChange = onSetDroneExpanded,
+            premiumTimbres = PREMIUM_DRONE_TIMBRES.keys,
+            premiumBlends = PREMIUM_DRONE_BLENDS.keys,
+        )
 
         Spacer(Modifier.height(12.dp))
         CalibrationCard(
@@ -431,6 +537,20 @@ internal fun TunerScreenContent(
             reading = r,
             onConfirm = { onCalibrateToNote(r); pendingReading.value = null },
             onDismiss = { pendingReading.value = null },
+        )
+    }
+
+    dronePaywall?.let { paywall ->
+        DroneVoiceDialog(
+            paywall = paywall,
+            store = store,
+            onPreview = { onPreviewDroneVoice(paywall.previewTimbre, paywall.previewBlend) },
+            onPurchase = { onPurchase(paywall.def.productId) },
+            onRestore = onRestore,
+            onDismiss = {
+                onStopDronePreview()
+                dronePaywall = null
+            },
         )
     }
 
@@ -712,6 +832,8 @@ private fun AmbientPanel(
     ambientLevel: AmbientTuning.Level = AmbientTuning.Level.MAX,
     onSetAmbientLevel: (AmbientTuning.Level) -> Unit = {},
     micGranted: Boolean = true,
+    /** True while something else owns the mic (currently: the drone is sounding). */
+    listeningPaused: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val chevronDeg by animateFloatAsState(if (expanded) 180f else 0f, label = "chevron")
@@ -743,7 +865,9 @@ private fun AmbientPanel(
                         indication = null,
                     ) { expanded = !expanded },
             ) {
-                AmbientStateIcons(state = shown.state)
+                // Nothing is being heard while the mic is handed over, so no state is lit
+                // rather than leaving the last one showing as though it were still live.
+                AmbientStateIcons(state = if (listeningPaused) null else shown.state)
                 Spacer(Modifier.weight(1f))
                 // Fixed-width slot — always reserves 36 dp so the chevron never shifts
                 Box(modifier = Modifier.width(36.dp), contentAlignment = Alignment.CenterEnd) {
@@ -841,10 +965,13 @@ private fun AmbientPanel(
                     // ("Getting ready…", implying it's about to start) - that reads as
                     // stuck rather than blocked. Swap in a plain informational line
                     // instead; the fix action itself lives in the banner above, not here.
-                    val statusText = if (!micGranted)
-                        "Microphone access needed" to "Grant access above to see live room analysis."
-                    else
-                        shown.headline to shown.guidance
+                    val statusText = when {
+                        !micGranted ->
+                            "Microphone access needed" to "Grant access above to see live room analysis."
+                        listeningPaused ->
+                            "Paused for the drone" to "Listening resumes when you stop the drone."
+                        else -> shown.headline to shown.guidance
+                    }
                     Crossfade(
                         targetState = statusText,
                         animationSpec = tween(250),
@@ -945,7 +1072,7 @@ private val ambientStateIconEntries = listOf(
  * Avoids fast-changing text that is hard to read in a noisy rehearsal environment.
  */
 @Composable
-private fun AmbientStateIcons(state: ListeningState) {
+private fun AmbientStateIcons(state: ListeningState?) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(5.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1252,9 +1379,62 @@ private fun SuppressionLevelToggle(
     }
 }
 
+// ── Drone paywall ────────────────────────────────────────────────────────────────
+
+/**
+ * A paid drone voice being offered, and everything the dialog needs to sell it.
+ *
+ * A plain class rather than a data class: it carries [select], the action to run once the
+ * purchase lands, and a lambda has no meaningful equality. It is only ever held in one
+ * nullable slot and compared against null.
+ */
+private class DronePaywall(
+    val def: PremiumDroneDef,
+    val displayName: String,
+    val previewTimbre: DroneTimbre,
+    val previewBlend: DroneBlend,
+    val select: () -> Unit,
+)
+
+/**
+ * The purchase dialog for a drone voice.
+ *
+ * Deliberately the same [PremiumPurchaseDialog] as the premium click sounds, down to the
+ * audible-preview slot: they are the same kind of offer, and a second paywall design would
+ * only teach the user that some purchases in this app work differently from others.
+ */
+@Composable
+private fun DroneVoiceDialog(
+    paywall: DronePaywall,
+    store: PurchaseStore,
+    onPreview: () -> Unit,
+    onPurchase: () -> Unit,
+    onRestore: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    PremiumPurchaseDialog(
+        title               = paywall.displayName,
+        description         = paywall.def.description,
+        actionLabel         = "Unlock ${paywall.displayName}",
+        priceText           = store.priceOf(paywall.def.productId),
+        isPurchasing        = store.isPurchasing,
+        isBillingConnecting = store.isConnecting,
+        isAvailable         = store.isAvailable(paywall.def.productId),
+        onPurchase          = onPurchase,
+        onRestore           = onRestore,
+        onDismiss           = onDismiss,
+        previewContent      = { AudioShowcase(paywall.displayName, caption = "PREMIUM DRONE VOICE") },
+        secondaryButton     = {
+            PreviewActionButton(
+                label   = "▶  Preview (5 seconds)",
+                onClick = onPreview,
+            )
+        },
+    )
+}
+
 // ── Reference pitch ──────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ReferencePitchCard(
     referenceHz: Float,
@@ -1262,20 +1442,8 @@ private fun ReferencePitchCard(
     onSet: (Float) -> Unit,
 ) {
     val isStandard = referenceHz.roundToInt() == 440
-    val fraction = ((referenceHz - TunerViewModel.MIN_REFERENCE) /
-                    (TunerViewModel.MAX_REFERENCE - TunerViewModel.MIN_REFERENCE)).coerceIn(0f, 1f)
     val standardFraction = (440f - TunerViewModel.MIN_REFERENCE) /
                            (TunerViewModel.MAX_REFERENCE - TunerViewModel.MIN_REFERENCE)
-
-    // Halo brightens instantly on any value change, springs back to resting glow when idle
-    val haloAlpha = remember { Animatable(0.15f) }
-    LaunchedEffect(referenceHz) {
-        haloAlpha.snapTo(0.45f)
-        haloAlpha.animateTo(
-            targetValue = 0.15f,
-            animationSpec = spring(dampingRatio = 0.7f, stiffness = 80f),
-        )
-    }
 
     Surface(
         color = AppColors.surfaceDim,
@@ -1308,79 +1476,14 @@ private fun ReferencePitchCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StepButton("−") { onNudge(-1f) }
                 Spacer(Modifier.width(10.dp))
-                Slider(
+                GoldSlider(
                     value = referenceHz,
                     onValueChange = onSet,
                     valueRange = TunerViewModel.MIN_REFERENCE..TunerViewModel.MAX_REFERENCE,
                     steps = (TunerViewModel.MAX_REFERENCE - TunerViewModel.MIN_REFERENCE).toInt() - 1,
+                    markerFraction = standardFraction,
+                    markerHighlighted = isStandard,
                     modifier = Modifier.weight(1f),
-                    thumb = {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.size(24.dp),
-                        ) {
-                            Box(Modifier.size(24.dp).background(AppColors.gold.copy(alpha = haloAlpha.value), CircleShape))
-                            Box(Modifier.size(12.dp).background(AppColors.gold, CircleShape))
-                        }
-                    },
-                    track = { _ ->
-                        Canvas(modifier = Modifier.fillMaxWidth().height(14.dp)) {
-                            val trackH = 2.dp.toPx()
-                            val cy = center.y
-                            val thumbX = size.width * fraction
-
-                            // Inactive rail — full width underneath
-                            drawLine(
-                                color = AppColors.surfaceVariant,
-                                start = Offset(0f, cy),
-                                end = Offset(size.width, cy),
-                                strokeWidth = trackH,
-                                cap = StrokeCap.Round,
-                            )
-
-                            // Active portion — gradient from dim at origin to bright at thumb
-                            if (fraction > 0f) {
-                                drawRoundRect(
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(
-                                            AppColors.gold.copy(alpha = 0.25f),
-                                            AppColors.gold.copy(alpha = 0.85f),
-                                        ),
-                                        startX = 0f,
-                                        endX = thumbX,
-                                    ),
-                                    topLeft = Offset(0f, cy - trackH / 2),
-                                    size = Size(thumbX, trackH),
-                                    cornerRadius = CornerRadius(trackH / 2),
-                                )
-
-                                // Radial glow bloom where track meets the thumb
-                                drawCircle(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(
-                                            AppColors.gold.copy(alpha = 0.35f),
-                                            Color.Transparent,
-                                        ),
-                                        center = Offset(thumbX, cy),
-                                        radius = 12.dp.toPx(),
-                                    ),
-                                    radius = 12.dp.toPx(),
-                                    center = Offset(thumbX, cy),
-                                )
-                            }
-
-                            // 440 Hz reference tick — glows gold when at standard pitch
-                            val markerX = size.width * standardFraction
-                            drawLine(
-                                color = if (isStandard) AppColors.gold.copy(alpha = 0.6f)
-                                        else AppColors.textDim.copy(alpha = 0.4f),
-                                start = Offset(markerX, cy - 5.dp.toPx()),
-                                end = Offset(markerX, cy + 5.dp.toPx()),
-                                strokeWidth = 1.5.dp.toPx(),
-                                cap = StrokeCap.Round,
-                            )
-                        }
-                    },
                 )
                 Spacer(Modifier.width(10.dp))
                 StepButton("+") { onNudge(1f) }

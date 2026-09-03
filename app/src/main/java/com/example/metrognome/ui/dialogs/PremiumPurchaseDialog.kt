@@ -34,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -49,6 +50,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -302,6 +304,64 @@ fun ShowcaseFrame(
                 fontSize      = 9.sp,
                 fontWeight    = FontWeight.ExtraBold,
                 letterSpacing = 1.5.sp,
+            )
+        }
+    }
+}
+
+/**
+ * Showcase for anything the app sells that is heard rather than seen: a music note radiating
+ * soft gold rings, with the name underneath.
+ *
+ * Sound cannot be shown, so this does not try to. Its job is to give the dialog a living
+ * focal point while the Preview button does the actual selling, which is why the same
+ * treatment serves a metronome click and a sustained drone voice; only [caption] changes.
+ */
+@Composable
+fun AudioShowcase(title: String, caption: String) {
+    ShowcaseFrame(caption = caption) {
+        val pulse by rememberInfiniteTransition(label = "audioShowcasePulse")
+            .animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(2400, easing = LinearEasing)),
+                label = "audioShowcasePulseT",
+            )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(contentAlignment = Alignment.Center) {
+                Canvas(modifier = Modifier.size(132.dp)) {
+                    val ringCount = 3
+                    for (i in 0 until ringCount) {
+                        val phase = (pulse + i.toFloat() / ringCount) % 1f
+                        val radius = size.minDimension * (0.16f + phase * 0.34f)
+                        drawCircle(
+                            color = AppColors.gold.copy(alpha = (1f - phase) * 0.55f),
+                            radius = radius,
+                            center = center,
+                            style = Stroke(width = 2.2f),
+                        )
+                    }
+                }
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(54.dp)
+                        .background(AppColors.gold.copy(alpha = 0.14f), CircleShape),
+                ) {
+                    Icon(
+                        imageVector        = Icons.Filled.MusicNote,
+                        contentDescription = null,
+                        tint               = AppColors.gold,
+                        modifier           = Modifier.size(30.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text       = title,
+                color      = Color.White,
+                fontSize   = 15.sp,
+                fontWeight = FontWeight.Bold,
             )
         }
     }

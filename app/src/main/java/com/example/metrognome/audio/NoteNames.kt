@@ -1,6 +1,7 @@
 package com.example.metrognome.audio
 
 import kotlin.math.log2
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 /**
@@ -28,6 +29,19 @@ object NoteNames {
 
     /** Scientific-pitch-notation octave for a MIDI number, e.g. 60 → 4. */
     fun octaveOf(midi: Int): Int = midi / 12 - 1
+
+    /**
+     * Frequency (Hz) of a MIDI number, given the A4 anchor [referenceHz].
+     *
+     * The exact inverse of [nearestMidi], and the single place anything that needs to
+     * *sound* a named note (the drone) derives its frequency, so a shifted reference
+     * pitch moves the tuner's target and the drone's tone by the same arithmetic.
+     */
+    fun frequencyOf(midi: Int, referenceHz: Float = 440f): Float =
+        (referenceHz * 2.0.pow((midi - 69) / 12.0)).toFloat()
+
+    /** Full note label for a MIDI number, e.g. 57 -> "A3". */
+    fun labelOf(midi: Int): String = "${nameOf(midi)}${octaveOf(midi)}"
 
     /** Nearest MIDI number for [frequencyHz], given the A4 anchor [referenceHz]. */
     fun nearestMidi(frequencyHz: Float, referenceHz: Float = 440f): Int =

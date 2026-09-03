@@ -29,6 +29,7 @@ class MetroItemTracker(context: Context) {
     companion object {
         private const val KEY_METRONOME_SECONDS  = "metronome_seconds"
         private const val KEY_TUNER_SECONDS      = "tuner_seconds"
+        private const val KEY_DRONE_SECONDS      = "drone_seconds"
         private const val KEY_GAMES_COMPLETED    = "games_completed"
         private const val KEY_FIRST_LAUNCH_MS    = "first_launch_ms"
         private const val KEY_CHEAT_MODE          = "cheat_mode"
@@ -82,6 +83,19 @@ class MetroItemTracker(context: Context) {
     fun addTunerSeconds(seconds: Long) {
         val current = prefs.getLong(KEY_TUNER_SECONDS, 0L)
         prefs.edit { putLong(KEY_TUNER_SECONDS, current + seconds) }
+    }
+
+    /**
+     * Add [seconds] to the cumulative tuning-drone sounding time.
+     *
+     * Kept separate from [addTunerSeconds] even though both happen on the Tuner screen: the
+     * two are mutually exclusive by design (the drone closes the mic), they earn at
+     * different rates, and an item that asks for drone time must not be satisfiable by
+     * leaving the needle running instead.
+     */
+    fun addDroneSeconds(seconds: Long) {
+        val current = prefs.getLong(KEY_DRONE_SECONDS, 0L)
+        prefs.edit { putLong(KEY_DRONE_SECONDS, current + seconds) }
     }
 
     /** Increment the count of individual notes the tuner has locked on to. */
@@ -143,6 +157,7 @@ class MetroItemTracker(context: Context) {
 
     fun metronomeSeconds(): Long    = prefs.getLong(KEY_METRONOME_SECONDS, 0L)
     fun tunerSeconds(): Long        = prefs.getLong(KEY_TUNER_SECONDS, 0L)
+    fun droneSeconds(): Long        = prefs.getLong(KEY_DRONE_SECONDS, 0L)
     fun tunerNotesLocked(): Int     = prefs.getInt(KEY_TUNER_NOTES_LOCKED, 0)
     fun gamesCompleted(): Int       = prefs.getInt(KEY_GAMES_COMPLETED, 0)
     fun totalGameScore(): Int       = prefs.getInt(KEY_GAME_SCORE_TOTAL, 0)
@@ -201,6 +216,7 @@ class MetroItemTracker(context: Context) {
         return when (condition) {
             is UnlockCondition.MetronomeSeconds        -> metronomeSeconds() >= condition.required
             is UnlockCondition.TunerSeconds            -> tunerSeconds() >= condition.required
+            is UnlockCondition.DroneSeconds            -> droneSeconds() >= condition.required
             is UnlockCondition.RhythmGamesCompleted    -> gamesCompleted() >= condition.required
             is UnlockCondition.DaysSinceFirstLaunch    -> daysSinceFirstLaunch() >= condition.required
             is UnlockCondition.LoyaltyDays             -> loyaltyDays() >= condition.required
@@ -239,6 +255,7 @@ class MetroItemTracker(context: Context) {
         prefs.edit {
             remove(KEY_METRONOME_SECONDS)
             remove(KEY_TUNER_SECONDS)
+            remove(KEY_DRONE_SECONDS)
             remove(KEY_TUNER_NOTES_LOCKED)
             remove(KEY_GAMES_COMPLETED)
             remove(KEY_GAME_SCORE_TOTAL)

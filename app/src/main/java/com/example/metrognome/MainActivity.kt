@@ -46,6 +46,8 @@ import com.example.metrognome.ui.dialogs.NotificationOptInDialog
 import com.example.metrognome.ui.screens.MetronomeScreen
 import com.example.metrognome.ui.screens.RhythmGameScreen
 import com.example.metrognome.ui.screens.SettingsScreen
+import android.widget.Toast
+import com.example.metrognome.billing.PurchaseStore
 import com.example.metrognome.ui.screens.TunerScreen
 import com.example.metrognome.ui.theme.MetroGnomeTheme
 import com.example.metrognome.notifications.NotificationOptInTracker
@@ -125,6 +127,27 @@ fun MetroGnomeApp(
     val isAdFree by metronomeVm.isAdFree.collectAsStateWithLifecycle()
     val isPlaying by metronomeVm.isPlaying.collectAsStateWithLifecycle()
 
+    // Purchase state is gathered once, here, because MetronomeViewModel owns the single
+    // BillingManager and two screens now sell things: Settings (clicks, items, ad removal)
+    // and the Tuner (drone voices). Settings reads the ViewModel directly; the Tuner gets
+    // this snapshot, so there is still exactly one billing connection in the process.
+    val purchasedSoundIds by metronomeVm.purchasedSoundIds.collectAsStateWithLifecycle()
+    val soundPrices by metronomeVm.soundPrices.collectAsStateWithLifecycle()
+    val availableSoundProductIds by metronomeVm.availableSoundProductIds.collectAsStateWithLifecycle()
+    val isPurchasing by metronomeVm.isPurchasing.collectAsStateWithLifecycle()
+    val isBillingConnecting by metronomeVm.isBillingConnecting.collectAsStateWithLifecycle()
+    val purchaseStore = PurchaseStore(
+        purchasedProductIds = purchasedSoundIds,
+        prices = soundPrices,
+        availableProductIds = availableSoundProductIds,
+        isPurchasing = isPurchasing,
+        isConnecting = isBillingConnecting,
+    )
+
+    // The drone enforces its own entitlements (a refund can take a voice away mid-note), so
+    // the tuner is told what is owned rather than reaching for a billing client of its own.
+    LaunchedEffect(purchasedSoundIds) { tunerVm.setOwnedProducts(purchasedSoundIds) }
+
     val visibleTabs = AppTab.entries
 
     val context = LocalContext.current
@@ -134,6 +157,17 @@ fun MetroGnomeApp(
     val hapticEngine  = remember { HapticEngine(context) }
 
     LaunchedEffect(Unit) { AnalyticsTracker.updateUserTier(adManager.userTier()) }
+
+    // A failed purchase is reported app-wide rather than by the screen that started it.
+    // It used to live in SettingsScreen, which was fine while Settings was the only place
+    // you could buy anything; with the Tuner selling drone voices, a failure there would
+    // have gone unseen and then surfaced as a stale toast the next time Settings opened.
+    val purchaseError by metronomeVm.purchaseError.collectAsStateWithLifecycle()
+    LaunchedEffect(purchaseError) {
+        val message = purchaseError ?: return@LaunchedEffect
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        metronomeVm.clearPurchaseError()
+    }
 
     // Single path for changing tabs, used by both the nav bar's onClick below AND a
     // notification deep link (LaunchedEffect(openTab) further down) - extracted so a
@@ -280,6 +314,11 @@ fun MetroGnomeApp(
                 keepScreenOn = metronomeVm.keepScreenOn.collectAsState().value,
                 onSetKeepScreenOn = metronomeVm::setKeepScreenOn,
                 isAdFree = isAdFree,
+                store = purchaseStore,
+                onPurchase = { productId ->
+                    activity?.let { metronomeVm.purchaseSound(it, productId) }
+                },
+                onRestore = metronomeVm::restorePurchases,
             )
 
             AppTab.SETTINGS -> SettingsScreen(

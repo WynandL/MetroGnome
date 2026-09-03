@@ -16,6 +16,7 @@ object AnalyticsTracker {
 
     private var metronomeSessionStartMs = 0L
     private var tunerSessionStartMs     = 0L
+    private var droneSessionStartMs     = 0L
 
     // ── Metronome ─────────────────────────────────────────────────────────────
 
@@ -58,6 +59,57 @@ object AnalyticsTracker {
         tunerSessionStartMs = 0L
         Firebase.analytics.logEvent("tuner_session_ended") {
             param("duration_seconds", durationSec)
+        }
+    }
+
+    // ── Drone ─────────────────────────────────────────────────────────────────
+
+    /**
+     * A drone session began.
+     *
+     * The note is sent as its label ("A3") rather than a MIDI number so the report reads
+     * without a lookup table, and it is the parameter worth watching: a pile of E, A and D
+     * says guitarists, a pile of Bb says brass, and either would say more about who is
+     * using this than any amount of duration data.
+     */
+    fun logDroneStarted(note: String, timbre: String, blend: String, referenceHz: Float) {
+        droneSessionStartMs = System.currentTimeMillis()
+        Firebase.analytics.logEvent("drone_started") {
+            param("note",         note)
+            param("timbre",       timbre)
+            param("blend",        blend)
+            param("reference_hz", referenceHz.toLong())
+        }
+    }
+
+    fun logDroneStopped() {
+        val durationSec = if (droneSessionStartMs > 0L)
+            (System.currentTimeMillis() - droneSessionStartMs) / 1000L else 0L
+        droneSessionStartMs = 0L
+        Firebase.analytics.logEvent("drone_stopped") {
+            param("duration_seconds", durationSec)
+        }
+    }
+
+    /** The drone's voice was changed, whether or not it was sounding at the time. */
+    fun logDroneVoiceChanged(timbre: String, blend: String) {
+        Firebase.analytics.logEvent("drone_voice_changed") {
+            param("timbre", timbre)
+            param("blend",  blend)
+        }
+    }
+
+    /**
+     * A paid drone voice was auditioned from its purchase dialog.
+     *
+     * Pair this with the Play Console's sales for the same product id and it answers the
+     * only question a paywall really raises: of the people who got far enough to hear it,
+     * how many bought it. A low preview count means the chip is not being found; a high
+     * preview count with few sales means the voice is not worth the money to them.
+     */
+    fun logDroneVoicePreviewed(productId: String) {
+        Firebase.analytics.logEvent("drone_voice_previewed") {
+            param("product_id", productId)
         }
     }
 

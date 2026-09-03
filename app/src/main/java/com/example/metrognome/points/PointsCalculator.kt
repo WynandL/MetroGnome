@@ -24,6 +24,7 @@ object PointsCalculator {
     fun calculate(
         metronomeSeconds: Long,
         tunerNotesLocked: Int,
+        droneSeconds: Long,
         totalGameScore: Int,
         totalPracticeMinutes: Int,
         speedTrainerSeconds: Long,
@@ -73,6 +74,11 @@ object PointsCalculator {
         else
             tunerNotesLocked
 
+        val droneMinutes = if (applyLimits)
+            countedMinutes(droneSeconds, t.droneSecondsToday, PointsLimits.DRONE_MINUTES_PER_DAY)
+        else
+            droneSeconds / 60
+
         val gameBeats = if (applyLimits)
             beatsFromScore(totalGameScore, t.gameScoreToday, PointsConfig.GAME_SCORE_DIVISOR, PointsLimits.RHYTHM_BEATS_PER_DAY)
         else
@@ -113,6 +119,14 @@ object PointsCalculator {
                     rawValue = tunerNotes.toLong(),
                     rawUnit  = if (tunerNotes == 1) "note" else "notes",
                     points   = tunerNotes * PointsConfig.PER_TUNER_NOTE,
+                )
+            )
+            if (droneMinutes > 0L) add(
+                PointsContribution(
+                    label    = "Drone",
+                    rawValue = droneMinutes,
+                    rawUnit  = "min",
+                    points   = (droneMinutes * PointsConfig.DRONE_PER_MINUTE).toInt(),
                 )
             )
             if (gameBeats > 0) add(
@@ -202,6 +216,7 @@ object PointsCalculator {
     fun todayBeats(today: DailyActivity): Int {
         val metMins    = (today.metronomeSeconds / 60).coerceAtMost(PointsLimits.METRONOME_MINUTES_PER_DAY.toLong())
         val tunerNotes = today.tunerNotesLocked.coerceAtMost(PointsLimits.TUNER_NOTES_PER_DAY)
+        val droneMins  = (today.droneSecondsToday / 60).coerceAtMost(PointsLimits.DRONE_MINUTES_PER_DAY.toLong())
         val gameBeats  = (today.gameScoreToday / PointsConfig.GAME_SCORE_DIVISOR).coerceAtMost(PointsLimits.RHYTHM_BEATS_PER_DAY)
         val pracMins   = today.practiceMinutesToday.coerceAtMost(PointsLimits.PRACTICE_MINUTES_PER_DAY)
         val speedMins  = (today.speedTrainerSecondsToday / 60).coerceAtMost(PointsLimits.SPEED_TRAINER_MINUTES_PER_DAY.toLong()).toInt()
@@ -209,6 +224,7 @@ object PointsCalculator {
         val perfBonus  = today.performanceBonusToday.coerceAtMost(PointsLimits.PERFORMANCE_BONUS_PER_DAY)
         return (metMins * PointsConfig.METRONOME_PER_MINUTE).toInt() +
                tunerNotes * PointsConfig.PER_TUNER_NOTE +
+               (droneMins * PointsConfig.DRONE_PER_MINUTE).toInt() +
                gameBeats +
                pracMins * PointsConfig.PER_PRACTICE_MINUTE +
                speedMins * PointsConfig.PER_SPEED_TRAINER_MINUTE +

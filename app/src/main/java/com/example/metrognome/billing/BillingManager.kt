@@ -17,12 +17,28 @@ class BillingManager(application: Application) {
         // ── Product IDs ───────────────────────────────────────────────────────
         const val PRODUCT_REMOVE_ADS    = "remove_ads"
 
-        // Sounds — add future PRODUCT_SOUND_* constants here, then add to SOUND_PRODUCTS
+        // Sounds — add future PRODUCT_SOUND_* / PRODUCT_DRONE_* constants here, then add
+        // to SOUND_PRODUCTS.
         const val PRODUCT_SOUND_BELL    = "sound_bell"
         const val PRODUCT_SOUND_BOWL    = "sound_bowl"
         const val PRODUCT_SOUND_KALIMBA = "sound_kalimba"
         const val PRODUCT_SOUND_COWBELL = "sound_cowbell"
-        val SOUND_PRODUCTS: Set<String> = setOf(PRODUCT_SOUND_BELL, PRODUCT_SOUND_BOWL, PRODUCT_SOUND_KALIMBA, PRODUCT_SOUND_COWBELL)
+
+        // Drone voices. Separate products, but the same bucket: SOUND_PRODUCTS is "things
+        // you buy that make a sound", not "metronome clicks". Sharing it means the drone
+        // voices are priced, queried, reconciled, acknowledged and restored by exactly the
+        // code that already does it for the clicks, instead of a fourth near-identical set
+        // of flows to keep in step. Which of them is a click and which is a drone voice is
+        // a question only the registries (PREMIUM_SOUND_REGISTRY, PREMIUM_DRONE_*) answer,
+        // and no code in this file needs to ask it.
+        const val PRODUCT_DRONE_REED    = "drone_reed"
+        const val PRODUCT_DRONE_STRING  = "drone_string"
+        const val PRODUCT_DRONE_FIFTH   = "drone_fifth"
+
+        val SOUND_PRODUCTS: Set<String> = setOf(
+            PRODUCT_SOUND_BELL, PRODUCT_SOUND_BOWL, PRODUCT_SOUND_KALIMBA, PRODUCT_SOUND_COWBELL,
+            PRODUCT_DRONE_REED, PRODUCT_DRONE_STRING, PRODUCT_DRONE_FIFTH,
+        )
 
         // Items — add future PRODUCT_ITEM_* constants here, then add to ITEM_PRODUCTS
         const val PRODUCT_ITEM_GLISSIE = "item_glissie"

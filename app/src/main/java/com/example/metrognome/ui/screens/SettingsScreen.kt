@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ButtonDefaults
 import com.example.metrognome.ui.components.AppFilterChip
+import com.example.metrognome.ui.components.PremiumChip
 import com.example.metrognome.ui.components.TimeSignaturePicker
 import com.example.metrognome.theory.Meter
 import com.example.metrognome.theory.MeterTheory
@@ -76,7 +77,7 @@ import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.ui.components.OwnedBadge
 import com.example.metrognome.ui.components.instruments.InstrumentAffinityRow
 import com.example.metrognome.ui.components.instruments.InstrumentAffinityBadges
-import com.example.metrognome.ui.dialogs.ShowcaseFrame
+import com.example.metrognome.ui.dialogs.AudioShowcase
 import com.example.metrognome.ui.dialogs.GrooveCheckRecalibrateDialog
 import com.example.metrognome.notifications.NotificationPermissionState
 import com.example.metrognome.ui.theme.AppColors
@@ -131,13 +132,8 @@ fun SettingsScreen(
     val isBillingAvailable by vm.isBillingAvailable.collectAsStateWithLifecycle()
     val isPurchasing by vm.isPurchasing.collectAsStateWithLifecycle()
     val isBillingConnecting by vm.isBillingConnecting.collectAsStateWithLifecycle()
-    val purchaseError by vm.purchaseError.collectAsStateWithLifecycle()
-
-    LaunchedEffect(purchaseError) {
-        val message = purchaseError ?: return@LaunchedEffect
-        android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
-        vm.clearPurchaseError()
-    }
+    // The failed-purchase toast is raised app-wide in MetroGnomeApp, not here: the Tuner
+    // sells drone voices too, and a failure started from there must still be seen.
 
     val purchasedSoundIds by vm.purchasedSoundIds.collectAsStateWithLifecycle()
     val soundPrices by vm.soundPrices.collectAsStateWithLifecycle()
@@ -274,23 +270,14 @@ fun SettingsScreen(
                     // Premium sounds — one chip per registry entry
                     PREMIUM_SOUND_REGISTRY.forEach { def ->
                         val owned = def.productId in purchasedSoundIds
-                        AppFilterChip(
+                        PremiumChip(
                             selected = soundType == def.soundTypeIndex,
+                            label = def.displayName,
                             onClick = {
                                 if (owned) vm.setSoundType(def.soundTypeIndex)
                                 else dialogSoundDef = def
                             },
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(def.displayName)
-                                Text(
-                                    "  ★",
-                                    color = if (soundType == def.soundTypeIndex) Color.White
-                                            else AppColors.gold,
-                                    fontSize = 9.sp,
-                                )
-                            }
-                        }
+                        )
                     }
                 }
             }
@@ -608,7 +595,7 @@ private fun PremiumSoundDialog(
         onPurchase         = onPurchase,
         onRestore          = onRestore,
         onDismiss          = onDismiss,
-        previewContent     = { SoundShowcase(def.displayName) },
+        previewContent     = { AudioShowcase(def.displayName, caption = "PREMIUM SOUND") },
         belowDescription   = { InstrumentAffinityBadges(soundType = def.soundTypeIndex) },
         secondaryButton    = {
             com.example.metrognome.ui.dialogs.PreviewActionButton(
@@ -617,61 +604,6 @@ private fun PremiumSoundDialog(
             )
         },
     )
-}
-
-/**
- * Animated showcase for a premium sound: a music note radiating soft gold
- * rings outward, suggesting a clear, resonant strike. The audible Preview
- * button does the real selling — this gives the dialog a living focal point.
- */
-@Composable
-private fun SoundShowcase(soundName: String) {
-    ShowcaseFrame(caption = "PREMIUM SOUND") {
-        val pulse by rememberInfiniteTransition(label = "soundPulse")
-            .animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(tween(2400, easing = LinearEasing)),
-                label = "soundPulseT",
-            )
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(contentAlignment = Alignment.Center) {
-                Canvas(modifier = Modifier.size(132.dp)) {
-                    val ringCount = 3
-                    for (i in 0 until ringCount) {
-                        val phase = (pulse + i.toFloat() / ringCount) % 1f
-                        val radius = size.minDimension * (0.16f + phase * 0.34f)
-                        drawCircle(
-                            color = AppColors.gold.copy(alpha = (1f - phase) * 0.55f),
-                            radius = radius,
-                            center = center,
-                            style = Stroke(width = 2.2f),
-                        )
-                    }
-                }
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(54.dp)
-                        .background(AppColors.gold.copy(alpha = 0.14f), CircleShape),
-                ) {
-                    Icon(
-                        imageVector        = Icons.Filled.MusicNote,
-                        contentDescription = null,
-                        tint               = AppColors.gold,
-                        modifier           = Modifier.size(30.dp),
-                    )
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text       = soundName,
-                color      = Color.White,
-                fontSize   = 15.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-    }
 }
 
 @Composable

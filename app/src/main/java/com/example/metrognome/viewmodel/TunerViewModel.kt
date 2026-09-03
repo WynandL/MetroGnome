@@ -15,6 +15,13 @@ import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.analytics.AnalyticsTracker
+import com.example.metrognome.audio.drone.DroneBlend
+import com.example.metrognome.audio.drone.DroneEngine
+import com.example.metrognome.audio.drone.DroneState
+import com.example.metrognome.audio.drone.DroneTimbre
+import com.example.metrognome.billing.FREE_DRONE_BLEND
+import com.example.metrognome.billing.FREE_DRONE_TIMBRE
+import com.example.metrognome.billing.premiumProductFor
 import com.example.metrognome.audio.tuner.AmbientReport
 import com.example.metrognome.audio.tuner.AmbientTuning
 import com.example.metrognome.audio.tuner.Tuner
@@ -26,7 +33,9 @@ import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -93,6 +102,7 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
 
     private val prefs = app.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE)
     private val tuner = Tuner()
+    private val drone = DroneEngine()
     private val calibrator = TunerCalibrator()
     private val tracker  = MetroItemTracker(app)
     private val dailyLog = com.example.metrognome.points.DailyActivityLog(app)
@@ -119,6 +129,45 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
     private val _feedbackPrompt = MutableStateFlow<TunerSessionSnapshot?>(null)
     val feedbackPrompt: StateFlow<TunerSessionSnapshot?> = _feedbackPrompt.asStateFlow()
 
+    private val _droneState = MutableStateFlow(loadDroneState())
+
+    /**
+     * The tuning drone. Lives here rather than in its own ViewModel because it shares the
+     * tuner's reference pitch and competes with the tuner for the microphone; splitting it
+     * out would mean duplicating both of those relationships across an owner boundary.
+     */
+    val droneState: StateFlow<DroneState> = _droneState.asStateFlow()
+
+    private val _droneExpanded = MutableStateFlow(prefs.getBoolean(KEY_DRONE_EXPANDED, true))
+
+    /**
+     * Whether the drone's voice controls are showing.
+     *
+     * Starts **open**, and stays wherever the user last put it. People do not go looking
+     * for a chevron: shipped collapsed, the timbre, blend and level controls were invisible
+     * enough that the header's own "F2 . Reed" readout read as a bug, since it named a
+     * setting with no visible way to reach it. Opening it once is a cheap way to show the
+     * feature exists, and anyone who wants the compact card collapses it and keeps it.
+     */
+    val droneExpanded: StateFlow<Boolean> = _droneExpanded.asStateFlow()
+
+    private val _dronePreviewing = MutableStateFlow(false)
+
+    /** True while a paywalled voice is being auditioned from its purchase dialog. */
+    val dronePreviewing: StateFlow<Boolean> = _dronePreviewing.asStateFlow()
+
+    private var dronePreviewJob: Job? = null
+
+    /**
+     * Products the user owns, pushed in from whoever owns the BillingManager.
+     *
+     * This ViewModel deliberately does not create its own billing client. One connection
+     * per process is the point of that class, and a second would mean two listeners, two
+     * caches and two chances to disagree about what has been paid for. So entitlement
+     * arrives here as plain data, and the drone's own rules are applied to it.
+     */
+    private val _ownedProducts = MutableStateFlow<Set<String>>(emptySet())
+
     private val _ambientLevel = MutableStateFlow(loadAmbientLevel())
     /** User-chosen ambient-suppression strength; drives the engine's experimental layers. */
     val ambientLevel: StateFlow<AmbientTuning.Level> = _ambientLevel.asStateFlow()
@@ -130,6 +179,7 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
 
     private var usageTimerJob: Job? = null
     private var noteLockJob:   Job? = null
+    private var droneTimerJob: Job? = null
 
     /** Whether the screen wants the mic open — survives the calibration pause. */
     @Volatile
@@ -160,13 +210,39 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
     @androidx.annotation.RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun startListening() {
         listenIntent = true
-        if (hasMicPermission()) {
-            tuner.start()
-            // A simulated reading (dev screenshots) must not accrue usage or trip unlocks.
-            if (!tuner.isSimulating) startUsageTimer()
-        }
+        resumeListening()
     }
 
+    /**
+     * Open the mic if, and only if, nothing else currently owns the audio path.
+     *
+     * Three things can hold it: the screen having navigated away ([listenIntent]), a
+     * calibration run, and the drone. Every path that finishes one of those calls back
+     * here rather than calling `tuner.start()` itself, so no caller has to remember the
+     * other two conditions, and none of them can re-open the mic behind another's back.
+     */
+    private fun resumeListening() {
+        if (!listenIntent) return
+        if (_droneState.value.playing) return
+        if (_calibration.value is CalibrationState.Running) return
+        if (!hasMicPermission()) return
+        try {
+            tuner.start()
+        } catch (_: SecurityException) {
+            return   // permission revoked between the check and the call
+        }
+        // A simulated reading (dev screenshots) must not accrue usage or trip unlocks.
+        // Only on a genuine (re)entry, never on a resume from a calibration run or the
+        // drone: those never stopped the timer, and restarting it would log a second
+        // "tuner started" for one visit.
+        if (!tuner.isSimulating && usageTimerJob == null) startUsageTimer()
+    }
+
+    /**
+     * Leave the tuner screen. Deliberately does not touch the drone: a sounding drone is
+     * meant to carry over to the metronome tab, which is the practice mode the two make
+     * together. It ends when the user stops it or the ViewModel is cleared.
+     */
     fun stopListening() {
         listenIntent = false
         tuner.stop()
@@ -224,10 +300,241 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
         val clamped = hz.coerceIn(MIN_REFERENCE, MAX_REFERENCE)
         _referenceHz.value = clamped
         tuner.referenceHz = clamped
+        // The drone is defined by note, not by Hz, so a moved anchor re-pitches it too.
+        // It glides there rather than jumping, which is what makes dragging the slider
+        // while the tone sounds usable instead of alarming.
+        drone.setFrequency(_droneState.value.frequencyHz(clamped).toDouble())
         prefs.edit { putFloat(KEY_REFERENCE, clamped) }
     }
 
     fun nudgeReference(deltaHz: Float) = setReferenceHz(_referenceHz.value + deltaHz)
+
+    // ── Drone ───────────────────────────────────────────────────────────────────
+
+    /**
+     * Start or stop the drone.
+     *
+     * Starting it closes the microphone. That is not a limitation being worked around, it
+     * is the only correct behaviour: the tuner would hear the drone through the speaker and
+     * lock onto it, reporting a perfectly in-tune note that is entirely the app's own
+     * output. Tuning by ear against a sustained reference is the whole point of a drone, so
+     * the needle has nothing to add while one is sounding, and it comes straight back the
+     * moment the tone stops. [listenIntent] is left alone throughout, so "the screen wants
+     * the mic" and "something else currently owns it" stay separate facts.
+     */
+    fun toggleDrone() {
+        if (_droneState.value.playing) stopDrone() else startDrone()
+    }
+
+    /** Show or hide the voice controls, remembered across launches. */
+    fun setDroneExpanded(expanded: Boolean) {
+        if (_droneExpanded.value == expanded) return
+        _droneExpanded.value = expanded
+        prefs.edit { putBoolean(KEY_DRONE_EXPANDED, expanded) }
+    }
+
+    /**
+     * Update what the user owns, and put the drone back inside those limits if it is not.
+     *
+     * Called on every reconcile, so it covers a refund, a reinstall, and a purchase made on
+     * another device. A voice can be taken away while it is sounding, which is why the
+     * revert goes through updateDrone: the engine crossfades to the free voice, never cuts.
+     */
+    fun setOwnedProducts(productIds: Set<String>) {
+        // Deliberately no "nothing changed, skip" guard. The field starts empty, so for a
+        // user who owns nothing the very first push would compare equal and skip the check
+        // entirely, leaving a paid voice selected from a previous install or a refund free
+        // to sound. updateDrone is already a no-op when nothing actually moves.
+        _ownedProducts.value = productIds
+        updateDrone { state ->
+            state.copy(
+                timbre = if (owns(premiumProductFor(state.timbre))) state.timbre else FREE_DRONE_TIMBRE,
+                blend = if (owns(premiumProductFor(state.blend))) state.blend else FREE_DRONE_BLEND,
+            )
+        }
+    }
+
+    /** True for a free voice, or a paid one that has been bought. */
+    private fun owns(productId: String?) = productId == null || productId in _ownedProducts.value
+
+    /** Choose the note within the current octave; 0 = C through 11 = B. */
+    fun setDroneNote(pitchClass: Int) = updateDrone { it.withPitchClass(pitchClass) }
+
+    /** Move the drone an octave up (+1) or down (-1), within [DroneState]'s range. */
+    fun shiftDroneOctave(delta: Int) = updateDrone { it.shiftedOctave(delta) }
+
+    /**
+     * Select a timbre. A locked one is ignored rather than selected and then reverted, the
+     * same way MetronomeViewModel.setSoundType guards the premium clicks: the UI opens the
+     * purchase dialog instead of calling this, and this is the backstop for any other path.
+     */
+    fun setDroneTimbre(timbre: DroneTimbre) {
+        if (!owns(premiumProductFor(timbre))) return
+        updateDrone { it.copy(timbre = timbre) }
+    }
+
+    fun setDroneBlend(blend: DroneBlend) {
+        if (!owns(premiumProductFor(blend))) return
+        updateDrone { it.copy(blend = blend) }
+    }
+
+    /**
+     * Sound a voice the user does not own yet, from its purchase dialog.
+     *
+     * Auditioning a drone is not the job auditioning a click is. A click plays over
+     * anything, so MetronomeViewModel.previewSound just fires a one-shot buffer; a drone is
+     * a sustained tone that owns the speaker, and the mic has to stand aside for it exactly
+     * as it does for a real session (see toggleDrone). So this drives the real engine at the
+     * note the user has already chosen: the audition is the thing itself, not a sample of it.
+     *
+     * If the drone is already sounding, the previewed voice crossfades in over the live one
+     * and back out afterwards, so the two can be compared directly. That comparison is the
+     * only one that answers whether the voice is worth buying.
+     */
+    fun previewDroneVoice(timbre: DroneTimbre, blend: DroneBlend) {
+        dronePreviewJob?.cancel()
+        // Only a paid voice reaches here, since a free one is simply selected.
+        (premiumProductFor(timbre) ?: premiumProductFor(blend))
+            ?.let { AnalyticsTracker.logDroneVoicePreviewed(it) }
+        val state = _droneState.value
+        dronePreviewJob = viewModelScope.launch {
+            _dronePreviewing.value = true
+            if (!state.playing) {
+                tuner.stop()
+                drone.setFrequency(state.frequencyHz(_referenceHz.value).toDouble())
+                drone.setVolume(state.volume)
+            }
+            drone.setVoice(timbre, blend)
+            if (!state.playing) drone.start()
+            try {
+                delay(DRONE_PREVIEW_SECONDS.seconds)
+            } finally {
+                // Runs on a normal finish and on cancellation alike (the dialog dismissed,
+                // or the drone started for real mid-audition), so a previewed voice can
+                // never outlive the audition that asked for it.
+                withContext(NonCancellable) { endDronePreview() }
+            }
+        }
+    }
+
+    /** Cut an audition short, e.g. when its dialog is dismissed. */
+    fun stopDronePreview() {
+        dronePreviewJob?.cancel()
+    }
+
+    private fun endDronePreview() {
+        _dronePreviewing.value = false
+        val state = _droneState.value
+        if (state.playing) {
+            drone.setVoice(state.timbre, state.blend)   // back to the voice actually selected
+        } else {
+            drone.stop()
+            resumeListening()
+        }
+    }
+
+    fun setDroneVolume(volume: Float) = updateDrone { it.copy(volume = volume.coerceIn(0f, 1f)) }
+
+    /**
+     * Credit drone time in ten-second slices while the tone sounds.
+     *
+     * Deliberately counts only a real session, never a paywall audition: five seconds of
+     * someone deciding whether to buy a voice is not thirty minutes of holding a note, and
+     * letting it count would make the item farmable by opening a dialog.
+     */
+    private fun startDroneTimer() {
+        droneTimerJob?.cancel()
+        droneTimerJob = viewModelScope.launch {
+            while (true) {
+                delay(10.seconds)
+                tracker.addDroneSeconds(10)
+                checkForNewUnlocks()
+                // No banner for a continuous earner, so nudge the displayed total instead.
+                com.example.metrognome.points.PointsBannerQueue.postSilentEarn()
+            }
+        }
+    }
+
+    private fun stopDroneTimer() {
+        droneTimerJob?.cancel()
+        droneTimerJob = null
+    }
+
+    private fun startDrone() {
+        dronePreviewJob?.cancel()
+        val state = _droneState.value
+        if (state.playing) return
+        tuner.stop()   // not stopListening(): the needle resumes on its own afterwards
+        drone.setVoice(state.timbre, state.blend)
+        drone.setFrequency(state.frequencyHz(_referenceHz.value).toDouble())
+        drone.setVolume(state.volume)
+        drone.start()
+        _droneState.value = state.copy(playing = true)
+        startDroneTimer()
+        AnalyticsTracker.logDroneStarted(
+            note = state.noteLabel,
+            timbre = state.timbre.name,
+            blend = state.blend.name,
+            referenceHz = _referenceHz.value,
+        )
+    }
+
+    private fun stopDrone() {
+        dronePreviewJob?.cancel()
+        if (!_droneState.value.playing) return
+        drone.stop()   // fades out; the engine tears itself down when the fade finishes
+        stopDroneTimer()
+        _droneState.value = _droneState.value.copy(playing = false)
+        AnalyticsTracker.logDroneStopped()
+        resumeListening()
+    }
+
+    /**
+     * Apply one change to the drone and push only what actually moved down to the engine.
+     *
+     * The "only what moved" part is load-bearing rather than an optimisation: handing the
+     * engine a voice is a request to crossfade into it, so pushing the current voice on
+     * every volume nudge would restart a 200 ms crossfade under the user's finger.
+     */
+    private fun updateDrone(transform: (DroneState) -> DroneState) {
+        val previous = _droneState.value
+        val next = transform(previous)
+        if (next == previous) return
+        _droneState.value = next
+
+        if (next.midi != previous.midi) {
+            drone.setFrequency(next.frequencyHz(_referenceHz.value).toDouble())
+        }
+        if (next.timbre != previous.timbre || next.blend != previous.blend) {
+            dronePreviewJob?.cancel()   // a real selection outranks an audition in progress
+            drone.setVoice(next.timbre, next.blend)
+            AnalyticsTracker.logDroneVoiceChanged(next.timbre.name, next.blend.name)
+        }
+        if (next.volume != previous.volume) {
+            drone.setVolume(next.volume)
+        }
+        persistDrone(next)
+    }
+
+    private fun persistDrone(state: DroneState) = prefs.edit {
+        putInt(KEY_DRONE_MIDI, state.midi)
+        putString(KEY_DRONE_TIMBRE, state.timbre.name)
+        putString(KEY_DRONE_BLEND, state.blend.name)
+        putFloat(KEY_DRONE_VOLUME, state.volume)
+    }
+
+    /** Note, voice and level are remembered; `playing` never is. The drone is opt-in each time. */
+    private fun loadDroneState() = DroneState(
+        midi = prefs.getInt(KEY_DRONE_MIDI, DroneState.DEFAULT_MIDI)
+            .coerceIn(DroneState.MIN_MIDI, DroneState.MAX_MIDI),
+        timbre = prefs.getString(KEY_DRONE_TIMBRE, null)
+            ?.let { runCatching { DroneTimbre.valueOf(it) }.getOrNull() }
+            ?: DroneTimbre.WARM,
+        blend = prefs.getString(KEY_DRONE_BLEND, null)
+            ?.let { runCatching { DroneBlend.valueOf(it) }.getOrNull() }
+            ?: DroneBlend.ROOT,
+        volume = prefs.getFloat(KEY_DRONE_VOLUME, DroneState.DEFAULT_VOLUME).coerceIn(0f, 1f),
+    )
 
     // ── Feedback ─────────────────────────────────────────────────────────────────
 
@@ -430,6 +737,9 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
 
+        // Loopback calibration plays its own tones and measures what comes back, so a
+        // drone sounding underneath would be measured as part of the signal.
+        stopDrone()
         tuner.stop()   // not stopListening() — keep listenIntent so we can resume
         _calibration.value = CalibrationState.Running(mode, 0f)
 
@@ -447,9 +757,7 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
                     mode,
                 )
 
-            if (listenIntent && hasMicPermission()) {
-                try { tuner.start() } catch (_: SecurityException) { /* permission revoked mid-run */ }
-            }
+            resumeListening()
         }
     }
 
@@ -511,7 +819,9 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         stopUsageTimer()
+        stopDroneTimer()
         tuner.stop()
+        drone.release()
         super.onCleared()
     }
 
@@ -521,6 +831,14 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
         const val MAX_REFERENCE = 466f
 
         private const val KEY_REFERENCE = "reference_hz"
+        private const val KEY_DRONE_MIDI = "drone_midi"
+        private const val KEY_DRONE_TIMBRE = "drone_timbre"
+        private const val KEY_DRONE_BLEND = "drone_blend"
+        private const val KEY_DRONE_VOLUME = "drone_volume"
+        private const val KEY_DRONE_EXPANDED = "drone_panel_expanded"
+
+        /** How long a paywall audition of a drone voice sounds for. */
+        private const val DRONE_PREVIEW_SECONDS = 5
         private const val KEY_AMBIENT_LEVEL = "ambient_suppression"
         private const val KEY_FACTOR = "calibration_factor"
         private const val KEY_ACCURACY = "calibration_accuracy"

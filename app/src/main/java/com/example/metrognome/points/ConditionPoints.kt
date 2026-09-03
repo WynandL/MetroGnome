@@ -24,6 +24,9 @@ fun UnlockCondition.pointsEquivalent(): Int = when (this) {
     is UnlockCondition.TunerSeconds ->
         (required / 60L * PointsConfig.TUNER_PER_MINUTE).toInt()
 
+    is UnlockCondition.DroneSeconds ->
+        (required / 60L * PointsConfig.DRONE_PER_MINUTE).toInt()
+
     is UnlockCondition.RhythmGamesCompleted ->
         required * (PointsConfig.GAME_SCORE_AVG_PER_GAME / PointsConfig.GAME_SCORE_DIVISOR)
 
@@ -63,6 +66,9 @@ fun UnlockCondition.pointsDisplayText(): String {
 
         is UnlockCondition.TunerSeconds ->
             "Earn $pts $name from Tuner"
+
+        is UnlockCondition.DroneSeconds ->
+            "Earn $pts $name from Drone"
 
         is UnlockCondition.RhythmGamesCompleted ->
             "Earn $pts $name from Rhythm Game"

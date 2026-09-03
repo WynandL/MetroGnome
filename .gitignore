@@ -31,3 +31,7 @@ google-services.json
 
 # Local-only tuner test-tone harness (generator + large WAV + manifest); regenerated on demand
 /tools/tuner_test_tones/
+
+# Release build outputs (the AAB is already covered by *.aab; mapping.txt is ~90 MB
+# and Crashlytics already receives it via injectCrashlyticsMappingFileId).
+/app/release/

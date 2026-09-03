@@ -14,6 +14,7 @@ import java.util.Locale
 data class DailyActivity(
     val metronomeSeconds: Long,
     val tunerNotesLocked: Int,
+    val droneSecondsToday: Long,
     val gameScoreToday: Int,
     val practiceMinutesToday: Int,
     val practiceSessionsToday: Int,
@@ -23,7 +24,7 @@ data class DailyActivity(
     val performanceBonusToday: Int,
 ) {
     companion object {
-        val EMPTY = DailyActivity(0L, 0, 0, 0, 0, 0, 0L, 0, 0)
+        val EMPTY = DailyActivity(0L, 0, 0L, 0, 0, 0, 0, 0L, 0, 0)
     }
 }
 
@@ -56,6 +57,7 @@ class DailyActivityLog(context: Context) {
             putString(KEY_DATE, today())
             putLong(KEY_BASE_METRONOME,     tracker.metronomeSeconds())
             putInt(KEY_BASE_TUNER_NOTES,    tracker.tunerNotesLocked())
+            putLong(KEY_BASE_DRONE,         tracker.droneSeconds())
             putInt(KEY_BASE_GAME_SCORE,         tracker.totalGameScore())
             putInt(KEY_BASE_PRACTICE_MINUTES,   tracker.totalPracticeMinutes())
             putInt(KEY_BASE_PRACTICE_SESSIONS,  tracker.practiceSessionsCompleted())
@@ -72,6 +74,7 @@ class DailyActivityLog(context: Context) {
         return DailyActivity(
             metronomeSeconds              = (tracker.metronomeSeconds()               - prefs.getLong(KEY_BASE_METRONOME,    0L)).coerceAtLeast(0L),
             tunerNotesLocked              = (tracker.tunerNotesLocked()               - prefs.getInt(KEY_BASE_TUNER_NOTES,  0)).coerceAtLeast(0),
+            droneSecondsToday             = (tracker.droneSeconds()                   - prefs.getLong(KEY_BASE_DRONE,      0L)).coerceAtLeast(0L),
             gameScoreToday                = (tracker.totalGameScore()                 - prefs.getInt(KEY_BASE_GAME_SCORE,          0)).coerceAtLeast(0),
             practiceMinutesToday          = (tracker.totalPracticeMinutes()           - prefs.getInt(KEY_BASE_PRACTICE_MINUTES,    0)).coerceAtLeast(0),
             practiceSessionsToday         = (tracker.practiceSessionsCompleted()      - prefs.getInt(KEY_BASE_PRACTICE_SESSIONS,   0)).coerceAtLeast(0),
@@ -87,6 +90,7 @@ class DailyActivityLog(context: Context) {
         private const val KEY_DATE              = "date"
         private const val KEY_BASE_METRONOME    = "base_metronome_sec"
         private const val KEY_BASE_TUNER_NOTES  = "base_tuner_notes"
+        private const val KEY_BASE_DRONE        = "base_drone_sec"
         private const val KEY_BASE_GAME_SCORE       = "base_game_score"
         private const val KEY_BASE_PRACTICE_MINUTES  = "base_practice_min"
         private const val KEY_BASE_PRACTICE_SESSIONS = "base_practice_sessions"

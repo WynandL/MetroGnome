@@ -16,6 +16,7 @@ import com.example.metrognome.ui.components.metro_items.items.HatFeather
 import com.example.metrognome.ui.components.metro_items.items.LapelPin
 import com.example.metrognome.ui.components.metro_items.items.StudioMic
 import com.example.metrognome.ui.components.metro_items.items.CheekTattoo
+import com.example.metrognome.ui.components.metro_items.items.DroneBee
 
 /**
  * Single source of truth for every cosmetic item and its unlock condition.
@@ -77,6 +78,12 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     //   1 h    =   3 600 s
     //   3 h    =  10 800 s
     MetroItemEntry(HatFeather, UnlockCondition.TunerSeconds(900)),  // 15 min — head-attached plume
+
+    // ── Drone reward — DroneSeconds accumulates from the tuning drone only ────
+    // Thirty minutes of held tone. Long enough that it means the feature was actually
+    // used for tuning rather than tapped once, short enough to land inside the first
+    // week of anyone who takes to it. A bee, because a drone is one.
+    MetroItemEntry(DroneBee, UnlockCondition.DroneSeconds(1_800)),   // 30 min
 
     // ── Groove Check reward — earned by running the microphone self-test ──────
     // Unlocks on the first completed run of any verdict (PASS / FAIL / fixable ABORT),

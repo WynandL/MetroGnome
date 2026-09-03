@@ -7,6 +7,21 @@ package com.example.metrognome.ui.components.metro_items
  * All conditions are monotonically increasing so an unlocked item can never become
  * locked again (except via dev reset). Do NOT add conditions that can decrease
  * (e.g. current streak) — broken streaks would silently hide earned items.
+ *
+ * ## Adding a variant: four files, and two of them will not remind you
+ *
+ * A new entry here needs a counter in `MetroItemTracker` (writer, reader, an `isUnlocked`
+ * branch and a line in `resetAllProgress`), a branch in [displayText] below, and then:
+ *
+ *  - `points/ConditionPoints.kt` — `pointsEquivalent()` and `pointsDisplayText()`
+ *  - `ui/components/metro_items/UnlockProgress.kt` — `unlockProgress()` and `progressLabel()`
+ *
+ * **`UnlockProgress.kt` is the one that gets missed** (it was, when `DroneSeconds` was
+ * added). Nothing on the feature side references it, so it never turns up in a search for
+ * the thing being built; it drives the progress bars in the collection, which is a screen
+ * away from whatever you are working on. Both files are exhaustive `when` blocks on this
+ * sealed class, so **the compiler is the safety net** and the build will fail until each is
+ * handled. If you are adding a condition, expect those two errors and welcome them.
  */
 sealed class UnlockCondition {
     /** Total cumulative metronome play-time in seconds. */
@@ -36,6 +51,9 @@ sealed class UnlockCondition {
 
     /** Total cumulative tuner listening time in seconds (mic active). */
     data class TunerSeconds(val required: Long) : UnlockCondition()
+
+    /** Total cumulative time the tuning drone has been sounding, in seconds. */
+    data class DroneSeconds(val required: Long) : UnlockCondition()
 
     /**
      * Number of Speed Trainer sessions fully completed (reached the result screen).
@@ -81,6 +99,14 @@ fun UnlockCondition.displayText(): String = when (this) {
             "$hrs hour${if (hrs > 1L) "s" else ""} of tuner use"
         else
             "$mins minutes of tuner use"
+    }
+    is UnlockCondition.DroneSeconds -> {
+        val mins = required / 60
+        val hrs  = mins / 60
+        if (hrs >= 1L && mins % 60 == 0L)
+            "$hrs hour${if (hrs > 1L) "s" else ""} of drone"
+        else
+            "$mins minutes of drone"
     }
     is UnlockCondition.RhythmGamesCompleted ->
         "Complete $required rhythm game${if (required != 1) "s" else ""}"

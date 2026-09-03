@@ -40,6 +40,7 @@ class PointsManager(
     fun getSnapshot(): PointsSnapshot = PointsCalculator.calculate(
         metronomeSeconds     = tracker.metronomeSeconds(),
         tunerNotesLocked     = tracker.tunerNotesLocked(),
+        droneSeconds         = tracker.droneSeconds(),
         totalGameScore       = tracker.totalGameScore(),
         totalPracticeMinutes = tracker.totalPracticeMinutes(),
         speedTrainerSeconds  = tracker.speedTrainerSeconds(),

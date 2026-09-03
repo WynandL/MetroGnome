@@ -23,6 +23,9 @@ fun UnlockCondition.unlockProgress(tracker: MetroItemTracker): Float = when (thi
     is UnlockCondition.TunerSeconds ->
         (tracker.tunerSeconds().toFloat() / required).coerceIn(0f, 1f)
 
+    is UnlockCondition.DroneSeconds ->
+        (tracker.droneSeconds().toFloat() / required).coerceIn(0f, 1f)
+
     is UnlockCondition.RhythmGamesCompleted ->
         (tracker.gamesCompleted().toFloat() / required).coerceIn(0f, 1f)
 
@@ -82,6 +85,18 @@ fun UnlockCondition.progressLabel(tracker: MetroItemTracker): String = when (thi
         } else {
             val curMin = tracker.tunerSeconds() / 60L
             "$curMin / $reqMins min tuning"
+        }
+    }
+
+    is UnlockCondition.DroneSeconds -> {
+        val reqMins = required / 60L
+        if (reqMins >= 60L) {
+            val curH = tracker.droneSeconds() / 3600L
+            val reqH = required / 3600L
+            "$curH / $reqH h drone"
+        } else {
+            val curMin = tracker.droneSeconds() / 60L
+            "$curMin / $reqMins min drone"
         }
     }
 

@@ -52,6 +52,15 @@ val EARN_RULES: List<EarnRule> = listOf(
         limitUnit     = "notes",
     ),
     EarnRule(
+        label         = "Drone",
+        description   = "Earns while the tuner's drone tone is sounding",
+        iconKey       = "drone",
+        pointsPerUnit = PointsConfig.DRONE_PER_MINUTE,
+        rateUnit      = "min",
+        dailyLimit    = PointsLimits.DRONE_MINUTES_PER_DAY,
+        limitUnit     = "min",
+    ),
+    EarnRule(
         label         = "Rhythm Game",
         description   = "Your timing is the reward here: tighter hits score higher, and every ${PointsConfig.GAME_SCORE_DIVISOR} score points earns 1 ${PointsConfig.CURRENCY_NAME_SINGULAR}.",
         iconKey       = "game",

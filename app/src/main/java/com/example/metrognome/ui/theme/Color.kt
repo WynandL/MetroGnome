@@ -122,6 +122,16 @@ object AppColors {
     val practiceTimerAmber    = Color(0xFFB8731A)   // mid-urgency warm amber
     val practiceTimerCritical = Color(0xFFFF4D5E)   // high-urgency coral red
 
+    // Drone keyboard. A keyboard is legible only because its two kinds of key sit at
+    // opposite ends of the value scale - that contrast, not the shapes, is what makes the
+    // groups of two and three sharps readable at a glance. Four shades of the same dark
+    // violet were tried first and read as an unexplained row of blocks. The naturals are a
+    // violet-tinted ivory rather than white so they still belong to this palette.
+    val keyNatural      = Color(0xFFDEDAEC)
+    val keyNaturalShade = Color(0xFFACA6C4)   // front lip of a natural, sunk away from the light
+    val keySharp        = Color(0xFF231F38)
+    val keySharpShade   = Color(0xFF08060F)
+
     // Controls
     val controlInactive = Color(0xFF666688)   // unchecked switch thumb
     val borderMuted     = Color(0xFF2A2860)   // inactive border (e.g. mic off)

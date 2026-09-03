@@ -32,6 +32,27 @@ object PointsBannerQueue {
     private val _events = MutableSharedFlow<PointsBannerData>(extraBufferCapacity = 3)
     val events: SharedFlow<PointsBannerData> = _events.asSharedFlow()
 
+    private val _silentEarn = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /**
+     * Fires when Gnotes were credited with no banner to go with it.
+     *
+     * Some activities earn continuously (metronome time, tuner time, drone time) and a
+     * banner every ten seconds would be intolerable, so they credit the tracker silently.
+     * The trap that creates is documented in CLAUDE.md: the on-screen total is a *cached*
+     * StateFlow in MetronomeViewModel, and it only moves when something tells it to. The
+     * metronome refreshes its own copy inside its play loop, which works only because the
+     * counter and the loop live in the same ViewModel. The drone does not, so instead of a
+     * second private arrangement, any credit path anywhere can post this and whoever owns
+     * the displayed total recomputes it.
+     */
+    val silentEarn: SharedFlow<Unit> = _silentEarn.asSharedFlow()
+
+    /** Announce that Gnotes were credited without a banner, so displayed totals refresh. */
+    fun postSilentEarn() {
+        _silentEarn.tryEmit(Unit)
+    }
+
     private val _milestones = MutableSharedFlow<Int>(extraBufferCapacity = 1)
     val milestones: SharedFlow<Int> = _milestones.asSharedFlow()
 

@@ -20,6 +20,15 @@ object PointsConfig {
     const val METRONOME_PER_MINUTE: Int        = 2
     const val TUNER_PER_MINUTE: Int            = 2  // kept for ConditionPoints item-unlock display only
     const val PER_TUNER_NOTE: Int              = 5  // points per individual note locked on
+    /**
+     * Half the metronome's rate, and deliberately the lowest in the app.
+     *
+     * The drone is the only activity that asks nothing of the user once started, and it can
+     * sound at the same time as the metronome, which is already earning. Matching the
+     * metronome's rate would have made "start both and walk away" the best-paying thing in
+     * the app, which is the opposite of what any of these weights are for.
+     */
+    const val DRONE_PER_MINUTE: Int            = 1
     const val GAME_SCORE_DIVISOR: Int          = 110  // every 110 game-score points = 1 Gnote (near-perfect beginner game ~14 Gnotes)
     const val GAME_SCORE_AVG_PER_GAME: Int     = 1000  // typical casual-game score; used only in ConditionPoints display
     const val PER_PRACTICE_MINUTE: Int         = 2   // points per minute of completed practice

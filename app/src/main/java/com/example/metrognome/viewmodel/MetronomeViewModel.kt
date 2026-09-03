@@ -621,6 +621,14 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
+        // Continuous earners credit the tracker without a banner (see postSilentEarn).
+        // Without this the pill keeps showing a total that stopped being true minutes ago.
+        viewModelScope.launch {
+            com.example.metrognome.points.PointsBannerQueue.silentEarn.collect { _ ->
+                _gnoteCount.value = pointsManager.getSnapshot().total
+            }
+        }
+
         viewModelScope.launch {
             billingManager.purchasedItemProductIds.collect { purchasedProductIds ->
                 PURCHASABLE_ITEM_REGISTRY.forEach { def ->
