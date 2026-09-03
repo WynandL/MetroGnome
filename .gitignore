@@ -35,3 +35,7 @@ google-services.json
 # Release build outputs (the AAB is already covered by *.aab; mapping.txt is ~90 MB
 # and Crashlytics already receives it via injectCrashlyticsMappingFileId).
 /app/release/
+
+# Play Store listing copy, kept locally as a scratch file for editing sessions.
+# The authoritative copy is the Play Console itself; see seo_context.md for the log.
+PSL.txt
