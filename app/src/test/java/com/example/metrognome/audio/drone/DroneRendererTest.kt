@@ -96,6 +96,42 @@ class DroneRendererTest {
         assertEquals(0.0, cents(measure(capture(renderer, RATE * 2).mono(), 221.0), 221.0), 0.01)
     }
 
+
+    /**
+     * Auditioning a voice REPLACES the one that was sounding, it does not layer over it.
+     *
+     * This is the question a listener cannot answer by ear, because the two voices share a
+     * fundamental and the changeover is a 200 ms crossfade. So it is answered by measurement
+     * instead: sound Reed, whose third harmonic is its strongest partial after the
+     * fundamental, then audition Pure, which has no third harmonic at all. Any energy left
+     * at that frequency once the crossfade has finished could only have come from the voice
+     * that was supposed to be gone.
+     */
+    @Test
+    fun anAuditionReplacesTheLiveVoiceRatherThanLayeringOverIt() {
+        val renderer = sounding(DroneTimbre.REED, DroneBlend.ROOT, 220.0)
+        val before = capture(renderer, RATE * 2).mono()
+        val reedThird = magnitudeAt(before, 660.0)
+        assertTrue("Reed should have a strong third harmonic to test against", reedThird > 0.005)
+
+        renderer.setVoice(buildVoice(DroneTimbre.PURE, DroneBlend.ROOT))
+        capture(renderer, RATE / 2)          // 500 ms, well past the 200 ms crossfade
+        val after = capture(renderer, RATE * 2).mono()
+
+        // Measured residue when this was written: 2e-9 of the original, about -175 dB,
+        // which is the floating-point floor rather than a quiet remnant. The bar below is
+        // deliberately far looser so the test fails on a real regression, not on noise.
+        val leaked = magnitudeAt(after, 660.0)
+        assertTrue(
+            "the replaced voice is still sounding: $leaked at 660 Hz against $reedThird before",
+            leaked < reedThird / 50.0,
+        )
+
+        // ...and the audition is a like-for-like comparison: same note, same level.
+        assertEquals(0.0, cents(measure(after, 220.0), 220.0), 0.01)
+        assertEquals(rms(before), rms(after), 0.02f)
+    }
+
     // ── Nothing clicks ──────────────────────────────────────────────────────────
 
     /**
@@ -338,6 +374,18 @@ class DroneRendererTest {
             imaginary -= samples[offset + i] * sin(angle)
         }
         return atan2(imaginary, real)
+    }
+
+    /** Amplitude of the component at [hz], for asking whether a partial is present at all. */
+    private fun magnitudeAt(samples: FloatArray, hz: Double, rate: Int = RATE): Double {
+        var real = 0.0
+        var imaginary = 0.0
+        for (i in samples.indices) {
+            val angle = 2.0 * PI * hz * i / rate
+            real += samples[i] * cos(angle)
+            imaginary -= samples[i] * sin(angle)
+        }
+        return 2.0 * sqrt(real * real + imaginary * imaginary) / samples.size
     }
 
     private fun cents(a: Double, b: Double) = 1200.0 * log2(a / b)

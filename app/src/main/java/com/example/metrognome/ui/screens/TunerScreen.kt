@@ -218,6 +218,7 @@ fun TunerScreen(
     val ambientLevel by vm.ambientLevel.collectAsStateWithLifecycle()
     val droneState by vm.droneState.collectAsStateWithLifecycle()
     val droneExpanded by vm.droneExpanded.collectAsStateWithLifecycle()
+    val dronePreviewing by vm.dronePreviewing.collectAsStateWithLifecycle()
 
     val prefs = remember { context.getSharedPreferences("metrognome_prefs", Context.MODE_PRIVATE) }
     var nudgeDismissed by remember { mutableStateOf(prefs.getBoolean("tuner_calibration_nudge_shown", false)) }
@@ -284,6 +285,7 @@ fun TunerScreen(
             onRestore = onRestore,
             onPreviewDroneVoice = vm::previewDroneVoice,
             onStopDronePreview = vm::stopDronePreview,
+            dronePreviewing = dronePreviewing,
         )
 
         TunerFeedbackCard(
@@ -342,6 +344,7 @@ internal fun TunerScreenContent(
     onRestore: () -> Unit = {},
     onPreviewDroneVoice: (DroneTimbre, DroneBlend) -> Unit = { _, _ -> },
     onStopDronePreview: () -> Unit = {},
+    dronePreviewing: Boolean = false,
 ) {
     val pendingReading = remember { mutableStateOf<Tuner.Reading?>(null) }
     var dronePaywall by remember { mutableStateOf<DronePaywall?>(null) }
@@ -544,6 +547,7 @@ internal fun TunerScreenContent(
         DroneVoiceDialog(
             paywall = paywall,
             store = store,
+            previewing = dronePreviewing,
             onPreview = { onPreviewDroneVoice(paywall.previewTimbre, paywall.previewBlend) },
             onPurchase = { onPurchase(paywall.def.productId) },
             onRestore = onRestore,
@@ -1407,6 +1411,7 @@ private class DronePaywall(
 private fun DroneVoiceDialog(
     paywall: DronePaywall,
     store: PurchaseStore,
+    previewing: Boolean,
     onPreview: () -> Unit,
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
@@ -1426,7 +1431,12 @@ private fun DroneVoiceDialog(
         previewContent      = { AudioShowcase(paywall.displayName, caption = "PREMIUM DRONE VOICE") },
         secondaryButton     = {
             PreviewActionButton(
-                label   = "▶  Preview (5 seconds)",
+                // Names the voice while it sounds, because the audition replaces whatever
+                // was already playing rather than layering over it, and the listener has
+                // no other way to know that.
+                label   = if (previewing) "Sounding ${paywall.displayName} on its own"
+                          else "▶  Preview (5 seconds)",
+                active  = previewing,
                 onClick = onPreview,
             )
         },

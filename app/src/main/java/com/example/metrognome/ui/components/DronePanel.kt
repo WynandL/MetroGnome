@@ -53,6 +53,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -163,7 +165,13 @@ fun DronePanel(
                 pitchClass = state.pitchClass,
                 sounding = state.playing,
                 onSelect = onSetNote,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    // The keyboard carries its meaning entirely in what it looks like, so
+                    // without this a screen reader finds an unlabelled canvas where the
+                    // note picker should be.
+                    .semantics { contentDescription = "Drone note keyboard, ${state.noteLabel} selected" },
             )
 
             Spacer(Modifier.height(12.dp))

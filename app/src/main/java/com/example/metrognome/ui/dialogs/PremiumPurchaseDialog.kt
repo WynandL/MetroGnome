@@ -501,14 +501,24 @@ private fun RestoreLink(enabled: Boolean, onClick: () -> Unit) {
     )
 }
 
-/** Outlined preview-action button used inside the secondaryButton slot for sounds. */
+/**
+ * Outlined preview-action button used inside the secondaryButton slot.
+ *
+ * [active] marks the audition as currently sounding: the button turns gold and stops
+ * accepting taps. That state matters more than it looks. A one-shot click preview is
+ * obviously over when it is over, but a drone audition replaces a tone that may already be
+ * playing, and without a "this is running now" signal a listener has no way to tell whether
+ * they are hearing the new voice or the new voice on top of the old one.
+ */
 @Composable
-fun PreviewActionButton(label: String, onClick: () -> Unit) {
+fun PreviewActionButton(label: String, onClick: () -> Unit, active: Boolean = false) {
+    val tint = if (active) AppColors.gold else AppColors.textAccent
     Surface(
         onClick  = onClick,
+        enabled  = !active,
         shape    = RoundedCornerShape(14.dp),
         color    = Color.Transparent,
-        border   = BorderStroke(1.dp, AppColors.textAccent.copy(alpha = 0.55f)),
+        border   = BorderStroke(1.dp, tint.copy(alpha = 0.55f)),
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp),
@@ -516,7 +526,7 @@ fun PreviewActionButton(label: String, onClick: () -> Unit) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 text       = label,
-                color      = AppColors.textAccent,
+                color      = tint,
                 fontSize   = 13.sp,
                 fontWeight = FontWeight.SemiBold,
             )

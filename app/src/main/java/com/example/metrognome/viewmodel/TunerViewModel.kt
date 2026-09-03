@@ -402,7 +402,12 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
             if (!state.playing) {
                 tuner.stop()
                 drone.setFrequency(state.frequencyHz(_referenceHz.value).toDouble())
-                drone.setVolume(state.volume)
+                // Floor the level for an audition started from silence. The saved level can
+                // legitimately be zero (the slider goes there), and an audition nobody can
+                // hear reads as a broken button rather than as a quiet setting. While the
+                // drone is already sounding the level is left exactly alone, so the
+                // comparison stays like for like.
+                drone.setVolume(state.volume.coerceAtLeast(MIN_PREVIEW_VOLUME))
             }
             drone.setVoice(timbre, blend)
             if (!state.playing) drone.start()
@@ -839,6 +844,9 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
 
         /** How long a paywall audition of a drone voice sounds for. */
         private const val DRONE_PREVIEW_SECONDS = 5
+
+        /** Level floor for an audition started while the drone is silent. */
+        private const val MIN_PREVIEW_VOLUME = 0.35f
         private const val KEY_AMBIENT_LEVEL = "ambient_suppression"
         private const val KEY_FACTOR = "calibration_factor"
         private const val KEY_ACCURACY = "calibration_accuracy"
