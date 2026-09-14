@@ -98,6 +98,22 @@
     var top = 7, bottom = 8, bpm = 80;
     var isPlaying = false;
 
+    /* ── deep links: ?ts=7-8 (or 7/8) and ?bpm=96 ──────────────────────
+       Lets the per-meter guide pages and the embed widget open on a given
+       time signature instead of always starting on 7/8. Anything out of
+       range or malformed is ignored and the defaults above stand. */
+    (function readParams() {
+      var q;
+      try { q = new URLSearchParams(window.location.search); } catch (e) { return; }
+      var ts = (q.get('ts') || '').replace('/', '-').split('-');
+      if (ts.length === 2) {
+        var t = parseInt(ts[0], 10), b = parseInt(ts[1], 10);
+        if (t >= TOP_MIN && t <= TOP_MAX && (b === 2 || b === 4 || b === 8 || b === 16)) { top = t; bottom = b; }
+      }
+      var p = parseInt(q.get('bpm'), 10);
+      if (p >= BPM_MIN && p <= BPM_MAX) bpm = p;
+    })();
+
     /* ── Meter.kt, ported: classification, grouping, and labels ────────
        Mirrors app/src/main/java/.../theory/Meter.kt exactly, so this page
        can never disagree with what the app itself does with the same

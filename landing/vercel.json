@@ -43,6 +43,8 @@
     { "source": "/blog", "destination": "/blog/", "permanent": true },
     { "source": "/tools/index.html", "destination": "/tools/", "permanent": true },
     { "source": "/tools", "destination": "/tools/", "permanent": true },
+    { "source": "/tools/time-signatures/index.html", "destination": "/tools/time-signatures/", "permanent": true },
+    { "source": "/tools/time-signatures", "destination": "/tools/time-signatures/", "permanent": true },
     { "source": "/embed/index.html", "destination": "/embed/", "permanent": true },
     { "source": "/embed", "destination": "/embed/", "permanent": true }
   ]

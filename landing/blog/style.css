@@ -814,3 +814,122 @@ details[open] summary::after { transform: rotate(45deg); }
   font-size: 0.9rem;
   line-height: 1.65;
 }
+
+/* ── Tools: per-meter guide pages (the odd meter widget, framed) ─────── */
+.tool-frame-wrap {
+  background: linear-gradient(160deg, var(--surface) 0%, var(--surface-deep) 100%);
+  border: 1px solid var(--surface-up);
+  border-radius: 20px;
+  padding: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.tool-frame {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+}
+.tool-frame-wrap + .tool-hint { margin-bottom: 2.5rem; text-align: center; }
+
+/* ── Tools: tuning drone (keyboard, voice chips, level) ──────────────── */
+.drone-keyboard {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  height: 118px;
+  margin: 1.4rem auto 0.4rem;
+  display: flex;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--surface-up);
+  background: var(--surface-deep);
+}
+.drone-key {
+  flex: 1;
+  border: 0;
+  border-right: 1px solid var(--surface-up);
+  background: #ECE8FF;
+  color: #3B2A66;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 0.45rem;
+  transition: background 0.12s, color 0.12s;
+}
+.drone-key:last-of-type { border-right: 0; }
+.drone-key:hover { background: #FFF6C2; }
+.drone-key.active { background: var(--gold); color: #1a0a2e; }
+.drone-key.black {
+  position: absolute;
+  top: 0;
+  width: 9%;
+  height: 62%;
+  flex: none;
+  background: #14112A;
+  color: var(--text-muted);
+  border: 1px solid var(--surface-up);
+  border-top: 0;
+  border-radius: 0 0 6px 6px;
+  font-size: 0.62rem;
+  z-index: 2;
+  padding-bottom: 0.35rem;
+}
+.drone-key.black:hover { background: #2A2550; color: var(--text); }
+.drone-key.black.active { background: var(--gold); color: #1a0a2e; }
+.drone-key:focus-visible { outline: 2px solid var(--gold); outline-offset: -3px; }
+
+.chip-group { margin-top: 1.1rem; }
+.chip-group .stepper-label { display: block; margin-bottom: 0.2rem; }
+.chip-group .preset-row { margin-top: 0.4rem; }
+.preset-chip.locked { opacity: 0.55; cursor: default; }
+.preset-chip.locked:hover { border-color: var(--surface-up); color: var(--text-muted); }
+
+.drone-level {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  margin: 1.1rem auto 0;
+  max-width: 340px;
+}
+.drone-level .stepper-label { margin: 0; }
+.drone-level input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-up);
+  outline: none;
+}
+.drone-level input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 2px solid var(--surface-deep);
+  cursor: pointer;
+}
+.drone-level input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 2px solid var(--surface-deep);
+  cursor: pointer;
+}
+.drone-level input[type="range"]:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+.drone-level output {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  font-weight: 700;
+  min-width: 2.6em;
+  text-align: right;
+}

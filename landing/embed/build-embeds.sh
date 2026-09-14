@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Regenerates the three embeddable widget pages from their full tool pages.
+# Regenerates the four embeddable widget pages from their full tool pages.
 #
-# Why a generator instead of three hand-maintained copies: the widget IS the
+# Why a generator instead of four hand-maintained copies: the widget IS the
 # tool, minus page chrome. Hand-copying guarantees the two drift apart the
 # first time a tool is touched, and a stale widget is worse than none because
 # it is already live on somebody else's site. Same principle as the tap-tempo
@@ -110,3 +110,5 @@ emit "$TOOLS/rhythm-timing-test.html" "$OUT/rhythm-test.html" \
   "Rhythm Timing Test - Metro Gnome" \
   "https://metrognome.co.za/tools/rhythm-timing-test.html" \
   "Rhythm timing test" ""
+
+emit "$TOOLS/tuning-drone.html" "$OUT/tuning-drone.html"   "Tuning Drone - Metro Gnome"   "https://metrognome.co.za/tools/tuning-drone.html"   "Online tuning drone" ""
