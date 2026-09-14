@@ -82,6 +82,22 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val activityLogger   = com.example.metrognome.usage.ActivitySummaryLogger(app)
     private val _gnoteCount = MutableStateFlow(pointsManager.getSnapshot().total)
     val gnoteCount: StateFlow<Int> = _gnoteCount.asStateFlow()
+
+    /**
+     * The in-app poll currently on screen, and whether it has been dealt with. Held here,
+     * not in MetronomeScreen's `remember`, so a tab switch mid-show does not lose it: the
+     * screen is disposed on leaving the tab, and on return PollManager's daily cooldown
+     * would refuse to re-issue the same show. Session-scoped only; never persisted.
+     */
+    private val _activePoll = MutableStateFlow<com.example.metrognome.poll.PollConfig?>(null)
+    val activePoll: StateFlow<com.example.metrognome.poll.PollConfig?> = _activePoll.asStateFlow()
+    private val _pollDone = MutableStateFlow(false)
+    val pollDone: StateFlow<Boolean> = _pollDone.asStateFlow()
+    /** Set by the screen once this show has been counted, so a return to the tab does not count it again. */
+    var pollShowLogged: Boolean = false
+
+    fun setActivePoll(poll: com.example.metrognome.poll.PollConfig?) { _activePoll.value = poll }
+    fun markPollDone() { _pollDone.value = true }
     val rewardedAdLoaded: StateFlow<Boolean> = rewardedAdManager.adLoaded
 
     val removeAdsPriceText: StateFlow<String?>           = billingManager.priceText

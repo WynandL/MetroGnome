@@ -44,6 +44,24 @@ object AnalyticsTracker {
         }
     }
 
+    // ── Polls ─────────────────────────────────────────────────────────────────
+
+    /** One appearance of a poll card; the denominator the Firestore responses lacked. */
+    fun logPollShown(pollId: String, showNumber: Int) {
+        Firebase.analytics.logEvent("poll_shown") {
+            param("poll_id",     pollId)
+            param("show_number", showNumber.toLong())
+        }
+    }
+
+    /** "up", "down", "dismissed", or "ignored" (retired after five unanswered shows). */
+    fun logPollAnswered(pollId: String, response: String) {
+        Firebase.analytics.logEvent("poll_answered") {
+            param("poll_id",  pollId)
+            param("response", response)
+        }
+    }
+
     // ── Tuner ─────────────────────────────────────────────────────────────────
 
     fun logTunerStarted(referenceHz: Float) {

@@ -62,6 +62,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.audio.selftest.CheckStatus
 import com.example.metrognome.audio.selftest.MicSelfTest
 import com.example.metrognome.audio.selftest.SelfTestPhase
+import com.example.metrognome.audio.selftest.AudioRoute
+import com.example.metrognome.audio.selftest.AudioRouteMonitor
+import com.example.metrognome.audio.selftest.NoteCode
 import com.example.metrognome.audio.selftest.SelfTestThresholds
 import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.cloud.MicCheckReporter
@@ -140,6 +143,22 @@ fun MicCheckOverlay(
     // speaker up, so we nudge rather than fail the run after the fact. Only polls on the intro.
     val volumeFraction = rememberMediaVolumeFraction(active = showingIntro)
 
+    // Gate Start on the output route too. The loopback plays clicks through the phone's
+    // speaker and listens on its mic; over Bluetooth there is no output timestamp to
+    // measure latency with (every Bluetooth run in the field failed on exactly that,
+    // after running the whole check), and over wired output the mic hears nothing.
+    // Telling the user before the run is the whole difference between "switch to the
+    // speaker" and a recorded NOT_FIT on a phone that would pass.
+    val routeMonitor = remember { AudioRouteMonitor(context) }
+    var route by remember { mutableStateOf(routeMonitor.currentRoute()) }
+    LaunchedEffect(showingIntro) {
+        if (!showingIntro) return@LaunchedEffect
+        while (true) {
+            route = routeMonitor.currentRoute()
+            kotlinx.coroutines.delay(300)
+        }
+    }
+
     val cardScale = remember { Animatable(0.2f) }
     LaunchedEffect(Unit) {
         cardScale.animateTo(
@@ -188,9 +207,30 @@ fun MicCheckOverlay(
 
                     running -> RunningContent(ui.phase, ui.statusLine)
 
-                    report == null -> IntroContent(volumeFraction = volumeFraction, onStart = { start() })
+                    report == null -> IntroContent(
+                        volumeFraction = volumeFraction,
+                        route = route,
+                        onStart = { start() },
+                    )
 
                     report.verdict == CheckStatus.PASS -> PassContent(onDone = onDismiss)
+
+                    // No output timestamp: the one FAIL that is either fixable (the route) or
+                    // final (the hardware), and in neither case a reason to try the same run
+                    // again. The generic FAIL copy invited exactly that: one device logged four
+                    // identical L1 failures in three minutes.
+                    report.verdict == CheckStatus.FAIL &&
+                        NoteCode.NO_OUTPUT_TIMESTAMP in report.notes &&
+                        !report.route.isBuiltInSpeaker -> FixableContent(
+                        message = "The check ran over ${report.route.label.lowercase()}, which " +
+                            "can't report the timing it needs. Switch to the phone's own speaker " +
+                            "and try again.",
+                        onRetry = { start() },
+                        onCancel = onDismiss,
+                    )
+
+                    report.verdict == CheckStatus.FAIL &&
+                        NoteCode.NO_OUTPUT_TIMESTAMP in report.notes -> UnmeasurableContent(onDismiss = onDismiss)
 
                     report.verdict == CheckStatus.FAIL -> IncapableContent(
                         onDismiss = onDismiss,
@@ -212,8 +252,9 @@ fun MicCheckOverlay(
 // ── Intro ─────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun IntroContent(volumeFraction: Float, onStart: () -> Unit) {
+private fun IntroContent(volumeFraction: Float, route: AudioRoute, onStart: () -> Unit) {
     val volumeOk = volumeFraction >= SelfTestThresholds.MIN_VOLUME_FRACTION
+    val routeOk = route.isBuiltInSpeaker
     PulsingNote(AppColors.gold)
     Spacer(Modifier.height(16.dp))
     Text("Microphone check", color = Color.White, fontSize = 18.sp,
@@ -233,7 +274,18 @@ private fun IntroContent(volumeFraction: Float, onStart: () -> Unit) {
         textAlign = TextAlign.Center,
     )
     Spacer(Modifier.height(16.dp))
-    if (!volumeOk) {
+    if (!routeOk) {
+        Text(
+            when (route) {
+                AudioRoute.BLUETOOTH -> "Disconnect Bluetooth audio first. This check needs the phone's own speaker."
+                AudioRoute.WIRED -> "Unplug headphones first. This check needs the phone's own speaker."
+                else -> "Switch to the phone's own speaker to start."
+            },
+            color = AppColors.gold, fontSize = 12.sp, lineHeight = 16.sp,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(10.dp))
+    } else if (!volumeOk) {
         Text(
             "Turn your volume up to start.",
             color = AppColors.gold, fontSize = 12.sp, lineHeight = 16.sp,
@@ -241,7 +293,7 @@ private fun IntroContent(volumeFraction: Float, onStart: () -> Unit) {
         )
         Spacer(Modifier.height(10.dp))
     }
-    PrimaryButton("Start", onStart, Modifier.fillMaxWidth(), enabled = volumeOk)
+    PrimaryButton("Start", onStart, Modifier.fillMaxWidth(), enabled = volumeOk && routeOk)
 }
 
 // ── Running ───────────────────────────────────────────────────────────────────
@@ -335,6 +387,29 @@ private fun IncapableContent(onDismiss: () -> Unit, onRetry: () -> Unit) {
         secondaryLabel = "Try again", onSecondary = onRetry,
         primaryLabel = "Keep playing", onPrimary = onDismiss,
     )
+}
+
+/**
+ * The built-in speaker gave no output timestamp: a limit of the phone's audio stack, not
+ * of the room, the volume or the user. Said plainly, with no retry, because retrying
+ * cannot change it and the gentle generic copy above was read as an invitation to.
+ */
+@Composable
+private fun UnmeasurableContent(onDismiss: () -> Unit) {
+    ResultIcon(AppColors.gold, AppColors.gold.copy(alpha = 0.12f), Icons.Filled.MusicNote)
+    Spacer(Modifier.height(12.dp))
+    Text("Not available on this phone", color = Color.White, fontSize = 18.sp,
+        fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    Spacer(Modifier.height(6.dp))
+    Text(
+        "This phone doesn't report the audio timing the microphone features need, so Metro " +
+            "will leave them off here. There's nothing on your side to fix, and running the " +
+            "check again won't change it. Everything else in Metro works exactly as before.",
+        color = AppColors.textSecondary, fontSize = 13.sp, lineHeight = 19.sp,
+        textAlign = TextAlign.Center,
+    )
+    Spacer(Modifier.height(22.dp))
+    PrimaryButton("Keep playing", onDismiss, Modifier.fillMaxWidth())
 }
 
 // ── Shared pieces ───────────────────────────────────────────────────────────────

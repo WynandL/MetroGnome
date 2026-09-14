@@ -1,18 +1,9 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,14 +15,12 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ThumbDown
-import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -44,8 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,12 +46,15 @@ import kotlinx.coroutines.delay
 private enum class CardStep { RATING, REASON, THANKING }
 
 /**
- * Non-blocking feedback strip that slides up from the bottom of the tuner screen.
+ * "Was that reading accurate?" on the shared [FeedbackCard], after a tuner session.
  *
  * State machine:
- *   RATING  — thumbs up / down — auto-dismisses in 20 s if ignored
+ *   RATING  — spot on / not quite — auto-dismisses in 20 s if ignored
  *   REASON  — follows a thumbs-down; reason chips or auto-dismiss in 10 s with null reason
  *   THANKING— brief confirmation; always auto-dismisses in 1.8 s
+ *
+ * Unlike the poll, this one keeps its timeouts: it is about one specific reading,
+ * and a reading the user has walked away from is stale, not merely unanswered.
  *
  * Only one Firestore write per session: [onThumbsDown] is not called until the
  * reason is known (or the reason timeout fires), so both the rating and the
@@ -79,13 +69,8 @@ fun TunerFeedbackCard(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    AnimatedVisibility(
-        visible = visible && snapshot != null,
-        enter = slideInVertically { it },
-        exit  = slideOutVertically { it },
-        modifier = modifier,
-    ) {
-        snapshot ?: return@AnimatedVisibility
+    FeedbackCard(visible = visible && snapshot != null, modifier = modifier) {
+        snapshot ?: return@FeedbackCard
 
         var step by remember(snapshot) { mutableStateOf(CardStep.RATING) }
 
@@ -101,117 +86,33 @@ fun TunerFeedbackCard(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
-                .background(AppColors.surfaceDeep)
-                .border(
-                    width = 1.dp,
-                    color = AppColors.mediumPurple,
-                    shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
-                ),
-        ) {
-            // Left accent bar — matchParentSize does NOT inflate the outer Box;
-            // the Box sizes itself from AnimatedContent, then this fills that height.
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .width(3.dp)
-                    .background(
-                        AppColors.primaryPurple,
-                        RoundedCornerShape(topStart = 18.dp, bottomEnd = 2.dp),
-                    ),
-            )
-
-            // Slow diagonal shimmer sweep — subtle, non-intrusive
-            val shimmerTransition = rememberInfiniteTransition(label = "cardShimmer")
-            val shimmerPhase by shimmerTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(tween(5000, easing = LinearEasing)),
-                label = "shimmerPhase",
-            )
-            Canvas(modifier = Modifier.matchParentSize()) {
-                val bandW = size.width * 0.45f
-                val x = shimmerPhase * (size.width + bandW) - bandW
-                drawRect(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.White.copy(alpha = 0.08f),
-                            Color.White.copy(alpha = 0.13f),
-                            Color.White.copy(alpha = 0.08f),
-                            Color.Transparent,
-                        ),
-                        // Diagonal: band sweeps from bottom-left to top-right
-                        start = Offset(x, size.height),
-                        end   = Offset(x + bandW, 0f),
-                    ),
-                    size = size,
+        AnimatedContent(
+            targetState = step,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            label = "feedback_step",
+        ) { current ->
+            when (current) {
+                CardStep.RATING -> FeedbackQuestion(
+                    eyebrow       = "${snapshot.noteName} · ${snapshot.detectedHz.toInt()} Hz",
+                    question      = "Was that reading accurate?",
+                    subtext       = "One tap. It helps make the tuner better.",
+                    negativeLabel = "Not quite",
+                    positiveLabel = "Spot on",
+                    onNegative    = { step = CardStep.REASON },
+                    onPositive    = { onThumbsUp(snapshot); step = CardStep.THANKING },
+                    onDismiss     = onDismiss,
                 )
+
+                CardStep.REASON -> ReasonStep(
+                    onReason = { reason ->
+                        onThumbsDown(snapshot, reason)
+                        step = CardStep.THANKING
+                    },
+                    onDismiss = onDismiss,
+                )
+
+                CardStep.THANKING -> FeedbackThanks("Got it, thank you")
             }
-
-            AnimatedContent(
-                targetState = step,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "feedback_step",
-            ) { current ->
-                when (current) {
-                    CardStep.RATING -> RatingRow(
-                        snapshot = snapshot,
-                        onThumbsUp = {
-                            onThumbsUp(snapshot)
-                            step = CardStep.THANKING
-                        },
-                        onThumbsDown = { step = CardStep.REASON },
-                        onDismiss = onDismiss,
-                    )
-
-                    CardStep.REASON -> ReasonRow(
-                        onReason = { reason ->
-                            onThumbsDown(snapshot, reason)
-                            step = CardStep.THANKING
-                        },
-                        onDismiss = onDismiss,
-                    )
-
-                    CardStep.THANKING -> ThankingRow()
-                }
-            }
-        }
-    }
-}
-
-// ── Rating ────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun RatingRow(
-    snapshot: TunerSessionSnapshot,
-    onThumbsUp: () -> Unit,
-    onThumbsDown: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(snapshot.noteName, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.width(6.dp))
-        Text("${snapshot.detectedHz.toInt()} Hz", color = AppColors.textSecondary, fontSize = 13.sp)
-        Spacer(Modifier.weight(1f))
-        Text("Accurate?", color = AppColors.textSecondary, fontSize = 12.sp)
-        Spacer(Modifier.width(2.dp))
-        IconButton(onClick = onThumbsDown, modifier = Modifier.size(38.dp)) {
-            Icon(Icons.Filled.ThumbDown, contentDescription = "No", tint = AppColors.textAccent, modifier = Modifier.size(18.dp))
-        }
-        IconButton(onClick = onThumbsUp, modifier = Modifier.size(38.dp)) {
-            Icon(Icons.Filled.ThumbUp, contentDescription = "Yes", tint = AppColors.gold, modifier = Modifier.size(18.dp))
-        }
-        IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Filled.Close, contentDescription = "Dismiss", tint = AppColors.textDim, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -226,31 +127,37 @@ private val REASONS = listOf(
 )
 
 @Composable
-private fun ReasonRow(
+private fun ReasonStep(
     onReason: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 12.dp),
+            .padding(start = 18.dp, end = 8.dp, top = 8.dp, bottom = 16.dp),
     ) {
-        // Label + dismiss on one line
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("What was off?", color = AppColors.textMuted, fontSize = 12.sp)
-            Spacer(Modifier.weight(1f))
-            IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Filled.Close, contentDescription = "Dismiss", tint = AppColors.textDim, modifier = Modifier.size(14.dp))
+            Text(
+                "What was off?",
+                color = Color.White,
+                fontSize = 16.sp,
+                lineHeight = 21.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f).padding(top = 8.dp),
+            )
+            IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Filled.Close, contentDescription = "Dismiss", tint = AppColors.textDim, modifier = Modifier.size(16.dp))
             }
         }
+        Spacer(Modifier.height(10.dp))
         // Chips wrap to a second line on narrow screens
         FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth().padding(end = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             REASONS.forEach { (key, label) ->
                 ReasonChip(label = label, onClick = { onReason(key) })
@@ -263,31 +170,17 @@ private fun ReasonRow(
 private fun ReasonChip(label: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(50.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(AppColors.surfaceVariant)
-            .border(1.dp, AppColors.mediumPurple, RoundedCornerShape(50.dp))
+            .border(1.dp, AppColors.mediumPurple, RoundedCornerShape(14.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 10.dp, vertical = 5.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-// ── Thanking ──────────────────────────────────────────────────────────────────
-
-@Composable
-private fun ThankingRow() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text("Got it, thank you", color = AppColors.textSecondary, fontSize = 13.sp)
+        Text(label, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
     }
 }

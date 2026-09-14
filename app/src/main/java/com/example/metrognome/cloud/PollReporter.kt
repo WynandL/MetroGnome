@@ -10,7 +10,9 @@ import com.example.metrognome.BuildConfig
  *   "up"             — thumbs up (interested)
  *   "down"           — thumbs down (not interested)
  *   "dismissed"      — X button (no opinion given)
- *   "auto_dismissed" — timed out without interaction (25 s)
+ *   "ignored"        — shown five times (one per day) and never touched; written once
+ *                      when PollManager retires it. Replaced "auto_dismissed", which was
+ *                      a 25 s timeout logged once per day for the same user.
  *
  * The gnotes snapshot is stored alongside the vote so results can be weighted
  * or filtered by engagement level (a 5000-Gnote user is a more invested signal

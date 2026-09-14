@@ -70,6 +70,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import com.example.metrognome.audio.selftest.SelfTestCalibrationStore
 import com.example.metrognome.ui.overlays.MicCheckOverlay
+import com.example.metrognome.analytics.AnalyticsTracker
+import com.example.metrognome.cloud.PollReporter
+import com.example.metrognome.poll.PollManager
+import com.example.metrognome.ui.components.PollBanner
 import com.example.metrognome.ui.overlays.PracticeCompleteOverlay
 import com.example.metrognome.ui.dialogs.PresetDeleteDialog
 import com.example.metrognome.ui.dialogs.SavePresetDialog
@@ -219,6 +223,23 @@ fun MetronomeScreen(
 
     LaunchedEffect(Unit) {
         vm.checkForNewUnlocks()
+    }
+
+    // In-app poll. Lives here, on the front door of the app, rather than on the Rhythm
+    // tab where it sat from 06-17 to 09-14 and reached only the minority who open the
+    // game. Picked once per tab entry after gnoteCount settles; a poll that has been
+    // shown out is reported "ignored" exactly once before the next one is considered.
+    val pollManager = remember { PollManager(context) }
+    val activePoll by vm.activePoll.collectAsStateWithLifecycle()
+    val pollDone by vm.pollDone.collectAsStateWithLifecycle()
+    LaunchedEffect(gnoteCount) {
+        if (!pollDone && activePoll == null && gnoteCount > 0) {
+            pollManager.retireIgnored().forEach { id ->
+                PollReporter.submit(id, "ignored", gnoteCount)
+                AnalyticsTracker.logPollAnswered(id, "ignored")
+            }
+            vm.setActivePoll(pollManager.pendingPoll(gnoteCount))
+        }
     }
 
     DisposableEffect(keepScreenOn) {
@@ -591,6 +612,36 @@ fun MetronomeScreen(
             remainingToday    = remember(gnoteCount) { vm.rewardedAdManager.remainingToday() },
             onWatchRewardedAd = onWatchRewardedAd,
             onDismiss         = { showGnotesInfo = false },
+        )
+    }
+
+    // The poll card only appears at a genuine pause: nothing sounding, no session running,
+    // and no overlay pending, so it never stacks on a result, a What's New or an unlock.
+    // Starting the metronome hides it (nothing recorded); stopping brings it back.
+    val poll = activePoll
+    if (poll != null) {
+        val pollVisible = !pollDone &&
+            !isPlaying && !isPracticeActive &&
+            trainerState is TrainerSessionState.Idle &&
+            pendingPracticeResult == null && pendingWhatsNew == null &&
+            unlockQueue.isEmpty() && !showMicCheck
+        LaunchedEffect(pollVisible) {
+            if (pollVisible && !vm.pollShowLogged) {
+                vm.pollShowLogged = true
+                pollManager.recordShown(poll.id)
+                AnalyticsTracker.logPollShown(poll.id, pollManager.shownCount(poll.id))
+            }
+        }
+        PollBanner(
+            visible = pollVisible,
+            poll    = poll,
+            onResponse = { response ->
+                pollManager.recordAnswered(poll.id)
+                PollReporter.submit(poll.id, response, gnoteCount)
+                AnalyticsTracker.logPollAnswered(poll.id, response)
+            },
+            onDismiss = { vm.markPollDone() },
+            modifier  = Modifier.align(Alignment.BottomCenter),
         )
     }
 
