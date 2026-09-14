@@ -217,7 +217,7 @@
             <tr><td>Guitar</td><td>E2, A2, D3, G3, B3, E4</td></tr>
             <tr><td>Bass guitar</td><td>E2, A2, D3, G3 (the drone sounds one octave above the low strings, which still locks cleanly)</td></tr>
             <tr><td>Winds, brass, voice</td><td>The key note of the piece, or A3 / A4 / Bb3 for long tones</td></tr>
-            <tr><td>Indian classical, modal practice</td><td>Your Sa (the tonic), with the Octave blend for a tanpura-like fullness</td></tr>
+            <tr><td>Indian classical, modal practice</td><td>Your Sa (the tonic), with the Octave blend for a tanpura-like fullness; see the <a href="/tools/shruti-box-online.html">online shruti box</a> for choosing Sa and practising swaras against it</td></tr>
           </tbody>
         </table>
       </div>
@@ -291,6 +291,10 @@
         <h3>Also useful</h3>
         <div class="related-grid">
           <div class="related-card">
+            <p class="rc-label">Free tool</p>
+            <a href="/tools/shruti-box-online.html">Online Shruti Box: Hold Your Sa as a Free Drone</a>
+          </div>
+          <div class="related-card">
             <p class="rc-label">Guide</p>
             <a href="/blog/tuning-drone-intonation-practice.html">How to Practice Intonation With a Tuning Drone (And Why It Pairs So Well With Your Tuner)</a>
           </div>
@@ -351,6 +355,27 @@
     var timbre = 'warm', blend = 'root';
     var level = 0.6;
     var isPlaying = false;
+
+    /* ── deep links: ?note=Cs&octave=3&timbre=warm&blend=octave&ref=440 ──
+       Lets the shruti box page and the embed widget open on a chosen Sa
+       instead of always starting on A3. "Cs" or "C#" (encoded C%23) both
+       read as C sharp. Anything malformed is ignored and the defaults
+       above stand. */
+    (function readParams() {
+      var q;
+      try { q = new URLSearchParams(window.location.search); } catch (e) { return; }
+      var n = (q.get('note') || '').toUpperCase().replace('S', '#');
+      var idx = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].indexOf(n);
+      if (idx >= 0) noteIndex = idx;
+      var o = parseInt(q.get('octave'), 10);
+      if (o >= 2 && o <= 5) octave = o;
+      var r = parseInt(q.get('ref'), 10);
+      if (r >= 415 && r <= 466) referenceHz = r;
+      var t = q.get('timbre');
+      if (t === 'pure' || t === 'warm') timbre = t;
+      var b = q.get('blend');
+      if (b === 'root' || b === 'octave') blend = b;
+    })();
 
     /* ── DroneVoice.kt, ported: the timbres and blends as data ─────────
        Mirrors app/src/main/java/.../audio/drone/DroneVoice.kt. Every
