@@ -17,9 +17,9 @@ import kotlin.math.sin
  * Each note is a harmonic-rich tone (fundamental plus four decaying partials, the kind of
  * spectrum the pitch detector locks on to at once and a phone speaker can actually put out), held [NOTE_MS] with a short attack and
  * release and a [NOTE_GAP_MS] silence after it, so the tuner's ambient gate sees a steady
- * note, then silence, then the next. Chords are [CHORD_GAP_MS] apart, long enough to tap
- * Clear between them; without that the finder accumulates all three into one eight-note
- * pile, which is not what is being tested.
+ * note, then silence, then the next. Chords are [CHORD_GAP_MS] apart; each starts below
+ * the previous bass, which is the finder's own cue to begin a new set, so the three should
+ * appear one after another with no Clear tap.
  *
  * Rendered in one go into a static AudioTrack on a plain thread, so it keeps playing when
  * the Settings screen (and its composition) is left. Not a shipped feature; lives in
@@ -28,21 +28,23 @@ import kotlin.math.sin
 object ChordArpeggioTestTone {
 
     /**
-     * What plays, as MIDI notes low to high: C major, G7, A minor, in the octave around
-     * middle C. The first cut sat an octave lower (C3, G2, A2) and came out faint even at
-     * full volume: a phone speaker reproduces almost nothing below about 300 Hz, so most of
-     * a 98 Hz G2 never left the phone. The finder does not care which octave a chord is in.
+     * What plays, as MIDI notes low to high: C major, G7, E minor, around middle C. Each
+     * chord's bass is below the previous one's, so the finder's "a note below the bass
+     * starts a new chord" rule splits them with no Clear tap and no gap logic. The first
+     * cut sat an octave lower (C3, G2, A2) and came out faint even at full volume: a phone
+     * speaker reproduces almost nothing below about 300 Hz, so most of a 98 Hz G2 never
+     * left the phone. The finder does not care which octave a chord is in.
      */
     private val CHORDS = listOf(
         listOf(60, 64, 67),        // C4 E4 G4
         listOf(55, 59, 62, 65),    // G3 B3 D4 F4
-        listOf(57, 60, 64),        // A3 C4 E4
+        listOf(52, 55, 59),        // E3 G3 B3
     )
 
     const val START_DELAY_MS = 3_000L
     private const val NOTE_MS = 900
     private const val NOTE_GAP_MS = 250
-    private const val CHORD_GAP_MS = 4_000
+    private const val CHORD_GAP_MS = 1_500
     private const val SAMPLE_RATE = 44_100
     private const val AMPLITUDE = 0.90f
 

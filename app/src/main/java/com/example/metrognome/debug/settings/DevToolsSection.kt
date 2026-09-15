@@ -436,7 +436,8 @@ fun DevToolsSection(
 
         // Chord Finder mic path without an instrument: after a delay long enough to walk to
         // the Chords tab, plays three chords as arpeggios through the speaker (turn it up).
-        // Tap Clear between chords, or they pile into one set. See ChordArpeggioTestTone.
+        // Each starts below the previous bass, so the finder splits them itself. See
+        // ChordArpeggioTestTone.
         OutlinedButton(
             onClick = {
                 val started = ChordArpeggioTestTone.playAfterDelay(

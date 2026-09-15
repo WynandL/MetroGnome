@@ -747,8 +747,8 @@ private fun ChordHero(reading: ChordReading) {
                             HeroSymbol(root = "", suffix = "Play or tap notes")
                             HeroCaption(
                                 name = "Name any chord, one note at a time.",
-                                about = "Play the chord as an arpeggio into the microphone, or tap it on " +
-                                    "the instrument. The lowest note counts as the bass.",
+                                about = "Play it as an arpeggio into the mic, or tap it. The lowest note " +
+                                    "is the bass; a note below it starts the next chord.",
                             )
                         }
                         is ChordReading.Single -> {
@@ -864,7 +864,7 @@ private fun TipStrip(reading: ChordReading) {
                             ChordReading.Empty -> "Tap the instrument, or play a chord one note at a time."
                             is ChordReading.Single -> "Add a second note for the interval."
                             is ChordReading.Dyad -> "Add a third note to name the chord."
-                            is ChordReading.Identified -> "No other name for these notes."
+                            is ChordReading.Identified -> "Next chord: start from its lowest note, or tap Clear."
                             is ChordReading.Unnamed -> "Remove a note, or add the missing one."
                         },
                         color = AppColors.textSecondary,

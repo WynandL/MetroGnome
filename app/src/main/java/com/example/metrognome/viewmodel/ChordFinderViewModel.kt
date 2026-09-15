@@ -60,6 +60,17 @@ enum class ChordInstrument(val displayName: String) {
  * (the reading goes null) before that pitch counts again. That is what keeps a sustained
  * note from re-adding itself after the user removes it, without a timer.
  *
+ * **A new arpeggio starts from the bottom.** From the notes alone, "the next chord" and
+ * "an extension of this one" are the same stream: C E G then B is Cmaj7, C E G then G B D
+ * reads as Cmaj9 and is right about the notes it was given. The boundary has to come from
+ * outside the notes, and the one signal that costs the player nothing is the convention
+ * the page already teaches: the lowest note is the bass. So a mic-captured note *below* the
+ * current bass, once the set holds [RESTART_MIN_NOTES] notes, starts a new set with that
+ * note. Extensions live on top, so they still extend; the one miss is adding a lower bass
+ * for a slash chord, which a tap handles. Tapped notes are exempt, since a tap is
+ * deliberate. A silence timer was considered and rejected: pausing to think about the
+ * seventh must not cost the triad.
+ *
  * ## Analytics
  * A session is one visit to the tab ([onScreenEntered] / [onScreenLeft]), mirroring the
  * tuner's. A chord counts as named only once its symbol has held for [NAME_HOLD_MS], so a
@@ -304,10 +315,18 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
             if (midi == pendingMidi) pendingFrames++ else { pendingMidi = midi; pendingFrames = 1 }
             if (pendingFrames < CAPTURE_FRAMES || midi == lastCaptured) return@collect
             lastCaptured = midi
-            if (midi !in _notes.value && _notes.value.size < MAX_NOTES) {
+            val current = _notes.value
+            val bass = current.minOrNull()
+            if (bass != null && midi < bass && current.size >= RESTART_MIN_NOTES) {
+                // Below the bass of a set that is already a chord: a new arpeggio has begun.
                 micNotes++
                 lastSource = "mic"
-                setNotes(_notes.value + midi)
+                setNotes(listOf(midi))
+                _captured.tryEmit(midi)
+            } else if (midi !in current && current.size < MAX_NOTES) {
+                micNotes++
+                lastSource = "mic"
+                setNotes(current + midi)
                 _captured.tryEmit(midi)
             }
         }
@@ -359,5 +378,13 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
 
         /** A chord name must hold this long before it is logged as named. */
         private const val NAME_HOLD_MS = 1_500L
+
+        /**
+         * Once the set holds this many notes, a mic note below its bass starts a new set.
+         * Three, not "is named": a set that came out wrong is exactly what the player wants
+         * to start over from, and two notes plus a lower one is a bass added last (E G,
+         * then C: C major), not a restart.
+         */
+        private const val RESTART_MIN_NOTES = 3
     }
 }
