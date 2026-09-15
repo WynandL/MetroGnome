@@ -214,9 +214,15 @@ object ChordLoopDiagnostic {
             },
         )
 
-        val started = withContext(Dispatchers.IO) { ChordArpeggioTestTone.playChord(chord, timings, referenceHz) }
-        delay(SETTLE_MS)
-        watchers.forEach { it.cancel() }
+        val started = try {
+            val t = withContext(Dispatchers.IO) { ChordArpeggioTestTone.playChord(chord, timings, referenceHz) }
+            delay(SETTLE_MS)
+            t
+        } finally {
+            // Also on cancellation: the watchers live in the object's scope, not this
+            // coroutine's, and would otherwise keep collecting the ViewModel's flows forever.
+            watchers.forEach { it.cancel() }
+        }
 
         val gotNotes = vm.notes.value.sorted()
         val gotSymbol = (vm.reading.value as? ChordReading.Identified)?.best?.symbol
