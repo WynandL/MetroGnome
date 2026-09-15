@@ -109,6 +109,8 @@ import com.example.metrognome.audio.tuner.AmbientReport
 import com.example.metrognome.audio.tuner.AmbientTuning
 import com.example.metrognome.audio.tuner.ListeningState
 import com.example.metrognome.audio.NoteNames
+import com.example.metrognome.haptics.HapticPattern
+import com.example.metrognome.haptics.LocalHaptics
 import com.example.metrognome.audio.tuner.Tuner
 import com.example.metrognome.ui.components.CircleButton
 import com.example.metrognome.ui.components.DronePanel
@@ -133,6 +135,8 @@ import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlin.math.abs
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlin.math.cos
 import kotlin.math.ln
 import kotlin.math.pow
@@ -202,6 +206,17 @@ fun TunerScreen(
     DisposableEffect(micGranted) {
         if (micGranted) vm.startListening()
         onDispose { vm.stopListening() }
+    }
+
+    // One tick each time the tuner locks on to a note, the same haptic the Chords tab gives
+    // a captured note, so the two screens feel like one instrument. Fires on the QUIET to
+    // LOCKED edge only (distinctUntilChanged), never while a lock is merely held, and only
+    // while this screen is composed.
+    val haptics = LocalHaptics.current
+    LaunchedEffect(vm) {
+        vm.ambient.map { it.locked }.distinctUntilChanged().collect { locked ->
+            if (locked) haptics.fire(HapticPattern.TICK)
+        }
     }
 
     val reading by vm.reading.collectAsStateWithLifecycle()
