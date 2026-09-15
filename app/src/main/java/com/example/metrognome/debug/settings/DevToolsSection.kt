@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.metrognome.audio.selftest.AudioRouteMonitor
 import com.example.metrognome.audio.selftest.MicCalibration
 import com.example.metrognome.audio.selftest.SelfTestCalibrationStore
@@ -59,6 +60,8 @@ import com.example.metrognome.ui.components.PollBanner
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.overlays.MetroAvatarDialog
 import com.example.metrognome.debug.chords.ChordArpeggioTestTone
+import com.example.metrognome.debug.chords.ChordLoopDiagnostic
+import com.example.metrognome.viewmodel.ChordFinderViewModel
 import com.example.metrognome.debug.chords.ChordLoopDiagnosticOverlay
 import com.example.metrognome.debug.chords.ChordTestTimingsStore
 import com.example.metrognome.ui.theme.AppColors
@@ -437,42 +440,52 @@ fun DevToolsSection(
 
         Spacer(Modifier.height(6.dp))
 
-        // Chord Finder mic path without an instrument. Left: after a 3 s delay (walk to the
-        // Chords tab), plays three chords as arpeggios through the speaker with this device's
-        // stored timings; each starts below the previous bass, so the finder splits them
-        // itself. Right: the closed-loop diagnostic that finds those timings by playing,
-        // listening through the finder, and adjusting until every chord comes back exact.
+        // Chord Finder mic path without an instrument. Left: plays three chords as arpeggios
+        // through the speaker with this device's stored timings, starting the moment the
+        // Chords tab's mic opens; each chord starts below the previous bass, so the finder
+        // splits them itself. Right: the closed-loop diagnostic that finds those timings by
+        // playing, listening through the finder, and adjusting until every chord comes back
+        // exact. Either button becomes its own stop while its run is in progress.
+        val chordVm: ChordFinderViewModel = viewModel()
+        val testChordsPlaying by ChordArpeggioTestTone.playing.collectAsStateWithLifecycle()
+        val loopState by ChordLoopDiagnostic.state.collectAsStateWithLifecycle()
+        val loopRunning = loopState.status == ChordLoopDiagnostic.Status.RUNNING ||
+            loopState.status == ChordLoopDiagnostic.Status.WAITING_FOR_MIC
         Row(modifier = Modifier.fillMaxWidth()) {
             OutlinedButton(
                 onClick = {
-                    val started = ChordArpeggioTestTone.playAfterDelay(
-                        timings = ChordTestTimingsStore(context).load(),
-                        referenceHz = context.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE)
-                            .getFloat("reference_hz", 440f),
-                    )
-                    Toast.makeText(
-                        context,
-                        if (started) "Go to the Chords tab: ${ChordArpeggioTestTone.description} in ${ChordArpeggioTestTone.START_DELAY_MS / 1000}s"
-                        else "Test chords already playing",
-                        Toast.LENGTH_LONG,
-                    ).show()
+                    if (testChordsPlaying) {
+                        ChordArpeggioTestTone.stop()
+                    } else {
+                        ChordArpeggioTestTone.playWhenListening(
+                            vm = chordVm,
+                            timings = ChordTestTimingsStore(context).load(),
+                            referenceHz = context.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE)
+                                .getFloat("reference_hz", 440f),
+                        )
+                        Toast.makeText(
+                            context,
+                            "Go to the Chords tab: ${ChordArpeggioTestTone.description} plays when its mic opens",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
                 },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
-                border = BorderStroke(1.dp, AppColors.gold)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = if (testChordsPlaying) AppColors.devRed else AppColors.gold),
+                border = BorderStroke(1.dp, if (testChordsPlaying) AppColors.devRedBorder else AppColors.gold)
             ) {
-                Text("Play Test Chords", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text(if (testChordsPlaying) "Stop Chords" else "Play Test Chords", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             }
 
             Spacer(Modifier.width(8.dp))
 
             OutlinedButton(
-                onClick = { showChordLoop = true },
+                onClick = { if (loopRunning) ChordLoopDiagnostic.cancel() else showChordLoop = true },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = BorderStroke(1.dp, AppColors.devBlueBorder)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = if (loopRunning) AppColors.devRed else AppColors.devBlue),
+                border = BorderStroke(1.dp, if (loopRunning) AppColors.devRedBorder else AppColors.devBlueBorder)
             ) {
-                Text("Chord Loop", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text(if (loopRunning) "Cancel Loop" else "Chord Loop", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             }
         }
 

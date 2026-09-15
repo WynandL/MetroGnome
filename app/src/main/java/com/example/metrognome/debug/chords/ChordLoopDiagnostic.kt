@@ -104,7 +104,7 @@ object ChordLoopDiagnostic {
     private var job: Job? = null
 
     const val MAX_ROUNDS = 8
-    private const val MIC_WAIT_MS = 20_000L
+    private const val MIC_WAIT_MS = 60_000L
     private const val ROOM_PROFILE_MS = 1_200L
     private const val SETTLE_MS = 1_500L
 
@@ -129,6 +129,7 @@ object ChordLoopDiagnostic {
 
     fun cancel() {
         job?.cancel()
+        ChordArpeggioTestTone.stop()
         _state.value = _state.value.copy(status = Status.IDLE, message = "Cancelled")
     }
 
@@ -143,8 +144,7 @@ object ChordLoopDiagnostic {
 
     private suspend fun runLoop(vm: ChordFinderViewModel, store: ChordTestTimingsStore, referenceHz: Float) {
         var timings = store.load()
-        _state.value = State(status = Status.WAITING_FOR_MIC, timings = timings, message = "Go to the Chords tab")
-        delay(ChordArpeggioTestTone.START_DELAY_MS)
+        _state.value = State(status = Status.WAITING_FOR_MIC, timings = timings, message = "Go to the Chords tab; the loop starts when its mic opens")
 
         val listening = withTimeoutOrNull(MIC_WAIT_MS) { vm.listening.first { it } } ?: false
         if (!listening) {

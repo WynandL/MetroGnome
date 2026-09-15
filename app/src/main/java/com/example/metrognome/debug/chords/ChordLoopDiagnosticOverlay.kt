@@ -53,7 +53,7 @@ private val runColor  = Color(0xFF64B5F6)
 
 /**
  * DEV ONLY: the engineering view of [ChordLoopDiagnostic]. Run it, walk to the Chords tab
- * within three seconds, and come back to read the rounds: for each chord what was expected,
+ * (the loop starts when that tab's mic opens), and come back to read the rounds: for each chord what was expected,
  * what the finder captured and named, each note's fault signature, and the knob the loop
  * turned before the next round. The timings that pass are stored on the device.
  *
@@ -115,7 +115,7 @@ fun ChordLoopDiagnosticOverlay(onDismiss: () -> Unit) {
                             } else {
                                 val ref = context.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE).getFloat("reference_hz", 440f)
                                 ChordLoopDiagnostic.start(vm, store, ref)
-                                Toast.makeText(context, "Go to the Chords tab now: the loop starts in 3 s", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Go to the Chords tab: the loop starts when its mic opens", Toast.LENGTH_LONG).show()
                                 onDismiss()
                             }
                         },
@@ -123,7 +123,7 @@ fun ChordLoopDiagnosticOverlay(onDismiss: () -> Unit) {
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = if (running) failColor else AppColors.gold),
                         border = BorderStroke(1.dp, if (running) failColor else AppColors.gold),
                     ) {
-                        Text(if (running) "Cancel" else "Run (3 s delay)", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text(if (running) "Cancel" else "Run", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                     OutlinedButton(
                         onClick = {
