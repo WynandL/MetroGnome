@@ -14,13 +14,16 @@ import androidx.core.content.edit
  * needs three more readings (~270 ms). So a note must sound well over a second and the
  * silence between notes must outlast the hold, or the next note is heard as an interferer
  * over the last one and never captured. The first cut (900 ms notes, 250 ms gaps) failed
- * for exactly that reason.
+ * for exactly that reason, and so did the next (1500/900) on the first real phone: the
+ * second note of each chord below middle C was still "held previous" at a 900 ms gap,
+ * and the loop passed in its second round at 1700/1300. Those are the defaults now, so a
+ * comparable phone passes in round one; the loop still tunes past them where it must.
  */
 data class ChordTestTimings(
     /** How long each note sounds. */
-    val noteMs: Int = 1_500,
+    val noteMs: Int = 1_700,
     /** Silence after each note, long enough for the tuner to drop its lock. */
-    val gapMs: Int = 900,
+    val gapMs: Int = 1_300,
     /** Silence between chords (the finder is cleared during it). */
     val chordGapMs: Int = 1_500,
     /** Peak level, 0..1 of full scale. */

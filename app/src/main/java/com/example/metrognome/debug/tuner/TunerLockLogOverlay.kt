@@ -154,8 +154,8 @@ private fun SummaryCard(sessions: List<TunerLockLog.LockSession>) {
             Text(
                 "SAVES = the presence probe kept a lock alive when the global pitch was gone. " +
                     "HIJACKS = a louder wrong pitch arrived but the lock survived. Higher = the " +
-                    "noise-robustness layer earning its keep. Cycle \"Noise Mode\" (Off/Medium/" +
-                    "Aggressive) in dev tools and compare runs in the same room.",
+                    "noise-robustness layer earning its keep. Change Ambient Suppression on the " +
+                    "Tuner page (Standard/Enhanced/Max) and compare runs in the same room.",
                 color = AppColors.textMuted,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 10.sp,
@@ -271,8 +271,9 @@ private fun EmptyState() {
             "No tuner locks captured yet.\n\n" +
                 "1. Open the Tuner and play a sustained note (with some background noise for a real test).\n" +
                 "2. Let it lock, hold, and eventually drop a few times.\n" +
-                "3. Leave the Tuner, come back here — each completed lock appears above.\n\n" +
-                "Cycle \"Noise Mode\" (Off/Medium/Aggressive) in dev tools between runs to compare.",
+                "3. Leave the Tuner, come back here: each completed lock appears above.\n\n" +
+                "Nothing to switch on; every Tuner visit records. Change Ambient Suppression on " +
+                "the Tuner page (Standard/Enhanced/Max) between runs to compare.",
             color = AppColors.textMuted,
             fontFamily = FontFamily.Monospace,
             fontSize = 11.sp,

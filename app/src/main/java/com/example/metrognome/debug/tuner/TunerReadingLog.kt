@@ -77,7 +77,14 @@ object TunerReadingLog {
 
     @Volatile
     var recording: Boolean = false
-        private set
+        private set(value) {
+            field = value
+            _isRecording.value = value
+        }
+
+    private val _isRecording = MutableStateFlow(false)
+    /** [recording] for Compose: the dev button and the Tuner tab's pill both follow it. */
+    val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
 
     private val _samples = MutableStateFlow<List<Sample>>(emptyList())
     val samples: StateFlow<List<Sample>> = _samples.asStateFlow()

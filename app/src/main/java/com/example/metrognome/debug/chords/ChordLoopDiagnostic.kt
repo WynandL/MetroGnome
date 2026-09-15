@@ -23,7 +23,7 @@ import kotlin.math.abs
  * DEV ONLY: a closed loop that plays the test chords through the speaker, watches what the
  * Chord Finder captures through the microphone, and adjusts the playback timings until
  * every chord comes back exactly as expected. The result is stored per device in
- * [ChordTestTimingsStore], so the plain "Play Test Chords" button works first time after.
+ * [ChordTestTimingsStore], so a later run on that phone passes in its first round.
  *
  * ## Why a loop and not a table
  * The failures have distinct signatures in the tuner's own state, and each points at one
@@ -95,6 +95,8 @@ object ChordLoopDiagnostic {
         val timings: ChordTestTimings = ChordTestTimings.DEFAULT,
         val rounds: List<RoundReport> = emptyList(),
         val message: String = "",
+        /** Index into [ChordArpeggioTestTone.CHORDS] of the chord sounding now, or -1 between chords. */
+        val chordIndex: Int = -1,
     )
 
     private val _state = MutableStateFlow(State())
@@ -157,8 +159,10 @@ object ChordLoopDiagnostic {
         for (round in 1..MAX_ROUNDS) {
             _state.value = _state.value.copy(status = Status.RUNNING, round = round, timings = timings, message = "Round $round: $timings")
             val chords = ChordArpeggioTestTone.CHORDS.mapIndexed { i, chord ->
+                _state.value = _state.value.copy(chordIndex = i)
                 playAndObserve(vm, chord, ChordArpeggioTestTone.EXPECTED_SYMBOLS[i], timings, referenceHz)
             }
+            _state.value = _state.value.copy(chordIndex = -1)
             val (diagnosis, next, adjustment) = diagnose(chords, timings)
             val report = RoundReport(round, timings, chords, diagnosis, adjustment)
             rounds += report

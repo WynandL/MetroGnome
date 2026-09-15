@@ -248,9 +248,10 @@ private fun EmptyState() {
     Surface(color = AppColors.surfaceDim, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
         Text(
             "No tuner readings captured yet.\n\n" +
-                "1. In dev tools, turn \"Record Readings\" ON (clears any previous run).\n" +
-                "2. Go to the Tuner and play the test-tone file (tools/tuner_test_tones) into the mic.\n" +
-                "3. Come back here — each detected note's stats appear above.\n\n" +
+                "1. In dev tools, tap \"Record Readings\" (clears any previous run).\n" +
+                "2. Go to the Tuner and play the test-tone file (tools/tuner_test_tones) into the mic. " +
+                "A pill on the Tuner page counts the samples; tap it to stop.\n" +
+                "3. Come back here: each detected note's stats appear above.\n\n" +
                 "Tip: run once uncalibrated, screenshot, then calibrate and run again to compare the " +
                 "mean¢ column.",
             color = AppColors.textMuted,

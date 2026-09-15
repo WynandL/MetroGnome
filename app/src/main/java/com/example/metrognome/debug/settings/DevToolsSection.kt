@@ -2,7 +2,6 @@ package com.example.metrognome.debug.settings
 
 import android.Manifest
 import android.content.Context
-import android.widget.Toast
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -44,7 +43,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.metrognome.audio.selftest.AudioRouteMonitor
 import com.example.metrognome.audio.selftest.MicCalibration
 import com.example.metrognome.audio.selftest.SelfTestCalibrationStore
@@ -59,11 +57,8 @@ import com.example.metrognome.points.PointsBannerQueue
 import com.example.metrognome.ui.components.PollBanner
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.overlays.MetroAvatarDialog
-import com.example.metrognome.debug.chords.ChordArpeggioTestTone
 import com.example.metrognome.debug.chords.ChordLoopDiagnostic
-import com.example.metrognome.viewmodel.ChordFinderViewModel
 import com.example.metrognome.debug.chords.ChordLoopDiagnosticOverlay
-import com.example.metrognome.debug.chords.ChordTestTimingsStore
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.whatsnew.AppWhatsNew
@@ -130,7 +125,7 @@ fun DevToolsSection(
     var showTunerReadingLog by remember { mutableStateOf(false) }
     var showProfileRoundTrip by remember { mutableStateOf(false) }
     var showChordLoop by remember { mutableStateOf(false) }
-    var recordReadings by remember { mutableStateOf(TunerReadingLog.recording) }
+    val recordReadings by TunerReadingLog.isRecording.collectAsStateWithLifecycle()
     var showMetroAvatar by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -440,53 +435,23 @@ fun DevToolsSection(
 
         Spacer(Modifier.height(6.dp))
 
-        // Chord Finder mic path without an instrument. Left: plays three chords as arpeggios
-        // through the speaker with this device's stored timings, starting the moment the
-        // Chords tab's mic opens; each chord starts below the previous bass, so the finder
-        // splits them itself. Right: the closed-loop diagnostic that finds those timings by
-        // playing, listening through the finder, and adjusting until every chord comes back
-        // exact. Either button becomes its own stop while its run is in progress.
-        val chordVm: ChordFinderViewModel = viewModel()
-        val testChordsPlaying by ChordArpeggioTestTone.playing.collectAsStateWithLifecycle()
+        // Chord Finder mic path without an instrument: "Chord Test UI" opens the Chord Loop
+        // report, whose own Run button plays the test chords through the speaker and adjusts
+        // the timings until the finder captures every one. While a run is going the button
+        // is the cancel instead, and says so; the label says exactly what a tap does.
         val loopState by ChordLoopDiagnostic.state.collectAsStateWithLifecycle()
         val loopRunning = loopState.status == ChordLoopDiagnostic.Status.RUNNING ||
             loopState.status == ChordLoopDiagnostic.Status.WAITING_FOR_MIC
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = {
-                    if (testChordsPlaying) {
-                        ChordArpeggioTestTone.stop()
-                    } else {
-                        ChordArpeggioTestTone.playWhenListening(
-                            vm = chordVm,
-                            timings = ChordTestTimingsStore(context).load(),
-                            referenceHz = context.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE)
-                                .getFloat("reference_hz", 440f),
-                        )
-                        Toast.makeText(
-                            context,
-                            "Go to the Chords tab: ${ChordArpeggioTestTone.description} plays when its mic opens",
-                            Toast.LENGTH_LONG,
-                        ).show()
-                    }
-                },
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = if (testChordsPlaying) AppColors.devRed else AppColors.gold),
-                border = BorderStroke(1.dp, if (testChordsPlaying) AppColors.devRedBorder else AppColors.gold)
-            ) {
-                Text(if (testChordsPlaying) "Stop Chords" else "Play Test Chords", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            }
-
-            Spacer(Modifier.width(8.dp))
-
-            OutlinedButton(
-                onClick = { if (loopRunning) ChordLoopDiagnostic.cancel() else showChordLoop = true },
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = if (loopRunning) AppColors.devRed else AppColors.devBlue),
-                border = BorderStroke(1.dp, if (loopRunning) AppColors.devRedBorder else AppColors.devBlueBorder)
-            ) {
-                Text(if (loopRunning) "Cancel Loop" else "Chord Loop", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            }
+        OutlinedButton(
+            onClick = { if (loopRunning) ChordLoopDiagnostic.cancel() else showChordLoop = true },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = if (loopRunning) AppColors.devRed else AppColors.devBlue),
+            border = BorderStroke(1.dp, if (loopRunning) AppColors.devRedBorder else AppColors.devBlueBorder)
+        ) {
+            Text(
+                if (loopRunning) "Cancel Chord Test" else "Chord Test UI",
+                fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
+            )
         }
 
         Spacer(Modifier.height(6.dp))
@@ -606,24 +571,26 @@ fun DevToolsSection(
 
         Spacer(Modifier.height(6.dp))
 
-        // Read-only viewer for the last real-mic session's onsets (MicDiagnosticsBuffer).
-        // Run a Speed Trainer session with mic on, then open this to see exactly what the
-        // mic heard and why a Timing Bonus did or did not pay out.
-        OutlinedButton(
-            onClick = { showMicTimingLog = true },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
-            border = BorderStroke(1.dp, AppColors.gold)
-        ) {
-            Text("Mic Timing Log", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-        }
-
-        Spacer(Modifier.height(6.dp))
-
-        // Tuner noise-robustness diagnostics. The suppression *strength* is now a user-facing
-        // control on the Tuner page (Ambient Suppression: Off/Low/High), so it is not duplicated
-        // here. These two viewers read the lock quality and the known-truth accuracy run.
+        // Three diagnostic logs, grouped by what the developer has to do to fill them. The
+        // first two record by themselves (MicDiagnosticsBuffer during any real-mic Speed
+        // Trainer session; TunerLockLog on every Tuner visit), so their buttons are plain
+        // viewers. The Reading Log is the known-truth accuracy run and records only while
+        // switched on, so its Record toggle sits beside its viewer; while recording, the
+        // toggle is the stop and TunerReadingRecordingPill on the Tuner tab counts samples
+        // and stops it too. The suppression *strength* is a user-facing control on the Tuner
+        // page (Ambient Suppression: Standard/Enhanced/Max), so it is not duplicated here.
         Row(modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = { showMicTimingLog = true },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
+                border = BorderStroke(1.dp, AppColors.gold)
+            ) {
+                Text("Mic Timing Log", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
+
+            Spacer(Modifier.width(8.dp))
+
             OutlinedButton(
                 onClick = { showTunerLockLog = true },
                 modifier = Modifier.weight(1f),
@@ -631,6 +598,33 @@ fun DevToolsSection(
                 border = BorderStroke(1.dp, AppColors.gold)
             ) {
                 Text("Tuner Lock Log", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
+        }
+
+        Text(
+            "Viewers only; both record by themselves. Mic Timing keeps the last Speed Trainer " +
+                "session with the mic on. Tuner Lock keeps every lock from every Tuner visit.",
+            color = AppColors.textMuted,
+            fontSize = 9.sp,
+            lineHeight = 12.sp,
+            modifier = Modifier.padding(top = 5.dp)
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = { if (recordReadings) TunerReadingLog.stop() else TunerReadingLog.start() },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (recordReadings) AppColors.devRed else AppColors.devBlue
+                ),
+                border = BorderStroke(1.dp, if (recordReadings) AppColors.devRedBorder else AppColors.devBlueBorder)
+            ) {
+                Text(
+                    if (recordReadings) "Stop Recording" else "Record Readings",
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
+                )
             }
 
             Spacer(Modifier.width(8.dp))
@@ -645,26 +639,15 @@ fun DevToolsSection(
             }
         }
 
-        Spacer(Modifier.height(6.dp))
-
-        // Known-truth accuracy test: record every settled reading while the test-tone file
-        // plays into the mic, then open the Reading Log (mean¢ per note ≈ calibration bias).
-        OutlinedButton(
-            onClick = {
-                recordReadings = !recordReadings
-                if (recordReadings) TunerReadingLog.start() else TunerReadingLog.stop()
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = if (recordReadings) AppColors.devRed else AppColors.devGrey
-            ),
-            border = BorderStroke(1.dp, if (recordReadings) AppColors.devRed else AppColors.devDarkBorder)
-        ) {
-            Text(
-                if (recordReadings) "● Recording Tuner Readings" else "Record Tuner Readings",
-                fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
-            )
-        }
+        Text(
+            "Readings record only while Record is on (starting clears the last run). Tap Record, " +
+                "play the test-tone file into the Tuner (a pill there counts the samples; tap it to " +
+                "stop), then open the log: mean¢ per note is the calibration bias.",
+            color = AppColors.textMuted,
+            fontSize = 9.sp,
+            lineHeight = 12.sp,
+            modifier = Modifier.padding(top = 5.dp)
+        )
 
         if (showMicSelfTest) {
             MicDiagnosticsOverlay(onDismiss = { showMicSelfTest = false })

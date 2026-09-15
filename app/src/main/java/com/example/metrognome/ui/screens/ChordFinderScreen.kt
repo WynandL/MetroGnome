@@ -72,6 +72,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.audio.NoteNames
 import com.example.metrognome.audio.tuner.ListeningState
 import com.example.metrognome.audio.tuner.Tuner
+import com.example.metrognome.debug.chords.ChordLoopRunningPill
 import com.example.metrognome.haptics.HapticPattern
 import com.example.metrognome.haptics.LocalHaptics
 import com.example.metrognome.theory.ChordMatch
@@ -211,6 +212,14 @@ fun ChordFinderScreen(
                     micLauncher.launch(Manifest.permission.RECORD_AUDIO)
                 }
             },
+        )
+
+        // Dev only in effect: composes to nothing unless a Chord Loop run is in progress,
+        // which only the dev tools can start. Overlaid, so the page never reflows.
+        ChordLoopRunningPill(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp),
         )
 
         // The Acoustic Guitar is earned here, so it is celebrated here, the way the rhythm

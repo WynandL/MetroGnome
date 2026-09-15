@@ -93,6 +93,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.ui.components.AdBannerView
+import com.example.metrognome.debug.tuner.TunerReadingRecordingPill
 import com.example.metrognome.billing.PREMIUM_DRONE_BLENDS
 import com.example.metrognome.billing.PREMIUM_DRONE_TIMBRES
 import com.example.metrognome.billing.PremiumDroneDef
@@ -297,6 +298,14 @@ fun TunerScreen(
             onPreviewDroneVoice = vm::previewDroneVoice,
             onStopDronePreview = vm::stopDronePreview,
             dronePreviewing = dronePreviewing,
+        )
+
+        // Dev only in effect: composes to nothing unless TunerReadingLog is recording, which
+        // only the dev tools can start. Overlaid, so the page never reflows.
+        TunerReadingRecordingPill(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp),
         )
 
         TunerFeedbackCard(
