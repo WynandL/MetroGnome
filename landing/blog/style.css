@@ -933,3 +933,158 @@ details[open] summary::after { transform: rotate(45deg); }
   min-width: 2.6em;
   text-align: right;
 }
+
+/* ── Tools: chord finder (instrument chips, fretboard, keyboard, note chips) ── */
+.bpm-readout.small { font-size: clamp(2rem, 9vw, 3rem); }
+.chord-instruments { margin-top: 1.2rem; }
+.chord-instruments .preset-row { justify-content: center; }
+
+.chord-fretboard {
+  display: grid;
+  grid-template-columns: 2.1rem repeat(13, 1fr);
+  gap: 3px;
+  width: 100%;
+  max-width: 520px;
+  margin: 1.3rem auto 0;
+  padding: 0.6rem 0.5rem 0.4rem;
+  border-radius: 12px;
+  border: 1px solid var(--surface-up);
+  background: var(--surface-deep);
+  position: relative;
+}
+.fret-string-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.35rem;
+}
+.fret-pos {
+  -webkit-tap-highlight-color: transparent;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: transparent;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+  transition: background 0.12s, color 0.12s;
+}
+.fret-pos::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: var(--string-w, 1px);
+  background: #6E6A9A;
+  transform: translateY(-50%);
+}
+.fret-pos::after {
+  content: "";
+  position: absolute;
+  top: 3px; bottom: 3px; right: -2px;
+  width: 1px;
+  background: var(--surface-up);
+}
+.fret-pos.nut::after { width: 4px; right: -3px; background: #C9C4E8; border-radius: 1px; }
+.fret-pos:hover { background: rgba(123, 77, 176, 0.35); }
+.fret-pos.echo { color: var(--purple-light); }
+.fret-pos.echo span, .fret-pos.lit span {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+.fret-pos.echo span { border: 1px solid var(--purple); background: var(--surface-deep); }
+.fret-pos.lit span { background: var(--gold); color: #1a0a2e; }
+.fret-pos:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.fret-numbers {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 3px;
+  margin-top: 0.15rem;
+}
+.fret-numbers span {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+.fret-numbers span.inlay { color: var(--purple-light); }
+
+.chord-keyboard {
+  max-width: 520px;
+  height: 128px;
+}
+.chord-keyboard .drone-key { font-size: 0.66rem; }
+.chord-keyboard .drone-key.black { width: 4.6%; font-size: 0.55rem; }
+.chord-keyboard .drone-key.lit { background: var(--gold); color: #1a0a2e; }
+.chord-keyboard .drone-key.black.lit { background: var(--gold); color: #1a0a2e; }
+
+.chord-notes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.6rem;
+  margin: 1.1rem auto 0;
+  max-width: 520px;
+}
+.chord-notes .empty { font-size: 0.85rem; color: var(--text-muted); }
+.note-chip {
+  -webkit-tap-highlight-color: transparent;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--gold);
+  background: rgba(255, 215, 0, 0.08);
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.note-chip small { font-size: 0.66rem; color: var(--purple-light); font-weight: 700; }
+.note-chip:hover { border-color: var(--gold-light); color: var(--gold-light); }
+.note-chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.chord-clear {
+  -webkit-tap-highlight-color: transparent;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--surface-up);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chord-clear:hover { border-color: var(--purple); color: var(--text); }
+.chord-clear:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.chord-alts { margin-top: 1rem; min-height: 1.6rem; }
+.chord-alts .stepper-label { display: block; margin-bottom: 0.3rem; }
+.chord-alts .preset-row { justify-content: center; }
+.chord-about {
+  margin: 0.4rem auto 0;
+  max-width: 460px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  min-height: 2.9em;
+  line-height: 1.5;
+}
+.chord-actions { display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; }
+.chord-actions .tap-pad { margin: 1.2rem 0 0.4rem; max-width: 220px; padding: 0.85rem 1rem; font-size: 0.95rem; }
