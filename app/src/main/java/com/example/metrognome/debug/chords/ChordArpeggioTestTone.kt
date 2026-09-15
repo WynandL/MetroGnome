@@ -14,8 +14,8 @@ import kotlin.math.sin
  * to walk from the dev tools to the Chords tab, so the Chord Finder's mic path can be tried
  * without an instrument in the room.
  *
- * Each note is a harmonic-rich tone (fundamental plus two decaying partials, the kind of
- * spectrum the pitch detector locks on to at once), held [NOTE_MS] with a short attack and
+ * Each note is a harmonic-rich tone (fundamental plus four decaying partials, the kind of
+ * spectrum the pitch detector locks on to at once and a phone speaker can actually put out), held [NOTE_MS] with a short attack and
  * release and a [NOTE_GAP_MS] silence after it, so the tuner's ambient gate sees a steady
  * note, then silence, then the next. Chords are [CHORD_GAP_MS] apart, long enough to tap
  * Clear between them; without that the finder accumulates all three into one eight-note
@@ -27,11 +27,16 @@ import kotlin.math.sin
  */
 object ChordArpeggioTestTone {
 
-    /** What plays, as MIDI notes low to high: C major, G7, A minor. */
+    /**
+     * What plays, as MIDI notes low to high: C major, G7, A minor, in the octave around
+     * middle C. The first cut sat an octave lower (C3, G2, A2) and came out faint even at
+     * full volume: a phone speaker reproduces almost nothing below about 300 Hz, so most of
+     * a 98 Hz G2 never left the phone. The finder does not care which octave a chord is in.
+     */
     private val CHORDS = listOf(
-        listOf(48, 52, 55),        // C3 E3 G3
-        listOf(43, 47, 50, 53),    // G2 B2 D3 F3
-        listOf(45, 48, 52),        // A2 C3 E3
+        listOf(60, 64, 67),        // C4 E4 G4
+        listOf(55, 59, 62, 65),    // G3 B3 D4 F4
+        listOf(57, 60, 64),        // A3 C4 E4
     )
 
     const val START_DELAY_MS = 3_000L
@@ -39,7 +44,7 @@ object ChordArpeggioTestTone {
     private const val NOTE_GAP_MS = 250
     private const val CHORD_GAP_MS = 4_000
     private const val SAMPLE_RATE = 44_100
-    private const val AMPLITUDE = 0.55f
+    private const val AMPLITUDE = 0.90f
 
     @Volatile private var playing = false
 
@@ -110,10 +115,15 @@ object ChordArpeggioTestTone {
                 for (i in 0 until noteSamples) {
                     val t = i.toDouble() / SAMPLE_RATE
                     val env = min(1.0, min(i / attack.toDouble(), (noteSamples - i) / release.toDouble()))
+                    // Bright partials up to the fifth: a phone speaker is far louder above
+                    // 1 kHz than at a fundamental, and the pitch detector finds the period
+                    // from the partials' spacing just as well as from the fundamental.
                     val v = sin(2 * PI * f * t) +
-                        0.45 * sin(2 * PI * 2 * f * t) +
-                        0.25 * sin(2 * PI * 3 * f * t)
-                    out[pos + i] = (v / 1.7 * env * AMPLITUDE * Short.MAX_VALUE).toInt().toShort()
+                        0.60 * sin(2 * PI * 2 * f * t) +
+                        0.40 * sin(2 * PI * 3 * f * t) +
+                        0.25 * sin(2 * PI * 4 * f * t) +
+                        0.15 * sin(2 * PI * 5 * f * t)
+                    out[pos + i] = (v / 2.4 * env * AMPLITUDE * Short.MAX_VALUE).toInt().toShort()
                 }
                 pos += noteSamples + gapSamples   // the gap is left at zero
             }
