@@ -61,6 +61,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -70,6 +71,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.audio.NoteNames
+import com.example.metrognome.audio.chords.ChordPlaybackPace
 import com.example.metrognome.audio.tuner.ListeningState
 import com.example.metrognome.audio.tuner.Tuner
 import com.example.metrognome.debug.chords.ChordLoopRunningPill
@@ -82,6 +84,7 @@ import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.components.AppFilterChip
 import com.example.metrognome.ui.components.FadingHorizontalScrollbar
 import com.example.metrognome.ui.components.GoldPill
+import com.example.metrognome.ui.components.PlayStopKey
 import com.example.metrognome.ui.components.GuitarFretboard
 import com.example.metrognome.ui.components.SCROLLBAR_HINT_HEIGHT
 import com.example.metrognome.ui.components.InputLevelMeter
@@ -160,6 +163,8 @@ fun ChordFinderScreen(
     val reading by vm.reading.collectAsStateWithLifecycle()
     val instrument by vm.instrument.collectAsStateWithLifecycle()
     val listening by vm.listening.collectAsStateWithLifecycle()
+    val playing by vm.playing.collectAsStateWithLifecycle()
+    val playbackPace by vm.playbackPace.collectAsStateWithLifecycle()
     val heard by vm.heard.collectAsStateWithLifecycle()
     val amplitude by vm.amplitude.collectAsStateWithLifecycle()
     val ambient by vm.ambient.collectAsStateWithLifecycle()
@@ -199,6 +204,13 @@ fun ChordFinderScreen(
             onToggleNote = vm::toggleNote,
             onRemoveNote = vm::removeNote,
             onClear = vm::clear,
+            playing = playing,
+            playbackPace = playbackPace,
+            onHear = {
+                haptics.fire(HapticPattern.TICK)
+                vm.hearChord()
+            },
+            onSetPace = vm::setPlaybackPace,
             onSetInstrument = vm::setInstrument,
             onToggleMic = vm::toggleMic,
             onRequestMic = {
@@ -244,7 +256,7 @@ private const val SCROLL_TO_NOTE_MS = 450
  * The whole page as a function of its inputs, so previews and tests can drive every
  * reading.
  *
- * Ordered chord card, mic strip, instrument, notes, tip: the chord card leads because
+ * Ordered chord card, mic strip, instrument, notes, hear-it, tip: the chord card leads because
  * it is the page's answer and, in its empty state, the only place that says "Chord
  * Finder". Nothing may jump while a chord is being played in, so every element that a
  * reading changes has a fixed height whatever it holds: the chord card pins its line
@@ -272,6 +284,10 @@ internal fun ChordFinderContent(
     onToggleNote: (Int) -> Unit = {},
     onRemoveNote: (Int) -> Unit = {},
     onClear: () -> Unit = {},
+    playing: Boolean = false,
+    playbackPace: ChordPlaybackPace = ChordPlaybackPace.QUICK,
+    onHear: () -> Unit = {},
+    onSetPace: (ChordPlaybackPace) -> Unit = {},
     onSetInstrument: (ChordInstrument) -> Unit = {},
     onToggleMic: () -> Unit = {},
     onRequestMic: () -> Unit = {},
@@ -348,6 +364,15 @@ internal fun ChordFinderContent(
                 degreeOf = { degreeLabels[it] ?: "" },
                 onRemove = onRemoveNote,
                 onClear = onClear,
+            )
+
+            Spacer(Modifier.height(SECTION_GAP))
+            HearStrip(
+                hasNotes = notes.isNotEmpty(),
+                playing = playing,
+                pace = playbackPace,
+                onHear = onHear,
+                onSetPace = onSetPace,
             )
 
             Spacer(Modifier.height(SECTION_GAP))
@@ -804,6 +829,83 @@ private fun ChordHero(reading: ChordReading) {
                     }
                 }
             }
+        }
+    }
+}
+
+// ── Hear-it strip ────────────────────────────────────────────────────────────────
+
+private val HEAR_ROW_HEIGHT = 44.dp
+
+/**
+ * Play the collected notes back: an arpeggio from the bass up, then the chord together.
+ *
+ * Its own row rather than a button beside Clear, which was tried on paper and cramped the
+ * notes strip. The key is the drone's [PlayStopKey], on the right where the drone keeps
+ * its own, so the two "start a sound" controls in the app are one asset in one place:
+ * purple play when there is something to hear, red stop while it sounds, dimmed with
+ * nothing to play. Left of it, the label and the pace choice (Slow for a beginner who
+ * wants to hear each note land, Quick for the web tool's ripple); the chips grey out with
+ * the key, because lit pills beside a dim key read as the thing to tap to start the sound,
+ * which the dev found confusing on the first build. Always the same height; only colours
+ * and words change.
+ */
+@Composable
+private fun HearStrip(
+    hasNotes: Boolean,
+    playing: Boolean,
+    pace: ChordPlaybackPace,
+    onHear: () -> Unit,
+    onSetPace: (ChordPlaybackPace) -> Unit,
+) {
+    Surface(
+        color = AppColors.surfaceDim,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .height(HEAR_ROW_HEIGHT),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    if (playing) "SOUNDING" else "HEAR IT",
+                    color = if (hasNotes) AppColors.gold else AppColors.textDim,
+                    fontSize = 10.sp, lineHeight = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                )
+                Text(
+                    if (hasNotes) "Arpeggio, then together" else "Add notes to hear them",
+                    color = if (hasNotes) AppColors.textSecondary else AppColors.textDim,
+                    fontSize = 11.sp, lineHeight = 15.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            // Greyed out and inert with nothing to hear, so they cannot be mistaken for the play key.
+            Row(modifier = Modifier.alpha(if (hasNotes) 1f else 0.35f)) {
+                ChordPlaybackPace.entries.forEach { option ->
+                    AppFilterChip(
+                        selected = option == pace,
+                        onClick = { if (hasNotes) onSetPace(option) },
+                        label = option.displayName,
+                    )
+                }
+            }
+            Spacer(Modifier.width(6.dp))
+            PlayStopKey(
+                playing = playing,
+                onClick = onHear,
+                enabled = hasNotes,
+                size = HEAR_ROW_HEIGHT,
+                playDescription = "Hear the chord",
+                stopDescription = "Stop the chord",
+            )
         }
     }
 }

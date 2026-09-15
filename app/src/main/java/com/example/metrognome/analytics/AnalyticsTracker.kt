@@ -179,6 +179,20 @@ object AnalyticsTracker {
         }
     }
 
+    /**
+     * "Hear it" was tapped: the collected notes sounded as an arpeggio and then together.
+     * [symbol] is null when the set had no dictionary name (a single note, an interval, an
+     * unnamed cluster); [pace] is the user's SLOW/QUICK choice. Whether people want to hear
+     * the chord back is the question the feature raises, so the tap is what is counted.
+     */
+    fun logChordPlayed(symbol: String?, noteCount: Int, pace: String) {
+        Firebase.analytics.logEvent("chord_played") {
+            param("symbol",     symbol ?: "none")
+            param("note_count", noteCount.toLong())
+            param("pace",       pace)
+        }
+    }
+
     /** The drawn instrument was switched, like the drone's voice change. */
     fun logChordsInstrumentChanged(instrument: String) {
         Firebase.analytics.logEvent("chords_instrument_changed") {

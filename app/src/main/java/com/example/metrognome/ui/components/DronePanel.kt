@@ -31,8 +31,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -105,11 +103,6 @@ fun DronePanel(
     premiumBlends: Set<DroneBlend> = emptySet(),
 ) {
     val chevronDeg by animateFloatAsState(if (expanded) 180f else 0f, label = "droneChevron")
-    val keyTint by animateColorAsState(
-        targetValue = if (state.playing) AppColors.danger else AppColors.primaryPurple,
-        animationSpec = tween(260),
-        label = "droneKeyTint",
-    )
 
     Surface(
         color = AppColors.surfaceDim,
@@ -201,19 +194,12 @@ fun DronePanel(
 
                 Spacer(Modifier.weight(1f))
 
-                RaisedControl(
+                PlayStopKey(
+                    playing = state.playing,
                     onClick = onToggle,
-                    shape = CircleShape,
-                    tint = keyTint,
-                    modifier = Modifier.size(52.dp),
-                ) {
-                    Icon(
-                        imageVector = if (state.playing) Icons.Filled.Stop else Icons.Filled.PlayArrow,
-                        contentDescription = if (state.playing) "Stop the drone" else "Play the drone",
-                        tint = Color.White,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
+                    playDescription = "Play the drone",
+                    stopDescription = "Stop the drone",
+                )
             }
 
             // ── Why the needle went quiet ─────────────────────────────────────────

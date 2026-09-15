@@ -10,6 +10,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.audio.NoteNames
+import com.example.metrognome.audio.chords.ChordPlaybackPace
+import com.example.metrognome.audio.chords.ChordPlaybackPlan
+import com.example.metrognome.audio.chords.ChordPlayer
+import com.example.metrognome.audio.chords.ChordVoice
 import com.example.metrognome.audio.tuner.AmbientReport
 import com.example.metrognome.audio.tuner.Tuner
 import com.example.metrognome.points.PointsBannerQueue
@@ -27,9 +31,11 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Which drawn instrument the Chord Finder shows for entering notes by touch. Guitar first: the app was built for a guitarist. */
 enum class ChordInstrument(val displayName: String) {
@@ -89,6 +95,15 @@ enum class ChordInstrument(val displayName: String) {
  * the Acoustic Guitar item counts. The unlock queue and celebration mirror the rhythm
  * game's, so the popup shows here, on the tab where it was earned.
  *
+ * ## Hearing it back
+ * [hearChord] plays the collected notes as an arpeggio from the bass up and then together,
+ * through [ChordPlayer] with [ChordVoice] (the sound of the web chord finder's "hear it"),
+ * at the user's [playbackPace]. The mic is not closed for it, unlike for the drone: a
+ * two-second phrase is not worth a permission round trip. Instead [captureFromMic] ignores
+ * readings while the phrase sounds and for [PLAYBACK_MUTE_TAIL_MS] after, since the
+ * closing chord is exactly the kind of steady sound the tuner would otherwise lock on and
+ * feed back into the set, usually as a wrong octave.
+ *
  * ## What persists
  * The instrument, the collected notes and whether the mic is on all survive leaving the
  * page and restarting the app, so the page reopens exactly as it was left. The mic choice
@@ -121,6 +136,14 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
     private val _micEnabled = MutableStateFlow(prefs.getBoolean(KEY_MIC_ENABLED, true))
     /** The user's standing choice: should the mic open when the page does? Persisted. */
     val micEnabled: StateFlow<Boolean> = _micEnabled.asStateFlow()
+
+    private val player = ChordPlayer()
+    /** True while "hear it" is sounding; the key shows stop. */
+    val playing: StateFlow<Boolean> = player.playing
+
+    private val _playbackPace = MutableStateFlow(loadPace())
+    /** How fast "hear it" walks through the chord. Persisted. */
+    val playbackPace: StateFlow<ChordPlaybackPace> = _playbackPace.asStateFlow()
 
     /** The tuner's live note, for the "hearing E3" readout while listening. */
     val heard: StateFlow<Tuner.Reading?> = tuner.reading
@@ -169,6 +192,7 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
 
     /** The tab left the screen. */
     fun onScreenLeft() {
+        player.stop()
         nameHoldJob?.cancel()
         sessionActive = false
         AnalyticsTracker.logChordsSessionEnded(tapNotes, micNotes, chordsNamed)
@@ -270,6 +294,49 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
         AnalyticsTracker.logChordsInstrumentChanged(instrument.name)
     }
 
+    // ── Hearing it back ─────────────────────────────────────────────────────────
+
+    private var playJob: Job? = null
+    @Volatile private var captureMuted = false
+
+    /** Cut a sounding "hear it" short. Safe when nothing is sounding. */
+    fun stopChord() = player.stop()
+
+    /** Play the collected notes as an arpeggio, then together. No-op with nothing to play; a tap while sounding stops instead. */
+    fun hearChord() {
+        val notes = _notes.value
+        if (notes.isEmpty()) return
+        if (playJob?.isActive == true) { stopChord(); return }
+        val pace = _playbackPace.value
+        val symbol = (reading.value as? ChordReading.Identified)?.best?.symbol
+        AnalyticsTracker.logChordPlayed(symbol, notes.size, pace.name)
+        playJob = viewModelScope.launch {
+            captureMuted = true
+            try {
+                withContext(Dispatchers.IO) {
+                    val events = ChordPlaybackPlan.arpeggioThenChord(notes, pace)
+                    player.play(ChordVoice.render(events, referenceHz))
+                }
+                delay(PLAYBACK_MUTE_TAIL_MS)
+            } finally {
+                captureMuted = false
+                pendingMidi = null
+                pendingFrames = 0
+            }
+        }
+    }
+
+    fun setPlaybackPace(pace: ChordPlaybackPace) {
+        if (pace == _playbackPace.value) return
+        _playbackPace.value = pace
+        prefs.edit { putString(KEY_PACE, pace.name) }
+    }
+
+    private fun loadPace(): ChordPlaybackPace =
+        prefs.getString(KEY_PACE, null)
+            ?.let { runCatching { ChordPlaybackPace.valueOf(it) }.getOrNull() }
+            ?: ChordPlaybackPace.QUICK
+
     // ── Microphone ──────────────────────────────────────────────────────────────
 
     /** Open the mic if RECORD_AUDIO is held. Safe to call when already listening. */
@@ -311,6 +378,12 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun captureFromMic() {
         tuner.reading.collect { rd ->
+            if (captureMuted) {
+                // The speaker is sounding the chord; nothing heard now is the player's.
+                pendingMidi = null
+                pendingFrames = 0
+                return@collect
+            }
             if (rd == null) {
                 // Silence or an unlocked frame: the next note may be the same pitch again.
                 pendingMidi = null
@@ -361,6 +434,7 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
+        player.stop()
         tuner.stop()
         super.onCleared()
     }
@@ -370,6 +444,10 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
         private const val KEY_INSTRUMENT = "instrument"
         private const val KEY_NOTES = "notes"
         private const val KEY_MIC_ENABLED = "mic_enabled"
+        private const val KEY_PACE = "playback_pace"
+
+        /** How long after "hear it" ends the mic keeps ignoring readings, for the tuner's lock to let go of the last chord. */
+        private const val PLAYBACK_MUTE_TAIL_MS = 600L
 
         /** More than this and nothing in the dictionary can name it anyway. */
         const val MAX_NOTES = 8
