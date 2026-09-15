@@ -59,6 +59,8 @@ import com.example.metrognome.ui.components.PollBanner
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.overlays.MetroAvatarDialog
 import com.example.metrognome.debug.chords.ChordArpeggioTestTone
+import com.example.metrognome.debug.chords.ChordLoopDiagnosticOverlay
+import com.example.metrognome.debug.chords.ChordTestTimingsStore
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.whatsnew.AppWhatsNew
@@ -124,6 +126,7 @@ fun DevToolsSection(
     var showTunerLockLog by remember { mutableStateOf(false) }
     var showTunerReadingLog by remember { mutableStateOf(false) }
     var showProfileRoundTrip by remember { mutableStateOf(false) }
+    var showChordLoop by remember { mutableStateOf(false) }
     var recordReadings by remember { mutableStateOf(TunerReadingLog.recording) }
     var showMetroAvatar by remember { mutableStateOf(false) }
 
@@ -434,28 +437,43 @@ fun DevToolsSection(
 
         Spacer(Modifier.height(6.dp))
 
-        // Chord Finder mic path without an instrument: after a delay long enough to walk to
-        // the Chords tab, plays three chords as arpeggios through the speaker (turn it up).
-        // Each starts below the previous bass, so the finder splits them itself. See
-        // ChordArpeggioTestTone.
-        OutlinedButton(
-            onClick = {
-                val started = ChordArpeggioTestTone.playAfterDelay(
-                    referenceHz = context.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE)
-                        .getFloat("reference_hz", 440f),
-                )
-                Toast.makeText(
-                    context,
-                    if (started) "Go to the Chords tab: ${ChordArpeggioTestTone.description} in ${ChordArpeggioTestTone.START_DELAY_MS / 1000}s"
-                    else "Test chords already playing",
-                    Toast.LENGTH_LONG,
-                ).show()
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
-            border = BorderStroke(1.dp, AppColors.gold)
-        ) {
-            Text("Play Test Chords (Chords tab, 3 s delay)", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        // Chord Finder mic path without an instrument. Left: after a 3 s delay (walk to the
+        // Chords tab), plays three chords as arpeggios through the speaker with this device's
+        // stored timings; each starts below the previous bass, so the finder splits them
+        // itself. Right: the closed-loop diagnostic that finds those timings by playing,
+        // listening through the finder, and adjusting until every chord comes back exact.
+        Row(modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = {
+                    val started = ChordArpeggioTestTone.playAfterDelay(
+                        timings = ChordTestTimingsStore(context).load(),
+                        referenceHz = context.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE)
+                            .getFloat("reference_hz", 440f),
+                    )
+                    Toast.makeText(
+                        context,
+                        if (started) "Go to the Chords tab: ${ChordArpeggioTestTone.description} in ${ChordArpeggioTestTone.START_DELAY_MS / 1000}s"
+                        else "Test chords already playing",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
+                border = BorderStroke(1.dp, AppColors.gold)
+            ) {
+                Text("Play Test Chords", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
+
+            Spacer(Modifier.width(8.dp))
+
+            OutlinedButton(
+                onClick = { showChordLoop = true },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
+                border = BorderStroke(1.dp, AppColors.devBlueBorder)
+            ) {
+                Text("Chord Loop", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
         }
 
         Spacer(Modifier.height(6.dp))
@@ -653,6 +671,10 @@ fun DevToolsSection(
 
         if (showProfileRoundTrip) {
             ProfileRoundTripOverlay(onDismiss = { showProfileRoundTrip = false })
+        }
+
+        if (showChordLoop) {
+            ChordLoopDiagnosticOverlay(onDismiss = { showChordLoop = false })
         }
     }
 

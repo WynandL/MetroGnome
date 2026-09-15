@@ -144,6 +144,13 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
     private var nameHoldJob: Job? = null
     private var sessionActive = false
 
+    /**
+     * DEV ONLY, set by the Chord Loop diagnostic while it plays test chords through the
+     * speaker: chords named during a run are not logged, credited or counted toward the
+     * guitar, so a diagnostic cannot farm Gnotes or muddy analytics from a developer phone.
+     */
+    @Volatile var diagnosticMode = false
+
     /** The tab came on screen. */
     fun onScreenEntered() {
         tapNotes = 0; micNotes = 0; chordsNamed = 0
@@ -182,6 +189,7 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
         nameHoldJob = viewModelScope.launch {
             delay(NAME_HOLD_MS)
             lastNamedSymbol = symbol
+            if (diagnosticMode) return@launch   // a dev loop's chords earn and log nothing
             chordsNamed++
             AnalyticsTracker.logChordNamed(symbol, noteCount, source)
             tracker.recordChordDiscovered(discovered)
