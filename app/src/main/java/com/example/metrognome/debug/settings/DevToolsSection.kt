@@ -85,6 +85,8 @@ fun DevToolsSection(
     onStopTunerSimulation: () -> Unit,
     onMicStateChanged: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Opens the Chord Finder page; a dev entry until the feature has a home in the app. */
+    onOpenChordFinder: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -441,6 +443,19 @@ fun DevToolsSection(
             border = BorderStroke(1.dp, AppColors.gold)
         ) {
             Text("Profile Round-Trip", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        }
+
+        Spacer(Modifier.height(6.dp))
+
+        // Chord Finder (v6.0, in progress): the full page, reachable from here only until
+        // it has a home in the app. See ChordFinderScreen.
+        OutlinedButton(
+            onClick = onOpenChordFinder,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
+            border = BorderStroke(1.dp, AppColors.gold)
+        ) {
+            Text("Chord Finder", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
         }
 
         Spacer(Modifier.height(6.dp))

@@ -43,6 +43,7 @@ import com.example.metrognome.ui.components.PointsEarnedBanner
 import com.example.metrognome.ui.components.RhythmPulseIcon
 import com.example.metrognome.ui.components.TunerNeedleIcon
 import com.example.metrognome.ui.dialogs.NotificationOptInDialog
+import com.example.metrognome.ui.screens.ChordFinderScreen
 import com.example.metrognome.ui.screens.MetronomeScreen
 import com.example.metrognome.ui.screens.RhythmGameScreen
 import com.example.metrognome.ui.screens.SettingsScreen
@@ -52,6 +53,7 @@ import com.example.metrognome.ui.screens.TunerScreen
 import com.example.metrognome.ui.theme.MetroGnomeTheme
 import com.example.metrognome.notifications.NotificationOptInTracker
 import com.example.metrognome.notifications.rememberNotificationPermissionState
+import com.example.metrognome.viewmodel.ChordFinderViewModel
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.viewmodel.RhythmGameViewModel
 import com.example.metrognome.viewmodel.SpeedTrainerViewModel
@@ -124,6 +126,7 @@ fun MetroGnomeApp(
     val rhythmVm: RhythmGameViewModel = viewModel()
     val tunerVm: TunerViewModel = viewModel()
     val speedTrainerVm: SpeedTrainerViewModel = viewModel()
+    val chordFinderVm: ChordFinderViewModel = viewModel()
     val isAdFree by metronomeVm.isAdFree.collectAsStateWithLifecycle()
     val isPlaying by metronomeVm.isPlaying.collectAsStateWithLifecycle()
 
@@ -147,6 +150,17 @@ fun MetroGnomeApp(
     // The drone enforces its own entitlements (a refund can take a voice away mid-note), so
     // the tuner is told what is owned rather than reaching for a billing client of its own.
     LaunchedEffect(purchasedSoundIds) { tunerVm.setOwnedProducts(purchasedSoundIds) }
+
+    // The Chord Finder is a full page drawn over the tab scaffold rather than a fifth tab:
+    // where it finally lives is undecided, and for now it is reached from the dev tools.
+    // Opening it stops a sounding drone for the same reason the tuner does: the finder's
+    // mic would hear the app's own tone and add it to the chord.
+    var showChordFinder by rememberSaveable { mutableStateOf(false) }
+    val droneState by tunerVm.droneState.collectAsStateWithLifecycle()
+    fun openChordFinder() {
+        if (droneState.playing) tunerVm.toggleDrone()
+        showChordFinder = true
+    }
 
     val visibleTabs = AppTab.entries
 
@@ -327,8 +341,12 @@ fun MetroGnomeApp(
                 onSimulateTuner = tunerVm::debugCycleSimulatedReading,
                 onStopTunerSimulation = tunerVm::debugStopSimulation,
                 notificationPermission = notificationPermission,
+                onOpenChordFinder = ::openChordFinder,
             )
         }
+    }
+    if (showChordFinder) {
+        ChordFinderScreen(vm = chordFinderVm, onBack = { showChordFinder = false })
     }
     PointsEarnedBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
     LoyaltyMilestoneBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())

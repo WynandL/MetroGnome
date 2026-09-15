@@ -16,7 +16,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,15 +43,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -65,7 +61,6 @@ import com.example.metrognome.audio.drone.DroneTimbre
 import com.example.metrognome.ui.theme.AppColors
 import java.util.Locale
 import kotlin.math.PI
-import kotlin.math.abs
 import kotlin.math.sin
 
 /**
@@ -350,31 +345,10 @@ private fun ChipSection(
 
 // ── Keyboard ─────────────────────────────────────────────────────────────────────
 
-/** Pitch classes of the seven naturals, left to right. */
-private val WHITE_PITCH_CLASSES = intArrayOf(0, 2, 4, 5, 7, 9, 11)
-
 /**
- * Which white keys have a black key on their right shoulder, and its pitch class.
- * The gap after E and after B is what gives a keyboard its two-then-three grouping.
- */
-private val BLACK_KEYS = listOf(0 to 1, 1 to 3, 3 to 6, 4 to 8, 5 to 10)
-
-/** Black key width as a fraction of a white key's. */
-private const val BLACK_KEY_WIDTH = 0.62f
-
-/** Black key length as a fraction of the keyboard's height. */
-private const val BLACK_KEY_HEIGHT = 0.62f
-
-/**
- * A one-octave keyboard for choosing the drone's note.
- *
- * Drawn with a real piano's value contrast: light naturals, near-black sharps. That is not
- * decoration, it is the whole reason the keyboard needs no letters. A dark-on-dark version
- * was built first and read as an unexplained row of blocks, because the groups of two and
- * three sharps only orient the eye when the sharps are clearly the dark ones.
- *
- * Hit testing checks the sharps first, since they overlap the naturals and are drawn on
- * top; a natural is only hit where no sharp covers it, exactly as the instrument behaves.
+ * A one-octave keyboard for choosing the drone's note: the shared [PianoKeyboard] with
+ * pitch classes standing in for MIDI numbers (0..11), and no octave labels, since the
+ * chosen note is spelled out beside the octave stepper anyway.
  */
 @Composable
 private fun DroneKeyboard(
@@ -383,59 +357,15 @@ private fun DroneKeyboard(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Gold while sounding, matching the rest of the tuner's "this is live" language.
-    val accent = if (sounding) AppColors.gold else AppColors.mediumPurple
-
-    Canvas(
-        modifier = modifier.pointerInput(Unit) {
-            detectTapGestures { offset ->
-                val naturalWidth = size.width / WHITE_PITCH_CLASSES.size
-                val sharpWidth = naturalWidth * BLACK_KEY_WIDTH
-                val sharpHeight = size.height * BLACK_KEY_HEIGHT
-
-                val sharp = BLACK_KEYS.firstOrNull { (naturalIndex, _) ->
-                    offset.y <= sharpHeight &&
-                        abs(offset.x - (naturalIndex + 1) * naturalWidth) <= sharpWidth / 2f
-                }
-                if (sharp != null) {
-                    onSelect(sharp.second)
-                    return@detectTapGestures
-                }
-                val index = (offset.x / naturalWidth).toInt().coerceIn(0, WHITE_PITCH_CLASSES.lastIndex)
-                onSelect(WHITE_PITCH_CLASSES[index])
-            }
-        },
-    ) {
-        val naturalWidth = size.width / WHITE_PITCH_CLASSES.size
-        // The gap is the card showing through, so the keys separate without a drawn border.
-        val gap = 1.5.dp.toPx()
-        val radius = CornerRadius(3.dp.toPx())
-
-        /** Top-lit down the face, like every other raised surface in the app. */
-        fun faceBrush(selected: Boolean, lit: Color, shade: Color) = Brush.verticalGradient(
-            colors = if (selected) listOf(accent, accent.copy(alpha = 0.78f)) else listOf(lit, shade),
-        )
-
-        WHITE_PITCH_CLASSES.forEachIndexed { index, pitch ->
-            drawRoundRect(
-                brush = faceBrush(pitch == pitchClass, AppColors.keyNatural, AppColors.keyNaturalShade),
-                topLeft = Offset(index * naturalWidth + gap / 2f, 0f),
-                size = Size(naturalWidth - gap, size.height),
-                cornerRadius = radius,
-            )
-        }
-
-        val sharpWidth = naturalWidth * BLACK_KEY_WIDTH
-        val sharpHeight = size.height * BLACK_KEY_HEIGHT
-        BLACK_KEYS.forEach { (naturalIndex, pitch) ->
-            drawRoundRect(
-                brush = faceBrush(pitch == pitchClass, AppColors.keySharp, AppColors.keySharpShade),
-                topLeft = Offset((naturalIndex + 1) * naturalWidth - sharpWidth / 2f, 0f),
-                size = Size(sharpWidth, sharpHeight),
-                cornerRadius = radius,
-            )
-        }
-    }
+    PianoKeyboard(
+        octaves = 1,
+        lowestMidi = 0,
+        litMidi = setOf(pitchClass),
+        // Gold while sounding, matching the rest of the tuner's "this is live" language.
+        accent = if (sounding) AppColors.gold else AppColors.mediumPurple,
+        onKeyTap = onSelect,
+        modifier = modifier,
+    )
 }
 
 // ── Header glyph ─────────────────────────────────────────────────────────────────
