@@ -217,7 +217,7 @@ object ChordDictionary {
         type("", "major", "1 3 5", 0,
             "The bright, settled home chord. Root, major third and perfect fifth."),
         type("m", "minor", "1 ♭3 5", 0,
-            "The major chord with its third lowered a semitone, which is all it takes to turn the mood."),
+            "The major chord with its third lowered a semitone. That one step turns the mood."),
         type("dim", "diminished", "1 ♭3 ♭5", 1,
             "Two minor thirds stacked. Tense and unstable, it wants to move somewhere."),
         type("aug", "augmented", "1 3 #5", 1,
@@ -229,7 +229,7 @@ object ChordDictionary {
 
         // ── Sixths and added tones ────────────────────────────────────────────
         type("6", "major sixth", "1 3 5 6", 2,
-            "A major triad with the sixth on top. Shares its notes with the minor seventh a third below."),
+            "A major triad with the sixth on top. Same notes as the m7 chord a minor third below."),
         type("m6", "minor sixth", "1 ♭3 5 6", 2,
             "A minor triad with a major sixth: the sound of jazz minor and film noir."),
         type("add9", "added ninth", "1 3 5 9", 2,
@@ -241,15 +241,15 @@ object ChordDictionary {
 
         // ── Sevenths ──────────────────────────────────────────────────────────
         type("maj7", "major seventh", "1 3 5 7", 2,
-            "A major triad with the major seventh. Soft, dreamy, at home in bossa nova and neo-soul."),
+            "A major triad with the major seventh. Soft and dreamy, at home in bossa nova and soul."),
         type("7", "dominant seventh", "1 3 5 ♭7", 2,
-            "A major triad with the flattened seventh. The engine of blues, and the chord that pulls to the tonic."),
+            "A major triad with the flattened seventh. The engine of blues; it pulls to the tonic."),
         type("m7", "minor seventh", "1 ♭3 5 ♭7", 2,
-            "A minor triad with the flattened seventh. Mellow, the everyday minor chord of jazz and R&B."),
+            "A minor triad with the flattened seventh. Mellow, the everyday minor chord of jazz."),
         type("m(maj7)", "minor-major seventh", "1 ♭3 5 7", 3,
-            "A minor triad with a major seventh. Uneasy and cinematic, the James Bond chord."),
+            "A minor triad with a major seventh, home chord of harmonic minor. Uneasy, cinematic."),
         type("dim7", "diminished seventh", "1 ♭3 ♭5 ♭♭7", 3,
-            "Minor thirds all the way up. Every note can be the root, so it can resolve in four directions."),
+            "Minor thirds all the way up. Any note can be the root, so it resolves four ways."),
         type("m7♭5", "half-diminished seventh", "1 ♭3 ♭5 ♭7", 3,
             "A diminished triad with a minor seventh. The ii chord of a minor key, written ø7."),
         type("7sus4", "seventh suspended fourth", "1 4 5 ♭7", 3,
@@ -271,7 +271,7 @@ object ChordDictionary {
         type("m9", "minor ninth", "1 ♭3 5 ♭7 9", 3,
             "A minor seventh with the ninth. Smooth, the sound of a slow jam."),
         type("m(maj9)", "minor-major ninth", "1 ♭3 5 7 9", 4,
-            "A minor-major seventh with the ninth added."),
+            "A minor-major seventh with the ninth. On E, it is the James Bond chord."),
         type("7♭9", "seventh flat nine", "1 3 5 ♭7 ♭9", 4,
             "A dominant seventh with a flattened ninth, dark and Spanish-tinged."),
         type("7#9", "seventh sharp nine", "1 3 5 ♭7 #9", 4,
@@ -341,12 +341,30 @@ data class ChordMatch(
      * A pitch class that is not a chord tone falls back to the plain sharp name.
      */
     fun spell(pitchClass: Int): String {
-        val degree = degreeOf(pitchClass) ?: return NoteNames.nameOf(pitchClass)
+        val (letter, alter) = spelling(pitchClass) ?: return NoteNames.nameOf(pitchClass)
+        return LETTERS[letter] + Degree.accidental(alter)
+    }
+
+    /**
+     * The octave number that goes with [spell] for the note [midi], in scientific pitch
+     * notation, where the number follows the *letter*: C♭4 is the pitch B3, and B#3 is the
+     * pitch C4. Reading the octave off the MIDI number alone would print "C♭3" for the
+     * seventh of D♭7 played at B3, which is a different note.
+     */
+    fun spelledOctave(midi: Int): Int {
+        val pitchClass = ((midi % 12) + 12) % 12
+        val (_, alter) = spelling(pitchClass) ?: return NoteNames.octaveOf(midi)
+        return NoteNames.octaveOf(midi - alter)
+    }
+
+    /** Letter index (0 = C) and accidental for a chord tone, or null if it is not one. */
+    private fun spelling(pitchClass: Int): Pair<Int, Int>? {
+        val degree = degreeOf(pitchClass) ?: return null
         val rootLetter = LETTERS.indexOf(rootName[0])
         val letter = (rootLetter + degree.letterSteps) % 7
         var alter = (pitchClass - LETTER_PITCH_CLASSES[letter] + 12) % 12
         if (alter > 6) alter -= 12
-        return LETTERS[letter] + Degree.accidental(alter)
+        return letter to alter
     }
 
     /** Lower is better: a root in the bass beats a slash chord, complete beats "(no 5)", simple beats complex. */

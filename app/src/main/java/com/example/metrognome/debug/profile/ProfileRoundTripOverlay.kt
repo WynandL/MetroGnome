@@ -355,6 +355,7 @@ private fun syntheticOtherDevice(l: ActivitySummary): ActivitySummary {
         metronomeSeconds              = l.metronomeSeconds + 3_600,            // other ahead
         tunerSeconds                  = l.tunerSeconds + 7_200,                // other ahead
         speedTrainerSeconds           = l.speedTrainerSeconds / 2,             // other behind → local
+        droneSeconds                  = l.droneSeconds + 600,                  // other ahead
         tunerNotesLocked              = l.tunerNotesLocked + 40,               // other ahead
         tunerFeedbackGiven            = l.tunerFeedbackGiven + 3,
         gamesCompleted                = (l.gamesCompleted - 1).coerceAtLeast(0), // behind → local
@@ -363,6 +364,11 @@ private fun syntheticOtherDevice(l: ActivitySummary): ActivitySummary {
         practiceSessionsCompleted     = l.practiceSessionsCompleted + 2,
         speedTrainerSessionsCompleted = (l.speedTrainerSessionsCompleted - 3).coerceAtLeast(0), // local
         performanceBonusPoints        = l.performanceBonusPoints + 30,
+        micChecksCompleted            = l.micChecksCompleted + 1,
+        chordsDiscovered              = l.chordsDiscovered + setOf("F#m", "B\u266d7"),   // new chords → union
+        chordsNamed                   = l.chordsNamed + 4,                     // other ahead
+        chordsNamedByMic              = l.chordsNamedByMic + 4,
+        chordsNamedByTap              = (l.chordsNamedByTap - 1).coerceAtLeast(0), // behind → local
         rewardedAdGnotes              = l.rewardedAdGnotes + 50,
         bestPracticeStreak            = l.bestPracticeStreak + 5,              // other ahead
         practicedEpochDays            = l.practicedEpochDays + setOf(today, today - 9), // new days → union
@@ -393,6 +399,7 @@ private fun compareRows(b: ActivitySummary, a: ActivitySummary): List<CmpRow> = 
     CmpRow("metronomeSeconds", b.metronomeSeconds.toString(), a.metronomeSeconds.toString()),
     CmpRow("tunerSeconds", b.tunerSeconds.toString(), a.tunerSeconds.toString()),
     CmpRow("speedTrainerSeconds", b.speedTrainerSeconds.toString(), a.speedTrainerSeconds.toString()),
+    CmpRow("droneSeconds", b.droneSeconds.toString(), a.droneSeconds.toString()),
     CmpRow("tunerNotesLocked", b.tunerNotesLocked.toString(), a.tunerNotesLocked.toString()),
     CmpRow("tunerFeedbackGiven", b.tunerFeedbackGiven.toString(), a.tunerFeedbackGiven.toString()),
     CmpRow("gamesCompleted", b.gamesCompleted.toString(), a.gamesCompleted.toString()),
@@ -401,6 +408,11 @@ private fun compareRows(b: ActivitySummary, a: ActivitySummary): List<CmpRow> = 
     CmpRow("practiceSessionsCompleted", b.practiceSessionsCompleted.toString(), a.practiceSessionsCompleted.toString()),
     CmpRow("speedTrainerSessionsCompleted", b.speedTrainerSessionsCompleted.toString(), a.speedTrainerSessionsCompleted.toString()),
     CmpRow("performanceBonusPoints", b.performanceBonusPoints.toString(), a.performanceBonusPoints.toString()),
+    CmpRow("micChecksCompleted", b.micChecksCompleted.toString(), a.micChecksCompleted.toString()),
+    CmpRow("chordsDiscovered", fmtSet(b.chordsDiscovered), fmtSet(a.chordsDiscovered)),
+    CmpRow("chordsNamed", b.chordsNamed.toString(), a.chordsNamed.toString()),
+    CmpRow("chordsNamedByMic", b.chordsNamedByMic.toString(), a.chordsNamedByMic.toString()),
+    CmpRow("chordsNamedByTap", b.chordsNamedByTap.toString(), a.chordsNamedByTap.toString()),
     CmpRow("rewardedAdGnotes", b.rewardedAdGnotes.toString(), a.rewardedAdGnotes.toString()),
     CmpRow("bestPracticeStreak", b.bestPracticeStreak.toString(), a.bestPracticeStreak.toString()),
     CmpRow("practicedEpochDays", fmtSet(b.practicedEpochDays), fmtSet(a.practicedEpochDays)),
@@ -431,6 +443,7 @@ private fun mergeRows(l: ActivitySummary, o: ActivitySummary, m: ActivitySummary
     maxRowL("metronomeSeconds", l.metronomeSeconds, o.metronomeSeconds, m.metronomeSeconds),
     maxRowL("tunerSeconds", l.tunerSeconds, o.tunerSeconds, m.tunerSeconds),
     maxRowL("speedTrainerSeconds", l.speedTrainerSeconds, o.speedTrainerSeconds, m.speedTrainerSeconds),
+    maxRowL("droneSeconds", l.droneSeconds, o.droneSeconds, m.droneSeconds),
     maxRowI("tunerNotesLocked", l.tunerNotesLocked, o.tunerNotesLocked, m.tunerNotesLocked),
     maxRowI("tunerFeedbackGiven", l.tunerFeedbackGiven, o.tunerFeedbackGiven, m.tunerFeedbackGiven),
     maxRowI("gamesCompleted", l.gamesCompleted, o.gamesCompleted, m.gamesCompleted),
@@ -439,12 +452,17 @@ private fun mergeRows(l: ActivitySummary, o: ActivitySummary, m: ActivitySummary
     maxRowI("practiceSessionsCompleted", l.practiceSessionsCompleted, o.practiceSessionsCompleted, m.practiceSessionsCompleted),
     maxRowI("speedTrainerSessionsCompleted", l.speedTrainerSessionsCompleted, o.speedTrainerSessionsCompleted, m.speedTrainerSessionsCompleted),
     maxRowI("performanceBonusPoints", l.performanceBonusPoints, o.performanceBonusPoints, m.performanceBonusPoints),
+    maxRowI("micChecksCompleted", l.micChecksCompleted, o.micChecksCompleted, m.micChecksCompleted),
+    maxRowI("chordsNamed", l.chordsNamed, o.chordsNamed, m.chordsNamed),
+    maxRowI("chordsNamedByMic", l.chordsNamedByMic, o.chordsNamedByMic, m.chordsNamedByMic),
+    maxRowI("chordsNamedByTap", l.chordsNamedByTap, o.chordsNamedByTap, m.chordsNamedByTap),
     maxRowI("rewardedAdGnotes", l.rewardedAdGnotes, o.rewardedAdGnotes, m.rewardedAdGnotes),
     maxRowI("bestPracticeStreak", l.bestPracticeStreak, o.bestPracticeStreak, m.bestPracticeStreak),
     maxRowL("adFreeRewardUntilMs", l.adFreeRewardUntilMs, o.adFreeRewardUntilMs, m.adFreeRewardUntilMs),
     setRow("practicedEpochDays", l.practicedEpochDays, o.practicedEpochDays, m.practicedEpochDays),
     setRow("unlockedItemIds", l.unlockedItemIds, o.unlockedItemIds, m.unlockedItemIds),
     setRow("celebratedItemIds", l.celebratedItemIds, o.celebratedItemIds, m.celebratedItemIds),
+    setRow("chordsDiscovered", l.chordsDiscovered, o.chordsDiscovered, m.chordsDiscovered),
     mapRow("rhythmHighScores", l.rhythmHighScores, o.rhythmHighScores, m.rhythmHighScores),
     mapRow("speedTrainerRecords", l.speedTrainerRecords, o.speedTrainerRecords, m.speedTrainerRecords),
 )

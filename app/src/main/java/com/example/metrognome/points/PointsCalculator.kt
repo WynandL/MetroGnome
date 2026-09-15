@@ -38,6 +38,8 @@ object PointsCalculator {
         today: DailyActivity? = null,
         /** Already daily-capped at earn time by RewardedAdManager; pass through directly. */
         rewardedAdGnotes: Int = 0,
+        /** Chords named in the Chord Finder (tapped or played in) → "Chord Finder" contribution. */
+        chordsNamed: Int = 0,
     ): PointsSnapshot {
 
         // Effective counted minutes for a time-based activity.
@@ -104,6 +106,11 @@ object PointsCalculator {
         else
             performanceBonusPoints
 
+        val chords = if (applyLimits)
+            countedEvents(chordsNamed, t.chordsNamedToday, PointsLimits.CHORDS_NAMED_PER_DAY)
+        else
+            chordsNamed
+
         val contributions = buildList {
             if (metronomeMinutes > 0L) add(
                 PointsContribution(
@@ -127,6 +134,14 @@ object PointsCalculator {
                     rawValue = droneMinutes,
                     rawUnit  = "min",
                     points   = (droneMinutes * PointsConfig.DRONE_PER_MINUTE).toInt(),
+                )
+            )
+            if (chords > 0) add(
+                PointsContribution(
+                    label    = "Chord Finder",
+                    rawValue = chords.toLong(),
+                    rawUnit  = if (chords == 1) "chord" else "chords",
+                    points   = chords * PointsConfig.PER_CHORD_NAMED,
                 )
             )
             if (gameBeats > 0) add(
@@ -222,9 +237,11 @@ object PointsCalculator {
         val speedMins  = (today.speedTrainerSecondsToday / 60).coerceAtMost(PointsLimits.SPEED_TRAINER_MINUTES_PER_DAY.toLong()).toInt()
         val feedback   = today.tunerFeedbackGiven.coerceAtMost(PointsLimits.TUNER_FEEDBACK_PER_DAY)
         val perfBonus  = today.performanceBonusToday.coerceAtMost(PointsLimits.PERFORMANCE_BONUS_PER_DAY)
+        val chords     = today.chordsNamedToday.coerceAtMost(PointsLimits.CHORDS_NAMED_PER_DAY)
         return (metMins * PointsConfig.METRONOME_PER_MINUTE).toInt() +
                tunerNotes * PointsConfig.PER_TUNER_NOTE +
                (droneMins * PointsConfig.DRONE_PER_MINUTE).toInt() +
+               chords * PointsConfig.PER_CHORD_NAMED +
                gameBeats +
                pracMins * PointsConfig.PER_PRACTICE_MINUTE +
                speedMins * PointsConfig.PER_SPEED_TRAINER_MINUTE +

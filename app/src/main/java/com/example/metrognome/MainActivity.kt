@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.metrognome.ui.components.AdBreakBanner
+import com.example.metrognome.ui.components.ChordGridIcon
 import com.example.metrognome.ui.components.LoyaltyMilestoneBanner
 import com.example.metrognome.ui.components.PointsEarnedBanner
 import com.example.metrognome.ui.components.RhythmPulseIcon
@@ -62,6 +63,7 @@ import com.example.metrognome.viewmodel.TunerViewModel
 enum class AppTab(val label: String) {
     GNOME("Gnome"),
     TUNER("Tuner"),
+    CHORDS("Chords"),
     RHYTHM("Rhythm"),
     SETTINGS("Settings"),
 }
@@ -151,16 +153,8 @@ fun MetroGnomeApp(
     // the tuner is told what is owned rather than reaching for a billing client of its own.
     LaunchedEffect(purchasedSoundIds) { tunerVm.setOwnedProducts(purchasedSoundIds) }
 
-    // The Chord Finder is a full page drawn over the tab scaffold rather than a fifth tab:
-    // where it finally lives is undecided, and for now it is reached from the dev tools.
-    // Opening it stops a sounding drone for the same reason the tuner does: the finder's
-    // mic would hear the app's own tone and add it to the chord.
-    var showChordFinder by rememberSaveable { mutableStateOf(false) }
+    // Read here for switchTab's Chords guard below.
     val droneState by tunerVm.droneState.collectAsStateWithLifecycle()
-    fun openChordFinder() {
-        if (droneState.playing) tunerVm.toggleDrone()
-        showChordFinder = true
-    }
 
     val visibleTabs = AppTab.entries
 
@@ -191,9 +185,16 @@ fun MetroGnomeApp(
         if (currentTab == AppTab.RHYTHM && tab != AppTab.RHYTHM) {
             rhythmVm.stopGame()
         }
-        // Ask for a review when the user lands on a calm, ad-free tab (Tuner/Settings)
+        // Landing on Chords stops a sounding drone for the same reason the tuner does:
+        // the finder's mic would hear the app's own tone and add it to the chord. The
+        // drone is otherwise allowed to carry across tabs (see TunerViewModel.stopListening).
+        if (tab == AppTab.CHORDS && tab != currentTab && droneState.playing) {
+            tunerVm.toggleDrone()
+        }
+        // Ask for a review when the user lands on a calm, ad-free tab (Tuner/Chords/Settings)
         // from elsewhere, never if an ad showed recently.
-        val landingOnCalmTab = tab != currentTab && (tab == AppTab.TUNER || tab == AppTab.SETTINGS)
+        val landingOnCalmTab = tab != currentTab &&
+            (tab == AppTab.TUNER || tab == AppTab.CHORDS || tab == AppTab.SETTINGS)
         currentTab = tab
         if (landingOnCalmTab && !adManager.recentlyShowedAd()) {
             activity?.let { reviewManager.maybeRequestReview(it) }
@@ -269,6 +270,7 @@ fun MetroGnomeApp(
                         when (tab) {
                             AppTab.GNOME    -> Icon(Icons.Filled.MusicNote, contentDescription = null)
                             AppTab.TUNER    -> TunerNeedleIcon()
+                            AppTab.CHORDS   -> ChordGridIcon()
                             AppTab.RHYTHM   -> RhythmPulseIcon()
                             AppTab.SETTINGS -> Icon(Icons.Filled.Settings, contentDescription = null)
                         }
@@ -335,18 +337,16 @@ fun MetroGnomeApp(
                 onRestore = metronomeVm::restorePurchases,
             )
 
+            AppTab.CHORDS -> ChordFinderScreen(vm = chordFinderVm, isAdFree = isAdFree)
+
             AppTab.SETTINGS -> SettingsScreen(
                 vm = metronomeVm,
                 onTriggerFeedback = tunerVm::debugTriggerFeedback,
                 onSimulateTuner = tunerVm::debugCycleSimulatedReading,
                 onStopTunerSimulation = tunerVm::debugStopSimulation,
                 notificationPermission = notificationPermission,
-                onOpenChordFinder = ::openChordFinder,
             )
         }
-    }
-    if (showChordFinder) {
-        ChordFinderScreen(vm = chordFinderVm, onBack = { showChordFinder = false })
     }
     PointsEarnedBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
     LoyaltyMilestoneBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())

@@ -36,6 +36,19 @@ private val INLAY_FRETS = setOf(3, 5, 7, 9, 12)
 /** The open-string column's width as a fraction of one fret. */
 private const val NUT_COLUMN = 0.72f
 
+/** Height (dp) of the fret-number band under the neck. */
+private const val LABEL_BAND_DP = 12
+
+/**
+ * Horizontal centre of every position that sounds [midi], each as a fraction of the
+ * fretboard's width (the open-string column counts as fret 0). Empty if no string reaches
+ * it. Lets a scrolling host bring the nearest position into view.
+ */
+fun fretboardPositionFractions(midi: Int, tuning: IntArray = GUITAR_STANDARD_TUNING): List<Float> =
+    tuning.map { open -> midi - open }
+        .filter { fret -> fret in 0..GUITAR_FRETS }
+        .map { fret -> (if (fret == 0) NUT_COLUMN * 0.5f else NUT_COLUMN + fret - 0.5f) / (GUITAR_FRETS + NUT_COLUMN) }
+
 /**
  * A drawn guitar neck, nut on the left, low E at the bottom, the way a right-handed player
  * sees it looking down. Every position sounding a MIDI note in [litMidi] is marked, so a
@@ -67,7 +80,7 @@ fun GuitarFretboard(
                 val fretWidth = size.width / (GUITAR_FRETS + NUT_COLUMN)
                 val fret = if (offset.x < fretWidth * NUT_COLUMN) 0
                     else ((offset.x - fretWidth * NUT_COLUMN) / fretWidth).toInt() + 1
-                val rowHeight = size.height / strings
+                val rowHeight = (size.height - LABEL_BAND_DP.dp.toPx()) / strings
                 // Row 0 is the top of the canvas, which is the highest string.
                 val row = (offset.y / rowHeight).toInt().coerceIn(0, strings - 1)
                 val string = strings - 1 - row
@@ -77,9 +90,11 @@ fun GuitarFretboard(
     ) {
         val fretWidth = size.width / (GUITAR_FRETS + NUT_COLUMN)
         val nutX = fretWidth * NUT_COLUMN
-        val rowHeight = size.height / strings
+        // The fret numbers get their own band under the neck, so they never sit on the low E.
+        val labelBand = LABEL_BAND_DP.dp.toPx()
+        val rowHeight = (size.height - labelBand) / strings
         val boardTop = rowHeight * 0.5f
-        val boardBottom = size.height - rowHeight * 0.5f
+        val boardBottom = size.height - labelBand - rowHeight * 0.5f
 
         fun stringY(string: Int) = boardBottom - string * rowHeight
         fun fretX(fret: Int) = if (fret == 0) nutX * 0.5f else nutX + (fret - 0.5f) * fretWidth

@@ -40,6 +40,23 @@ private const val BLACK_KEY_WIDTH = 0.62f
 private const val BLACK_KEY_HEIGHT = 0.62f
 
 /**
+ * Horizontal centre of the key for [midi], as a fraction of the keyboard's width, or null
+ * if the key is off the keyboard. Lets a scrolling host bring a key into view without
+ * knowing how the keys are laid out.
+ */
+fun pianoKeyCentreFraction(midi: Int, octaves: Int, lowestMidi: Int): Float? {
+    val offset = midi - lowestMidi
+    if (offset < 0 || offset >= octaves * 12) return null
+    val octave = offset / 12
+    val pitch = offset % 12
+    val naturalCount = WHITE_PITCH_CLASSES.size * octaves
+    val sharp = BLACK_KEYS.firstOrNull { it.second == pitch }
+    val naturals = if (sharp != null) octave * 7 + sharp.first + 1f
+        else octave * 7 + WHITE_PITCH_CLASSES.indexOf(pitch) + 0.5f
+    return naturals / naturalCount
+}
+
+/**
  * A drawn piano keyboard of whole octaves, starting on the C at [lowestMidi].
  *
  * Drawn with a real piano's value contrast: light naturals, near-black sharps. That is not

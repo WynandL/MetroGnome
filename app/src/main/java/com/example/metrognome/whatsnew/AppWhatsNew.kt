@@ -13,7 +13,8 @@ object AppWhatsNew {
     const val V3 = "v3"
     const val V4 = "v4"
     const val V5 = "v5"
+    const val V6 = "v6"
 
     /** All version keys, oldest first. The first unconfirmed key is shown to the user. */
-    val ALL: List<String> = listOf(V3, V4, V5)
+    val ALL: List<String> = listOf(V3, V4, V5, V6)
 }

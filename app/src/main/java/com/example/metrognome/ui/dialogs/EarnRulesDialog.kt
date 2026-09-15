@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.Piano
 import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.HorizontalDivider
@@ -280,6 +281,7 @@ private fun iconFor(iconKey: String): ImageVector = when (iconKey) {
     "metronome" -> Icons.Filled.MusicNote
     "tuner"     -> Icons.Filled.GraphicEq
     "drone"     -> Icons.Filled.Waves
+    "chords"    -> Icons.Filled.Piano
     "game"      -> Icons.Filled.Stars
     "practice"  -> Icons.Filled.Timer
     "speed"     -> Icons.Filled.Bolt

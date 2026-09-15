@@ -56,12 +56,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.ModeNight
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.Hearing
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.RecordVoiceOver
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -92,7 +87,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -120,8 +114,10 @@ import com.example.metrognome.ui.components.CircleButton
 import com.example.metrognome.ui.components.DronePanel
 import com.example.metrognome.ui.components.GoldSlider
 import com.example.metrognome.ui.components.GoldPill
+import com.example.metrognome.ui.components.InputLevelMeter
+import com.example.metrognome.ui.components.ListeningStateIcons
+import com.example.metrognome.ui.components.MicAccessStrip
 import com.example.metrognome.ui.components.LabelValueBadge
-import com.example.metrognome.ui.components.PrimaryButton
 import com.example.metrognome.ui.components.TunerFeedbackCard
 import com.example.metrognome.ui.dialogs.CalibrationConfirmDialog
 import com.example.metrognome.ui.dialogs.CalibrationDialog
@@ -415,7 +411,7 @@ internal fun TunerScreenContent(
         Spacer(Modifier.height(8.dp))
 
         if (!micGranted) {
-            MicPermissionPrompt(onRequestMic, isPermanentlyDenied = micPermanentlyDenied)
+            MicAccessStrip(permanentlyDenied = micPermanentlyDenied, onClick = onRequestMic)
             Spacer(Modifier.height(10.dp))
         }
 
@@ -729,7 +725,7 @@ private fun GaugeReadout(reading: Tuner.Reading?, amplitude: Float) {
         }
 
         Spacer(Modifier.height(8.dp))
-        LevelMeter(amplitude)
+        InputLevelMeter(amplitude)
     }
 }
 
@@ -800,25 +796,6 @@ private fun DrawScope.drawGauge(cents: Float, accent: Color, hasSignal: Boolean)
     drawCircle(AppColors.background, 3.5.dp.toPx(), pivot)
 }
 
-@Composable
-private fun LevelMeter(amplitude: Float) {
-    val fill = (amplitude * 6f).coerceIn(0f, 1f)
-    Box(
-        modifier = Modifier
-            .width(120.dp)
-            .height(4.dp)
-            .clip(RoundedCornerShape(2.dp))
-            .background(AppColors.surfaceVariant),
-    ) {
-        Box(
-            Modifier
-                .fillMaxWidth(fill)
-                .fillMaxHeight()
-                .background(AppColors.textAccent),
-        )
-    }
-}
-
 // ── Ambient environment panel ─────────────────────────────────────────────────────
 
 /**
@@ -871,7 +848,7 @@ private fun AmbientPanel(
             ) {
                 // Nothing is being heard while the mic is handed over, so no state is lit
                 // rather than leaving the last one showing as though it were still live.
-                AmbientStateIcons(state = if (listeningPaused) null else shown.state)
+                ListeningStateIcons(state = if (listeningPaused) null else shown.state)
                 Spacer(Modifier.weight(1f))
                 // Fixed-width slot — always reserves 36 dp so the chevron never shifts
                 Box(modifier = Modifier.width(36.dp), contentAlignment = Alignment.CenterEnd) {
@@ -1061,56 +1038,6 @@ private fun AmbientPanel(
     }
 }
 
-private val ambientStateIconEntries = listOf(
-    ListeningState.PROFILING to Icons.Filled.Search,
-    ListeningState.QUIET     to Icons.Filled.Hearing,
-    ListeningState.NOISE     to Icons.Filled.GraphicEq,
-    ListeningState.UNSTABLE  to Icons.Filled.RecordVoiceOver,
-    ListeningState.ACQUIRING to Icons.Filled.MusicNote,
-    ListeningState.LOCKED    to Icons.Filled.Lock,
-)
-
-/**
- * Always-visible row of six state indicator icons.
- * The active state lights up in its own [ambientStateColor]; all others are dimmed.
- * Avoids fast-changing text that is hard to read in a noisy rehearsal environment.
- */
-@Composable
-private fun AmbientStateIcons(state: ListeningState?) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ambientStateIconEntries.forEach { (s, icon) ->
-            val isActive = state == s
-            val activeColor = ambientStateColor(s)
-            val tint by animateColorAsState(
-                targetValue = if (isActive) activeColor else AppColors.textDim.copy(alpha = 0.28f),
-                animationSpec = tween(220),
-                label = "ambientIconTint",
-            )
-            val bgAlpha by animateFloatAsState(
-                targetValue = if (isActive) 0.15f else 0f,
-                animationSpec = tween(220),
-                label = "ambientIconBg",
-            )
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(26.dp)
-                    .background(activeColor.copy(alpha = bgAlpha), CircleShape),
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = tint,
-                    modifier = Modifier.size(15.dp),
-                )
-            }
-        }
-    }
-}
-
 /**
  * Slim pitch rail that replaces the old room-noise histogram.
  *
@@ -1233,13 +1160,6 @@ private fun FrequencyRail(
             }
         }
     }
-}
-
-private fun ambientStateColor(state: ListeningState): Color = when (state) {
-    ListeningState.LOCKED                          -> GameColors.good
-    ListeningState.ACQUIRING                       -> AppColors.gold
-    ListeningState.UNSTABLE, ListeningState.NOISE  -> AppColors.warning
-    ListeningState.QUIET, ListeningState.PROFILING -> GameColors.rangeBlue
 }
 
 private fun noiseColor(level: AmbientLevel): Color = when (level) {
@@ -1844,33 +1764,6 @@ private fun CalibrationStatus(info: CalibrationInfo) {
     }
 }
 
-
-@Composable
-private fun MicPermissionPrompt(onRequest: () -> Unit, isPermanentlyDenied: Boolean = false) {
-    Surface(
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                if (isPermanentlyDenied)
-                    "Microphone access was blocked. Enable it in App Settings to use the tuner."
-                else
-                    "Microphone access needed to hear your instrument.",
-                color = AppColors.textSecondary, fontSize = 12.sp, textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(12.dp))
-            PrimaryButton(
-                if (isPermanentlyDenied) "Open App Settings" else "Grant Microphone Access",
-                onRequest,
-            )
-        }
-    }
-}
 
 // ── Reference pitch pill ─────────────────────────────────────────────────────────
 

@@ -68,6 +68,13 @@ sealed class UnlockCondition {
      */
     data class MicChecksCompleted(val required: Int) : UnlockCondition()
 
+    /**
+     * Number of *different* chords named in the Chord Finder (distinct root + quality,
+     * "C" and "C/E" counting once). A set, so it cannot be farmed by naming the same
+     * chord over and over; it grows only as the player explores. Monotonically increasing.
+     */
+    data class ChordsDiscovered(val required: Int) : UnlockCondition()
+
     /** Always unlocked — used for developer preview / cheat mode. */
     object Always : UnlockCondition()
 }
@@ -124,5 +131,7 @@ fun UnlockCondition.displayText(): String = when (this) {
     is UnlockCondition.MicChecksCompleted ->
         if (required == 1) "Run a microphone Groove Check"
         else "Run $required microphone Groove Checks"
+    is UnlockCondition.ChordsDiscovered ->
+        "Name $required different chord${if (required != 1) "s" else ""} in the Chord Finder"
     UnlockCondition.Always -> "Always available"
 }

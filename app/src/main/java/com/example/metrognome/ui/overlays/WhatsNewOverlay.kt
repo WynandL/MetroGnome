@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.metrognome.ui.components.GuitarFretboard
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.whatsnew.AppWhatsNew
 import kotlinx.coroutines.launch
@@ -68,6 +69,7 @@ fun WhatsNewOverlayDispatcher(versionKey: String, onDismiss: () -> Unit) {
         AppWhatsNew.V3 -> V3FeatureIntroOverlay(onDismiss)
         AppWhatsNew.V4 -> V4FeatureIntroOverlay(onDismiss)
         AppWhatsNew.V5 -> V5FeatureIntroOverlay(onDismiss)
+        AppWhatsNew.V6 -> V6FeatureIntroOverlay(onDismiss)
     }
 }
 
@@ -330,6 +332,166 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
         }
     }
 }
+
+// ── V6 — "Chord Finder" ──────────────────────────────────────────────────────
+
+@Composable
+private fun V6FeatureIntroOverlay(onDismiss: () -> Unit) {
+    val cardScale = remember { Animatable(0.15f) }
+    val overlayAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        launch { overlayAlpha.animateTo(0.88f, tween(280)) }
+        cardScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+        )
+    }
+
+    // The preview names the chord one note at a time, the way the feature itself does:
+    // a dot lands on the fretboard, its name joins the line, and once all four are in,
+    // the chord name replaces them. Then it loops.
+    val reveal by rememberInfiniteTransition(label = "v6Reveal")
+        .animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(5200, easing = LinearEasing)),
+            label = "reveal",
+        )
+    val notesShown = (reveal / 0.15f).toInt().coerceIn(0, CMAJ7_OPEN.size)
+    val named = notesShown == CMAJ7_OPEN.size
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = overlayAlpha.value)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier
+                .padding(horizontal = 22.dp)
+                .graphicsLayer {
+                    scaleX = cardScale.value
+                    scaleY = cardScale.value
+                    alpha = (cardScale.value - 0.15f) / 0.85f
+                },
+            shape = RoundedCornerShape(28.dp),
+            color = AppColors.surfaceDeep,
+            shadowElevation = 28.dp,
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 24.dp, vertical = 28.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "\u2726  NEW IN VERSION 6  \u2726",
+                    color = AppColors.gold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 2.sp,
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                // Preview: an open Cmaj7 (x 3 2 0 0 0) arriving note by note, then named.
+                Box(
+                    modifier = Modifier
+                        .size(width = 220.dp, height = 150.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(AppColors.previewBgTop, AppColors.previewBgBottom)
+                            )
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 18.dp),
+                    ) {
+                        // No degree labels: at this size a marker is too small to carry text.
+                        GuitarFretboard(
+                            litMidi = CMAJ7_OPEN.take(notesShown).toSet(),
+                            accent = AppColors.gold,
+                            onPositionTap = {},
+                            modifier = Modifier.fillMaxWidth().height(74.dp),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = if (named) "Cmaj7" else CMAJ7_NAMES.take(notesShown).distinct().joinToString("   "),
+                            color = if (named) AppColors.gold else AppColors.gold.copy(alpha = 0.85f),
+                            fontSize = if (named) 26.sp else 14.sp,
+                            lineHeight = 30.sp,
+                            fontWeight = FontWeight.Black,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                Text(
+                    text = "Meet the Chord Finder",
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
+
+                Spacer(Modifier.height(6.dp))
+
+                Text(
+                    text = "Guitar \u00b7 Piano \u00b7 Microphone",
+                    color = AppColors.textMutedBlue,
+                    fontSize = 12.sp,
+                    fontStyle = FontStyle.Italic,
+                    textAlign = TextAlign.Center,
+                )
+
+                Spacer(Modifier.height(14.dp))
+
+                Text(
+                    text = "Play a chord as an arpeggio, one note at a time, and MetroGnome names it: the root, the quality, the inversion, and every other way those notes can be read. Or tap the notes on a fretboard or keyboard. Find it in the new Chords tab.",
+                    color = AppColors.textSecondary,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 21.sp,
+                )
+
+                Spacer(Modifier.height(26.dp))
+
+                // An acknowledgement, not a call to action: the button only dismisses, like
+                // every earlier version's, and "Name a chord!" read as a promise to open the
+                // tab. The body copy already says where to find it.
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
+                    shape = RoundedCornerShape(22.dp),
+                    modifier = Modifier.fillMaxWidth(0.65f),
+                ) {
+                    Text(
+                        text = "Sounds good!",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.White,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Open Cmaj7 on guitar (x 3 2 0 0 0): C3 E3 G3 B3 E4, low to high, the order the preview
+ * adds them. The top E doubles the third, so the name line shows four distinct notes.
+ */
+private val CMAJ7_OPEN = listOf(48, 52, 55, 59, 64)
+private val CMAJ7_NAMES = listOf("C", "E", "G", "B", "E")
 
 // ── V3 — "Metro Got a Glow-Up!" ───────────────────────────────────────────────
 

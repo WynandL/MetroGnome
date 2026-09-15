@@ -17,6 +17,7 @@ import com.example.metrognome.ui.components.metro_items.items.LapelPin
 import com.example.metrognome.ui.components.metro_items.items.StudioMic
 import com.example.metrognome.ui.components.metro_items.items.CheekTattoo
 import com.example.metrognome.ui.components.metro_items.items.DroneBee
+import com.example.metrognome.ui.components.metro_items.items.AcousticGuitar
 
 /**
  * Single source of truth for every cosmetic item and its unlock condition.
@@ -84,6 +85,13 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     // used for tuning rather than tapped once, short enough to land inside the first
     // week of anyone who takes to it. A bee, because a drone is one.
     MetroItemEntry(DroneBee, UnlockCondition.DroneSeconds(1_800)),   // 30 min
+
+    // ── Chord Finder reward — different chords named, a set rather than a count ──
+    // Twenty-five distinct chords: the twelve major and twelve minor triads alone are
+    // twenty-four, so the twenty-fifth means the player went past the basics, or played
+    // real songs in. Cannot be farmed by re-naming one chord. A guitar, because the
+    // feature was built for a guitarist and the fretboard is its default instrument.
+    MetroItemEntry(AcousticGuitar, UnlockCondition.ChordsDiscovered(25)),
 
     // ── Groove Check reward — earned by running the microphone self-test ──────
     // Unlocks on the first completed run of any verdict (PASS / FAIL / fixable ABORT),

@@ -50,5 +50,6 @@ class PointsManager(
         installedDays     = tracker.daysSinceFirstLaunch(),
         today                = dailyLog.todayActivity(tracker),
         rewardedAdGnotes     = rewardedAds.lifetimeGnotes(),
+        chordsNamed          = tracker.chordsNamed(),
     )
 }

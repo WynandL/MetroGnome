@@ -42,6 +42,10 @@ class MetroItemTracker(context: Context) {
         private const val KEY_SPEED_TRAINER_SECONDS   = "speed_trainer_seconds"
         private const val KEY_PERFORMANCE_BONUS       = "performance_bonus_points"
         private const val KEY_MIC_CHECKS_COMPLETED    = "mic_checks_completed"
+        private const val KEY_CHORDS_DISCOVERED       = "chords_discovered"
+        private const val KEY_CHORDS_NAMED            = "chords_named"
+        private const val KEY_CHORDS_NAMED_MIC        = "chords_named_mic"
+        private const val KEY_CHORDS_NAMED_TAP        = "chords_named_tap"
 
         // Mirrors PracticeSessionManager key — read-only here, written only by PracticeSessionManager
         private const val KEY_PRACTICE_TOTAL = "total_sessions"
@@ -96,6 +100,32 @@ class MetroItemTracker(context: Context) {
     fun addDroneSeconds(seconds: Long) {
         val current = prefs.getLong(KEY_DRONE_SECONDS, 0L)
         prefs.edit { putLong(KEY_DRONE_SECONDS, current + seconds) }
+    }
+
+    /**
+     * Record that [chordSymbol] (root + quality, no slash or omission, e.g. "Am7") was named
+     * in the Chord Finder. A set rather than a counter: the reward is for exploring
+     * chords, not for naming one chord many times. Copied before mutation, since the set
+     * SharedPreferences hands back must never be modified in place.
+     */
+    fun recordChordDiscovered(chordSymbol: String) {
+        val current = prefs.getStringSet(KEY_CHORDS_DISCOVERED, emptySet()) ?: emptySet()
+        if (chordSymbol in current) return
+        prefs.edit { putStringSet(KEY_CHORDS_DISCOVERED, HashSet(current) + chordSymbol) }
+    }
+
+    /**
+     * Count one chord named in the Chord Finder (the Gnotes-earning counter, capped per day
+     * by the points system), and which way its last note arrived. The mic/tap split is
+     * kept from day one so a future item can reward playing chords in specifically; the
+     * total is what earns, so a tapped chord is worth the same as a played one.
+     */
+    fun recordChordNamed(fromMic: Boolean) {
+        val splitKey = if (fromMic) KEY_CHORDS_NAMED_MIC else KEY_CHORDS_NAMED_TAP
+        prefs.edit {
+            putInt(KEY_CHORDS_NAMED, prefs.getInt(KEY_CHORDS_NAMED, 0) + 1)
+            putInt(splitKey, prefs.getInt(splitKey, 0) + 1)
+        }
     }
 
     /** Increment the count of individual notes the tuner has locked on to. */
@@ -167,6 +197,12 @@ class MetroItemTracker(context: Context) {
     fun speedTrainerSeconds(): Long           = prefs.getLong(KEY_SPEED_TRAINER_SECONDS, 0L)
     fun performanceBonusPoints(): Int        = prefs.getInt(KEY_PERFORMANCE_BONUS, 0)
     fun micChecksCompleted(): Int            = prefs.getInt(KEY_MIC_CHECKS_COMPLETED, 0)
+    fun chordsDiscovered(): Int              = chordsDiscoveredSet().size
+    fun chordsNamed(): Int                   = prefs.getInt(KEY_CHORDS_NAMED, 0)
+    fun chordsNamedByMic(): Int              = prefs.getInt(KEY_CHORDS_NAMED_MIC, 0)
+    fun chordsNamedByTap(): Int              = prefs.getInt(KEY_CHORDS_NAMED_TAP, 0)
+    /** The distinct chords named so far (root + quality), for the profile snapshot. */
+    fun chordsDiscoveredSet(): Set<String>   = prefs.getStringSet(KEY_CHORDS_DISCOVERED, emptySet())?.toSet() ?: emptySet()
     fun practiceSessionsCompleted(): Int = practicePrefs.getInt(KEY_PRACTICE_TOTAL, 0)
     /** Distinct calendar days on which the user has opened the app. */
     fun loyaltyDays(): Int = usageDayTracker.distinctDaysCount()
@@ -224,6 +260,7 @@ class MetroItemTracker(context: Context) {
             is UnlockCondition.TunerFeedbackGiven              -> tunerFeedbackGiven() >= condition.required
             is UnlockCondition.SpeedTrainingSessionsCompleted  -> speedTrainingSessionsCompleted() >= condition.required
             is UnlockCondition.MicChecksCompleted              -> micChecksCompleted() >= condition.required
+            is UnlockCondition.ChordsDiscovered                -> chordsDiscovered() >= condition.required
             UnlockCondition.Always                             -> true
         }
     }
@@ -267,6 +304,10 @@ class MetroItemTracker(context: Context) {
             remove(KEY_SPEED_TRAINER_SECONDS)
             remove(KEY_PERFORMANCE_BONUS)
             remove(KEY_MIC_CHECKS_COMPLETED)
+            remove(KEY_CHORDS_DISCOVERED)
+            remove(KEY_CHORDS_NAMED)
+            remove(KEY_CHORDS_NAMED_MIC)
+            remove(KEY_CHORDS_NAMED_TAP)
             // KEY_FORCE_UNLOCKED_IDS is intentionally preserved — it reflects real purchases
         }
     }

@@ -95,7 +95,6 @@ fun SettingsScreen(
     onSimulateTuner: () -> Unit = {},
     onStopTunerSimulation: () -> Unit = {},
     notificationPermission: NotificationPermissionState? = null,
-    onOpenChordFinder: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val activity = LocalActivity.current
@@ -384,7 +383,6 @@ fun SettingsScreen(
                     onSimulateTuner = onSimulateTuner,
                     onStopTunerSimulation = onStopTunerSimulation,
                     onMicStateChanged = { micCheckRefresh++ },
-                    onOpenChordFinder = onOpenChordFinder,
                 )
             }
 

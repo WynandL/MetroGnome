@@ -57,6 +57,9 @@ data class ActivitySummary(
     /** Cumulative seconds spent in Speed Trainer sessions. */
     val speedTrainerSeconds: Long,
 
+    /** Cumulative seconds the tuning drone has been sounding. */
+    val droneSeconds: Long,
+
     // ── Event counters (merge = take the larger) ───────────────────────────────
 
     /** Number of individual notes the tuner has successfully locked on to. */
@@ -82,6 +85,18 @@ data class ActivitySummary(
 
     /** Lifetime graded timing-bonus points (raw input to the "Timing Bonus" Gnotes). */
     val performanceBonusPoints: Int,
+
+    /** Number of microphone Groove Check runs that reached a verdict. */
+    val micChecksCompleted: Int,
+
+    /** Distinct chords (root + quality) named in the Chord Finder. Merge = the union. */
+    val chordsDiscovered: Set<String>,
+
+    /** Chords named in the Chord Finder, lifetime (the Gnotes-earning counter), and its split
+     *  by how the chord's last note arrived. All three merge = take the larger. */
+    val chordsNamed: Int,
+    val chordsNamedByMic: Int,
+    val chordsNamedByTap: Int,
 
     /** Lifetime Gnotes earned from rewarded ads, already daily-capped at earn time
      *  (raw input to the "Ad Bonus" Gnotes). */

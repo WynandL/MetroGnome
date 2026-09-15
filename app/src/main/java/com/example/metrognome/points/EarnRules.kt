@@ -61,6 +61,15 @@ val EARN_RULES: List<EarnRule> = listOf(
         limitUnit     = "min",
     ),
     EarnRule(
+        label         = "Chord Finder",
+        description   = "Earned each time the Chord Finder names a chord, played in or tapped",
+        iconKey       = "chords",
+        pointsPerUnit = PointsConfig.PER_CHORD_NAMED,
+        rateUnit      = "chord",
+        dailyLimit    = PointsLimits.CHORDS_NAMED_PER_DAY,
+        limitUnit     = "chords",
+    ),
+    EarnRule(
         label         = "Rhythm Game",
         description   = "Your timing is the reward here: tighter hits score higher, and every ${PointsConfig.GAME_SCORE_DIVISOR} score points earns 1 ${PointsConfig.CURRENCY_NAME_SINGULAR}.",
         iconKey       = "game",

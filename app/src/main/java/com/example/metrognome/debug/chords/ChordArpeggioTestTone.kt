@@ -1,0 +1,124 @@
+package com.example.metrognome.debug.chords
+
+import android.media.AudioAttributes
+import android.media.AudioFormat
+import android.media.AudioTrack
+import com.example.metrognome.audio.NoteNames
+import kotlin.concurrent.thread
+import kotlin.math.PI
+import kotlin.math.min
+import kotlin.math.sin
+
+/**
+ * DEV ONLY: plays a few chords through the speaker as arpeggios, after a delay long enough
+ * to walk from the dev tools to the Chords tab, so the Chord Finder's mic path can be tried
+ * without an instrument in the room.
+ *
+ * Each note is a harmonic-rich tone (fundamental plus two decaying partials, the kind of
+ * spectrum the pitch detector locks on to at once), held [NOTE_MS] with a short attack and
+ * release and a [NOTE_GAP_MS] silence after it, so the tuner's ambient gate sees a steady
+ * note, then silence, then the next. Chords are [CHORD_GAP_MS] apart, long enough to tap
+ * Clear between them; without that the finder accumulates all three into one eight-note
+ * pile, which is not what is being tested.
+ *
+ * Rendered in one go into a static AudioTrack on a plain thread, so it keeps playing when
+ * the Settings screen (and its composition) is left. Not a shipped feature; lives in
+ * `debug/` and is reachable only from [com.example.metrognome.debug.settings.DevToolsSection].
+ */
+object ChordArpeggioTestTone {
+
+    /** What plays, as MIDI notes low to high: C major, G7, A minor. */
+    private val CHORDS = listOf(
+        listOf(48, 52, 55),        // C3 E3 G3
+        listOf(43, 47, 50, 53),    // G2 B2 D3 F3
+        listOf(45, 48, 52),        // A2 C3 E3
+    )
+
+    const val START_DELAY_MS = 3_000L
+    private const val NOTE_MS = 900
+    private const val NOTE_GAP_MS = 250
+    private const val CHORD_GAP_MS = 4_000
+    private const val SAMPLE_RATE = 44_100
+    private const val AMPLITUDE = 0.55f
+
+    @Volatile private var playing = false
+
+    /** Human-readable description of the sequence, for the dev button's caption. */
+    val description: String
+        get() = CHORDS.joinToString(", ") { chord -> chord.joinToString(" ") { NoteNames.labelOf(it) } }
+
+    /**
+     * Start after [START_DELAY_MS] unless already playing. Returns false if a run is in
+     * progress. [referenceHz] should be the tuner's, so the tones land where the finder
+     * expects them.
+     */
+    fun playAfterDelay(referenceHz: Float = 440f): Boolean {
+        if (playing) return false
+        playing = true
+        thread(name = "ChordArpeggioTestTone", isDaemon = true) {
+            try {
+                Thread.sleep(START_DELAY_MS)
+                val pcm = render(referenceHz)
+                val track = AudioTrack.Builder()
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build(),
+                    )
+                    .setAudioFormat(
+                        AudioFormat.Builder()
+                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                            .setSampleRate(SAMPLE_RATE)
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                            .build(),
+                    )
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .setBufferSizeInBytes(pcm.size * 2)
+                    .build()
+                try {
+                    track.write(pcm, 0, pcm.size)
+                    track.play()
+                    Thread.sleep(pcm.size * 1000L / SAMPLE_RATE + 200L)
+                } finally {
+                    track.stop()
+                    track.release()
+                }
+            } catch (_: Exception) {
+                // A dev tool: fail silently rather than crash the app under test.
+            } finally {
+                playing = false
+            }
+        }
+        return true
+    }
+
+    /** The whole sequence as 16-bit mono PCM. */
+    private fun render(referenceHz: Float): ShortArray {
+        val noteSamples = SAMPLE_RATE * NOTE_MS / 1000
+        val gapSamples = SAMPLE_RATE * NOTE_GAP_MS / 1000
+        val chordGapSamples = SAMPLE_RATE * CHORD_GAP_MS / 1000
+        val total = CHORDS.sumOf { it.size * (noteSamples + gapSamples) } + (CHORDS.size - 1) * chordGapSamples
+        val out = ShortArray(total)
+        var pos = 0
+        val attack = SAMPLE_RATE * 25 / 1000
+        val release = SAMPLE_RATE * 80 / 1000
+
+        CHORDS.forEachIndexed { chordIndex, chord ->
+            for (midi in chord) {
+                val f = NoteNames.frequencyOf(midi, referenceHz).toDouble()
+                for (i in 0 until noteSamples) {
+                    val t = i.toDouble() / SAMPLE_RATE
+                    val env = min(1.0, min(i / attack.toDouble(), (noteSamples - i) / release.toDouble()))
+                    val v = sin(2 * PI * f * t) +
+                        0.45 * sin(2 * PI * 2 * f * t) +
+                        0.25 * sin(2 * PI * 3 * f * t)
+                    out[pos + i] = (v / 1.7 * env * AMPLITUDE * Short.MAX_VALUE).toInt().toShort()
+                }
+                pos += noteSamples + gapSamples   // the gap is left at zero
+            }
+            if (chordIndex < CHORDS.lastIndex) pos += chordGapSamples
+        }
+        return out
+    }
+}

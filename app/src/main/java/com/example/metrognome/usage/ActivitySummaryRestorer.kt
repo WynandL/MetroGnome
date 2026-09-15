@@ -53,6 +53,7 @@ class ActivitySummaryRestorer(private val context: Context) {
             putLong("metronome_seconds",        s.metronomeSeconds)
             putLong("tuner_seconds",            s.tunerSeconds)
             putLong("speed_trainer_seconds",    s.speedTrainerSeconds)
+            putLong("drone_seconds",            s.droneSeconds)
             putInt("tuner_notes_locked",        s.tunerNotesLocked)
             putInt("games_completed",           s.gamesCompleted)
             putInt("game_score_total",          s.totalGameScore)
@@ -60,6 +61,11 @@ class ActivitySummaryRestorer(private val context: Context) {
             putInt("tuner_feedback_count",      s.tunerFeedbackGiven)
             putInt("speed_training_sessions",   s.speedTrainerSessionsCompleted)
             putInt("performance_bonus_points",  s.performanceBonusPoints)
+            putInt("mic_checks_completed",      s.micChecksCompleted)
+            putStringSet("chords_discovered",   s.chordsDiscovered)
+            putInt("chords_named",              s.chordsNamed)
+            putInt("chords_named_mic",          s.chordsNamedByMic)
+            putInt("chords_named_tap",          s.chordsNamedByTap)
             putLong("first_launch_ms",          s.firstLaunchMs)
             putStringSet("celebrated_item_ids", s.celebratedItemIds)
         }
@@ -132,6 +138,7 @@ internal fun mergeSummaries(local: ActivitySummary, incoming: ActivitySummary): 
         metronomeSeconds              = max(local.metronomeSeconds, incoming.metronomeSeconds),
         tunerSeconds                  = max(local.tunerSeconds, incoming.tunerSeconds),
         speedTrainerSeconds           = max(local.speedTrainerSeconds, incoming.speedTrainerSeconds),
+        droneSeconds                  = max(local.droneSeconds, incoming.droneSeconds),
         tunerNotesLocked              = max(local.tunerNotesLocked, incoming.tunerNotesLocked),
         tunerFeedbackGiven            = max(local.tunerFeedbackGiven, incoming.tunerFeedbackGiven),
         gamesCompleted                = max(local.gamesCompleted, incoming.gamesCompleted),
@@ -140,6 +147,11 @@ internal fun mergeSummaries(local: ActivitySummary, incoming: ActivitySummary): 
         practiceSessionsCompleted     = max(local.practiceSessionsCompleted, incoming.practiceSessionsCompleted),
         speedTrainerSessionsCompleted = max(local.speedTrainerSessionsCompleted, incoming.speedTrainerSessionsCompleted),
         performanceBonusPoints        = max(local.performanceBonusPoints, incoming.performanceBonusPoints),
+        micChecksCompleted            = max(local.micChecksCompleted, incoming.micChecksCompleted),
+        chordsDiscovered              = local.chordsDiscovered + incoming.chordsDiscovered,
+        chordsNamed                   = max(local.chordsNamed, incoming.chordsNamed),
+        chordsNamedByMic              = max(local.chordsNamedByMic, incoming.chordsNamedByMic),
+        chordsNamedByTap              = max(local.chordsNamedByTap, incoming.chordsNamedByTap),
         rewardedAdGnotes              = max(local.rewardedAdGnotes, incoming.rewardedAdGnotes),
         bestPracticeStreak            = max(local.bestPracticeStreak, incoming.bestPracticeStreak),
         practicedEpochDays            = local.practicedEpochDays + incoming.practicedEpochDays,

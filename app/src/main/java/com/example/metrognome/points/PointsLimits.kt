@@ -18,6 +18,12 @@ object PointsLimits {
     const val TUNER_NOTES_PER_DAY: Int                = 18
     /** Minutes of drone that count per day. 30 x 1 pt = 30 pts max, a third of the others. */
     const val DRONE_MINUTES_PER_DAY: Int              = 30
+    /**
+     * Chords named in the Chord Finder that count per day. 9 x 5 pts = 45 pts max, half the
+     * practice activities: it is a lookup tool, and a chord can be tapped in as easily as
+     * played, so it sits between the drone (30) and the metronome (90).
+     */
+    const val CHORDS_NAMED_PER_DAY: Int               = 9
     /** Maximum Gnotes earnable from the rhythm game per day. Reached after ~2-3 decent games. */
     const val RHYTHM_BEATS_PER_DAY: Int               = 30
     /** Minutes of completed practice that count per day. 45 × 2 pts = 90 pts max (equal to metronome). */

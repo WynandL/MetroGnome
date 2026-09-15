@@ -162,7 +162,11 @@ fun DronePanel(
                 onSelect = onSetNote,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    // Tall enough that a natural is clearly longer than it is wide. At the
+                    // original 48 dp the seven keys came out nearly square and the picker
+                    // read as a different instrument from the Chords tab's keyboard, which is
+                    // the same component drawn at real key proportions.
+                    .height(84.dp)
                     // The keyboard carries its meaning entirely in what it looks like, so
                     // without this a screen reader finds an unlabelled canvas where the
                     // note picker should be.

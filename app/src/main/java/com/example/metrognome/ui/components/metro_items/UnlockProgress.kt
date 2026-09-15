@@ -47,6 +47,9 @@ fun UnlockCondition.unlockProgress(tracker: MetroItemTracker): Float = when (thi
     is UnlockCondition.MicChecksCompleted ->
         (tracker.micChecksCompleted().toFloat() / required).coerceIn(0f, 1f)
 
+    is UnlockCondition.ChordsDiscovered ->
+        (tracker.chordsDiscovered().toFloat() / required).coerceIn(0f, 1f)
+
     UnlockCondition.Always -> 1f
 }
 
@@ -133,6 +136,11 @@ fun UnlockCondition.progressLabel(tracker: MetroItemTracker): String = when (thi
     is UnlockCondition.MicChecksCompleted -> {
         val cur = tracker.micChecksCompleted()
         "$cur / $required Groove Check${if (required != 1) "s" else ""}"
+    }
+
+    is UnlockCondition.ChordsDiscovered -> {
+        val cur = tracker.chordsDiscovered()
+        "$cur / $required different chord${if (required != 1) "s" else ""}"
     }
 
     UnlockCondition.Always -> ""

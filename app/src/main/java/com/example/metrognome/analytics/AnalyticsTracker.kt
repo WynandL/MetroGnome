@@ -17,6 +17,7 @@ object AnalyticsTracker {
     private var metronomeSessionStartMs = 0L
     private var tunerSessionStartMs     = 0L
     private var droneSessionStartMs     = 0L
+    private var chordsSessionStartMs    = 0L
 
     // ── Metronome ─────────────────────────────────────────────────────────────
 
@@ -128,6 +129,60 @@ object AnalyticsTracker {
     fun logDroneVoicePreviewed(productId: String) {
         Firebase.analytics.logEvent("drone_voice_previewed") {
             param("product_id", productId)
+        }
+    }
+
+    // ── Chord Finder ──────────────────────────────────────────────────────────
+
+    /**
+     * The Chords tab was opened. [mic] is "on", "off" (the user switched it off) or
+     * "denied" (no permission), which is the first thing to know about how the feature is
+     * used: a tab full of "off" says people tap chords in, and the mic path is a bonus.
+     */
+    fun logChordsSessionStarted(instrument: String, mic: String) {
+        chordsSessionStartMs = System.currentTimeMillis()
+        Firebase.analytics.logEvent("chords_session_started") {
+            param("instrument", instrument)
+            param("mic",        mic)
+        }
+    }
+
+    /**
+     * The Chords tab was left. The three counts say what the visit was: notes that came
+     * from the mic against notes that were tapped, and how many distinct chords ended up
+     * named, so a long visit with nothing named is visible as a failure rather than as
+     * engagement.
+     */
+    fun logChordsSessionEnded(tapNotes: Int, micNotes: Int, chordsNamed: Int) {
+        val durationSec = if (chordsSessionStartMs > 0L)
+            (System.currentTimeMillis() - chordsSessionStartMs) / 1000L else 0L
+        chordsSessionStartMs = 0L
+        Firebase.analytics.logEvent("chords_session_ended") {
+            param("duration_seconds", durationSec)
+            param("tap_notes",        tapNotes.toLong())
+            param("mic_notes",        micNotes.toLong())
+            param("chords_named",     chordsNamed.toLong())
+        }
+    }
+
+    /**
+     * A chord name held on screen long enough to have been read (see the ViewModel's
+     * debounce), so the intermediate triad on the way to a seventh is not counted. The
+     * symbol is the parameter worth watching, for the same reason as the drone's note: a
+     * pile of E, A, D and G says guitarists, a pile of maj7 and m9 says jazz.
+     */
+    fun logChordNamed(symbol: String, noteCount: Int, source: String) {
+        Firebase.analytics.logEvent("chord_named") {
+            param("symbol",     symbol)
+            param("note_count", noteCount.toLong())
+            param("source",     source)
+        }
+    }
+
+    /** The drawn instrument was switched, like the drone's voice change. */
+    fun logChordsInstrumentChanged(instrument: String) {
+        Firebase.analytics.logEvent("chords_instrument_changed") {
+            param("instrument", instrument)
         }
     }
 

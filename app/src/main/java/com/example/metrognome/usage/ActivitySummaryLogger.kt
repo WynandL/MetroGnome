@@ -50,6 +50,7 @@ class ActivitySummaryLogger(context: Context) {
             metronomeSeconds              = tracker.metronomeSeconds(),
             tunerSeconds                  = tracker.tunerSeconds(),
             speedTrainerSeconds           = tracker.speedTrainerSeconds(),
+            droneSeconds                  = tracker.droneSeconds(),
             tunerNotesLocked              = tracker.tunerNotesLocked(),
             tunerFeedbackGiven            = tracker.tunerFeedbackGiven(),
             gamesCompleted                = tracker.gamesCompleted(),
@@ -58,6 +59,11 @@ class ActivitySummaryLogger(context: Context) {
             practiceSessionsCompleted     = tracker.practiceSessionsCompleted(),
             speedTrainerSessionsCompleted = tracker.speedTrainingSessionsCompleted(),
             performanceBonusPoints        = tracker.performanceBonusPoints(),
+            micChecksCompleted            = tracker.micChecksCompleted(),
+            chordsDiscovered              = tracker.chordsDiscoveredSet(),
+            chordsNamed                   = tracker.chordsNamed(),
+            chordsNamedByMic              = tracker.chordsNamedByMic(),
+            chordsNamedByTap              = tracker.chordsNamedByTap(),
             rewardedAdGnotes              = rewardedAdPrefs.getInt("lifetime_gnotes", 0),
             bestPracticeStreak            = practiceManager.getBestStreak(),
             practicedEpochDays            = practiceManager.getPracticedEpochDays(),
@@ -78,6 +84,8 @@ class ActivitySummaryLogger(context: Context) {
             appendLine("usage days : ${s.distinctUsageDays}  (install days: ${s.daysSinceInstall})")
             appendLine("metronome  : ${s.metronomeSeconds}s")
             appendLine("tuner      : ${s.tunerSeconds}s  notes: ${s.tunerNotesLocked}  feedback: ${s.tunerFeedbackGiven}")
+            appendLine("drone      : ${s.droneSeconds}s  mic checks: ${s.micChecksCompleted}")
+            appendLine("chords     : named ${s.chordsNamed} (mic ${s.chordsNamedByMic}, tap ${s.chordsNamedByTap})  distinct: ${s.chordsDiscovered.size}")
             appendLine("game       : ${s.gamesCompleted} rounds  score: ${s.totalGameScore}  highs: ${s.rhythmHighScores}")
             appendLine("practice   : ${s.practiceMinutesTotal}min  sessions: ${s.practiceSessionsCompleted}  best streak: ${s.bestPracticeStreak}  days: ${s.practicedEpochDays.size}")
             appendLine("speed      : ${s.speedTrainerSeconds}s  sessions: ${s.speedTrainerSessionsCompleted}  records: ${s.speedTrainerRecords.size}")

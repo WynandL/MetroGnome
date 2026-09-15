@@ -29,6 +29,11 @@ object PointsConfig {
      * the app, which is the opposite of what any of these weights are for.
      */
     const val DRONE_PER_MINUTE: Int            = 1
+    /**
+     * Per chord named in the Chord Finder, the tuner's per-note rate: both are one event of
+     * real musical input. The daily cap (see PointsLimits) is what keeps it modest.
+     */
+    const val PER_CHORD_NAMED: Int             = 5
     const val GAME_SCORE_DIVISOR: Int          = 110  // every 110 game-score points = 1 Gnote (near-perfect beginner game ~14 Gnotes)
     const val GAME_SCORE_AVG_PER_GAME: Int     = 1000  // typical casual-game score; used only in ConditionPoints display
     const val PER_PRACTICE_MINUTE: Int         = 2   // points per minute of completed practice

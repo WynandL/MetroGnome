@@ -130,6 +130,22 @@ class ChordTheoryTest {
     }
 
     @Test
+    fun theOctaveNumberFollowsTheSpelledLetter() {
+        // D♭7 is D♭ F A♭ C♭. Its seventh played at MIDI 59 is the pitch B3, spelled C♭4.
+        val dbSeven = best(C3 + 1, C3 + 5, Ab3, B3)
+        assertEquals("D♭7", dbSeven.symbol)
+        assertEquals("C♭", dbSeven.spell(11))
+        assertEquals(4, dbSeven.spelledOctave(B3))
+        assertEquals(3, dbSeven.spelledOctave(Ab3))   // an ordinary tone keeps its MIDI octave
+
+        // C#m(maj7) is C# E G# B#. Its seventh played at MIDI 60 (the pitch C4) is B#3.
+        val csMinMaj7 = best(C3 + 1, E3, Ab3, C4)
+        assertEquals("C#m(maj7)", csMinMaj7.symbol)
+        assertEquals("B#", csMinMaj7.spell(0))
+        assertEquals(3, csMinMaj7.spelledOctave(C4))
+    }
+
+    @Test
     fun minorTypeRootsPreferSharps() {
         assertEquals("C#m", symbol(C3 + 1, E3, Ab3))
         assertEquals("D♭", symbol(C3 + 1, C3 + 5, Ab3))

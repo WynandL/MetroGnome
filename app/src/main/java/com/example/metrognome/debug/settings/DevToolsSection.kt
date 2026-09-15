@@ -2,6 +2,7 @@ package com.example.metrognome.debug.settings
 
 import android.Manifest
 import android.content.Context
+import android.widget.Toast
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -57,6 +58,7 @@ import com.example.metrognome.points.PointsBannerQueue
 import com.example.metrognome.ui.components.PollBanner
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.overlays.MetroAvatarDialog
+import com.example.metrognome.debug.chords.ChordArpeggioTestTone
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import com.example.metrognome.whatsnew.AppWhatsNew
@@ -85,8 +87,6 @@ fun DevToolsSection(
     onStopTunerSimulation: () -> Unit,
     onMicStateChanged: () -> Unit,
     modifier: Modifier = Modifier,
-    /** Opens the Chord Finder page; a dev entry until the feature has a home in the app. */
-    onOpenChordFinder: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -434,6 +434,31 @@ fun DevToolsSection(
 
         Spacer(Modifier.height(6.dp))
 
+        // Chord Finder mic path without an instrument: after a delay long enough to walk to
+        // the Chords tab, plays three chords as arpeggios through the speaker (turn it up).
+        // Tap Clear between chords, or they pile into one set. See ChordArpeggioTestTone.
+        OutlinedButton(
+            onClick = {
+                val started = ChordArpeggioTestTone.playAfterDelay(
+                    referenceHz = context.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE)
+                        .getFloat("reference_hz", 440f),
+                )
+                Toast.makeText(
+                    context,
+                    if (started) "Go to the Chords tab: ${ChordArpeggioTestTone.description} in ${ChordArpeggioTestTone.START_DELAY_MS / 1000}s"
+                    else "Test chords already playing",
+                    Toast.LENGTH_LONG,
+                ).show()
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
+            border = BorderStroke(1.dp, AppColors.gold)
+        ) {
+            Text("Play Test Chords (Chords tab, 3 s delay)", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        }
+
+        Spacer(Modifier.height(6.dp))
+
         // Non-destructive profile capture/restore round-trip: proves every progress field
         // survives a write+read with no loss. Shows a per-field PASS/FAIL diff.
         OutlinedButton(
@@ -443,19 +468,6 @@ fun DevToolsSection(
             border = BorderStroke(1.dp, AppColors.gold)
         ) {
             Text("Profile Round-Trip", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-        }
-
-        Spacer(Modifier.height(6.dp))
-
-        // Chord Finder (v6.0, in progress): the full page, reachable from here only until
-        // it has a home in the app. See ChordFinderScreen.
-        OutlinedButton(
-            onClick = onOpenChordFinder,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
-            border = BorderStroke(1.dp, AppColors.gold)
-        ) {
-            Text("Chord Finder", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
         }
 
         Spacer(Modifier.height(6.dp))

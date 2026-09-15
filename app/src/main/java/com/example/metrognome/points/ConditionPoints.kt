@@ -48,6 +48,10 @@ fun UnlockCondition.pointsEquivalent(): Int = when (this) {
     // A one-off action, not a Gnotes-earning activity — no points equivalent.
     is UnlockCondition.MicChecksCompleted -> 0
 
+    // Naming chords earns no Gnotes (it asks nothing of the user that a tap cannot give),
+    // so the requirement is named directly rather than in Gnotes terms.
+    is UnlockCondition.ChordsDiscovered -> 0
+
     UnlockCondition.Always -> 0
 }
 
@@ -92,6 +96,9 @@ fun UnlockCondition.pointsDisplayText(): String {
         is UnlockCondition.MicChecksCompleted ->
             if (required == 1) "Run a microphone Groove Check"
             else "Run $required microphone Groove Checks"
+
+        is UnlockCondition.ChordsDiscovered ->
+            "Name $required different chord${if (required != 1) "s" else ""} in the Chord Finder"
 
         UnlockCondition.Always -> "Always available"
     }
