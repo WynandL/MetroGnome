@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Metro Gnome - Free Metronome &amp; Chromatic Tuner for Android</title>
-  <meta name="description" content="Free metronome, chromatic tuner, rhythm game, and speed trainer for Android. Tap tempo, train your speed, and stay in time. Built for real musicians.">
+  <meta name="description" content="Free metronome, chromatic tuner, chord finder, rhythm game, and speed trainer for Android. Tap tempo, name any chord, stay in time. Built for real musicians.">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="qwODXdkzQirlCbR2ycGuLXg0EKr2PddGe5CZnxfjDTw">
   <meta name="google-site-verification" content="UFwW2Ybk-LWanrl-LZsS4XjzSsgx0mVHjApxjV7BqP0">
@@ -16,7 +16,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Metro Gnome">
   <meta property="og:title" content="Metro Gnome - Free Metronome &amp; Chromatic Tuner for Android">
-  <meta property="og:description" content="Free metronome, chromatic tuner, rhythm game, and speed trainer for Android. Tap tempo, train your speed, and stay in time. Built for real musicians.">
+  <meta property="og:description" content="Free metronome, chromatic tuner, chord finder, rhythm game, and speed trainer for Android. Tap tempo, name any chord, stay in time. Built for real musicians.">
   <meta property="og:url" content="https://metrognome.co.za/">
   <meta property="og:image" content="https://metrognome.co.za/metro.png">
   <meta property="og:image:alt" content="Metro Gnome, the friendly gnome metronome and tuner for Android">
@@ -24,7 +24,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Metro Gnome - Free Metronome &amp; Chromatic Tuner for Android">
-  <meta name="twitter:description" content="Free metronome, chromatic tuner, rhythm game, and speed trainer for Android. Tap tempo, train your speed, and stay in time.">
+  <meta name="twitter:description" content="Free metronome, chromatic tuner, chord finder, rhythm game, and speed trainer for Android. Tap tempo, name any chord, and stay in time.">
   <meta name="twitter:image" content="https://metrognome.co.za/metro.png">
 
   <!-- SoftwareApplication Schema -->
@@ -44,10 +44,11 @@
     "sameAs": [
       "https://metrognome.co.za/"
     ],
-    "description": "Free metronome, chromatic tuner, rhythm game, speed trainer, and practice timer for Android with smart ambient noise detection and a rewards system.",
+    "description": "Free metronome, chromatic tuner, chord finder, rhythm game, speed trainer, and practice timer for Android with smart ambient noise detection and a rewards system.",
     "featureList": [
       "Precision metronome with tap tempo and BPM presets",
       "Chromatic tuner with ambient noise detection",
+      "Chord finder that names any chord you play or tap, on guitar or piano",
       "Rhythm game playable by tapping or clapping",
       "Speed trainer with automatic BPM ramps",
       "Practice timer with daily streak tracking",
@@ -72,7 +73,7 @@
         "name": "Is Metro Gnome really a free metronome app for Android?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes, completely free. The metronome, chromatic tuner, rhythm game, and speed trainer are all free with no time limits. Optional purchases remove ads or unlock cosmetic items, but the core tools never cost anything. Metro Gnome works on Android 7.0 and above, fully offline."
+          "text": "Yes, completely free. The metronome, chromatic tuner, chord finder, rhythm game, and speed trainer are all free with no time limits. Optional purchases remove ads or unlock cosmetic items, but the core tools never cost anything. Metro Gnome works on Android 7.0 and above, fully offline."
         }
       },
       {
@@ -101,6 +102,14 @@
       },
       {
         "@type": "Question",
+        "name": "Does Metro Gnome have a chord finder?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The Chords tab names any chord one note at a time. Play the chord as an arpeggio into the microphone, or tap the notes on a drawn guitar fretboard or piano keyboard, and the app names it (C, Am7, D7/F#), spells every note, offers alternative readings, and can play the chord back. The lowest note counts as the bass, so C E G A reads as C6 with C at the bottom and Am7 with A at the bottom. It is free and works fully offline."
+        }
+      },
+      {
+        "@type": "Question",
         "name": "Is Metro Gnome good for music teachers?",
         "acceptedAnswer": {
           "@type": "Answer",
@@ -112,7 +121,7 @@
         "name": "Does it work offline?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Fully. The metronome, tuner, rhythm game, and speed trainer all run entirely on-device with no internet connection required. The only feature that needs a connection is loading ads, which you can remove with a one-time purchase."
+          "text": "Fully. The metronome, tuner, chord finder, rhythm game, and speed trainer all run entirely on-device with no internet connection required. The only feature that needs a connection is loading ads, which you can remove with a one-time purchase."
         }
       },
       {
@@ -401,7 +410,11 @@
 
     .pillars { display: grid; gap: 1.5rem; margin-top: 2.5rem; }
 
-    @media (min-width: 640px) { .pillars { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 640px) {
+      .pillars { grid-template-columns: repeat(3, 1fr); }
+      /* Seven pillars: keep the last one centred rather than orphaned at the left. */
+      .pillars > .pillar:last-child:nth-child(3n + 1) { grid-column: 2; }
+    }
 
     .pillar {
       background: var(--bg);
@@ -432,6 +445,12 @@
       content: '✓'; position: absolute; left: 0;
       color: var(--gold); font-weight: 700;
     }
+    /* Inline links inside body copy (pillar bullets, FAQ answers) read as links. */
+    .pillar ul li a, .faq-answer a {
+      color: var(--purple-light); text-decoration: underline; text-underline-offset: 2px;
+      transition: color 0.15s;
+    }
+    .pillar ul li a:hover, .faq-answer a:hover { color: var(--gold); }
 
     /* ── Audience ──────────────────────────────────────────────────── */
     #audience { background: var(--bg); }
@@ -723,7 +742,7 @@
       </div>
       <h1>The Metronome App Built for<br><em>Real Musicians</em></h1>
       <p class="subhead">
-        Free metronome, chromatic tuner, and rhythm trainer in one app.
+        Free metronome, chromatic tuner, chord finder, and rhythm trainer in one app.
         No subscription. No gimmicks. Just solid tools that work.
       </p>
       <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome"
@@ -749,49 +768,49 @@
     <div class="container">
       <p class="section-label">See it in action</p>
       <h2>One app. Everything you need.</h2>
-      <p class="lead">From a precision metronome and chromatic tuner to a rhythm game, speed trainer, and daily rewards that keep you coming back.</p>
+      <p class="lead">From a precision metronome, chromatic tuner, and chord finder to a rhythm game, speed trainer, and daily rewards that keep you coming back.</p>
 
       <div class="shots">
         <figure class="shot">
           <div class="shot-frame">
-            <img src="screenshots/home.png" alt="Metro Gnome metronome screen showing 120 BPM Allegretto with Metro the gnome" loading="lazy" width="600" height="1268">
+            <img src="screenshots/home.png" alt="Metro Gnome metronome screen showing 120 BPM Allegro with Metro the gnome in his forest" loading="lazy" width="600" height="1268">
           </div>
           <figcaption class="shot-label"><strong>Metronome</strong> · meet Metro</figcaption>
         </figure>
 
         <figure class="shot">
           <div class="shot-frame">
-            <img src="screenshots/tuner.png" alt="Metro Gnome chromatic tuner reading the note A4" loading="lazy" width="600" height="1269">
+            <img src="screenshots/tuner.png" alt="Metro Gnome chromatic tuner reading the note A4, with the tuning drone panel below" loading="lazy" width="600" height="1268">
           </div>
           <figcaption class="shot-label"><strong>Tuner</strong> · any instrument</figcaption>
         </figure>
 
         <figure class="shot">
           <div class="shot-frame">
-            <img src="screenshots/rhythm-game.png" alt="Metro Gnome rhythm game with notes falling toward the hit line" loading="lazy" width="600" height="1269">
+            <img src="screenshots/chord-finder.png" alt="Metro Gnome chord finder with a guitar fretboard, ready to name a chord from played or tapped notes" loading="lazy" width="600" height="1268">
+          </div>
+          <figcaption class="shot-label"><strong>Chord Finder</strong> · play or tap notes</figcaption>
+        </figure>
+
+        <figure class="shot">
+          <div class="shot-frame">
+            <img src="screenshots/rhythm-game.png" alt="Metro Gnome rhythm game with notes falling toward the hit line" loading="lazy" width="600" height="1268">
           </div>
           <figcaption class="shot-label"><strong>Rhythm Game</strong> · tap or clap</figcaption>
         </figure>
 
         <figure class="shot">
           <div class="shot-frame">
-            <img src="screenshots/rewards.png" alt="Metro Gnome rewards screen with Gnotes, daily streak, and loyalty milestones" loading="lazy" width="600" height="1268">
+            <img src="screenshots/rewards.png" alt="Metro Gnome rewards screen with Gnotes, daily bonus, loyalty milestones, and streak" loading="lazy" width="600" height="1268">
           </div>
           <figcaption class="shot-label"><strong>Rewards</strong> · earn Gnotes</figcaption>
         </figure>
 
         <figure class="shot">
           <div class="shot-frame">
-            <img src="screenshots/unlockables.png" alt="Metro Gnome unlock reward showing a collectible gold hoop earring" loading="lazy" width="600" height="1269">
+            <img src="screenshots/unlockables.png" alt="Metro Gnome unlock reward showing a collectible gold hoop earring" loading="lazy" width="600" height="1268">
           </div>
           <figcaption class="shot-label"><strong>Collectibles</strong> · unlock items</figcaption>
-        </figure>
-
-        <figure class="shot">
-          <div class="shot-frame">
-            <img src="screenshots/settings.png" alt="Metro Gnome settings screen for tempo, time signature, and click sound" loading="lazy" width="600" height="1268">
-          </div>
-          <figcaption class="shot-label"><strong>Settings</strong> · make it yours</figcaption>
         </figure>
       </div>
     </div>
@@ -803,7 +822,7 @@
       <p class="section-label">What's inside</p>
       <h2>Far more than a metronome.</h2>
       <p class="lead">
-        Most apps do one thing. Metro Gnome gives you a precision metronome, a smart chromatic tuner,
+        Most apps do one thing. Metro Gnome gives you a precision metronome, a smart chromatic tuner, a chord finder,
         a rhythm game, a speed trainer, a practice timer, and a rewards system - all free, all in one place.
       </p>
 
@@ -848,6 +867,32 @@
             <li>Built-in tuning drone for intonation practice</li>
             <li>Reference pitch 415 to 466 Hz, shared with the drone</li>
             <li>Loopback and tuning fork calibration</li>
+          </ul>
+        </article>
+
+        <article class="pillar">
+          <div class="pillar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="5" x2="19" y2="5" stroke-width="2.6"/>
+              <line x1="5" y1="10" x2="19" y2="10"/>
+              <line x1="5" y1="15" x2="19" y2="15"/>
+              <line x1="5" y1="20" x2="19" y2="20"/>
+              <line x1="5" y1="5" x2="5" y2="20"/>
+              <line x1="12" y1="5" x2="12" y2="20"/>
+              <line x1="19" y1="5" x2="19" y2="20"/>
+              <circle cx="12" cy="12.5" r="1.7" fill="currentColor" stroke="none"/>
+              <circle cx="19" cy="17.5" r="1.7" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <h3>Chord Finder</h3>
+          <p>Play a chord one note at a time, or tap it on a fretboard or keyboard, and get its name, spelled and explained.</p>
+          <ul>
+            <li>Names any chord you play or tap</li>
+            <li>Guitar fretboard and piano keyboard</li>
+            <li>The bass note decides: C6 or Am7, slash chords included</li>
+            <li>Alternative readings and a line about each chord</li>
+            <li>Hear it back, arpeggio then together</li>
+            <li>Also free in your browser: <a href="/tools/chord-finder.html">online chord finder</a></li>
           </ul>
         </article>
 
@@ -943,7 +988,7 @@
             </svg>
           </div>
           <h3>Guitarists</h3>
-          <p>Tune between songs with a tuner that works on a loud stage. Lock in a BPM preset for each song in your set.</p>
+          <p>Tune between songs with a tuner that works on a loud stage. Name any chord shape you find on the neck. Lock in a BPM preset for each song in your set.</p>
         </div>
 
         <div class="audience-card">
@@ -1167,7 +1212,7 @@
       <h2>No subscription. Ever.</h2>
       <p>
         The core app is completely free. There are optional cosmetic items and a one-time
-        ad-removal purchase - but the metronome, tuner, and rhythm game will always be free.
+        ad-removal purchase - but the metronome, tuner, chord finder, and rhythm game will always be free.
         No bait-and-switch. No features locked behind a paywall six months from now.
       </p>
     </div>
@@ -1184,7 +1229,7 @@
         <details>
           <summary>Is Metro Gnome really a free metronome app for Android?</summary>
           <div class="faq-answer">
-            Yes - completely free. The metronome, chromatic tuner, rhythm game, and speed trainer are all free with no time limits.
+            Yes - completely free. The metronome, chromatic tuner, chord finder, rhythm game, and speed trainer are all free with no time limits.
             There are optional purchases to remove ads or unlock cosmetic items, but the core tools never cost anything.
             Metro Gnome works on Android 7.0 and above, fully offline.
           </div>
@@ -1231,6 +1276,17 @@
         </details>
 
         <details>
+          <summary>Does Metro Gnome have a chord finder?</summary>
+          <div class="faq-answer">
+            Yes. The Chords tab names any chord one note at a time. Play the chord as an arpeggio into the microphone,
+            or tap the notes on a drawn guitar fretboard or piano keyboard, and the app names it (C, Am7, D7/F#),
+            spells every note, offers alternative readings, and can play the chord back. The lowest note counts as
+            the bass, so C E G A reads as C6 with C at the bottom and Am7 with A at the bottom. It is free and works
+            fully offline. There is also a <a href="/tools/chord-finder.html">browser version</a> you can use right now.
+          </div>
+        </details>
+
+        <details>
           <summary>Is Metro Gnome good for music teachers?</summary>
           <div class="faq-answer">
             Yes. The built-in practice timer lets you set a session goal (5, 10, 15, 20, or 30 minutes).
@@ -1243,7 +1299,7 @@
         <details>
           <summary>Does it work offline?</summary>
           <div class="faq-answer">
-            Fully. The metronome, tuner, rhythm game, and speed trainer all run entirely on-device - no internet
+            Fully. The metronome, tuner, chord finder, rhythm game, and speed trainer all run entirely on-device - no internet
             connection required. The only feature that needs a connection is loading ads (which you can remove with a
             one-time purchase).
           </div>
