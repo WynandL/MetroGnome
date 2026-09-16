@@ -716,6 +716,16 @@
     }
     .footer-links a:hover { color: var(--text); }
 
+    .footer-badge {
+      display: block;
+      width: 244px; height: 79px;
+      margin: 1.5rem auto 0;
+      opacity: 0.85;
+      transition: opacity 0.2s ease;
+    }
+    .footer-badge:hover { opacity: 1; }
+    .footer-badge img { display: block; width: 244px; height: 79px; }
+
     .footer-legal {
       margin-top: 1.5rem;
       color: var(--text-muted);
@@ -1399,6 +1409,14 @@
           <path d="M3 20.5v-17c0-.83 1-.83 1.5-.5l14 8.5c.5.3.5 1 0 1.3L4.5 21c-.5.33-1.5.33-1.5-.5z"/>
         </svg>
         Get it Free on Google Play
+      </a>
+
+      <a href="https://alternativeto.net/software/metro-gnome/about/?utm_source=badge&amp;utm_medium=referral"
+         class="footer-badge"
+         target="_blank" rel="noopener">
+        <img src="https://alternativeto.net/static/badges/badge-compact-color.svg"
+             alt="Metro Gnome on AlternativeTo"
+             width="244" height="79" loading="lazy">
       </a>
 
       <div class="footer-links">
