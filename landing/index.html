@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Metro Gnome - Free Metronome &amp; Chromatic Tuner for Android</title>
-  <meta name="description" content="Free metronome, chromatic tuner, chord finder, rhythm game, and speed trainer for Android. Tap tempo, name any chord, stay in time. Built for real musicians.">
+  <meta name="description" content="Free metronome, chromatic tuner, tuning drone, chord finder, rhythm game, and speed trainer for Android. Stay in time, stay in tune, name any chord.">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="qwODXdkzQirlCbR2ycGuLXg0EKr2PddGe5CZnxfjDTw">
   <meta name="google-site-verification" content="UFwW2Ybk-LWanrl-LZsS4XjzSsgx0mVHjApxjV7BqP0">
@@ -16,7 +16,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Metro Gnome">
   <meta property="og:title" content="Metro Gnome - Free Metronome &amp; Chromatic Tuner for Android">
-  <meta property="og:description" content="Free metronome, chromatic tuner, chord finder, rhythm game, and speed trainer for Android. Tap tempo, name any chord, stay in time. Built for real musicians.">
+  <meta property="og:description" content="Free metronome, chromatic tuner, tuning drone, chord finder, rhythm game, and speed trainer for Android. Stay in time, stay in tune, name any chord.">
   <meta property="og:url" content="https://metrognome.co.za/">
   <meta property="og:image" content="https://metrognome.co.za/metro.png">
   <meta property="og:image:alt" content="Metro Gnome, the friendly gnome metronome and tuner for Android">
@@ -24,7 +24,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Metro Gnome - Free Metronome &amp; Chromatic Tuner for Android">
-  <meta name="twitter:description" content="Free metronome, chromatic tuner, chord finder, rhythm game, and speed trainer for Android. Tap tempo, name any chord, and stay in time.">
+  <meta name="twitter:description" content="Free metronome, chromatic tuner, tuning drone, chord finder, rhythm game, and speed trainer for Android. Stay in time, stay in tune, name any chord.">
   <meta name="twitter:image" content="https://metrognome.co.za/metro.png">
 
   <!-- SoftwareApplication Schema -->
@@ -44,10 +44,11 @@
     "sameAs": [
       "https://metrognome.co.za/"
     ],
-    "description": "Free metronome, chromatic tuner, chord finder, rhythm game, speed trainer, and practice timer for Android with smart ambient noise detection and a rewards system.",
+    "description": "Free metronome, chromatic tuner, tuning drone, chord finder, rhythm game, speed trainer, and practice timer for Android with smart ambient noise detection and a rewards system.",
     "featureList": [
       "Precision metronome with tap tempo and BPM presets",
       "Chromatic tuner with ambient noise detection",
+      "Tuning drone for intonation practice, any note C2 to B5, sharing the tuner's reference pitch",
       "Chord finder that names any chord you play or tap, on guitar or piano",
       "Rhythm game playable by tapping or clapping",
       "Speed trainer with automatic BPM ramps",
@@ -73,7 +74,7 @@
         "name": "Is Metro Gnome really a free metronome app for Android?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes, completely free. The metronome, chromatic tuner, chord finder, rhythm game, and speed trainer are all free with no time limits. Optional purchases remove ads or unlock cosmetic items, but the core tools never cost anything. Metro Gnome works on Android 7.0 and above, fully offline."
+          "text": "Yes, completely free. The metronome, chromatic tuner, tuning drone, chord finder, rhythm game, and speed trainer are all free with no time limits. Optional purchases remove ads or unlock cosmetic items, but the core tools never cost anything. Metro Gnome works on Android 7.0 and above, fully offline."
         }
       },
       {
@@ -102,6 +103,14 @@
       },
       {
         "@type": "Question",
+        "name": "Does Metro Gnome have a tuning drone?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The Tuner tab has a built-in tuning drone: a sustained reference note you tune to and play against by ear, so you hear the beating slow and stop as you lock in. Pick any note from C2 to B5 on a drawn keyboard and add the octave above. It follows the tuner's reference pitch, so setting A4 to 442 Hz moves the drone too. The Pure and Warm voices and the root and octave blends are free; Reed and String voices and a pure-fifth blend are optional one-time extras. The drone keeps sounding when you switch to the metronome, so you can practise time and intonation together."
+        }
+      },
+      {
+        "@type": "Question",
         "name": "Does Metro Gnome have a chord finder?",
         "acceptedAnswer": {
           "@type": "Answer",
@@ -121,7 +130,7 @@
         "name": "Does it work offline?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Fully. The metronome, tuner, chord finder, rhythm game, and speed trainer all run entirely on-device with no internet connection required. The only feature that needs a connection is loading ads, which you can remove with a one-time purchase."
+          "text": "Fully. The metronome, tuner, tuning drone, chord finder, rhythm game, and speed trainer all run entirely on-device with no internet connection required. The only feature that needs a connection is loading ads, which you can remove with a one-time purchase."
         }
       },
       {
@@ -411,9 +420,13 @@
     .pillars { display: grid; gap: 1.5rem; margin-top: 2.5rem; }
 
     @media (min-width: 640px) {
-      .pillars { grid-template-columns: repeat(3, 1fr); }
-      /* Seven pillars: keep the last one centred rather than orphaned at the left. */
-      .pillars > .pillar:last-child:nth-child(3n + 1) { grid-column: 2; }
+      /* Three cards per row on a six-track grid, so a short last row can sit
+         centred: one leftover card takes tracks 3-4, two take 2-3 and 4-5. */
+      .pillars { grid-template-columns: repeat(6, 1fr); }
+      .pillar { grid-column: span 2; }
+      .pillars > .pillar:last-child:nth-child(3n + 1) { grid-column: 3 / span 2; }
+      .pillars > .pillar:nth-last-child(2):nth-child(3n + 1) { grid-column: 2 / span 2; }
+      .pillars > .pillar:last-child:nth-child(3n + 2) { grid-column: 4 / span 2; }
     }
 
     .pillar {
@@ -768,7 +781,7 @@
     <div class="container">
       <p class="section-label">See it in action</p>
       <h2>One app. Everything you need.</h2>
-      <p class="lead">From a precision metronome, chromatic tuner, and chord finder to a rhythm game, speed trainer, and daily rewards that keep you coming back.</p>
+      <p class="lead">From a precision metronome, chromatic tuner, tuning drone, and chord finder to a rhythm game, speed trainer, and daily rewards that keep you coming back.</p>
 
       <div class="shots">
         <figure class="shot">
@@ -782,7 +795,7 @@
           <div class="shot-frame">
             <img src="screenshots/tuner.png" alt="Metro Gnome chromatic tuner reading the note A4, with the tuning drone panel below" loading="lazy" width="600" height="1268">
           </div>
-          <figcaption class="shot-label"><strong>Tuner</strong> · any instrument</figcaption>
+          <figcaption class="shot-label"><strong>Tuner</strong> · needle and drone</figcaption>
         </figure>
 
         <figure class="shot">
@@ -822,8 +835,8 @@
       <p class="section-label">What's inside</p>
       <h2>Far more than a metronome.</h2>
       <p class="lead">
-        Most apps do one thing. Metro Gnome gives you a precision metronome, a smart chromatic tuner, a chord finder,
-        a rhythm game, a speed trainer, a practice timer, and a rewards system - all free, all in one place.
+        Most apps do one thing. Metro Gnome gives you a precision metronome, a smart chromatic tuner, a tuning drone,
+        a chord finder, a rhythm game, a speed trainer, a practice timer, and a rewards system - all free, all in one place.
       </p>
 
       <div class="pillars">
@@ -864,9 +877,26 @@
             <li>Ambient noise detection - ignores room sound</li>
             <li>Speech rejection - filters voices</li>
             <li>LOCKED / ACQUIRING state display</li>
-            <li>Built-in tuning drone for intonation practice</li>
             <li>Reference pitch 415 to 466 Hz, shared with the drone</li>
             <li>Loopback and tuning fork calibration</li>
+          </ul>
+        </article>
+
+        <article class="pillar">
+          <div class="pillar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12c2 0 2-5 4-5s2 10 4 10 2-10 4-10 2 10 4 10 2-5 4-5"/>
+            </svg>
+          </div>
+          <h3>Tuning Drone</h3>
+          <p>Hold a reference note and play against it by ear. The beating slows and stops as you lock in, which is intonation practice in one sound.</p>
+          <ul>
+            <li>Any note from C2 to B5 on a drawn keyboard</li>
+            <li>Follows the tuner's reference pitch</li>
+            <li>Root and octave blends, Pure and Warm voices, all free</li>
+            <li>Reed, String, and a pure-fifth blend as one-time extras</li>
+            <li>Keeps sounding while the metronome runs</li>
+            <li>Also free in your browser: <a href="/tools/tuning-drone.html">online tuning drone</a></li>
           </ul>
         </article>
 
@@ -1012,7 +1042,7 @@
             </svg>
           </div>
           <h3>Music Teachers</h3>
-          <p>Assign practice sessions with the built-in timer. Students build streaks and you see the habit forming.</p>
+          <p>Assign practice sessions with the built-in timer. Put a drone on for intonation work. Students build streaks and you see the habit forming.</p>
         </div>
 
         <div class="audience-card">
@@ -1212,7 +1242,7 @@
       <h2>No subscription. Ever.</h2>
       <p>
         The core app is completely free. There are optional cosmetic items and a one-time
-        ad-removal purchase - but the metronome, tuner, chord finder, and rhythm game will always be free.
+        ad-removal purchase - but the metronome, tuner, drone, chord finder, and rhythm game will always be free.
         No bait-and-switch. No features locked behind a paywall six months from now.
       </p>
     </div>
@@ -1229,7 +1259,7 @@
         <details>
           <summary>Is Metro Gnome really a free metronome app for Android?</summary>
           <div class="faq-answer">
-            Yes - completely free. The metronome, chromatic tuner, chord finder, rhythm game, and speed trainer are all free with no time limits.
+            Yes - completely free. The metronome, chromatic tuner, tuning drone, chord finder, rhythm game, and speed trainer are all free with no time limits.
             There are optional purchases to remove ads or unlock cosmetic items, but the core tools never cost anything.
             Metro Gnome works on Android 7.0 and above, fully offline.
           </div>
@@ -1276,6 +1306,20 @@
         </details>
 
         <details>
+          <summary>Does Metro Gnome have a tuning drone?</summary>
+          <div class="faq-answer">
+            Yes. The Tuner tab has a built-in tuning drone: a sustained reference note you tune to and play against
+            by ear, so you hear the beating slow and stop as you lock in. Pick any note from C2 to B5 on a drawn
+            keyboard and add the octave above. It follows the tuner's reference pitch, so setting A4 to 442 Hz moves
+            the drone too. The Pure and Warm voices and the root and octave blends are free; Reed and String voices
+            and a pure-fifth blend are optional one-time extras. The drone keeps sounding when you switch to the
+            metronome, so you can practise time and intonation together. Try the
+            <a href="/tools/tuning-drone.html">browser version</a>, or read
+            <a href="/blog/tuning-drone-intonation-practice.html">how to practise intonation with a drone</a>.
+          </div>
+        </details>
+
+        <details>
           <summary>Does Metro Gnome have a chord finder?</summary>
           <div class="faq-answer">
             Yes. The Chords tab names any chord one note at a time. Play the chord as an arpeggio into the microphone,
@@ -1299,7 +1343,7 @@
         <details>
           <summary>Does it work offline?</summary>
           <div class="faq-answer">
-            Fully. The metronome, tuner, chord finder, rhythm game, and speed trainer all run entirely on-device - no internet
+            Fully. The metronome, tuner, tuning drone, chord finder, rhythm game, and speed trainer all run entirely on-device - no internet
             connection required. The only feature that needs a connection is loading ads (which you can remove with a
             one-time purchase).
           </div>
