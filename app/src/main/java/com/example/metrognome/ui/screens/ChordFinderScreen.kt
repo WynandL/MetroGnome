@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -59,11 +58,14 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -835,7 +837,9 @@ private fun ChordHero(reading: ChordReading) {
 
 // ── Hear-it strip ────────────────────────────────────────────────────────────────
 
-private val HEAR_ROW_HEIGHT = 44.dp
+/** Eyebrow (14) + subtitle (15) + gap (8) + a 32 dp chip row; the key centres on it. */
+private val HEAR_STRIP_HEIGHT = 69.dp
+private val HEAR_KEY_SIZE = 52.dp
 
 /**
  * Play the collected notes back: an arpeggio from the bass up, then the chord together.
@@ -844,11 +848,16 @@ private val HEAR_ROW_HEIGHT = 44.dp
  * notes strip. The key is the drone's [PlayStopKey], on the right where the drone keeps
  * its own, so the two "start a sound" controls in the app are one asset in one place:
  * purple play when there is something to hear, red stop while it sounds, dimmed with
- * nothing to play. Left of it, the label and the pace choice (Slow for a beginner who
- * wants to hear each note land, Quick for the web tool's ripple); the chips grey out with
- * the key, because lit pills beside a dim key read as the thing to tap to start the sound,
- * which the dev found confusing on the first build. Always the same height; only colours
- * and words change.
+ * nothing to play. Left of it, two lines of label over the pace choice (Slow for a
+ * beginner who wants to hear each note land, Quick for the web tool's ripple); the chips
+ * grey out with the key, because lit pills beside a dim key read as the thing to tap to
+ * start the sound, which the dev found confusing on the first build.
+ *
+ * The first cut put label, chips and key on one line, and on narrower phones the subtitle
+ * was left with a few dozen dp and ellipsed ("Arpeggio, then tog..."). Now the chips sit
+ * under the label, so the text gets the whole width left of the key, and the key spans
+ * both lines, which is what makes it read as the control for the row rather than a third
+ * chip. Always the same height; only colours and words change.
  */
 @Composable
 private fun HearStrip(
@@ -867,8 +876,8 @@ private fun HearStrip(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp)
-                .height(HEAR_ROW_HEIGHT),
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .height(HEAR_STRIP_HEIGHT),
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -885,24 +894,24 @@ private fun HearStrip(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-            }
-            Spacer(Modifier.width(8.dp))
-            // Greyed out and inert with nothing to hear, so they cannot be mistaken for the play key.
-            Row(modifier = Modifier.alpha(if (hasNotes) 1f else 0.35f)) {
-                ChordPlaybackPace.entries.forEach { option ->
-                    AppFilterChip(
-                        selected = option == pace,
-                        onClick = { if (hasNotes) onSetPace(option) },
-                        label = option.displayName,
-                    )
+                Spacer(Modifier.height(8.dp))
+                // Greyed out and inert with nothing to hear, so they cannot be mistaken for the play key.
+                Row(modifier = Modifier.alpha(if (hasNotes) 1f else 0.35f)) {
+                    ChordPlaybackPace.entries.forEach { option ->
+                        AppFilterChip(
+                            selected = option == pace,
+                            onClick = { if (hasNotes) onSetPace(option) },
+                            label = option.displayName,
+                        )
+                    }
                 }
             }
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(10.dp))
             PlayStopKey(
                 playing = playing,
                 onClick = onHear,
                 enabled = hasNotes,
-                size = HEAR_ROW_HEIGHT,
+                size = HEAR_KEY_SIZE,
                 playDescription = "Hear the chord",
                 stopDescription = "Stop the chord",
             )
@@ -916,7 +925,9 @@ private fun HearStrip(
  * A small dedicated card under the chord: the other readings of these notes when there
  * are any, otherwise the next step. Its own element rather than the chord card's last
  * row, so it reads as a helper rather than part of the result. Fixed height, the same
- * shape as the mic strip; only the words change.
+ * shape as the mic strip, down to the bare gold icon and the 12 dp after it; only the
+ * words change. The icon alone marks it (a bulb for the next step, arrows for other
+ * readings); a "NEXT"/"ALSO" caption was tried and was one word too many for a strip.
  */
 /** Two lines of 15 sp tip, which also clears the 26 dp icon. */
 private val TIP_ROW_HEIGHT = 30.dp
@@ -939,28 +950,22 @@ private fun TipStrip(reading: ChordReading) {
                     .padding(horizontal = 14.dp, vertical = 8.dp)
                     .height(TIP_ROW_HEIGHT),
             ) {
+                // Bare gold glyph in the same 26 dp slot as the mic strip's icon: the app's
+                // strips carry their icon without a disc behind it, so this one does too.
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(26.dp)
-                        .background(AppColors.gold.copy(alpha = 0.15f), CircleShape),
+                    modifier = Modifier.size(26.dp),
                 ) {
                     Icon(
                         imageVector = if (alternatives.isNotEmpty()) Icons.Filled.SwapHoriz else Icons.Outlined.Lightbulb,
                         contentDescription = null,
                         tint = AppColors.gold,
-                        modifier = Modifier.size(15.dp),
+                        modifier = Modifier.size(17.dp),
                     )
                 }
+                // The same 12 dp as the mic strip keeps between its icon and its meter. No
+                // "NEXT"/"ALSO" word: the bulb and the swap arrows say what the strip is.
                 Spacer(Modifier.width(12.dp))
-                Text(
-                    if (alternatives.isNotEmpty()) "ALSO" else "NEXT",
-                    color = AppColors.gold,
-                    fontSize = 10.sp, lineHeight = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                )
-                Spacer(Modifier.width(10.dp))
                 if (alternatives.isNotEmpty()) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -990,8 +995,45 @@ private fun TipStrip(reading: ChordReading) {
 }
 
 /** The big name: root in gold, quality and slash smaller beside it, sharing a baseline. */
+/**
+ * Makes `lineHeight` literal within the paragraph: a line is exactly that tall whatever
+ * is on it. The app's ambient style leaves the default `Trim.Both`, under which a single
+ * line is its *natural* height and `lineHeight` only spaces the lines between.
+ */
+private val PinnedLines = TextStyle(
+    lineHeightStyle = LineHeightStyle(
+        alignment = LineHeightStyle.Alignment.Center,
+        trim = LineHeightStyle.Trim.None,
+    ),
+)
+
+/**
+ * A slot exactly [lines] x [lineHeight] tall, whatever the text inside it measures.
+ *
+ * [PinnedLines] alone is not enough: with font padding off, Compose adds a top and bottom
+ * padding to a `Text` derived from the ink bounds of the glyphs on its first and last line
+ * (`TextLayout.getVerticalPaddings`), so a 44 sp Black "C" and a 24 sp "Play or tap notes"
+ * on the same 50 sp line still measure a pixel or two apart, and the card below them
+ * shifted by that much between readings. Taking the height from the density instead of
+ * the text is what finally pins it; a text that measures a hair taller than its slot
+ * simply paints over the edge, which is invisible.
+ */
 @Composable
-private fun HeroSymbol(root: String, suffix: String, slash: String = "") {
+private fun PinnedSlot(
+    lineHeight: TextUnit,
+    lines: Int = 1,
+    alignment: Alignment = Alignment.CenterStart,
+    content: @Composable () -> Unit,
+) {
+    val height = with(LocalDensity.current) { (lineHeight * lines).toDp() }
+    Box(
+        contentAlignment = alignment,
+        modifier = Modifier.fillMaxWidth().height(height),
+    ) { content() }
+}
+
+@Composable
+private fun HeroSymbol(root: String, suffix: String, slash: String = "") = PinnedSlot(lineHeight = 50.sp) {
     Text(
         buildAnnotatedString {
             withStyle(SpanStyle(color = AppColors.gold, fontSize = 44.sp, fontWeight = FontWeight.Black)) {
@@ -1009,26 +1051,35 @@ private fun HeroSymbol(root: String, suffix: String, slash: String = "") {
         fontSize = 44.sp,
         lineHeight = 50.sp,
         maxLines = 1,
+        style = PinnedLines,
     )
 }
 
 @Composable
 private fun HeroCaption(name: String, about: String) {
     Spacer(Modifier.height(2.dp))
-    Text(
-        name,
-        color = AppColors.textSecondary,
-        fontSize = 13.sp, lineHeight = 17.sp,
-        fontWeight = FontWeight.Bold,
-        maxLines = 1,
-    )
+    PinnedSlot(lineHeight = 17.sp) {
+        Text(
+            name,
+            color = AppColors.textSecondary,
+            fontSize = 13.sp, lineHeight = 17.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            style = PinnedLines,
+        )
+    }
     Spacer(Modifier.height(4.dp))
-    Text(
-        about,
-        color = AppColors.textMuted,
-        fontSize = 11.sp, lineHeight = 15.sp,
-        minLines = 2, maxLines = 2,
-    )
+    // Top-aligned with minLines, so a one-line "about" sits on the first line of its two
+    // rather than floating between them.
+    PinnedSlot(lineHeight = 15.sp, lines = 2, alignment = Alignment.TopStart) {
+        Text(
+            about,
+            color = AppColors.textMuted,
+            fontSize = 11.sp, lineHeight = 15.sp,
+            minLines = 2, maxLines = 2,
+            style = PinnedLines,
+        )
+    }
 }
 
 // ── Previews ─────────────────────────────────────────────────────────────────────
