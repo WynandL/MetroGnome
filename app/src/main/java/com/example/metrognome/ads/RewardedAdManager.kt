@@ -2,6 +2,8 @@ package com.example.metrognome.ads
 
 import android.app.Activity
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import androidx.core.content.edit
 import com.example.metrognome.BuildConfig
 import com.example.metrognome.analytics.AnalyticsTracker
@@ -21,6 +23,9 @@ import kotlinx.coroutines.flow.asStateFlow
 
 private const val REWARDED_AD_UNIT_TEST = "ca-app-pub-3940256099942544/5224354917"
 private const val REWARDED_AD_UNIT_PROD = "ca-app-pub-8485854692249613/6776283607"
+
+private const val INITIAL_RETRY_DELAY_MS = 30_000L
+private const val MAX_RETRY_DELAY_MS     = 5 * 60_000L
 
 private const val PREFS_NAME     = "rewarded_ad_manager"
 private const val KEY_LIFETIME   = "lifetime_gnotes"
@@ -44,6 +49,15 @@ class RewardedAdManager(private val context: Context) {
     /** Emits true when a rewarded ad is ready to show; false while loading or after show. */
     val adLoaded: StateFlow<Boolean> = _adLoaded.asStateFlow()
 
+    // Unlike AdManager's interstitial, nothing re-triggers preload() from the UI on a
+    // dead slot: DailyBonusCta only calls show() once adLoaded is already true, so a
+    // failed load has no natural retry to piggyback on. Without this, one no-fill/network
+    // blip at the single preload() call in MetronomeViewModel's init leaves the bonus row
+    // stuck on "Bonus clip loading..." for the rest of the session. Backs off on repeated
+    // failures and resets on a successful load, so it can't hammer AdMob indefinitely.
+    private val handler = Handler(Looper.getMainLooper())
+    private var retryDelayMs = INITIAL_RETRY_DELAY_MS
+
     fun preload() {
         if (isLoading || loadedAd != null) return
         isLoading = true
@@ -53,12 +67,15 @@ class RewardedAdManager(private val context: Context) {
                 override fun onAdLoaded(ad: RewardedAd) {
                     loadedAd = ad
                     isLoading = false
+                    retryDelayMs = INITIAL_RETRY_DELAY_MS
                     _adLoaded.value = true
                 }
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     loadedAd = null
                     isLoading = false
                     _adLoaded.value = false
+                    handler.postDelayed({ preload() }, retryDelayMs)
+                    retryDelayMs = (retryDelayMs * 2).coerceAtMost(MAX_RETRY_DELAY_MS)
                 }
             })
     }
