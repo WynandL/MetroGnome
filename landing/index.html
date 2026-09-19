@@ -493,6 +493,45 @@
     .audience-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
     .audience-card p { font-size: 0.82rem; color: var(--text-muted); line-height: 1.45; }
 
+    /* ── Meet Metro ────────────────────────────────────────────────── */
+    #meet-metro { background: var(--surface); }
+    .meet-metro-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      text-align: center;
+    }
+    @media (min-width: 700px) {
+      .meet-metro-row { flex-direction: row; text-align: left; gap: 2.75rem; }
+      .meet-metro-row .copy { flex: 1; }
+    }
+    .meet-metro-frame {
+      flex-shrink: 0;
+      width: 100%;
+      max-width: 230px;
+    }
+    .meet-metro-frame img {
+      width: 100%; height: auto; display: block;
+      border-radius: var(--radius);
+      filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.5));
+    }
+    .meet-metro-row .copy .lead { margin: 0.6rem 0 1.25rem; }
+    @media (min-width: 700px) { .meet-metro-row .copy .lead { margin-inline: 0; } }
+    .meet-metro-row .see-all {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-weight: 700; font-size: 0.9rem; color: var(--gold);
+      padding: 0.55rem 1rem;
+      border: 1.5px solid var(--gold);
+      border-radius: 50px;
+      transition: background 0.2s, color 0.2s, transform 0.15s;
+      white-space: nowrap;
+    }
+    .meet-metro-row .see-all:hover {
+      background: var(--gold); color: #0D0B1E; transform: translateY(-2px);
+    }
+    .meet-metro-row .see-all svg { width: 14px; height: 14px; }
+
     /* ── Blog teaser ───────────────────────────────────────────────── */
     #blog-teaser {
       background: linear-gradient(180deg, var(--bg) 0%, var(--surface-deep) 100%);
@@ -1022,7 +1061,7 @@
             <li>Earn Gnotes from every activity</li>
             <li>Loyalty milestones</li>
             <li>Unlock Metro's accessories and forest world</li>
-            <li>Ad-free reward for hitting your daily goal</li>
+            <li>Ad-free session for hitting your daily goal</li>
             <li>A reason to come back tomorrow</li>
           </ul>
         </article>
@@ -1090,6 +1129,32 @@
           <p>Free forever. No subscription to forget about. The rhythm game makes a chore feel like a challenge.</p>
         </div>
 
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Meet Metro ───────────────────────────────────────────────── -->
+  <section id="meet-metro">
+    <div class="container">
+      <div class="meet-metro-row">
+        <div class="meet-metro-frame">
+          <img src="metro-story.png" alt="Metro the gnome standing by a lake at night with a city skyline behind him" loading="lazy" width="600" height="833">
+        </div>
+        <div class="copy">
+          <p class="section-label">The mascot</p>
+          <h2>There's a gnome behind the metronome.</h2>
+          <p class="lead">
+            Metro isn't just a logo. He's got a backstory, an item collection you unlock by practising,
+            and a surprising amount of engineering behind that pendulum swing.
+          </p>
+          <a class="see-all" href="/blog/meet-metro-the-gnome-behind-the-metronome.html">
+            Read his story
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="13 5 20 12 13 19"/>
+            </svg>
+          </a>
+        </div>
       </div>
     </div>
   </section>
