@@ -1,10 +1,12 @@
 package com.example.metrognome.ui.components.metro_items.items
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
 import com.example.metrognome.ui.components.metro_items.MetroItem
@@ -54,47 +56,71 @@ object CheekTattoo : MetroItem {
         }
     }
 
-    /** A small flash-art eighth note built from notehead, stem and flag. */
+    /** Union the parts before applying translucent ink so the joins cannot darken. */
     private fun DrawScope.drawEighthNote(center: Offset, height: Float, color: Color) {
-        val headRx  = height * 0.30f
-        val headRy  = height * 0.23f
-        val headC   = Offset(center.x - height * 0.10f, center.y + height * 0.30f)
-        val stemX   = headC.x + headRx * 0.92f
+        val headC = Offset(center.x - height * 0.10f, center.y + height * 0.30f)
+        val stemX = headC.x + height * 0.276f
         val stemTop = headC.y - height * 0.85f
+        val halfStem = height * 0.055f
 
-        // Stem
-        drawLine(
-            color = color,
-            start = Offset(stemX, headC.y),
-            end = Offset(stemX, stemTop),
-            strokeWidth = height * 0.11f,
-            cap = StrokeCap.Round
-        )
-        // Flag off the top of the stem
-        drawPath(
-            Path().apply {
-                moveTo(stemX, stemTop)
-                cubicTo(
-                    stemX + height * 0.34f, stemTop + height * 0.12f,
-                    stemX + height * 0.30f, stemTop + height * 0.40f,
-                    stemX + height * 0.06f, stemTop + height * 0.52f
-                )
-                cubicTo(
-                    stemX + height * 0.26f, stemTop + height * 0.34f,
-                    stemX + height * 0.22f, stemTop + height * 0.16f,
-                    stemX, stemTop + height * 0.10f
-                )
-                close()
-            },
-            color = color
-        )
-        // Notehead - tilted oval, drawn last so it sits over the stem base
-        withTransform({ rotate(-18f, pivot = headC) }) {
-            drawOval(
-                color = color,
-                topLeft = Offset(headC.x - headRx, headC.y - headRy),
-                size = Size(headRx * 2f, headRy * 2f)
+        // A gently tilted oval, expressed in the same coordinates as the stem and flag.
+        val head = Path().apply {
+            moveTo(headC.x + height * 0.285f, headC.y - height * 0.093f)
+            cubicTo(
+                headC.x + height * 0.324f, headC.y + height * 0.028f,
+                headC.x + height * 0.229f, headC.y + height * 0.168f,
+                headC.x + height * 0.071f, headC.y + height * 0.219f
             )
+            cubicTo(
+                headC.x - height * 0.087f, headC.y + height * 0.270f,
+                headC.x - height * 0.246f, headC.y + height * 0.214f,
+                headC.x - height * 0.285f, headC.y + height * 0.093f
+            )
+            cubicTo(
+                headC.x - height * 0.324f, headC.y - height * 0.028f,
+                headC.x - height * 0.229f, headC.y - height * 0.168f,
+                headC.x - height * 0.071f, headC.y - height * 0.219f
+            )
+            cubicTo(
+                headC.x + height * 0.087f, headC.y - height * 0.270f,
+                headC.x + height * 0.246f, headC.y - height * 0.214f,
+                headC.x + height * 0.285f, headC.y - height * 0.093f
+            )
+            close()
         }
+        val stem = Path().apply {
+            addRoundRect(RoundRect(
+                rect = Rect(stemX - halfStem, stemTop - halfStem, stemX + halfStem, headC.y),
+                cornerRadius = CornerRadius(halfStem)
+            ))
+        }
+        // A full shoulder flows into a tapered flag with an open inner curve.
+        val flag = Path().apply {
+            moveTo(stemX, stemTop)
+            cubicTo(
+                stemX + height * 0.12f, stemTop + height * 0.09f,
+                stemX + height * 0.35f, stemTop + height * 0.13f,
+                stemX + height * 0.30f, stemTop + height * 0.32f
+            )
+            cubicTo(
+                stemX + height * 0.28f, stemTop + height * 0.41f,
+                stemX + height * 0.20f, stemTop + height * 0.49f,
+                stemX + height * 0.13f, stemTop + height * 0.53f
+            )
+            cubicTo(
+                stemX + height * 0.23f, stemTop + height * 0.38f,
+                stemX + height * 0.26f, stemTop + height * 0.26f,
+                stemX + height * 0.15f, stemTop + height * 0.21f
+            )
+            cubicTo(
+                stemX + height * 0.10f, stemTop + height * 0.19f,
+                stemX + height * 0.04f, stemTop + height * 0.17f,
+                stemX, stemTop + height * 0.14f
+            )
+            close()
+        }
+        val headAndStem = Path.combine(PathOperation.Union, head, stem)
+        val note = Path.combine(PathOperation.Union, headAndStem, flag)
+        drawPath(note, color = color)
     }
 }

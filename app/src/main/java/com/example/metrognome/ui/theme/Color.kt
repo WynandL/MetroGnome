@@ -12,9 +12,9 @@ object GnomeColors {
     val bgBottom = Color(0xFF16133A)
 
     // Skin (warm medium tone)
-    val skin = Color(0xFFF0BC80)
-    val skinHighlight = Color(0xFFFAD09A)
-    val skinDark = Color(0xFFD8A060)
+    val skin = Color(0xFFF2B77A)
+    val skinHighlight = Color(0xFFFFD7A1)
+    val skinDark = Color(0xFFCE905D)
     val skinShadow = Color(0xFFB07C46)   // deep fold — inside of the ear
 
     // Santa beard & moustache — off-white/cream with gray shadow
@@ -23,8 +23,8 @@ object GnomeColors {
     val beardLight = Color(0xFFFFFDFA)  // lit crown of the moustache (upper-left key light)
 
     // Red garden gnome hat — classic and iconic
-    val hatRed = Color(0xFFCC1818)
-    val hatRedLight = Color(0xFFDD3535)
+    val hatRed = Color(0xFFD51C22)
+    val hatRedLight = Color(0xFFEF4244)
     val hatRedDark = Color(0xFF881010)
     // Hat form-shading layers (key light from the upper-left, matching head & baton)
     val hatRedRim = Color(0xFFF07070)      // key-light rim along the lit left contour
@@ -38,7 +38,7 @@ object GnomeColors {
 
     // Near-black pinstripe suit — corporate & metropolitan
     val jacket = Color(0xFF111115)
-    val jacketLight = Color(0xFF1C1C22)
+    val jacketLight = Color(0xFF24242D)
     val jacketDark = Color(0xFF08080C)
     val jacketRim = Color(0xFF3A3A46)  // key light catching the lit edge of the cloth
     val pinstripe = Color(0x1ECCCCCC)  // subtle grey stripe
