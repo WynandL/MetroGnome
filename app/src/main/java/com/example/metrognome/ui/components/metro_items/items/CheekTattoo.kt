@@ -36,7 +36,7 @@ object CheekTattoo : MetroItem {
 
     // Tattoo anchor in body coordinates (after translate(cx, baseY))
     private const val TX = 1.32f   // * u
-    private const val TY = -9.65f  // * u
+    private const val TY = -9.38f  // * u
     private const val TILT_DEG = -12f
 
     // Ink palette - item-unique, stays private (see Color System rules)

@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -282,8 +283,9 @@ internal fun DrawScope.drawGnome(
             drawHead(u)
             drawHair(u)
             drawEars(u)
-            drawNose(u)
+            drawMouth(u)
             drawMustache(u)
+            drawNose(u)          // nose ball sits on top of the moustache, tucked under the bridge
             drawSunglasses(u)
             drawEyebrows(u)
             drawHat(u, beatBounce)
@@ -808,14 +810,15 @@ private fun DrawScope.drawHead(u: Float) {
     // Cheek blush. Faded rather than flat-filled: as a constant-alpha circle it had a hard
     // rim, which went unnoticed on an evenly-lit face but reads as a stuck-on disc now that
     // the face turns underneath it.
+    // Bigger, lower blush — reads as fuller, rounder cheeks (friendlier face)
     for (side in listOf(-1f, 1f)) {
-        val c = Offset(cx + side * 1.05f * u, cy + 0.45f * u)
+        val c = Offset(cx + side * 1.1f * u, cy + 0.5f * u)
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(GnomeColors.cheek, GnomeColors.cheek, Color.Transparent),
-                center = c, radius = 0.48f * u
+                center = c, radius = 0.55f * u
             ),
-            radius = 0.48f * u, center = c
+            radius = 0.55f * u, center = c
         )
     }
 }
@@ -834,19 +837,21 @@ private fun DrawScope.drawHead(u: Float) {
 private const val EAR_LIFT = 0.14f
 
 // Shared with the hat, which needs the ear outlines for its cast-shadow clip.
+// A pointed ear: the upper edge runs almost level from the temple out to the tip, the
+// lower edge is full and convex.
 private fun earPath(side: Float, u: Float): Path {
-    val ecy = HEAD_CY * u + 0.1f * u
+    val ecy = HEAD_CY * u + 0.05f * u
     return Path().apply {
-        moveTo(side * 1.56f * u, ecy - 0.48f * u)
+        moveTo(side * 1.56f * u, ecy - 0.46f * u)
         cubicTo(
-            side * 1.85f * u, ecy - 0.55f * u,
-            side * 2.40f * u, ecy - 0.70f * u,
-            side * 2.54f * u, ecy - 0.56f * u
+            side * 1.90f * u, ecy - 0.52f * u,
+            side * 2.25f * u, ecy - 0.48f * u,
+            side * 2.50f * u, ecy - 0.42f * u
         )
         cubicTo(
-            side * 2.40f * u, ecy - 0.38f * u,
-            side * 1.95f * u, ecy + 0.38f * u,
-            side * 1.56f * u, ecy + 0.48f * u
+            side * 2.42f * u, ecy + 0.10f * u,
+            side * 2.05f * u, ecy + 0.56f * u,
+            side * 1.56f * u, ecy + 0.46f * u
         )
         close()
     }
@@ -856,9 +861,9 @@ private fun DrawScope.drawEars(u: Float) {
     val cx = 0f
     val cy = HEAD_CY * u
     for (side in listOf(-1f, 1f)) {
-        val ecy = cy + 0.1f * u
+        val ecy = cy + 0.05f * u
         val innerX = cx + side * 1.56f * u
-        val outerX = cx + side * 2.54f * u
+        val outerX = cx + side * 2.50f * u
         val innerCol = skinSphereColor(skinFalloffAt(innerX, ecy, u))
         val outerCol =
             lerp(skinSphereColor(skinFalloffAt(outerX, ecy, u)), GnomeColors.skinHighlight, EAR_LIFT)
@@ -873,13 +878,13 @@ private fun DrawScope.drawEars(u: Float) {
             Path().apply {
                 moveTo(cx + side * 1.70f * u, ecy - 0.18f * u)
                 cubicTo(
-                    cx + side * 1.90f * u, ecy - 0.20f * u,
-                    cx + side * 2.28f * u, ecy - 0.44f * u,
-                    cx + side * 2.38f * u, ecy - 0.38f * u
+                    cx + side * 1.90f * u, ecy - 0.25f * u,
+                    cx + side * 2.20f * u, ecy - 0.34f * u,
+                    cx + side * 2.32f * u, ecy - 0.28f * u
                 )
                 cubicTo(
-                    cx + side * 2.26f * u, ecy - 0.22f * u,
-                    cx + side * 1.92f * u, ecy + 0.20f * u,
+                    cx + side * 2.22f * u, ecy - 0.04f * u,
+                    cx + side * 1.92f * u, ecy + 0.24f * u,
                     cx + side * 1.70f * u, ecy + 0.18f * u
                 )
                 close()
@@ -901,22 +906,22 @@ private fun DrawScope.drawEars(u: Float) {
 // The side falls are mirror images, so one builder serves both. Pulled out as a function
 // because drawHat needs the same geometry: the brim's cast shadow is clipped to the head
 // PLUS this hair (see hatShadowSurface), otherwise the hair sits lit outside a shadowed face.
+// A band of hair hugging the side of the head: its inner edge is an arc concentric with
+// the head circle (just inside the silhouette, so no seam), its outer edge bulges ~0.3u
+// past it. It runs from under the brim down behind the ear, which covers its lower end.
 private fun hairSidePath(side: Float, u: Float): Path = Path().apply {
-    moveTo(side * 1.42f * u, -11.52f * u)
+    moveTo(side * 1.24f * u, -11.28f * u)           // inner arc, top (under the brim)
+    lineTo(side * 1.32f * u, -11.37f * u)
     cubicTo(
-        side * 1.68f * u, -11.15f * u,
-        side * 2.08f * u, -10.72f * u,
-        side * 2.12f * u, -10.1f * u
+        side * 1.75f * u, -11.30f * u,
+        side * 2.12f * u, -10.65f * u,
+        side * 1.93f * u, -10.27f * u               // outer edge, down to behind the ear
     )
+    lineTo(side * 1.76f * u, -10.25f * u)
     cubicTo(
-        side * 1.96f * u, -10.0f * u,
-        side * 1.65f * u, -10.08f * u,
-        side * 1.52f * u, -10.38f * u
-    )
-    cubicTo(
-        side * 1.46f * u, -10.88f * u,
-        side * 1.28f * u, -11.28f * u,
-        side * 1.18f * u, -11.48f * u
+        side * 1.705f * u, -10.643f * u,
+        side * 1.525f * u, -11.004f * u,
+        side * 1.24f * u, -11.28f * u               // back up along the head's own curve
     )
     close()
 }
@@ -943,8 +948,9 @@ private fun hatShadowSurface(u: Float): Path {
 
 private fun DrawScope.drawHair(u: Float) {
     // Sides — hair falls from under hat brim, alongside head
-    drawPath(hairSidePath(-1f, u), color = GnomeColors.hairGrey)
-    drawPath(hairSidePath(1f, u), color = GnomeColors.hairGrey)
+    // White like the moustache — one head of hair, and it reads softer than grey
+    drawPath(hairSidePath(-1f, u), color = GnomeColors.beard)
+    drawPath(hairSidePath(1f, u), color = GnomeColors.beard)
     // Forelock — swept from left-center to right (classic side part)
     // Visible just below the front edge of the tilted hat brim
     drawPath(
@@ -961,11 +967,11 @@ private fun DrawScope.drawHair(u: Float) {
 // ── Nose ──────────────────────────────────────────────────────────────────────
 
 private fun DrawScope.drawNose(u: Float) {
-    val topLeft = Offset(-0.44f * u, -9.72f * u)
-    val size = Size(0.88f * u, 0.72f * u)
-    // Ball of the nose, lit from the upper-left like the head sphere it sits on. The old
-    // highlight was centred and nearly as wide as the nose itself, which washed the whole
-    // shape out flat; pulling it up-left and adding a shadow end gives it a turn.
+    // A round ball 0.74u x 0.63u whose top tucks up between the lenses under the bridge,
+    // sitting on top of the moustache's parting. Same shading structure as before (key-light highlight, shadow-side
+    // terminator, soft catch-light, nostrils), scaled to the ball.
+    val topLeft = Offset(-0.40f * u, -9.88f * u)
+    val size = Size(0.80f * u, 0.72f * u)
     drawOval(
         brush = Brush.radialGradient(
             colors = listOf(
@@ -973,17 +979,17 @@ private fun DrawScope.drawNose(u: Float) {
                 GnomeColors.nosePink,
                 GnomeColors.noseShade
             ),
-            center = Offset(-0.17f * u, -9.58f * u), radius = 0.80f * u
+            center = Offset(-0.15f * u, -9.74f * u), radius = 0.68f * u
         ),
         topLeft = topLeft, size = size
     )
     // Terminator down the shadow side.
     drawOval(
         brush = Brush.linearGradient(
-            0.50f to Color.Transparent,
-            1.00f to GnomeColors.noseShade.copy(alpha = 0.55f),
-            start = Offset(-0.44f * u, -9.72f * u),
-            end = Offset(0.44f * u, -9.00f * u)
+            0.40f to Color.Transparent,
+            1.00f to GnomeColors.noseShade.copy(alpha = 0.70f),
+            start = topLeft,
+            end = Offset(0.40f * u, -9.16f * u)
         ),
         topLeft = topLeft, size = size
     )
@@ -995,18 +1001,26 @@ private fun DrawScope.drawNose(u: Float) {
                 GnomeColors.skinHighlight.copy(alpha = 0.75f),
                 Color.Transparent,
             ),
-            center = Offset(-0.15f * u, -9.54f * u), radius = 0.30f * u
+            center = Offset(-0.15f * u, -9.70f * u), radius = 0.28f * u
         ),
         topLeft = topLeft, size = size
     )
-    // Nostrils. Smaller than they were — at the old size they widened the nose into a snout —
-    // and softened rather than flat-filled: a hole reads as a hole because it deepens toward
-    // its middle, not because it has a crisp rim. They also sit under the same key light as
-    // everything else, so the right one runs deeper: it is on the shadow side of the ball,
-    // where there is less light finding its way in.
+    // Underside of the ball turning away into shadow.
+    drawOval(
+        brush = Brush.verticalGradient(
+            0.55f to Color.Transparent,
+            1.00f to GnomeColors.noseShade.copy(alpha = 0.55f),
+            startY = topLeft.y, endY = topLeft.y + size.height
+        ),
+        topLeft = topLeft, size = size
+    )
+    // Nostrils. Softened rather than flat-filled: a hole reads as a hole because it deepens
+    // toward its middle, not because it has a crisp rim. They also sit under the same key
+    // light as everything else, so the right one runs deeper: it is on the shadow side of
+    // the ball, where there is less light finding its way in.
     fun nostril(cx: Float, depth: Float) {
-        val w = 0.073f * u
-        val h = 0.063f * u
+        val w = 0.06f * u
+        val h = 0.054f * u
         drawOval(
             brush = Brush.radialGradient(
                 colors = listOf(
@@ -1014,14 +1028,40 @@ private fun DrawScope.drawNose(u: Float) {
                     GnomeColors.nostril.copy(alpha = depth * 0.86f),
                     GnomeColors.nostril.copy(alpha = depth * 0.30f),
                 ),
-                center = Offset(cx - 0.01f * u, -9.30f * u), radius = 0.055f * u
+                center = Offset(cx - 0.01f * u, -9.30f * u), radius = 0.045f * u
             ),
             topLeft = Offset(cx - w / 2f, -9.30f * u - h / 2f),
             size = Size(w, h)
         )
     }
-    nostril(-0.19f * u, 0.46f)
-    nostril(0.19f * u, 0.56f)
+    nostril(-0.17f * u, 0.40f)
+    nostril(0.17f * u, 0.50f)
+}
+
+// ── Mouth — a small closed smile in the V between the moustache lobes ──────────
+
+private fun DrawScope.drawMouth(u: Float) {
+    val cy = HEAD_CY * u
+    val smile = Path().apply {
+        moveTo(-0.30f * u, cy + 1.36f * u)
+        cubicTo(
+            -0.15f * u, cy + 1.46f * u,
+            0.15f * u, cy + 1.46f * u,
+            0.30f * u, cy + 1.36f * u
+        )
+    }
+    // Lower lip catching the light just under the crease — what makes it read as a smile
+    // rather than a scratch.
+    drawPath(
+        Path().apply { addPath(smile, Offset(0f, 0.06f * u)) },
+        color = GnomeColors.skinHighlight.copy(alpha = 0.55f),
+        style = Stroke(width = 0.09f * u, cap = StrokeCap.Round)
+    )
+    drawPath(
+        smile,
+        color = GnomeColors.skinShadow.copy(alpha = 0.75f),
+        style = Stroke(width = 0.055f * u, cap = StrokeCap.Round)
+    )
 }
 
 // ── Full Santa moustache ──────────────────────────────────────────────────────
@@ -1036,23 +1076,46 @@ private fun DrawScope.drawNose(u: Float) {
 // flat fill on it was reading as a paper cut-out stuck to his face.
 
 private fun DrawScope.drawMustache(u: Float) {
-    val baseY = -9.12f * u
-    val topY = baseY - 0.12f * u
-    val botY = baseY + 0.62f * u
+    // Two lobes that meet only in a short junction under the nose. Each one's upper edge
+    // humps up beside the nose, then runs down and outward to a round outer end that
+    // overhangs the cheek; the underside comes back in along the jaw, and between the two
+    // undersides a V of bare skin opens where the mouth would be. That gap is what keeps a
+    // moustache this wide from reading as one heavy slab. Coordinates are relative to the
+    // head centre so they can be read straight off the reference.
+    val cy = HEAD_CY * u
+    val topY = cy + 0.70f * u
+    val botY = cy + 1.58f * u
 
+    // Each wing is a teardrop lying on a downward diagonal: its narrow end is at the centre
+    // under the nose, its fat round end hangs out past the cheek. The two are mirror images
+    // touching only at their narrow ends, so a wide V of skin opens between them below.
     fun wing(side: Float) = Path().apply {
-        moveTo(side * 0.08f * u, baseY)
+        moveTo(0f, cy + 0.72f * u)                  // narrow end, top (under the nose)
         cubicTo(
-            side * 0.45f * u, baseY - 0.12f * u,
-            side * 1.35f * u, baseY - 0.08f * u,
-            side * 1.58f * u, baseY + 0.42f * u
+            side * 0.35f * u, cy + 0.68f * u,
+            side * 0.75f * u, cy + 0.70f * u,
+            side * 1.10f * u, cy + 0.88f * u        // upper edge, onto the fat end
         )
         cubicTo(
-            side * 1.45f * u, baseY + 0.62f * u,
-            side * 0.78f * u, baseY + 0.55f * u,
-            side * 0.35f * u, baseY + 0.44f * u
+            side * 1.42f * u, cy + 1.02f * u,
+            side * 1.64f * u, cy + 1.16f * u,
+            side * 1.70f * u, cy + 1.32f * u        // outer tip
         )
-        cubicTo(side * 0.12f * u, baseY + 0.36f * u, 0f, baseY + 0.25f * u, side * 0.08f * u, baseY)
+        cubicTo(
+            side * 1.66f * u, cy + 1.48f * u,
+            side * 1.45f * u, cy + 1.58f * u,
+            side * 1.20f * u, cy + 1.57f * u        // bottom of the fat end
+        )
+        cubicTo(
+            side * 0.95f * u, cy + 1.56f * u,
+            side * 0.70f * u, cy + 1.50f * u,
+            side * 0.50f * u, cy + 1.36f * u        // underside turning in
+        )
+        cubicTo(
+            side * 0.28f * u, cy + 1.16f * u,
+            side * 0.10f * u, cy + 0.94f * u,
+            0f, cy + 0.82f * u                      // narrow end, bottom — hidden by the nose
+        )
         close()
     }
     val moustache = Path().apply { op(wing(-1f), wing(1f), PathOperation.Union) }
@@ -1060,16 +1123,23 @@ private fun DrawScope.drawMustache(u: Float) {
     // Shadow it casts onto the cheeks and chin. Same construction as the hat's, including
     // the same trap: an offset copy whose hard top edge hides under the moustache itself,
     // with only the softly fading lower crescent visible — and clipped to the head sphere,
-    // because the moustache is WIDER than his face at this height (±1.58u of moustache
-    // against a head only ~1.08u across down here), so its tips overhang open sky and an
+    // because the moustache is WIDER than his face at this height (ends at ±1.7u against a
+    // head only ~1.3u across down there), so its ends overhang open sky and an
     // unclipped shadow hangs there in mid-air. Nudged right as well as down, since the
     // light comes from the left.
     drawContext.canvas.save()
     drawContext.canvas.clipPath(
         Path().apply { addOval(Rect(Offset(-1.85f * u, -11.85f * u), Size(3.7f * u, 3.7f * u))) }
     )
+    // The shadow copy is trimmed to the outer lobes (|x| > 0.7u): inside the V between
+    // them it was landing on the chin and closing the gap the V exists to show.
+    val shadowCopy = Path().apply { addPath(moustache, Offset(0.03f * u, 0.13f * u)) }
+    val outsideV = Path().apply {
+        addRect(Rect(Offset(-3f * u, cy), Size(3f * u - 0.7f * u, 3f * u)))
+        addRect(Rect(Offset(0.7f * u, cy), Size(3f * u, 3f * u)))
+    }
     drawPath(
-        Path().apply { addPath(moustache, Offset(0.03f * u, 0.13f * u)) },
+        Path().apply { op(shadowCopy, outsideV, PathOperation.Intersect) },
         brush = Brush.verticalGradient(
             colors = listOf(
                 GnomeColors.skinDark.copy(alpha = 0.55f),
@@ -1084,7 +1154,7 @@ private fun DrawScope.drawMustache(u: Float) {
     // with x across the moustache standing in for position around the roll. That is what
     // makes this read as the same light rather than merely a similar one: the bright band
     // lands left of centre and the right edge falls right off, exactly as it does on the hat.
-    drawPath(moustache, brush = rollGradient(-1.58f * u, 1.58f * u, color = ::beardRollColor))
+    drawPath(moustache, brush = rollGradient(-1.7f * u, 1.7f * u, color = ::beardRollColor))
     // It droops, so it is a roll of hair rather than a flat shape: crown catching light,
     // underside turning away beneath it.
     drawPath(
@@ -1107,7 +1177,7 @@ private fun DrawScope.drawMustache(u: Float) {
                 GnomeColors.beardShade.copy(alpha = 0.22f),
                 Color.Transparent,
             ),
-            center = Offset(-0.05f * u, topY + 0.04f * u), radius = 0.80f * u
+            center = Offset(-0.05f * u, topY + 0.04f * u), radius = 0.68f * u
         )
     )
 }
@@ -1115,9 +1185,12 @@ private fun DrawScope.drawMustache(u: Float) {
 // ── Gold-frame sunglasses ─────────────────────────────────────────────────────
 
 private fun DrawScope.drawSunglasses(u: Float) {
-    val lensY = -10.3f * u
-    val lensH = 0.62f * u
-    val lensW = 1.1f * u
+    // Frame outer box ~1.31u x 0.91u per lens, centred 0.21u above the head's centre, with
+    // a 0.11u frame; the frames sit only ~0.38u apart at the bridge.
+    val lensY = (HEAD_CY - 0.21f) * u
+    val lensH = 0.80f * u
+    val lensW = 1.20f * u
+    val frameW = 0.11f * u
 
     // One gradient spanning the whole pair — temple to temple — rather than one per lens, so
     // the gold turns continuously across his face instead of each lens repeating the same
@@ -1137,76 +1210,65 @@ private fun DrawScope.drawSunglasses(u: Float) {
         drawRoundRect(
             brush = goldRoll,
             topLeft = Offset(lx - lensW / 2, lensY - lensH / 2), size = Size(lensW, lensH),
-            cornerRadius = CornerRadius(0.2f * u), style = Stroke(width = 0.1f * u)
+            cornerRadius = CornerRadius(0.2f * u), style = Stroke(width = frameW)
         )
         drawLine(
             color = GnomeColors.glassReflect,
-            start = Offset(lx - lensW * 0.3f, lensY - lensH * 0.25f),
-            end = Offset(lx - lensW * 0.05f, lensY + lensH * 0.15f),
+            start = Offset(lx - lensW * 0.28f, lensY - lensH * 0.22f),
+            end = Offset(lx - lensW * 0.05f, lensY + lensH * 0.12f),
             strokeWidth = 0.11f * u, cap = StrokeCap.Round
         )
     }
-    lens(-0.7f * u); lens(0.7f * u)
+    val lensX = 0.79f * u
+    lens(-lensX); lens(lensX)
+    // Bridge — a short bar between the frames, a little below lens-centre height; the nose
+    // ball tucks up between the lenses beneath it
     drawLine(
         brush = goldRoll,
-        start = Offset(-0.15f * u, lensY),
-        end = Offset(0.15f * u, lensY),
-        strokeWidth = 0.08f * u
+        start = Offset(-lensX + lensW / 2, lensY + 0.04f * u),
+        end = Offset(lensX - lensW / 2, lensY + 0.04f * u),
+        strokeWidth = 0.17f * u
     )
     drawLine(
         brush = goldRoll,
-        start = Offset(-0.7f * u - lensW / 2, lensY),
-        end = Offset(-1.82f * u, lensY + 0.1f * u),
-        strokeWidth = 0.08f * u
+        start = Offset(-lensX - lensW / 2, lensY),
+        end = Offset(-1.85f * u, lensY),
+        strokeWidth = 0.11f * u
     )
     drawLine(
         brush = goldRoll,
-        start = Offset(0.7f * u + lensW / 2, lensY),
-        end = Offset(1.82f * u, lensY + 0.1f * u),
-        strokeWidth = 0.08f * u
+        start = Offset(lensX + lensW / 2, lensY),
+        end = Offset(1.85f * u, lensY),
+        strokeWidth = 0.11f * u
     )
 }
 
-// ── Eyebrows — dark, confident ────────────────────────────────────────────────
+// ── Eyebrows — white, soft, gently arched ─────────────────────────────────────
 
-// Shading only, deliberately no cast shadow: eyebrows lie flat against the brow, so there
-// is nothing for them to stand proud of and cast onto. What they do get is the same
-// left-to-right turn as the moustache — driven by the same rollLambert — so the pair of
-// hair features on his face agree with each other and with the hat above them. The ramp is
-// centred on the existing eyebrow colour, lifting slightly on the lit side and deepening on
-// the shadow side, rather than making them lighter or darker overall.
-private fun browRollColor(shade: Float): Color = lerp(
-    lerp(GnomeColors.beardShade, GnomeColors.hairDark, 0.70f),
-    lerp(GnomeColors.beardShade, GnomeColors.beard, 0.35f),
-    shade
-)
-
+// Same white hair as the moustache and the same roll shading, so the three hair features
+// on his face agree with each other. Shading only, no cast shadow: brows lie flat against
+// the forehead and have nothing to stand proud of.
+//
+// The shape is what carries the expression. Each brow is a gentle symmetrical dome whose
+// two ends sit at the SAME height, tucked right under the brim and just above its lens.
+// The previous brows were dark and their inner ends dipped toward the nose — the classic
+// furrowed-brow silhouette — which is what was making him read as stern.
 private fun DrawScope.drawEyebrows(u: Float) {
-    val browY = -10.85f * u
-    val brow = rollGradient(-1.58f * u, 1.58f * u, steps = 8, color = ::browRollColor)
+    // Sits with its top just kissing the underside of the brim, a shallow arch, and a
+    // clear strip of forehead between it and the lens below.
+    val browY = (HEAD_CY - 0.90f) * u
+    val brow = rollGradient(-1.4f * u, 1.4f * u, steps = 8, strength = 0.6f, color = ::beardRollColor)
 
-    drawPath(Path().apply {
-        moveTo(-1.58f * u, browY + 0.05f * u)
-        cubicTo(
-            -1.08f * u,
-            browY - 0.2f * u,
-            -0.58f * u,
-            browY - 0.15f * u,
-            -0.2f * u,
-            browY + 0.08f * u
-        )
-    }, brush = brow, style = Stroke(width = 0.21f * u, cap = StrokeCap.Round))
-    drawPath(Path().apply {
-        moveTo(1.58f * u, browY + 0.05f * u)
-        cubicTo(
-            1.08f * u,
-            browY - 0.2f * u,
-            0.58f * u,
-            browY - 0.15f * u,
-            0.2f * u,
-            browY + 0.08f * u
-        )
-    }, brush = brow, style = Stroke(width = 0.21f * u, cap = StrokeCap.Round))
+    for (side in listOf(-1f, 1f)) {
+        drawPath(Path().apply {
+            moveTo(side * 0.34f * u, browY + 0.02f * u)
+            cubicTo(
+                side * 0.58f * u, browY - 0.07f * u,
+                side * 0.94f * u, browY - 0.07f * u,
+                side * 1.12f * u, browY + 0.02f * u
+            )
+        }, brush = brow, style = Stroke(width = 0.17f * u, cap = StrokeCap.Round))
+    }
 }
 
 // ── Cone shading model ───────────────────────────────────────────────────────
@@ -1317,8 +1379,12 @@ private fun beardRollColor(shade: Float): Color = when {
 // upper-LEFT. Every shading layer is painted through the cone path / brim paths below, so
 // the silhouette is exactly what it always was — only the fill inside it gained depth.
 
+private const val HAT_TILT_DEG = 4f
+
 private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
-    val hatBaseY = -11.1f * u
+    // Raked 4° rather than 11°, so the brim's front lip sits just on the brows on the low
+    // side of the tilt instead of covering the whole right brow.
+    val hatBaseY = -11.14f * u
     val hatBobOffset = beatBounce * (-0.15f * u)
 
     // === CONTACT SHADOW ===
@@ -1344,7 +1410,7 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
     drawContext.canvas.clipPath(hatShadowSurface(u))
     withTransform({
         translate(0f, hatBobOffset)
-        rotate(11f, Offset(0f, hatBaseY))
+        rotate(HAT_TILT_DEG, Offset(0f, hatBaseY))
     }) {
         drawRect(
             brush = Brush.verticalGradient(
@@ -1360,7 +1426,7 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
 
     withTransform({
         translate(0f, hatBobOffset)
-        rotate(11f, Offset(0f, hatBaseY))
+        rotate(HAT_TILT_DEG, Offset(0f, hatBaseY))
     }) {
 
         // === SHARED GEOMETRY & BRUSHES ===
@@ -1371,16 +1437,16 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
         // that SAME brush there lands on the same angle and therefore the same colour. The
         // two shapes meet at identical pixels and the seam has nothing left to show. The
         // brim only departs from the cone as it travels away from it (see brim() below).
-        val coneTipY = hatBaseY - 5.1f * u
+        val coneTipY = hatBaseY - 5.0f * u
         val conePath = Path().apply {
             moveTo(-1.75f * u, hatBaseY)
             cubicTo(
                 -1.45f * u, hatBaseY - 2.0f * u,
-                -0.22f * u, hatBaseY - 4.9f * u,
+                -0.22f * u, hatBaseY - 4.8f * u,
                 0f, coneTipY
             )
             cubicTo(
-                0.22f * u, hatBaseY - 4.9f * u,
+                0.22f * u, hatBaseY - 4.8f * u,
                 1.45f * u, hatBaseY - 2.0f * u,
                 1.75f * u, hatBaseY
             )
@@ -1501,7 +1567,7 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
                 moveTo(-1.72f * u, hatBaseY - 0.55f * u)
                 cubicTo(
                     -1.45f * u, hatBaseY - 2.0f * u,
-                    -0.22f * u, hatBaseY - 4.9f * u,
+                    -0.22f * u, hatBaseY - 4.8f * u,
                     0f, coneTipY
                 )
             },
@@ -1523,7 +1589,7 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
                 moveTo(1.72f * u, hatBaseY - 0.55f * u)
                 cubicTo(
                     1.45f * u, hatBaseY - 2.0f * u,
-                    0.22f * u, hatBaseY - 4.9f * u,
+                    0.22f * u, hatBaseY - 4.8f * u,
                     0f, coneTipY
                 )
             },

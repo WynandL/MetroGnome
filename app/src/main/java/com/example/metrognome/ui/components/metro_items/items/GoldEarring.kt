@@ -36,7 +36,7 @@ object GoldEarring : MetroItem {
     override val isBodyAttached  = true
     override val isHeadAttached  = true
 
-    override fun hitCenter(u: Float) = Offset(-1.95f * u, (-10.0f + 0.51f) * u)
+    override fun hitCenter(u: Float) = Offset(-1.98f * u, (-10.0f + 0.73f) * u)
     override fun hitRadius(u: Float) = u * 0.45f
 
     // Palette — ruby is item-unique, gold comes from ItemPalette
@@ -50,8 +50,8 @@ object GoldEarring : MetroItem {
         // Ear lobe anchor — derived from drawEars pointy-ear geometry
         // earX: lower-bezier CP2 x = side * 1.95f * u (side = -1 for left ear)
         // earY: ecy + 0.13f·u, where ecy = (cy + 0.1f) * u = -9.9f·u
-        val earX = -1.95f * u
-        val earY = (-10.0f + 0.23f) * u                 // = -9.77f·u
+        val earX = -1.98f * u
+        val earY = (-10.0f + 0.45f) * u                 // = -9.55f·u, on the lobe's lower edge
 
         val hoopR      = 0.28f * u    // outer radius of the hoop
         val wireW      = 0.10f * u    // stroke width of the ring wire
