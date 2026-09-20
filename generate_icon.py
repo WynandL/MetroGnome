@@ -4,7 +4,7 @@ Generate MetroGnome launcher icons and Play Store assets.
 
 Renders from ic_launcher_foreground.xml + ic_launcher_background.xml using
 pycairo. Every path, gradient, alpha, clip and rotation matches the XML
-exactly. Text for the feature graphic uses Pillow + Segoe UI.
+exactly. The feature graphic is exported from its approved campaign artwork master.
 
 Outputs
 -------
@@ -19,9 +19,10 @@ Requirements:  pip install pycairo Pillow
 import cairo
 import math
 import os
-import random
 import re
-from PIL import Image, ImageDraw, ImageFont
+import xml.etree.ElementTree as ET
+from pathlib import Path
+from PIL import Image
 
 # ── Colour helpers ─────────────────────────────────────────────────────────────
 
@@ -202,170 +203,65 @@ def S(ctx, pd, colour, w, cap=cairo.LINE_CAP_BUTT):
     ctx.set_line_width(w); ctx.set_line_cap(cap); ctx.stroke()
 
 
-# ── Shared path constants ─────────────────────────────────────────────────────
-
-_BRIM = ("M 72.9,62.66 A 18.9,2.61,0,1,1,35.1,62.66"
-         " A 18.9,2.61,0,1,1,72.9,62.66 Z")
-
-_LENSES = (
-    "M 44.55,68.51 H 50.85 Q 52.65,68.51 52.65,70.31"
-    " V 72.29 Q 52.65,74.09 50.85,74.09"
-    " H 44.55 Q 42.75,74.09 42.75,72.29"
-    " V 70.31 Q 42.75,68.51 44.55,68.51 Z"
-    " M 57.15,68.51 H 63.45 Q 65.25,68.51 65.25,70.31"
-    " V 72.29 Q 65.25,74.09 63.45,74.09"
-    " H 57.15 Q 55.35,74.09 55.35,72.29"
-    " V 70.31 Q 55.35,68.51 57.15,68.51 Z"
-)
+# Read the actual vector resources so adaptive and raster icons share one drawing.
+ANDROID = '{http://schemas.android.com/apk/res/android}'
+AAPT = '{http://schemas.android.com/aapt}'
 
 
-# ── Foreground renderer (shared by icon and feature graphic) ──────────────────
+def _draw_vector(ctx, filename):
+    root = ET.parse(Path(BASE) / 'drawable' / filename).getroot()
+
+    def attr(node, key, default=None):
+        return node.get(ANDROID + key, default)
+
+    def number(node, key, default=0):
+        return float(attr(node, key, default))
+
+    def visit(node):
+        if node.tag in ('vector', 'group'):
+            ctx.save()
+            px, py = number(node, 'pivotX'), number(node, 'pivotY')
+            ctx.translate(number(node, 'translateX') + px, number(node, 'translateY') + py)
+            ctx.rotate(math.radians(number(node, 'rotation')))
+            ctx.scale(number(node, 'scaleX', 1), number(node, 'scaleY', 1))
+            ctx.translate(-px, -py)
+            for child in node:
+                visit(child)
+            ctx.restore()
+        elif node.tag == 'clip-path':
+            P(ctx, attr(node, 'pathData'))
+            ctx.clip()
+        elif node.tag == 'path':
+            data = attr(node, 'pathData')
+            P(ctx, data)
+            gradient = node.find(AAPT + 'attr/gradient')
+            if gradient is not None:
+                if attr(gradient, 'type', 'linear') == 'radial':
+                    x, y = number(gradient, 'centerX'), number(gradient, 'centerY')
+                    paint = cairo.RadialGradient(x, y, 0, x, y, number(gradient, 'gradientRadius'))
+                else:
+                    paint = cairo.LinearGradient(number(gradient, 'startX'), number(gradient, 'startY'),
+                                                 number(gradient, 'endX'), number(gradient, 'endY'))
+                for stop in gradient:
+                    paint.add_color_stop_rgba(number(stop, 'offset'),
+                                              *hc(attr(stop, 'color'), number(node, 'fillAlpha', 1)))
+                ctx.set_source(paint)
+                ctx.fill()
+            else:
+                F(ctx, attr(node, 'fillColor', '#00000000'), number(node, 'fillAlpha', 1))
+            if attr(node, 'strokeColor'):
+                P(ctx, data)
+                ctx.set_source_rgba(*hc(attr(node, 'strokeColor'), number(node, 'strokeAlpha', 1)))
+                ctx.set_line_width(number(node, 'strokeWidth'))
+                ctx.set_line_cap({'round': cairo.LINE_CAP_ROUND, 'square': cairo.LINE_CAP_SQUARE}.get(
+                    attr(node, 'strokeLineCap'), cairo.LINE_CAP_BUTT))
+                ctx.stroke()
+
+    visit(root)
+
 
 def _draw_foreground(ctx):
-    """
-    Draw Metro's face into ctx.
-    ctx must already be scaled so 108 units = the desired output size.
-    Mirrors ic_launcher_foreground.xml exactly.
-    """
-    ctx.save()
-    ctx.translate(0, -7)   # <group android:translateY="-7">
-
-    # NECK
-    P(ctx, "M 51.93,87.5 H 56.07"
-           " Q 57.42,87.5 57.42,88.85 V 93.17"
-           " Q 57.42,94.52 56.07,94.52 H 51.93"
-           " Q 50.58,94.52 50.58,93.17 V 88.85"
-           " Q 50.58,87.5 51.93,87.5 Z")
-    F(ctx, "#F0BC80")
-
-    # EARS
-    P(ctx, "M 39.96,70.58 C 37.35,69.95 32.4,68.6 31.14,69.86"
-           " C 32.4,71.48 36.45,78.32 39.96,79.22 Z")
-    F(ctx, "#F0BC80")
-    P(ctx, "M 38.7,73.28 C 36.9,73.1 33.48,70.94 32.58,71.48"
-           " C 33.66,72.92 36.72,76.7 38.7,76.52 Z")
-    F(ctx, "#D8A060", 0.9)
-
-    P(ctx, "M 68.04,70.58 C 70.65,69.95 75.6,68.6 76.86,69.86"
-           " C 75.6,71.48 71.55,78.32 68.04,79.22 Z")
-    F(ctx, "#F0BC80")
-    P(ctx, "M 69.3,73.28 C 71.1,73.1 74.52,70.94 75.42,71.48"
-           " C 74.34,72.92 71.28,76.7 69.3,76.52 Z")
-    F(ctx, "#D8A060", 0.9)
-
-    # HEAD
-    P(ctx, "M 70.65,74 A 16.65,16.65,0,1,1,37.35,74"
-           " A 16.65,16.65,0,1,1,70.65,74 Z")
-    FR(ctx, 49.84, 69.84, 21.65,
-        [(0.0, "#FAD09A"), (0.5, "#F0BC80"), (1.0, "#D8A060")])
-
-    # CHEEK BLUSH
-    P(ctx, "M 48.87,78.05 A 4.32,4.32,0,1,1,40.23,78.05"
-           " A 4.32,4.32,0,1,1,48.87,78.05 Z")
-    F(ctx, "#EBA080", 0.16)
-    P(ctx, "M 67.77,78.05 A 4.32,4.32,0,1,1,59.13,78.05"
-           " A 4.32,4.32,0,1,1,67.77,78.05 Z")
-    F(ctx, "#EBA080", 0.16)
-
-    # HAIR
-    P(ctx, "M 41.22,60.32 C 38.88,63.65 35.28,67.52 34.92,73.1"
-           " C 36.36,74 39.15,73.28 40.32,70.58"
-           " C 40.86,66.08 42.48,62.48 43.38,60.68 Z")
-    F(ctx, "#B5B0AB")
-    P(ctx, "M 66.78,60.32 C 69.12,63.65 72.72,67.52 73.08,73.1"
-           " C 71.64,74 68.85,73.28 67.68,70.58"
-           " C 67.14,66.08 65.52,62.48 64.62,60.68 Z")
-    F(ctx, "#B5B0AB")
-    P(ctx, "M 48.6,58.88 C 54,57.62 60.48,59.15 63.45,60.95"
-           " C 61.38,61.4 55.08,59.96 49.95,59.78 Z")
-    F(ctx, "#888280")
-
-    # NOSE
-    P(ctx, "M 57.96,79.76 A 3.96,3.24,0,1,1,50.04,79.76"
-           " A 3.96,3.24,0,1,1,57.96,79.76 Z")
-    FR(ctx, 53.28, 79.22, 5.0, [(0.0, "#FAD09A"), (1.0, "#CC8868")])
-
-    # NOSTRILS
-    P(ctx, "M 53.1,80.39 A 0.9,0.81,0,1,1,51.3,80.39"
-           " A 0.9,0.81,0,1,1,53.1,80.39 Z"
-           " M 56.7,80.39 A 0.9,0.81,0,1,1,54.9,80.39"
-           " A 0.9,0.81,0,1,1,56.7,80.39 Z")
-    F(ctx, "#D8A060", 0.35)
-
-    # MUSTACHE
-    P(ctx, "M 53.28,81.92 C 49.95,80.84 41.85,81.2 39.78,85.7"
-           " C 40.95,87.5 46.98,86.87 50.85,85.88"
-           " C 52.92,85.16 54,84.17 53.28,81.92 Z")
-    F(ctx, "#F2EEEA")
-    P(ctx, "M 54.72,81.92 C 58.05,80.84 66.15,81.2 68.22,85.7"
-           " C 67.05,87.5 61.02,86.87 57.15,85.88"
-           " C 55.08,85.16 54,84.17 54.72,81.92 Z")
-    F(ctx, "#F2EEEA")
-
-    # SUNGLASSES – dark lenses
-    P(ctx, _LENSES); F(ctx, "#080818")
-    # SUNGLASSES – gold frame
-    P(ctx, _LENSES)
-    ctx.set_source_rgba(*hc("#FFD700"))
-    ctx.set_line_width(0.9); ctx.set_line_cap(cairo.LINE_CAP_BUTT); ctx.stroke()
-    # Bridge and arms
-    S(ctx,
-      "M 52.65,71.3 L 55.35,71.3"
-      " M 42.75,71.3 L 37.62,72.2"
-      " M 65.25,71.3 L 70.38,72.2",
-      "#FFD700", 0.72, cairo.LINE_CAP_ROUND)
-    # Lens reflections (#664466AA = AARRGGBB, alpha≈0.4)
-    S(ctx,
-      "M 44.73,69.91 L 47.21,72.14"
-      " M 57.33,69.91 L 59.81,72.14",
-      "#664466AA", 0.99, cairo.LINE_CAP_ROUND)
-
-    # EYEBROWS
-    S(ctx, "M 39.78,66.8 C 44.28,64.55 48.78,65 52.2,67.07",
-      "#B8B0A8", 1.89, cairo.LINE_CAP_ROUND)
-    S(ctx, "M 68.22,66.8 C 63.72,64.55 59.22,65 55.8,67.07",
-      "#B8B0A8", 1.89, cairo.LINE_CAP_ROUND)
-
-    # HAT GROUP (rotation=11° around pivot 54, 64.1)
-    ctx.save()
-    ctx.translate(54, 64.1)
-    ctx.rotate(math.radians(11))
-    ctx.translate(-54, -64.1)
-
-    # Brim upper half — behind hat body
-    ctx.save()
-    ctx.rectangle(0, 0, 108, 64.1); ctx.clip()
-    P(ctx, _BRIM); F(ctx, "#881010")
-    ctx.restore()
-
-    # Hat body
-    P(ctx, "M 38.25,64.1 C 40.95,46.1 52.02,20 54,18.2"
-           " C 55.98,20 67.05,46.1 69.75,64.1 Z")
-    FL(ctx, 54, 18.2, 54, 64.1, [
-        (0.0, "#DD3535"), (0.5, "#CC1818"), (1.0, "#881010")])
-
-    # Brim lower half — in front of hat body
-    ctx.save()
-    ctx.rectangle(0, 64.1, 108, 43.9); ctx.clip()
-    P(ctx, _BRIM); F(ctx, "#881010")
-    ctx.restore()
-
-    ctx.restore()  # end hat group
-
-    # SHIRT COLLAR
-    P(ctx, "M 49.32,96.32 L 54,101.45 L 58.68,96.32"
-           " L 56.88,91.28 L 54,93.08 L 51.12,91.28 Z")
-    F(ctx, "#F8F4EE")
-    # Tie triangles
-    P(ctx, "M 53.55,93.62 L 49.5,91.82 L 49.5,95.42 Z"
-           " M 54.45,93.62 L 58.5,91.82 L 58.5,95.42 Z")
-    F(ctx, "#AA1E2E")
-    # Tie knot
-    P(ctx, "M 55.08,93.62 A 1.08,1.08,0,1,1,52.92,93.62"
-           " A 1.08,1.08,0,1,1,55.08,93.62 Z")
-    F(ctx, "#AA1E2E")
-
-    ctx.restore()  # end outer group translateY=-7
+    _draw_vector(ctx, 'ic_launcher_foreground.xml')
 
 
 # ── Icon renderer ─────────────────────────────────────────────────────────────
@@ -377,95 +273,18 @@ def draw_icon(size: int) -> cairo.ImageSurface:
     ctx   = cairo.Context(surf)
     ctx.scale(scale, scale)
     ctx.set_antialias(cairo.ANTIALIAS_BEST)
-    ctx.rectangle(0, 0, 108, 108)
-    FL(ctx, 54, 0, 54, 108, [(0, "#0A0818"), (1, "#16133A")])
+    _draw_vector(ctx, 'ic_launcher_background.xml')
     _draw_foreground(ctx)
     return surf
 
 
 # ── Feature graphic renderer ──────────────────────────────────────────────────
 
-def _load_font(filename, size):
-    for path in [f"C:/Windows/Fonts/{filename}", f"C:/Windows/Fonts/arialbd.ttf"]:
-        try:
-            return ImageFont.truetype(path, size)
-        except Exception:
-            pass
-    return ImageFont.load_default()
-
-
 def draw_feature_graphic() -> Image.Image:
-    """Render the 1024×500 Play Store feature graphic."""
-    W, H = 1024, 500
-
-    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, W, H)
-    ctx  = cairo.Context(surf)
-    ctx.set_antialias(cairo.ANTIALIAS_BEST)
-
-    # Background — same gradient direction as the app
-    ctx.rectangle(0, 0, W, H)
-    pat = cairo.LinearGradient(0, 0, W, H)
-    pat.add_color_stop_rgba(0.0, *hc("#0A0818"))
-    pat.add_color_stop_rgba(1.0, *hc("#16133A"))
-    ctx.set_source(pat); ctx.fill()
-
-    # Stars — same seed as the launcher icon background for consistency
-    rng = random.Random(1337)
-    for _ in range(80):
-        fx, fy = rng.random(), rng.random()
-        sx = fx * W
-        sy = fy * H * 0.78          # keep stars in upper 78% of height
-        sr = max(0.8, (1.0 + fx * 1.5) * (W / 512.0))
-        b  = 0.2 + fy * 0.45
-        ctx.arc(sx, sy, sr, 0, 2 * math.pi)
-        ctx.set_source_rgba(b, b, b + 0.05, 1.0)
-        ctx.fill()
-
-    # Gnome face — right side, viewport 390×390 px starting at (574, 48)
-    # Face centre lands at x≈774, y≈295; hat tip at y≈89; collar at y≈398
-    GNOME_PX = 390
-    GX, GY   = 574, 48
-    ctx.save()
-    ctx.translate(GX, GY)
-    ctx.scale(GNOME_PX / 108.0, GNOME_PX / 108.0)
-    _draw_foreground(ctx)
-    ctx.restore()
-
-    # Hand off to Pillow for text (better font rendering on Windows)
-    img  = Image.frombuffer(
-        'RGBA', (W, H), bytes(surf.get_data()), 'raw', 'BGRA', 0, 1).copy()
-    draw = ImageDraw.Draw(img)
-
-    font_title = _load_font("segoeuib.ttf", 88)
-    font_tag   = _load_font("segoeui.ttf",  26)
-
-    TX = 68   # left text margin
-
-    def shadowed(x, y, text, fill):
-        draw.text((x + 2, y + 2), text, fill=(0, 0, 0, 130), font=font_title)
-        draw.text((x,     y    ), text, fill=fill,             font=font_title)
-
-    # "Metro" white, "Gnome" gold — stacked, vertically centred on canvas
-    shadowed(TX, 148, "Metro", (255, 255, 255, 255))
-    shadowed(TX, 255, "Gnome", (255, 215,   0, 255))
-
-    # Gold accent line
-    draw.line([(TX, 368), (TX + 330, 368)], fill=(255, 215, 0, 180), width=2)
-
-    # Tagline
-    draw.text((TX + 2, 381), "Beat Detection · Rhythm Game · Metronome",
-              fill=(0,   0,   0,   110), font=font_tag)
-    draw.text((TX,     379), "Beat Detection · Rhythm Game · Metronome",
-              fill=(165, 160, 200, 255), font=font_tag)
-
-    # Four beat dots — a nod to the metronome's 4/4 pulse
-    DOT_Y, DOT_R = 455, 7
-    for i in range(4):
-        bx = TX + i * 30
-        draw.ellipse([bx-DOT_R, DOT_Y-DOT_R, bx+DOT_R, DOT_Y+DOT_R],
-                     fill=(255, 215, 0, 200))
-
-    return img.convert('RGB')
+    """Export the campaign master at Google Play's required 1024×500 size."""
+    source = STORE / 'artwork' / 'feature_graphic_master.png'
+    with Image.open(source) as master:
+        return master.convert('RGB').resize((1024, 500), Image.Resampling.LANCZOS)
 
 
 # ── cairo → PIL helper ────────────────────────────────────────────────────────
@@ -479,8 +298,9 @@ def to_pil_rgb(surf: cairo.ImageSurface) -> Image.Image:
 
 # ── Output paths & sizes ──────────────────────────────────────────────────────
 
-BASE  = r"C:\Users\wlambrechts\AndroidStudioProjects\MetroGnome\app\src\main\res"
-STORE = r"C:\Users\wlambrechts\AndroidStudioProjects\MetroGnome\app"
+ROOT = Path(__file__).resolve().parent
+BASE = ROOT / 'app' / 'src' / 'main' / 'res'
+STORE = ROOT / 'app'
 
 DENSITIES = {
     'mipmap-mdpi':    48,
@@ -508,10 +328,10 @@ if __name__ == '__main__':
     # Launcher icons
     print()
     for folder, px in DENSITIES.items():
-        surf = draw_icon(px)
-        img  = to_pil_rgb(surf)
+        surf = draw_icon(px * 4)
+        img  = to_pil_rgb(surf).resize((px, px), Image.Resampling.LANCZOS)
         for name in ('ic_launcher.webp', 'ic_launcher_round.webp'):
-            img.save(os.path.join(BASE, folder, name), 'WEBP', quality=95)
+            img.save(os.path.join(BASE, folder, name), 'WEBP', lossless=True)
         print(f"  {folder}  {px}×{px}px")
 
     print("\nDone.")
