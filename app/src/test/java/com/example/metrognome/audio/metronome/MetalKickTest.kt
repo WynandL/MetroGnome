@@ -57,27 +57,34 @@ class MetalKickTest {
     @Test
     fun theKickIsLoudCleanAndAudibleOnAPhone() {
         val kick = buffer("kickClick")
-        assertEquals("260 ms", sr * 260 / 1000, kick.size)
+        assertEquals("420 ms", sr * 420 / 1000, kick.size)
         val peak = kick.maxOf { abs(it) }
-        assertTrue("peaks at its volume, got $peak", peak in 0.8f..0.9f)
+        assertTrue("peaks at its volume, got $peak", peak in 0.85f..0.92f)
         val clipped = kick.count { abs(it) >= 0.99f }
         assertTrue("almost nothing pinned at full scale, got $clipped samples", clipped < kick.size / 200)
-        // Through a phone speaker (nothing below ~350 Hz) the hit must still land: what
-        // comes out of a 4th-order high-pass peaks at over 40% of the full hit's peak, and
-        // its first 20 ms carry at least a quarter of the full hit's energy there.
+        // The doof: the hit is a sustained, saturated body, not a click with a tail, so
+        // its RMS over the first 50 ms is a large fraction of its peak (a sine body gives
+        // ~0.5, a click-forward voice ~0.2). This is what the dev asked for over the
+        // phone-speaker loudness below, and the two pull against each other.
+        val hitRms = rms(kick, 0, sr / 20)
+        assertTrue("a thump, not a click: hit rms ${hitRms / peak} of peak", hitRms > 0.4f * peak)
+        // Through a phone speaker (nothing below ~350 Hz) the hit still lands, by the
+        // body's harmonics, the punch and the beater: what comes out of a 4th-order
+        // high-pass peaks at over a quarter of the full hit's peak, and its first 20 ms
+        // carry over 15% of the full hit's energy there. The dev chose thump over the
+        // 40% a click-forward voice managed ("I understand low frequencies are soft").
         val through = throughPhoneSpeaker(kick)
         val throughPeak = through.maxOf { abs(it) }
-        assertTrue("through a phone speaker the hit peaks at ${(throughPeak / peak * 100).toInt()}% of full", throughPeak > 0.4f * peak)
+        assertTrue("through a phone speaker the hit peaks at ${(throughPeak / peak * 100).toInt()}% of full", throughPeak > 0.25f * peak)
         val throughHit = rms(through, 0, sr / 50)
         val fullHit = rms(kick, 0, sr / 50)
-        assertTrue("through a phone speaker the first 20 ms hold ${(throughHit / fullHit * 100).toInt()}% of the hit", throughHit > 0.25f * fullHit)
+        assertTrue("through a phone speaker the first 20 ms hold ${(throughHit / fullHit * 100).toInt()}% of the hit", throughHit > 0.15f * fullHit)
         // ...but it is still a kick: most of its power sits below 300 Hz.
         val above = powerAbove(kick, 300.0)
         assertTrue("still deep: ${(above * 100).toInt()}% above 300 Hz", above < 0.6)
-        // The gate and the body decay: the last 100 ms is a whisper next to the hit.
-        val hit = rms(kick, 0, sr / 20)
+        // The body decays out: the last 50 ms is a tenth of the hit or less.
         val tail = rms(kick, kick.size - sr / 20)
-        assertTrue("gated tail, hit $hit vs tail $tail", tail < hit * 0.05f)
+        assertTrue("decays out, hit $hitRms vs tail $tail", tail < hitRms * 0.1f)
     }
 
     @Test

@@ -48,9 +48,9 @@ class MetronomeEngine {
     // Premium (index 7): cowbell, voiced to cut through a loud kit (built for drummers)
     private val cowbellClick  = generateCowbellClick(baseFrequency = 540.0, durationMs = 150, volume = 0.82f)
     private val cowbellAccent = generateCowbellClick(baseFrequency = 660.0, durationMs = 170, volume = 0.96f)
-    // Premium (index 8): metal kick, tight and clicky with a hint of room
-    private val kickClick  = generateMetalKick(startHz = 130.0, endHz = 55.0, durationMs = 260, volume = 0.84f)
-    private val kickAccent = generateMetalKick(startHz = 160.0, endHz = 60.0, durationMs = 300, volume = 0.98f)
+    // Premium (index 8): metal kick, a deep sustained doof with a beater on top
+    private val kickClick  = generateMetalKick(startHz = 160.0, endHz = 58.0, durationMs = 420, volume = 0.88f)
+    private val kickAccent = generateMetalKick(startHz = 190.0, endHz = 62.0, durationMs = 460, volume = 0.98f)
 
     // Mutable settings — read from audio thread, written from main thread (volatile)
     @Volatile
@@ -401,79 +401,64 @@ class MetronomeEngine {
     }
 
     /**
-     * Heavy-metal kick drum synthesis: tight, punchy, and clicky, the modern metal kick.
+     * Heavy-metal kick drum synthesis: the doof. Deep, fat and long, with a beater on top.
      *
-     * What makes a kick read as *metal* is a recipe, not a mood: a short low thump with no
-     * boom (the body is gone in about a hundred milliseconds), a scooped low-mid (the
-     * 300 to 500 Hz region is cut, which is why there is no shell "knock" here), and a
-     * hard **click** at 4 to 6 kHz from a hard beater, the typewriter attack that lets a
-     * double-kick pattern stay legible at 200 BPM. Dry: the room in that music sits on the
-     * snare, and the kick carries only a hint of it. Four layers, all deterministic:
-     *  - **Sub**: a sine dropping exponentially from [startHz] to [endHz] over 25 ms,
-     *    decaying with an 80 ms time constant, driven hard into `tanh` for odd harmonics.
-     *    Kept *under* the other layers in level: no small speaker plays it, and when it
-     *    set the peak the rest came out soft after normalising and the first hit read as
-     *    distortion (the dev's words: "distorts on the first click, the rest is soft").
-     *  - **Punch**: a 190 to 90 Hz thump gone in 40 ms, the weight a phone or laptop
-     *    speaker can actually reproduce.
-     *  - **Click**: a 3 ms high-passed noise burst, 4.2 kHz and 6 kHz partials gone in a
-     *    few ms, a 2 kHz "point" and a 900 Hz slap behind them. Besides being the sound,
-     *    this layer is what a phone speaker (nothing below ~300 Hz) can reproduce.
-     *  - **Room**: three early reflections at low gain and a 30 ms tail, cut at 120 ms.
-     *    A first cut had a big gated room and the dev heard reverb, not a kick.
-     * A 1 ms fade-in on the whole hit rules out a pop at the first sample.
+     * The thump is a low note that *sustains*: a sine dropping from [startHz] to [endHz]
+     * over 60 ms and then holding there, decaying with a 180 ms time constant, driven
+     * almost to a square wave by an asymmetric `tanh` (odd harmonics from the drive, even
+     * ones from the asymmetry). The saturation is what makes it work on a phone: a square
+     * body is louder than a sine for the same peak, and its harmonics at 180, 300 and
+     * 420 Hz are what a small speaker plays when it cannot play 60. On top: a 200 to 80 Hz
+     * punch for the attack's weight, a restrained beater (2 ms hiss, a 3.5 kHz tick and a
+     * 700 Hz slap; the click is present, not the point), and a hint of room.
      *
-     * Each hit is normalised to its own [volume] (the mix peaks well over 1.0 and
-     * normalising both hits to full scale left the accent no louder than the click). The
-     * accent starts its sweep higher and is louder and a touch longer, a harder hit.
+     * Three earlier cuts are worth remembering: a big gated room read as reverb, a
+     * click-forward voice read as thin ("soft and boring"), and a pure-sine sub set the
+     * peak while being inaudible. Each hit is normalised to its own [volume]; the accent
+     * starts higher, holds longer and is louder, a harder hit on the same drum.
      */
     private fun generateMetalKick(startHz: Double, endHz: Double, durationMs: Int, volume: Float): ShortArray {
         val numSamples = sampleRate * durationMs / 1000
-        val sweepSamples = (0.025 * sampleRate).toInt()
-        val bodyTau = 0.080 * sampleRate
+        val sweepSamples = (0.060 * sampleRate).toInt()
+        val bodyTau = 0.180 * sampleRate
         val noise = java.util.Random(0x4D4B).let { r -> FloatArray(numSamples) { r.nextFloat() * 2f - 1f } }
 
-        // Sub: the pitch sweep, integrated for a continuous phase, saturated hard. Kept
-        // under the punch and the click in level: it is the part no small speaker plays,
-        // and when it set the peak the audible part came out soft after normalising.
-        val sub = FloatArray(numSamples)
+        // Body: the sustained low note, saturated hard and asymmetrically.
+        val body = FloatArray(numSamples)
         var phase = 0.0
         for (i in 0 until numSamples) {
             val sweep = (i.toDouble() / sweepSamples).coerceAtMost(1.0)
             val hz = startHz * (endHz / startHz).pow(sweep)
             phase += 2.0 * PI * hz / sampleRate
-            sub[i] = (tanh(4.0 * sin(phase)) * exp(-i / bodyTau)).toFloat()
+            val x = sin(phase)
+            body[i] = (tanh(5.0 * x + 1.5 * x * x) * exp(-i / bodyTau)).toFloat()
         }
 
-        // Punch: the beater's thump, 190 down to 90 Hz in 30 ms and gone in 40, the part
-        // of a kick's weight a phone or laptop speaker can actually reproduce.
+        // Punch: the attack's weight, 200 down to 80 Hz, gone in 60 ms.
         val punch = FloatArray(numSamples)
         var punchPhase = 0.0
         val punchSweep = (0.030 * sampleRate).toInt()
-        val punchTau = 0.040 * sampleRate
+        val punchTau = 0.060 * sampleRate
         for (i in 0 until numSamples) {
             val sweep = (i.toDouble() / punchSweep).coerceAtMost(1.0)
-            val hz = 190.0 * (90.0 / 190.0).pow(sweep)
+            val hz = 200.0 * (80.0 / 200.0).pow(sweep)
             punchPhase += 2.0 * PI * hz / sampleRate
-            punch[i] = (tanh(2.0 * sin(punchPhase)) * exp(-i / punchTau)).toFloat()
+            punch[i] = (tanh(3.0 * sin(punchPhase)) * exp(-i / punchTau)).toFloat()
         }
 
-        // Click: the hard beater. The burst is first-differenced, a one-tap high-pass, so
-        // it is hiss rather than thud.
+        // Beater: restrained. The burst is first-differenced (a one-tap high-pass) so it is hiss, not thud.
         val click = FloatArray(numSamples) { i ->
             val t = i.toDouble() / sampleRate
-            val hiss = if (t < 0.003 && i > 0) (noise[i] - noise[i - 1]) * (1.0 - t / 0.003) * 1.0 else 0.0
-            val tick = sin(2.0 * PI * 4200.0 * t) * exp(-t / 0.006) * 1.0
-            val edge = sin(2.0 * PI * 6000.0 * t) * exp(-t / 0.004) * 0.6
-            val point = sin(2.0 * PI * 2000.0 * t) * exp(-t / 0.010) * 0.5
-            val slap = sin(2.0 * PI * 900.0 * t) * exp(-t / 0.012) * 0.5
-            (hiss + tick + edge + point + slap).toFloat()
+            val hiss = if (t < 0.002 && i > 0) (noise[i] - noise[i - 1]) * (1.0 - t / 0.002) * 0.5 else 0.0
+            val tick = sin(2.0 * PI * 3500.0 * t) * exp(-t / 0.004) * 0.35
+            val slap = sin(2.0 * PI * 700.0 * t) * exp(-t / 0.012) * 0.4
+            (hiss + tick + slap).toFloat()
         }
 
         val fadeIn = (0.001 * sampleRate).toInt().coerceAtLeast(1)
         val dry = FloatArray(numSamples) { i ->
             val onset = if (i < fadeIn) i.toFloat() / fadeIn else 1f
-            (sub[i] * 0.5f + punch[i] * 0.95f + click[i] * 0.85f) * onset
+            (body[i] * 1.0f + punch[i] * 1.0f + click[i] * 0.9f) * onset
         }
 
         // A hint of room: three early reflections and a short tail, gated.
