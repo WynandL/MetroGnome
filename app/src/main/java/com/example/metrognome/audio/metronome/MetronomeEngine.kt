@@ -236,8 +236,12 @@ class MetronomeEngine {
         val buf = ShortArray(samplesPerBeat)
         val len = minOf(click.size, samplesPerBeat)
         val vol = volume.coerceIn(0f, 1f)
+        // A voice longer than the beat (the Metal Kick at a fast tempo) is cut short; fade
+        // the cut over 8 ms, or the body ends mid-swing and every beat carries a click.
+        val fade = if (len < click.size) (sampleRate * 8 / 1000).coerceAtMost(len) else 0
         for (i in 0 until len) {
-            buf[i] = (click[i] * vol).toInt().toShort()
+            val g = if (fade > 0 && i >= len - fade) (len - i).toFloat() / fade else 1f
+            buf[i] = (click[i] * vol * g).toInt().toShort()
         }
         return buf
     }
@@ -404,7 +408,7 @@ class MetronomeEngine {
      * Heavy-metal kick drum synthesis: the doof. Deep, fat and long, with a beater on top.
      *
      * The thump is a low note that *sustains*: a sine dropping from [startHz] to [endHz]
-     * over 60 ms and then holding there, decaying with a 180 ms time constant, driven
+     * over 60 ms and then holding there, decaying with a 220 ms time constant, driven
      * almost to a square wave by an asymmetric `tanh` (odd harmonics from the drive, even
      * ones from the asymmetry). The saturation is what makes it work on a phone: a square
      * body is louder than a sine for the same peak, and its harmonics at 180, 300 and
@@ -420,7 +424,7 @@ class MetronomeEngine {
     private fun generateMetalKick(startHz: Double, endHz: Double, durationMs: Int, volume: Float): ShortArray {
         val numSamples = sampleRate * durationMs / 1000
         val sweepSamples = (0.060 * sampleRate).toInt()
-        val bodyTau = 0.180 * sampleRate
+        val bodyTau = 0.220 * sampleRate
         val noise = java.util.Random(0x4D4B).let { r -> FloatArray(numSamples) { r.nextFloat() * 2f - 1f } }
 
         // Body: the sustained low note, saturated hard and asymmetrically.
@@ -449,8 +453,8 @@ class MetronomeEngine {
         // Beater: restrained. The burst is first-differenced (a one-tap high-pass) so it is hiss, not thud.
         val click = FloatArray(numSamples) { i ->
             val t = i.toDouble() / sampleRate
-            val hiss = if (t < 0.002 && i > 0) (noise[i] - noise[i - 1]) * (1.0 - t / 0.002) * 0.5 else 0.0
-            val tick = sin(2.0 * PI * 3500.0 * t) * exp(-t / 0.004) * 0.35
+            val hiss = if (t < 0.002 && i > 0) (noise[i] - noise[i - 1]) * (1.0 - t / 0.002) * 0.35 else 0.0
+            val tick = sin(2.0 * PI * 3500.0 * t) * exp(-t / 0.004) * 0.25
             val slap = sin(2.0 * PI * 700.0 * t) * exp(-t / 0.012) * 0.4
             (hiss + tick + slap).toFloat()
         }
@@ -458,7 +462,7 @@ class MetronomeEngine {
         val fadeIn = (0.001 * sampleRate).toInt().coerceAtLeast(1)
         val dry = FloatArray(numSamples) { i ->
             val onset = if (i < fadeIn) i.toFloat() / fadeIn else 1f
-            (body[i] * 1.0f + punch[i] * 1.0f + click[i] * 0.9f) * onset
+            (body[i] * 1.0f + punch[i] * 0.9f + click[i] * 0.4f) * onset
         }
 
         // A hint of room: three early reflections and a short tail, gated.
