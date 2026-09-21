@@ -1412,7 +1412,7 @@ private fun ReferencePitchCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "REFERENCE PITCH", color = AppColors.textSubtle,
+                    "REFERENCE PITCH", color = AppColors.textDim,
                     fontSize = 12.sp, fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
                 )
@@ -1505,7 +1505,7 @@ private fun CalibrationCard(
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Text(
-                "CALIBRATION", color = AppColors.gold, fontSize = 12.sp,
+                "CALIBRATION", color = AppColors.textDim, fontSize = 12.sp,
                 fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
             )
             Spacer(Modifier.height(14.dp))

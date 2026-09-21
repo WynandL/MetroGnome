@@ -37,6 +37,16 @@ object ChordArpeggioTestTone {
     /** What each chord should be named, for the closed loop to check against. */
     val EXPECTED_SYMBOLS = listOf("C", "G7", "Em")
 
+    /**
+     * The legato comparison's timings: a note every [LEGATO_STEP_MS], each held for
+     * [LEGATO_HOLD_MS] so it rings on under the next one (with [ChordTimbre.LEGATO_TEST]'s
+     * decay, the way a string does). A fast arpeggio with no silence in it at all, which
+     * is the playing the tuner-based engine cannot follow and the onset engine exists for.
+     * Fixed, not tuned: the question is which engine copes, not what gap makes it cope.
+     */
+    const val LEGATO_STEP_MS = 450
+    const val LEGATO_HOLD_MS = 900
+
     private val player = ChordPlayer()
 
     /** The sequence as note names, for the diagnostic overlay's "Sequence:" line. */
@@ -63,5 +73,23 @@ object ChordArpeggioTestTone {
         }
         // The tail is the gap after the last note, so the buffer is exactly one chord's slot.
         return player.play(ChordVoice.render(events, referenceHz, ChordTimbre.TEST_TONE, tailMs = timings.gapMs))
+    }
+
+    /**
+     * Render and play one chord legato ([LEGATO_STEP_MS] apart, each note held
+     * [LEGATO_HOLD_MS]), blocking as [playChord] does and returning the same start time.
+     * Level and octave shift come from [timings], since those are facts about the
+     * speaker, not the test.
+     */
+    fun playLegato(chord: List<Int>, timings: ChordTestTimings, referenceHz: Float): Long {
+        val events = chord.mapIndexed { i, midi ->
+            ChordVoice.ToneEvent(
+                midi = midi + timings.octaveShift,
+                startMs = i * LEGATO_STEP_MS,
+                holdMs = LEGATO_HOLD_MS,
+                gain = timings.amplitude,
+            )
+        }
+        return player.play(ChordVoice.render(events, referenceHz, ChordTimbre.LEGATO_TEST, tailMs = ChordVoice.RELEASE_TAIL_MS))
     }
 }

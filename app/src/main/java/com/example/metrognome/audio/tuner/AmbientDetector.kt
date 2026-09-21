@@ -175,6 +175,18 @@ class AmbientDetector(hopMillis: Double) {
         /** Speed at which the background-level estimate tracks the room. */
         private const val FLOOR_ADAPT = 0.05f
 
+        /**
+         * How the floor follows loud, tone-free sound: a room that gets louder mid-session
+         * (air-conditioning, traffic). A fixed fraction per frame, geometric rather than
+         * averaged, so the size of the excursion does not matter: 0.4% per 93 ms frame is
+         * a doubling every 16 s, so a two-second door slam lifts it under 10% (undone in
+         * a second of quiet) while a room twenty times louder is the new floor in about
+         * 70 s. Before this the floor could only ever track sound *below* twice itself,
+         * so a step up froze it for the rest of the session and every frame after read
+         * as "Background sound".
+         */
+        private const val FLOOR_RISE = 0.004f
+
         /** The background estimate never collapses below this (normalised RMS). */
         private const val MIN_FLOOR = 0.0012f
 
@@ -262,15 +274,18 @@ class AmbientDetector(hopMillis: Double) {
         val holdTonal = pitch != null && pitch.clarity >= HOLD_CLARITY && !isHum
 
         val loud = levelRms > ambientFloor * LEVEL_MARGIN
-        // Track the room only on genuinely quiet, tone-free frames.
-        if (!loud && !rawTonal) {
-            ambientFloor = (ambientFloor + FLOOR_ADAPT * (levelRms - ambientFloor))
-                .coerceAtLeast(MIN_FLOOR)
+        // Track the room on tone-free frames: quickly while quiet, and very slowly upward
+        // while loud, so a room that gets louder is eventually the new floor and a note
+        // never is.
+        if (!rawTonal) {
+            ambientFloor = if (loud) minOf(levelRms, ambientFloor * (1f + FLOOR_RISE))
+                else (ambientFloor + FLOOR_ADAPT * (levelRms - ambientFloor)).coerceAtLeast(MIN_FLOOR)
         }
 
         // Live broadband-noise estimate: peak-hold the level of loud, tone-free frames and
-        // decay slowly. Unlike [ambientFloor] (frozen after profiling) this reacts to noise
-        // that starts mid-session, and stretches the hold ride-out while noise is present.
+        // decay slowly. Unlike [ambientFloor] (which follows the room over tens of seconds)
+        // this reacts at once to noise that starts mid-session, and stretches the hold
+        // ride-out while noise is present.
         liveNoise = if (loud && !rawTonal) maxOf(liveNoise, levelRms)
                     else liveNoise * (1f - NOISE_DECAY)
 

@@ -139,11 +139,19 @@ object AnalyticsTracker {
      * "denied" (no permission), which is the first thing to know about how the feature is
      * used: a tab full of "off" says people tap chords in, and the mic path is a bonus.
      */
-    fun logChordsSessionStarted(instrument: String, mic: String) {
+    fun logChordsSessionStarted(instrument: String, mic: String, engine: String) {
         chordsSessionStartMs = System.currentTimeMillis()
         Firebase.analytics.logEvent("chords_session_started") {
             param("instrument", instrument)
             param("mic",        mic)
+            param("engine",     engine)
+        }
+    }
+
+    /** The Chords tab's listening engine was switched (MCLEOD or BROSSIER). */
+    fun logChordsEngineChanged(engine: String) {
+        Firebase.analytics.logEvent("chords_engine_changed") {
+            param("engine", engine)
         }
     }
 

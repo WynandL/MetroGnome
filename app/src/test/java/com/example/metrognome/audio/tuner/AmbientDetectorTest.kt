@@ -208,6 +208,25 @@ class AmbientDetectorTest {
         assertFalse("a steady room hum must never lock", r.locked)
     }
 
+    @Test
+    fun aRoomThatGetsLouderBecomesTheFloorButASlamDoesNot() {
+        // Profiled quiet, then the air-conditioning starts: steady tone-free sound at
+        // 20x the floor. Frozen, the floor would read every later frame as NOISE for the
+        // rest of the session; slowly following it, the room is QUIET again within a
+        // minute. A two-second slam at the same level must barely move it.
+        val d = detector()
+        d.profileQuiet()                                   // floor = MIN_FLOOR, 0.0012; loud above 0.0024
+        repeat(22) { d.noise(0.024f) }                    // ~2 s slam at 20x
+        assertEquals("a slam must barely move the floor", ListeningState.NOISE, d.noise(0.0027f).state)   // 2.25x the old floor: still loud
+
+        repeat(90_000 / 93) { d.noise(0.024f) }           // a minute and a half of the louder room
+        assertEquals("the louder room is now the floor", ListeningState.QUIET, d.noise(0.024f).state)
+        // ...and a note that rings above the new room still locks.
+        var r = d.tone(220f, level = 0.1f)
+        repeat(20) { r = d.tone(220f, level = 0.1f) }
+        assertEquals(ListeningState.LOCKED, r.state)
+    }
+
     private companion object {
         /** ceil(PROFILE_MS / hopMs) for the 900 ms profile at a 93 ms hop. */
         const val PROFILE_FRAMES = 10

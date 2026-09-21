@@ -23,6 +23,7 @@ class BillingManager(application: Application) {
         const val PRODUCT_SOUND_BOWL    = "sound_bowl"
         const val PRODUCT_SOUND_KALIMBA = "sound_kalimba"
         const val PRODUCT_SOUND_COWBELL = "sound_cowbell"
+        const val PRODUCT_SOUND_METAL_KICK = "sound_metal_kick"
 
         // Drone voices. Separate products, but the same bucket: SOUND_PRODUCTS is "things
         // you buy that make a sound", not "metronome clicks". Sharing it means the drone
@@ -37,6 +38,7 @@ class BillingManager(application: Application) {
 
         val SOUND_PRODUCTS: Set<String> = setOf(
             PRODUCT_SOUND_BELL, PRODUCT_SOUND_BOWL, PRODUCT_SOUND_KALIMBA, PRODUCT_SOUND_COWBELL,
+            PRODUCT_SOUND_METAL_KICK,
             PRODUCT_DRONE_REED, PRODUCT_DRONE_STRING, PRODUCT_DRONE_FIFTH,
         )
 

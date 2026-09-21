@@ -13,7 +13,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -34,6 +33,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
@@ -62,6 +62,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -73,6 +74,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.audio.NoteNames
+import com.example.metrognome.audio.chords.ChordEngine
 import com.example.metrognome.audio.chords.ChordPlaybackPace
 import com.example.metrognome.audio.tuner.ListeningState
 import com.example.metrognome.audio.tuner.Tuner
@@ -91,7 +93,6 @@ import com.example.metrognome.ui.components.GuitarFretboard
 import com.example.metrognome.ui.components.SCROLLBAR_HINT_HEIGHT
 import com.example.metrognome.ui.components.InputLevelMeter
 import com.example.metrognome.ui.components.ListeningStateBadge
-import com.example.metrognome.ui.components.MicAccessStrip
 import com.example.metrognome.ui.components.PianoKeyboard
 import com.example.metrognome.ui.components.fretboardPositionFractions
 import com.example.metrognome.ui.components.pianoKeyCentreFraction
@@ -167,6 +168,7 @@ fun ChordFinderScreen(
     val listening by vm.listening.collectAsStateWithLifecycle()
     val playing by vm.playing.collectAsStateWithLifecycle()
     val playbackPace by vm.playbackPace.collectAsStateWithLifecycle()
+    val engine by vm.engine.collectAsStateWithLifecycle()
     val heard by vm.heard.collectAsStateWithLifecycle()
     val amplitude by vm.amplitude.collectAsStateWithLifecycle()
     val ambient by vm.ambient.collectAsStateWithLifecycle()
@@ -213,6 +215,8 @@ fun ChordFinderScreen(
                 vm.hearChord()
             },
             onSetPace = vm::setPlaybackPace,
+            engine = engine,
+            onSetEngine = vm::setEngine,
             onSetInstrument = vm::setInstrument,
             onToggleMic = vm::toggleMic,
             onRequestMic = {
@@ -258,7 +262,7 @@ private const val SCROLL_TO_NOTE_MS = 450
  * The whole page as a function of its inputs, so previews and tests can drive every
  * reading.
  *
- * Ordered chord card, mic strip, instrument, notes, hear-it, tip: the chord card leads because
+ * Ordered chord card, mic strip, engine strip, instrument, notes, hear-it, tip: the chord card leads because
  * it is the page's answer and, in its empty state, the only place that says "Chord
  * Finder". Nothing may jump while a chord is being played in, so every element that a
  * reading changes has a fixed height whatever it holds: the chord card pins its line
@@ -290,6 +294,8 @@ internal fun ChordFinderContent(
     playbackPace: ChordPlaybackPace = ChordPlaybackPace.QUICK,
     onHear: () -> Unit = {},
     onSetPace: (ChordPlaybackPace) -> Unit = {},
+    engine: ChordEngine = ChordEngine.DEFAULT,
+    onSetEngine: (ChordEngine) -> Unit = {},
     onSetInstrument: (ChordInstrument) -> Unit = {},
     onToggleMic: () -> Unit = {},
     onRequestMic: () -> Unit = {},
@@ -334,19 +340,6 @@ internal fun ChordFinderContent(
             ChordHero(reading = reading)
 
             Spacer(Modifier.height(SECTION_GAP))
-            MicStrip(
-                listening = listening,
-                micEnabled = micEnabled,
-                heard = heard,
-                amplitude = amplitude,
-                listeningState = listeningState,
-                micGranted = micGranted,
-                micPermanentlyDenied = micPermanentlyDenied,
-                onToggleMic = onToggleMic,
-                onRequestMic = onRequestMic,
-            )
-
-            Spacer(Modifier.height(SECTION_GAP))
             InstrumentCard(
                 instrument = instrument,
                 litMidi = notes.toSet(),
@@ -356,6 +349,21 @@ internal fun ChordFinderContent(
                 listening = listening,
                 onSetInstrument = onSetInstrument,
                 onToggleNote = onToggleNote,
+            )
+
+            Spacer(Modifier.height(SECTION_GAP))
+            ListeningCard(
+                listening = listening,
+                micEnabled = micEnabled,
+                heard = heard,
+                amplitude = amplitude,
+                listeningState = listeningState,
+                micGranted = micGranted,
+                micPermanentlyDenied = micPermanentlyDenied,
+                engine = engine,
+                onSetEngine = onSetEngine,
+                onToggleMic = onToggleMic,
+                onRequestMic = onRequestMic,
             )
 
             Spacer(Modifier.height(SECTION_GAP))
@@ -378,7 +386,7 @@ internal fun ChordFinderContent(
             )
 
             Spacer(Modifier.height(SECTION_GAP))
-            TipStrip(reading = reading)
+            TipStrip(reading = reading, engine = engine)
             Spacer(Modifier.height(24.dp))
         }
 
@@ -446,7 +454,7 @@ private fun InstrumentCard(
                         ChordInstrument.PIANO -> "$PIANO_OCTAVES OCTAVES · ${NoteNames.labelOf(PIANO_LOWEST_MIDI)} TO ${NoteNames.labelOf(PIANO_LOWEST_MIDI + PIANO_OCTAVES * 12 - 1)}"
                     },
                     color = AppColors.textDim,
-                    fontSize = 10.sp, lineHeight = 14.sp,
+                    fontSize = 12.sp, lineHeight = 16.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
                     maxLines = 1,
@@ -543,18 +551,27 @@ private fun InstrumentCard(
     }
 }
 
-// ── Microphone strip ─────────────────────────────────────────────────────────────
+// ── Listening card ───────────────────────────────────────────────────────────────
 
-/** Width reserved for the heard note, so the badge never shifts as the text changes. */
-private val HEARD_NOTE_SLOT = 36.dp
+/** The mic row's height, whichever of its two forms is showing. */
+private val MIC_ROW_HEIGHT = 26.dp
 
 /**
- * The tuner's input line, folded into one row: mic toggle, level meter, the note being
- * heard, and the listening-state badge. Same components as under the tuner's needle, so a
- * user who knows one reads the other.
+ * Everything about listening in one card, in the tuner's card grammar (12 sp caps
+ * header with the current value on the right, 14 dp gaps, 11/14 sp captions): the mic
+ * row (toggle, level meter, ear-or-lock badge; or the app's shared microphone ask until
+ * the grant arrives), the Fast/Steady choice as two equal chips, and one pinned two-line
+ * caption saying what the chosen mode gains and gives up. The header's value is only what
+ * the chips do not already show: the note being heard, or "Paused" (a first cut also put
+ * the mode there, above the selected chip, and the dev called it redundant).
+ *
+ * Replaced (2026-09-21) a mic strip and a separate dev-only "engine" strip with 10 sp
+ * labels and their own spacing, which the dev read as pasted in; once the choice became
+ * the player's it needed to look like the rest of the app. Every slot is a fixed height
+ * so a mode change or a heard note moves nothing below.
  */
 @Composable
-private fun MicStrip(
+private fun ListeningCard(
     listening: Boolean,
     micEnabled: Boolean,
     heard: Tuner.Reading?,
@@ -562,73 +579,180 @@ private fun MicStrip(
     listeningState: ListeningState?,
     micGranted: Boolean,
     micPermanentlyDenied: Boolean,
+    engine: ChordEngine,
+    onSetEngine: (ChordEngine) -> Unit,
     onToggleMic: () -> Unit,
     onRequestMic: () -> Unit,
 ) {
-    // Until the grant arrives the whole strip is the app's shared ask, same shape and height.
-    if (!micGranted) {
-        MicAccessStrip(permanentlyDenied = micPermanentlyDenied, onClick = onRequestMic)
-        return
-    }
-
-    val micTint by animateColorAsState(
-        targetValue = if (listening) AppColors.gold else AppColors.textDim,
-        animationSpec = tween(220),
-        label = "micTint",
-    )
-
     Surface(
         color = AppColors.surfaceDim,
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(26.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onToggleMic,
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp)) {
+            // Header: label left, mode (and the heard note) right.
+            PinnedSlot(lineHeight = 18.sp) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "LISTENING", color = AppColors.textDim,
+                        fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
                     )
-                    .semantics {
-                        contentDescription = if (micEnabled) "Pause the microphone" else "Start the microphone"
-                    },
-            ) {
-                Icon(
-                    imageVector = if (micEnabled) Icons.Filled.Mic else Icons.Filled.MicOff,
-                    contentDescription = null,
-                    tint = micTint,
-                    modifier = Modifier.size(17.dp),
-                )
+                    Spacer(Modifier.weight(1f))
+                    // Only what the chips do not already say: the mode is the selected chip
+                    // below, so the value is the note being heard, or "Paused".
+                    Text(
+                        when {
+                            !micGranted -> ""
+                            !micEnabled -> "Paused"
+                            listening && heard != null -> "${heard.noteName}${heard.octave}"
+                            else -> ""
+                        },
+                        color = if (micEnabled) AppColors.gold else AppColors.textMuted,
+                        fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                }
             }
-            Spacer(Modifier.width(12.dp))
 
-            InputLevelMeter(
-                amplitude = if (listening) amplitude else 0f,
-                modifier = Modifier.weight(1f),
-            )
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.height(14.dp))
 
-            // The note being heard, in the same slot the tuner's ambient header uses.
-            Box(modifier = Modifier.width(HEARD_NOTE_SLOT), contentAlignment = Alignment.CenterEnd) {
-                Text(
-                    if (listening && heard != null) "${heard.noteName}${heard.octave}" else "",
-                    color = AppColors.gold,
-                    fontSize = 14.sp, lineHeight = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 1,
-                )
+            if (micGranted) {
+                MicRow(listening, micEnabled, amplitude, listeningState, onToggleMic)
+            } else {
+                MicAskRow(micPermanentlyDenied, onRequestMic)
             }
-            Spacer(Modifier.width(6.dp))
-            ListeningStateBadge(state = listeningState)
+
+            Spacer(Modifier.height(14.dp))
+
+            // Fast first: it is the default, and the enum is declared in the order the
+            // methods were built, not the order a player should read them.
+            val choices = listOf(ChordEngine.BROSSIER, ChordEngine.MCLEOD)
+            Row(modifier = Modifier.fillMaxWidth()) {
+                choices.forEach { option ->
+                    AppFilterChip(
+                        selected = option == engine,
+                        onClick = { onSetEngine(option) },
+                        endPadding = if (option == choices.last()) 0.dp else 8.dp,
+                        modifier = Modifier.weight(1f),
+                        label = {
+                            Text(option.displayName, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        },
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            PinnedSlot(lineHeight = 14.sp, lines = 2, alignment = Alignment.TopStart) {
+                Crossfade(targetState = engine, animationSpec = tween(200), label = "listeningCaption") { e ->
+                    Text(
+                        e.caption,
+                        color = AppColors.textMuted,
+                        fontSize = 11.sp, lineHeight = 14.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }
+
+/** Mic toggle, level meter, and the ear-or-lock badge: the tuner's input line, without the note (the header carries it). */
+@Composable
+private fun MicRow(
+    listening: Boolean,
+    micEnabled: Boolean,
+    amplitude: Float,
+    listeningState: ListeningState?,
+    onToggleMic: () -> Unit,
+) {
+    val micTint by animateColorAsState(
+        targetValue = if (listening) AppColors.gold else AppColors.textDim,
+        animationSpec = tween(220),
+        label = "micTint",
+    )
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().height(MIC_ROW_HEIGHT),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(MIC_ROW_HEIGHT)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onToggleMic,
+                )
+                .semantics {
+                    contentDescription = if (micEnabled) "Pause the microphone" else "Start the microphone"
+                },
+        ) {
+            Icon(
+                imageVector = if (micEnabled) Icons.Filled.Mic else Icons.Filled.MicOff,
+                contentDescription = null,
+                tint = micTint,
+                modifier = Modifier.size(17.dp),
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        InputLevelMeter(
+            amplitude = if (listening) amplitude else 0f,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(12.dp))
+        // Only the ear and the lock: a musician playing notes in does not need the
+        // tuner's blow-by-blow, and the changing icons drew the eye off the fretboard.
+        ListeningStateBadge(state = listeningState, quiet = true)
+    }
+}
+
+/** The mic row until the grant arrives: the shared ask's content, in this card's row rather than its own strip. */
+@Composable
+private fun MicAskRow(permanentlyDenied: Boolean, onClick: () -> Unit) {
+    val message = if (permanentlyDenied) "Microphone blocked, tap to open App Settings"
+        else "Microphone access needed, tap to grant"
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(MIC_ROW_HEIGHT)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            )
+            .semantics { contentDescription = message },
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(MIC_ROW_HEIGHT)) {
+            Icon(
+                imageVector = Icons.Filled.MicOff,
+                contentDescription = null,
+                tint = AppColors.warning,
+                modifier = Modifier.size(17.dp),
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Text(
+            message,
+            color = AppColors.textMuted,
+            fontSize = 11.sp, lineHeight = 14.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(8.dp))
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = AppColors.textDim,
+            modifier = Modifier.size(18.dp),
+        )
+    }
+}
+
 
 // ── Notes strip ──────────────────────────────────────────────────────────────────
 
@@ -662,12 +786,11 @@ private fun NotesStrip(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
             ) {
-                notes.forEachIndexed { index, midi ->
+                notes.forEach { midi ->
                     NoteChip(
                         name = spell(midi),
                         octave = octaveOf(midi),
                         degree = degreeOf(midi),
-                        isBass = index == 0,
                         onRemove = { onRemove(midi) },
                     )
                 }
@@ -693,22 +816,22 @@ private fun NotesStrip(
 }
 
 /**
- * One collected note: its spelled name, its octave, and its degree in the chord. The bass
- * carries a gold rim, because it is the note that decided the name.
+ * One collected note: its spelled name, its octave, and its degree in the chord. All chips
+ * look alike; the gold "R" already marks the root. A first cut rimmed the first-arrived
+ * chip in gold as "the bass", which it was not (the bass is the lowest note, whichever
+ * came first), and the dev read it as an unexplained highlight.
  */
 @Composable
 private fun NoteChip(
     name: String,
     octave: Int,
     degree: String,
-    isBass: Boolean,
     onRemove: () -> Unit,
 ) {
     Surface(
         onClick = onRemove,
         color = AppColors.surfaceVariant,
         shape = RoundedCornerShape(10.dp),
-        border = if (isBass) BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.55f)) else null,
         modifier = Modifier
             .height(NOTES_STRIP_HEIGHT)
             .semantics { contentDescription = "$name$octave, $degree. Tap to remove" },
@@ -773,7 +896,7 @@ private fun ChordHero(reading: ChordReading) {
                             is ChordReading.Unnamed -> "NO COMMON NAME"
                         },
                         color = AppColors.textDim,
-                        fontSize = 10.sp, lineHeight = 14.sp,
+                        fontSize = 12.sp, lineHeight = 16.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
                     )
@@ -837,8 +960,6 @@ private fun ChordHero(reading: ChordReading) {
 
 // ── Hear-it strip ────────────────────────────────────────────────────────────────
 
-/** Eyebrow (14) + subtitle (15) + gap (8) + a 32 dp chip row; the key centres on it. */
-private val HEAR_STRIP_HEIGHT = 69.dp
 private val HEAR_KEY_SIZE = 52.dp
 
 /**
@@ -853,11 +974,12 @@ private val HEAR_KEY_SIZE = 52.dp
  * grey out with the key, because lit pills beside a dim key read as the thing to tap to
  * start the sound, which the dev found confusing on the first build.
  *
- * The first cut put label, chips and key on one line, and on narrower phones the subtitle
- * was left with a few dozen dp and ellipsed ("Arpeggio, then tog..."). Now the chips sit
- * under the label, so the text gets the whole width left of the key, and the key spans
- * both lines, which is what makes it read as the control for the row rather than a third
- * chip. Always the same height; only colours and words change.
+ * Laid out as the Listening card's twin (2026-09-21): the same header row, whose value is
+ * "Sounding" in gold while it plays and nothing otherwise (the pace is the selected chip), the pace chips sharing a row with the
+ * key and centred on it, and a pinned two-line caption. Two earlier layouts failed: label,
+ * chips and key on one line ellipsed the subtitle on narrow phones ("Arpeggio, then
+ * tog..."), and chips stacked under a two-line label read as squashed once the card above
+ * it had proper room. Every slot is pinned; only colours and words change.
  */
 @Composable
 private fun HearStrip(
@@ -872,49 +994,68 @@ private fun HearStrip(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp)
-                .height(HEAR_STRIP_HEIGHT),
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    if (playing) "SOUNDING" else "HEAR IT",
-                    color = if (hasNotes) AppColors.gold else AppColors.textDim,
-                    fontSize = 10.sp, lineHeight = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                )
-                Text(
-                    if (hasNotes) "Arpeggio, then together" else "Add notes to hear them",
-                    color = if (hasNotes) AppColors.textSecondary else AppColors.textDim,
-                    fontSize = 11.sp, lineHeight = 15.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(8.dp))
-                // Greyed out and inert with nothing to hear, so they cannot be mistaken for the play key.
-                Row(modifier = Modifier.alpha(if (hasNotes) 1f else 0.35f)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp)) {
+            // Header: label left, the pace (or "Sounding") right, as the Listening card does.
+            PinnedSlot(lineHeight = 18.sp) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "HEAR IT", color = AppColors.textDim,
+                        fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    // Only what the chips do not already say: the selected pace is visible
+                    // below, so the value is "Sounding" while it plays and nothing otherwise.
+                    Text(
+                        if (playing) "Sounding" else "",
+                        color = AppColors.gold,
+                        fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            // The pace chips share the row with the key and centre on it. Greyed out and
+            // inert with nothing to hear, so they cannot be mistaken for the play key.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.weight(1f).alpha(if (hasNotes) 1f else 0.35f)) {
                     ChordPlaybackPace.entries.forEach { option ->
                         AppFilterChip(
                             selected = option == pace,
                             onClick = { if (hasNotes) onSetPace(option) },
-                            label = option.displayName,
+                            endPadding = if (option == ChordPlaybackPace.entries.last()) 0.dp else 8.dp,
+                            modifier = Modifier.weight(1f),
+                            label = {
+                                Text(option.displayName, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                            },
                         )
                     }
                 }
+                Spacer(Modifier.width(18.dp))
+                PlayStopKey(
+                    playing = playing,
+                    onClick = onHear,
+                    enabled = hasNotes,
+                    size = HEAR_KEY_SIZE,
+                    playDescription = "Hear the chord",
+                    stopDescription = "Stop the chord",
+                )
             }
-            Spacer(Modifier.width(10.dp))
-            PlayStopKey(
-                playing = playing,
-                onClick = onHear,
-                enabled = hasNotes,
-                size = HEAR_KEY_SIZE,
-                playDescription = "Hear the chord",
-                stopDescription = "Stop the chord",
-            )
+
+            Spacer(Modifier.height(10.dp))
+
+            PinnedSlot(lineHeight = 14.sp, lines = 2, alignment = Alignment.TopStart) {
+                Text(
+                    if (hasNotes) "Plays the notes one by one from the bass, then all together."
+                    else "Add notes to hear them.",
+                    color = if (hasNotes) AppColors.textMuted else AppColors.textDim,
+                    fontSize = 11.sp, lineHeight = 14.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -932,8 +1073,31 @@ private fun HearStrip(
 /** Two lines of 15 sp tip, which also clears the 26 dp icon. */
 private val TIP_ROW_HEIGHT = 30.dp
 
+/**
+ * The next step for this reading. Steady's tips carry its one instruction, let the note
+ * ring a moment, wherever the step is to play another note: a player who taps Steady and
+ * keeps playing at Fast's pace would otherwise see notes go missing with no word why.
+ * Fast has no instruction of its own; playing normally is what it is for.
+ */
+private fun tipFor(reading: ChordReading, engine: ChordEngine): String {
+    val steady = engine == ChordEngine.MCLEOD
+    return when (reading) {
+        ChordReading.Empty ->
+            if (steady) "Tap the instrument, or play a chord one note at a time, letting each ring a moment."
+            else "Tap the instrument, or play a chord one note at a time."
+        is ChordReading.Single ->
+            if (steady) "Add a second note for the interval, and let it ring a moment."
+            else "Add a second note for the interval."
+        is ChordReading.Dyad ->
+            if (steady) "Add a third note to name the chord, and let it ring a moment."
+            else "Add a third note to name the chord."
+        is ChordReading.Identified -> "Next chord: start from its lowest note, or tap Clear."
+        is ChordReading.Unnamed -> "Remove a note, or add the missing one."
+    }
+}
+
 @Composable
-private fun TipStrip(reading: ChordReading) {
+private fun TipStrip(reading: ChordReading, engine: ChordEngine) {
     Surface(
         color = AppColors.surfaceDim,
         shape = RoundedCornerShape(16.dp),
@@ -976,13 +1140,7 @@ private fun TipStrip(reading: ChordReading) {
                     }
                 } else {
                     Text(
-                        when (r) {
-                            ChordReading.Empty -> "Tap the instrument, or play a chord one note at a time."
-                            is ChordReading.Single -> "Add a second note for the interval."
-                            is ChordReading.Dyad -> "Add a third note to name the chord."
-                            is ChordReading.Identified -> "Next chord: start from its lowest note, or tap Clear."
-                            is ChordReading.Unnamed -> "Remove a note, or add the missing one."
-                        },
+                        tipFor(r, engine),
                         color = AppColors.textSecondary,
                         fontSize = 11.sp, lineHeight = 15.sp,
                         maxLines = 2,

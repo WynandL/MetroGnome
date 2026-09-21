@@ -45,5 +45,12 @@ val PREMIUM_SOUND_REGISTRY: List<PremiumSoundDef> = listOf(
         description = "A bright, metallic cowbell built to cut through a loud kit. " +
                 "Punchy and unmistakable, the click drummers can actually hear over the cymbals."
     ),
+    PremiumSoundDef(
+        soundTypeIndex = 8,
+        productId = BillingManager.PRODUCT_SOUND_METAL_KICK,
+        displayName = "Metal Kick",
+        description = "A deep, bassy heavy-metal kick drum with a big gated room behind it. " +
+                "Thunderous and tight, the pulse that drives a wall of guitars."
+    ),
     // Add new premium sounds here
 )

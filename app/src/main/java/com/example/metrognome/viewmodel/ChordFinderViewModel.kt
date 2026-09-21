@@ -10,10 +10,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.audio.NoteNames
+import com.example.metrognome.audio.chords.ChordEngine
 import com.example.metrognome.audio.chords.ChordPlaybackPace
 import com.example.metrognome.audio.chords.ChordPlaybackPlan
 import com.example.metrognome.audio.chords.ChordPlayer
 import com.example.metrognome.audio.chords.ChordVoice
+import com.example.metrognome.audio.chords.NoteAnalyzer
+import com.example.metrognome.audio.chords.NoteCapture
 import com.example.metrognome.audio.tuner.AmbientReport
 import com.example.metrognome.audio.tuner.Tuner
 import com.example.metrognome.points.PointsBannerQueue
@@ -29,6 +32,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
@@ -52,7 +56,14 @@ enum class ChordInstrument(val displayName: String) {
  * is C6 or Am7 depending on what is in the bass).
  *
  * ## The microphone path
- * This owns its own [Tuner] rather than borrowing [TunerViewModel]'s. The tuner's ViewModel
+ * Two engines can listen, chosen on the page and persisted ([engine], a [ChordEngine]):
+ * the tuner's pipeline ([Tuner], "McLeod") and the onset-segmented note tracker
+ * ([NoteCapture], "Brossier"). Exactly one runs at a time; [startListening] opens the
+ * chosen one and [setEngine] swaps them live. The strip's flows ([heard], [amplitude],
+ * [ambient]) follow the active engine, and both feed the same admission rules below
+ * through [admit], so the two differ only in *when* a note is decided.
+ *
+ * The tuner path owns its own [Tuner] rather than borrowing [TunerViewModel]'s. The tuner's ViewModel
  * ties its engine to the Tuner tab's usage timer, its analytics session and its feedback
  * prompt, none of which should fire because someone is naming a chord. The engine itself
  * is exactly what is wanted: its ambient gate only passes a *steady, sustained* note, so
@@ -61,10 +72,12 @@ enum class ChordInstrument(val displayName: String) {
  * agree on what "E3" is. Lock telemetry is off by default ([com.example.metrognome.cloud.CloudReportConfig]),
  * so the second engine instance reports nothing.
  *
- * A note is captured when the tuner has held it for [CAPTURE_FRAMES] consecutive readings,
- * and the same note is not captured twice in a row: the player has to let the note stop
- * (the reading goes null) before that pitch counts again. That is what keeps a sustained
- * note from re-adding itself after the user removes it, without a timer.
+ * On the tuner path a note is captured when the tuner has held it for [CAPTURE_FRAMES]
+ * consecutive readings, and the same note is not captured twice in a row: the player has
+ * to let the note stop (the reading goes null) before that pitch counts again. That is
+ * what keeps a sustained note from re-adding itself after the user removes it, without a
+ * timer. On the onset path every decided note is an event of its own (a re-pluck is a new
+ * event, a note ringing on is not), so it needs no such rule.
  *
  * **A new arpeggio starts from the bottom.** From the notes alone, "the next chord" and
  * "an extension of this one" are the same stream: C E G then B is Cmaj7, C E G then G B D
@@ -99,7 +112,7 @@ enum class ChordInstrument(val displayName: String) {
  * [hearChord] plays the collected notes as an arpeggio from the bass up and then together,
  * through [ChordPlayer] with [ChordVoice] (the sound of the web chord finder's "hear it"),
  * at the user's [playbackPace]. The mic is not closed for it, unlike for the drone: a
- * two-second phrase is not worth a permission round trip. Instead [captureFromMic] ignores
+ * two-second phrase is not worth a permission round trip. Instead the capture paths ignore
  * readings while the phrase sounds and for [PLAYBACK_MUTE_TAIL_MS] after, since the
  * closing chord is exactly the kind of steady sound the tuner would otherwise lock on and
  * feed back into the set, usually as a wrong octave.
@@ -115,7 +128,12 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val tunerPrefs = app.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE)
     private val tuner = Tuner()
+    private val capture = NoteCapture()
     private val tracker = MetroItemTracker(app)
+
+    private val _engine = MutableStateFlow(loadEngine())
+    /** Which engine listens. Persisted; applied live. */
+    val engine: StateFlow<ChordEngine> = _engine.asStateFlow()
 
     private val _notes = MutableStateFlow(loadNotes())
     /** Collected MIDI notes in the order they arrived. */
@@ -145,10 +163,16 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
     /** How fast "hear it" walks through the chord. Persisted. */
     val playbackPace: StateFlow<ChordPlaybackPace> = _playbackPace.asStateFlow()
 
-    /** The tuner's live note, for the "hearing E3" readout while listening. */
-    val heard: StateFlow<Tuner.Reading?> = tuner.reading
-    val amplitude: StateFlow<Float> = tuner.amplitude
-    val ambient: StateFlow<AmbientReport> = tuner.ambient
+    /** The active engine's live note, for the "hearing E3" readout while listening. */
+    val heard: StateFlow<Tuner.Reading?> =
+        combine(_engine, tuner.reading, capture.reading) { e, t, c -> if (e == ChordEngine.MCLEOD) t else c }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val amplitude: StateFlow<Float> =
+        combine(_engine, tuner.amplitude, capture.amplitude) { e, t, c -> if (e == ChordEngine.MCLEOD) t else c }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, 0f)
+    val ambient: StateFlow<AmbientReport> =
+        combine(_engine, tuner.ambient, capture.ambient) { e, t, c -> if (e == ChordEngine.MCLEOD) t else c }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, AmbientReport.Idle)
 
     private val _captured = MutableSharedFlow<Int>(extraBufferCapacity = 8)
     /** Fires with the MIDI note each time the microphone adds one, for the UI to flash it. */
@@ -174,6 +198,11 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
      */
     @Volatile var diagnosticMode = false
 
+    /** DEV ONLY: the onset engine's per-hop trace, for the Chord Loop's log. Null when no run is recording. */
+    fun setFrameTrace(sink: ((NoteAnalyzer.Trace) -> Unit)?) {
+        capture.trace = sink
+    }
+
     /** The tab came on screen. */
     fun onScreenEntered() {
         tapNotes = 0; micNotes = 0; chordsNamed = 0
@@ -187,6 +216,7 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
                 _micEnabled.value -> "on"
                 else -> "off"
             },
+            engine = _engine.value.name,
         )
     }
 
@@ -272,6 +302,7 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
     fun clear() {
         setNotes(emptyList())
         lastCaptured = null
+        capture.forget()
     }
 
     private fun setNotes(notes: List<Int>) {
@@ -322,6 +353,7 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
                 captureMuted = false
                 pendingMidi = null
                 pendingFrames = 0
+                capture.forget()   // the played chord is not the player's; drop it from the tracker's memory
             }
         }
     }
@@ -339,15 +371,21 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
 
     // ── Microphone ──────────────────────────────────────────────────────────────
 
-    /** Open the mic if RECORD_AUDIO is held. Safe to call when already listening. */
+    /** Open the mic on the chosen engine if RECORD_AUDIO is held. Safe to call when already listening. */
     fun startListening() {
         if (_listening.value || !hasMicPermission()) return
         // Re-read both on every open: the user may have changed the reference pitch or
         // calibrated the tuner since this ViewModel was created.
+        val calibration = tunerPrefs.getFloat("calibration_factor", 1f)
         tuner.referenceHz = referenceHz
-        tuner.calibrationFactor = tunerPrefs.getFloat("calibration_factor", 1f)
+        tuner.calibrationFactor = calibration
+        capture.referenceHz = referenceHz
+        capture.calibrationFactor = calibration
         try {
-            tuner.start()
+            when (_engine.value) {
+                ChordEngine.MCLEOD -> tuner.start()
+                ChordEngine.BROSSIER -> capture.start()
+            }
         } catch (_: SecurityException) {
             return   // permission revoked between the check and the call
         }
@@ -357,10 +395,27 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
     fun stopListening() {
         if (!_listening.value) return
         tuner.stop()
+        capture.stop()
         _listening.value = false
         pendingMidi = null
         pendingFrames = 0
     }
+
+    /** Choose the listening engine: persisted, and if the mic is open it reopens on the new one. */
+    fun setEngine(engine: ChordEngine) {
+        if (engine == _engine.value) return
+        val wasListening = _listening.value
+        if (wasListening) stopListening()
+        _engine.value = engine
+        prefs.edit { putString(KEY_ENGINE, engine.name) }
+        AnalyticsTracker.logChordsEngineChanged(engine.name)
+        if (wasListening) startListening()
+    }
+
+    private fun loadEngine(): ChordEngine =
+        prefs.getString(KEY_ENGINE, null)
+            ?.let { runCatching { ChordEngine.valueOf(it) }.getOrNull() }
+            ?: ChordEngine.DEFAULT
 
     /** The user's mic toggle: remembered, and applied at once. */
     fun setMicEnabled(enabled: Boolean) {
@@ -376,8 +431,10 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
     private var pendingFrames = 0
     private var lastCaptured: Int? = null
 
-    private suspend fun captureFromMic() {
+    /** The tuner path: a note counts once its reading has held for [CAPTURE_FRAMES]. */
+    private suspend fun captureFromTuner() {
         tuner.reading.collect { rd ->
+            if (_engine.value != ChordEngine.MCLEOD) return@collect
             if (captureMuted) {
                 // The speaker is sounding the chord; nothing heard now is the player's.
                 pendingMidi = null
@@ -396,20 +453,37 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
             if (midi == pendingMidi) pendingFrames++ else { pendingMidi = midi; pendingFrames = 1 }
             if (pendingFrames < CAPTURE_FRAMES || midi == lastCaptured) return@collect
             lastCaptured = midi
-            val current = _notes.value
-            val bass = current.minOrNull()
-            if (bass != null && midi < bass && current.size >= RESTART_MIN_NOTES) {
-                // Below the bass of a set that is already a chord: a new arpeggio has begun.
-                micNotes++
-                lastSource = "mic"
-                setNotes(listOf(midi))
-                _captured.tryEmit(midi)
-            } else if (midi !in current && current.size < MAX_NOTES) {
-                micNotes++
-                lastSource = "mic"
-                setNotes(current + midi)
-                _captured.tryEmit(midi)
-            }
+            admit(midi)
+        }
+    }
+
+    /** The onset path: every decided note is an event; the tracker has already done the holding. */
+    private suspend fun captureFromOnsets() {
+        capture.notes.collect { event ->
+            if (_engine.value != ChordEngine.BROSSIER || captureMuted) return@collect
+            admit(event.midi)
+        }
+    }
+
+    /**
+     * Admit a note heard from the mic, by either engine: below the bass of a set that is
+     * already a chord it starts a new set, otherwise it is added if new. The one place the
+     * finder's rules about what a played note *means* live.
+     */
+    private fun admit(midi: Int) {
+        val current = _notes.value
+        val bass = current.minOrNull()
+        if (bass != null && midi < bass && current.size >= RESTART_MIN_NOTES) {
+            // Below the bass of a set that is already a chord: a new arpeggio has begun.
+            micNotes++
+            lastSource = "mic"
+            setNotes(listOf(midi))
+            _captured.tryEmit(midi)
+        } else if (midi !in current && current.size < MAX_NOTES) {
+            micNotes++
+            lastSource = "mic"
+            setNotes(current + midi)
+            _captured.tryEmit(midi)
         }
     }
 
@@ -429,13 +503,17 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
     init {
         tuner.referenceHz = referenceHz
         tuner.calibrationFactor = tunerPrefs.getFloat("calibration_factor", 1f)
-        viewModelScope.launch { captureFromMic() }
+        capture.referenceHz = tuner.referenceHz
+        capture.calibrationFactor = tuner.calibrationFactor
+        viewModelScope.launch { captureFromTuner() }
+        viewModelScope.launch { captureFromOnsets() }
         viewModelScope.launch { reading.collect { onReadingChanged(it) } }
     }
 
     override fun onCleared() {
         player.stop()
         tuner.stop()
+        capture.stop()
         super.onCleared()
     }
 
@@ -445,6 +523,7 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
         private const val KEY_NOTES = "notes"
         private const val KEY_MIC_ENABLED = "mic_enabled"
         private const val KEY_PACE = "playback_pace"
+        private const val KEY_ENGINE = "engine"
 
         /** How long after "hear it" ends the mic keeps ignoring readings, for the tuner's lock to let go of the last chord. */
         private const val PLAYBACK_MUTE_TAIL_MS = 600L

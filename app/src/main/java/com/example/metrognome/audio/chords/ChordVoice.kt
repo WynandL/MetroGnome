@@ -115,5 +115,17 @@ data class ChordTimbre(
             sustain = 1f,
             decayMs = 1,
         )
+
+        /**
+         * The dev tools' legato test tone: [TEST_TONE]'s bright partials with a real
+         * pluck's decay, so that when notes overlap the earlier one rings on under the
+         * next at a falling level, the way a string does. What the Chord Loop's legato
+         * comparison plays, and what `NoteAnalyzerTest` feeds the onset engine.
+         */
+        val LEGATO_TEST = ChordTimbre(
+            partials = TEST_TONE.partials,
+            sustain = 0.45f,
+            decayMs = 450,
+        )
     }
 }

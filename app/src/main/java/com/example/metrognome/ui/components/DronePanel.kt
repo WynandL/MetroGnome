@@ -126,7 +126,7 @@ fun DronePanel(
                 Text(
                     "DRONE",
                     color = AppColors.textDim,
-                    fontSize = 10.sp, lineHeight = 14.sp,
+                    fontSize = 12.sp, lineHeight = 16.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
                 )

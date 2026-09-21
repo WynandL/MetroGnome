@@ -22,6 +22,7 @@ object InstrumentAffinity {
         5 to setOf(Instrument.VOICE),                   // 5 Crystal Bowl
         6 to setOf(Instrument.GUITAR, Instrument.KEYS), // 6 Kalimba
         7 to setOf(Instrument.DRUMS),                   // 7 Cowbell
+        8 to setOf(Instrument.DRUMS, Instrument.GUITAR), // 8 Metal Kick
     )
 
     /** Instruments the given sound is ideal for. Empty for an unknown index. */

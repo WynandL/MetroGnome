@@ -74,6 +74,15 @@ class PitchDetector(
         /** Spectral floor: never attenuate a bin below this fraction of its own magnitude,
          *  which keeps the subtraction from punching holes ("musical noise") into the tone. */
         private const val NOISE_SPECTRAL_FLOOR = 0.10f
+
+        /**
+         * Over-subtraction for [detectAbove]. Higher than [NOISE_OVERSUBTRACT] because the
+         * reference is taken a few frames before the onset and the ringing partials it holds
+         * have barely decayed by the time the residual is measured, so a margin of 1.0 would
+         * leave a sliver of each old partial standing; a note plucked over a sustained chord
+         * is still far above what this removes.
+         */
+        private const val RESIDUAL_OVERSUBTRACT = 2.0f
     }
 
     /** A successful detection. [clarity] is 0..1 — higher means a purer, more certain pitch. */
@@ -198,6 +207,55 @@ class PitchDetector(
         noiseReady = true
     }
 
+    // â”€â”€ Onset residual: the pitch of what is *new* (see [detectAbove]) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    /** Length of the magnitude-spectrum arrays [magnitudeSpectrum] fills and [detectAbove] reads. */
+    val spectrumSize: Int get() = fftSize / 2 + 1
+
+    /**
+     * Magnitude spectrum of [window] at this detector's own FFT resolution, written into
+     * [out] (length [spectrumSize]). Meant to be taken on the frames just *before* a note
+     * onset, as the reference [detectAbove] subtracts. Silent windows write zeros.
+     */
+    fun magnitudeSpectrum(window: FloatArray, out: FloatArray) {
+        require(window.size == windowSize) { "expected $windowSize samples, got ${window.size}" }
+        require(out.size == spectrumSize) { "expected $spectrumSize bins, got ${out.size}" }
+        if (!loadWork(window)) { out.fill(0f); return }
+        forwardFft()
+        for (i in 0 until spectrumSize) out[i] = sqrt(re[i] * re[i] + im[i] * im[i])
+    }
+
+    /**
+     * Detect the pitch of what is new in [window] relative to [reference], a spectrum from
+     * [magnitudeSpectrum] taken just before an onset: the reference is spectrally
+     * subtracted (Boll's method, the same step [presenceAt] uses against room noise) and
+     * MPM runs on the residual.
+     *
+     * This exists because MPM is monophonic. When a note is plucked while the previous one
+     * still rings, the two together repeat at their *common* period, so the tallest NSDF
+     * peak sits at the missing fundamental of the pair (C4 over a ringing G4 reads as C3)
+     * and the new note's own peak is often not tall enough for [PEAK_PICK_RATIO]. The
+     * ringing note's partials are steady across the onset, so subtracting the spectrum
+     * from just before it removes them and leaves the new note alone. On the first note
+     * after silence the reference is empty and this is exactly [detect].
+     *
+     * Returns null when nothing periodic is left once the reference is removed.
+     */
+    fun detectAbove(window: FloatArray, reference: FloatArray): Pitch? {
+        require(window.size == windowSize) { "expected $windowSize samples, got ${window.size}" }
+        require(reference.size == spectrumSize) { "expected $spectrumSize bins, got ${reference.size}" }
+        if (!loadWork(window)) return null
+        subtractSpectrum(reference, RESIDUAL_OVERSUBTRACT)
+        autocorrelate()
+        buildNsdf()
+        val lag = pickPeakLag() ?: return null
+        val (refinedLag, refinedValue) = parabolicRefine(lag)
+        if (refinedLag <= 0f) return null
+        val frequency = sampleRate / refinedLag
+        if (frequency !in MIN_FREQUENCY..MAX_FREQUENCY) return null
+        return Pitch(frequency, refinedValue.coerceIn(0f, 1f))
+    }
+
     /** DC-remove [window] into [work]; returns false if the window is below the silence floor. */
     private fun loadWork(window: FloatArray): Boolean {
         var mean = 0.0
@@ -224,23 +282,45 @@ class PitchDetector(
      * A global inverse-FFT scale would cancel in the NSDF, so only the *shape* change
      * (noise removed) matters; the tone's period peak survives, its noise floor drops.
      */
-    private fun whitenWork() {
+    private fun whitenWork() = subtractSpectrum(noiseMag, NOISE_OVERSUBTRACT)
+
+    /**
+     * Subtract [reference] magnitudes (times [overSubtract]) from [work]'s spectrum, in
+     * place, keeping the phase; each bin is floored at [NOISE_SPECTRAL_FLOOR] of itself so
+     * the subtraction cannot punch holes into what remains.
+     */
+    private fun subtractSpectrum(reference: FloatArray, overSubtract: Float) {
         forwardFft()
         val half = fftSize / 2
+        var before = 0.0
+        var after = 0.0
         for (i in 0 until fftSize) {
             val ni = if (i <= half) i else fftSize - i   // magnitude spectrum is symmetric
             val mag = sqrt(re[i] * re[i] + im[i] * im[i])
             if (mag > 1e-9f) {
-                val clean = (mag - NOISE_OVERSUBTRACT * noiseMag[ni])
+                val clean = (mag - overSubtract * reference[ni])
                     .coerceAtLeast(NOISE_SPECTRAL_FLOOR * mag)
                 val g = clean / mag
                 re[i] *= g
                 im[i] *= g
+                before += mag.toDouble() * mag
+                after += clean.toDouble() * clean
             }
         }
+        lastResidualPowerFraction = if (before > 0.0) (after / before).toFloat() else 0f
         fft.transform(re, im, inverse = true)
         for (i in 0 until windowSize) work[i] = re[i]
     }
+
+    /**
+     * After [detectAbove]: the fraction of the window's spectral power that survived the
+     * subtraction. What the reference explains is removed; what is new stays. The floor
+     * alone leaves about [NOISE_SPECTRAL_FLOOR]² (1%), so a value near that means nothing
+     * new arrived and the residual's pitch is only the ghost of what was already sounding,
+     * which MPM, being level-blind, reads as confidently as the real thing.
+     */
+    var lastResidualPowerFraction: Float = 0f
+        private set
 
     /** Highest NSDF value within ±[PRESENCE_TOLERANCE_CENTS] of the lag for [targetHz]. */
     private fun peakNear(targetHz: Float): Float {

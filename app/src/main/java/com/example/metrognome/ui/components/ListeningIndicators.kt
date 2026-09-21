@@ -80,10 +80,16 @@ fun ListeningStateIcons(state: ListeningState?) {
 /**
  * The same indicator folded into one badge: the active state's icon, crossfading as the
  * state changes, the ear when nothing is lit. For a strip too narrow for all six.
+ *
+ * With [quiet], only two of the six show: the ear while listening and the lock once a
+ * note is held; the four in-between states (profiling, noise, unstable, acquiring) stay
+ * on the ear. The Chords page uses this: a musician playing notes in does not need the
+ * tuner's blow-by-blow, and the dev found the changing icons distracting from the fretboard.
  */
 @Composable
-fun ListeningStateBadge(state: ListeningState?) {
-    Crossfade(targetState = state, animationSpec = tween(220), label = "listeningBadge") { s ->
+fun ListeningStateBadge(state: ListeningState?, quiet: Boolean = false) {
+    val shown = if (quiet && state != null && state != ListeningState.LOCKED) ListeningState.QUIET else state
+    Crossfade(targetState = shown, animationSpec = tween(220), label = "listeningBadge") { s ->
         val entry = listeningStateIcons.firstOrNull { it.first == s }
         ListeningStateBadge(
             icon = entry?.second ?: Icons.Filled.Hearing,
