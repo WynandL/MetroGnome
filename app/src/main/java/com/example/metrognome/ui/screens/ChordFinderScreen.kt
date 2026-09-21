@@ -644,14 +644,18 @@ private fun ListeningCard(
 
             Spacer(Modifier.height(10.dp))
 
-            PinnedSlot(lineHeight = 14.sp, lines = 2, alignment = Alignment.TopStart) {
+            // The hero's two-line recipe: a literal line height (PinnedLines) with
+            // minLines, in a slot of exactly two lines. Without PinnedLines the two lines
+            // measure taller than the slot on some densities and Compose fell back to
+            // one line with an ellipsis ("...even quick arpeggios. B...").
+            PinnedSlot(lineHeight = 15.sp, lines = 2, alignment = Alignment.TopStart) {
                 Crossfade(targetState = engine, animationSpec = tween(200), label = "listeningCaption") { e ->
                     Text(
                         e.caption,
                         color = AppColors.textMuted,
-                        fontSize = 11.sp, lineHeight = 14.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 11.sp, lineHeight = 15.sp,
+                        minLines = 2, maxLines = 2,
+                        style = PinnedLines,
                     )
                 }
             }
@@ -1046,14 +1050,14 @@ private fun HearStrip(
 
             Spacer(Modifier.height(10.dp))
 
-            PinnedSlot(lineHeight = 14.sp, lines = 2, alignment = Alignment.TopStart) {
+            PinnedSlot(lineHeight = 15.sp, lines = 2, alignment = Alignment.TopStart) {
                 Text(
                     if (hasNotes) "Plays the notes one by one from the bass, then all together."
                     else "Add notes to hear them.",
                     color = if (hasNotes) AppColors.textMuted else AppColors.textDim,
-                    fontSize = 11.sp, lineHeight = 14.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    fontSize = 11.sp, lineHeight = 15.sp,
+                    minLines = 2, maxLines = 2,
+                    style = PinnedLines,
                 )
             }
         }
