@@ -15,6 +15,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +49,7 @@ import com.example.metrognome.ui.screens.ChordFinderScreen
 import com.example.metrognome.ui.screens.MetronomeScreen
 import com.example.metrognome.ui.screens.RhythmGameScreen
 import com.example.metrognome.ui.screens.SettingsScreen
+import android.view.WindowManager
 import android.widget.Toast
 import com.example.metrognome.billing.PurchaseStore
 import com.example.metrognome.ui.screens.TunerScreen
@@ -175,6 +177,18 @@ fun MetroGnomeApp(
         val message = purchaseError ?: return@LaunchedEffect
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         metronomeVm.clearPurchaseError()
+    }
+
+    // Keep-screen-on is one setting for the whole app: the button lives on the Home tab
+    // only, and the window flag follows the setting whatever tab is showing. It used to
+    // be applied per screen (Home and Tuner each added and cleared the flag on entry and
+    // exit), so the Chords tab, which had no copy, dimmed while the others did not, and
+    // the Tuner carried a second button that could drift from the first.
+    val keepScreenOn by metronomeVm.keepScreenOn.collectAsStateWithLifecycle()
+    DisposableEffect(keepScreenOn) {
+        if (keepScreenOn) activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose { activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
     }
 
     // Single path for changing tabs, used by both the nav bar's onClick below AND a
@@ -327,8 +341,6 @@ fun MetroGnomeApp(
 
             AppTab.TUNER -> TunerScreen(
                 vm = tunerVm,
-                keepScreenOn = metronomeVm.keepScreenOn.collectAsState().value,
-                onSetKeepScreenOn = metronomeVm::setKeepScreenOn,
                 isAdFree = isAdFree,
                 store = purchaseStore,
                 onPurchase = { productId ->

@@ -1,6 +1,5 @@
 package com.example.metrognome.ui.screens
 
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -242,16 +241,6 @@ fun MetronomeScreen(
         }
     }
 
-    DisposableEffect(keepScreenOn) {
-        if (keepScreenOn) {
-            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        } else {
-            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
-        onDispose {
-            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(

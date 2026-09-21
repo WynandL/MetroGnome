@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import androidx.core.content.edit
 import android.content.pm.PackageManager
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -51,9 +50,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.ModeNight
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
@@ -177,8 +174,6 @@ private const val GAUGE_PIVOT_FRACTION = 0.82f
 @Composable
 fun TunerScreen(
     vm: TunerViewModel,
-    keepScreenOn: Boolean = false,
-    onSetKeepScreenOn: (Boolean) -> Unit = {},
     isAdFree: Boolean = false,
     store: PurchaseStore = PurchaseStore(),
     onPurchase: (String) -> Unit = {},
@@ -235,12 +230,6 @@ fun TunerScreen(
     val prefs = remember { context.getSharedPreferences("metrognome_prefs", Context.MODE_PRIVATE) }
     var nudgeDismissed by remember { mutableStateOf(prefs.getBoolean("tuner_calibration_nudge_shown", false)) }
 
-    DisposableEffect(keepScreenOn) {
-        if (keepScreenOn) activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        else activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        onDispose { activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         TunerScreenContent(
             reading = reading,
@@ -251,7 +240,6 @@ fun TunerScreen(
             calibrationInfo = calibrationInfo,
             micGranted = micGranted,
             micPermanentlyDenied = micPermanentlyDenied,
-            keepScreenOn = keepScreenOn,
             onRequestMic = {
                 if (micPermanentlyDenied) {
                     context.startActivity(
@@ -270,11 +258,6 @@ fun TunerScreen(
             onDismissCalibration = vm::dismissCalibration,
             onClearCalibration = vm::clearCalibration,
             onCalibrateToNote = vm::calibrateToNote,
-            onToggleScreenOn = { enabling ->
-                onSetKeepScreenOn(enabling)
-                val msg = if (enabling) "Screen will stay on" else "Screen timeout on"
-                Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
-            },
             isAdFree = isAdFree,
             showCalibrationNudge = micGranted && !nudgeDismissed && !calibrationInfo.calibrated,
             onDismissCalibrationNudge = {
@@ -335,7 +318,6 @@ internal fun TunerScreenContent(
     calibrationInfo: CalibrationInfo,
     micGranted: Boolean,
     micPermanentlyDenied: Boolean = false,
-    keepScreenOn: Boolean = false,
     onRequestMic: () -> Unit,
     onNudgeReference: (Float) -> Unit,
     onSetReferenceHz: (Float) -> Unit,
@@ -344,7 +326,6 @@ internal fun TunerScreenContent(
     onDismissCalibration: () -> Unit,
     onClearCalibration: () -> Unit,
     onCalibrateToNote: (Tuner.Reading) -> Unit = {},
-    onToggleScreenOn: (Boolean) -> Unit = {},
     isAdFree: Boolean = false,
     showCalibrationNudge: Boolean = false,
     onDismissCalibrationNudge: () -> Unit = {},
@@ -408,27 +389,6 @@ internal fun TunerScreenContent(
                 ReferencePitchPill(
                     referenceHz = referenceHz,
                     modifier = Modifier.align(Alignment.CenterStart),
-                )
-            }
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(if (keepScreenOn) AppColors.darkPurple else Color.Transparent)
-                    .border(1.dp, if (keepScreenOn) AppColors.gold else Color(0x33FFFFFF),
-                        RoundedCornerShape(10.dp))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { onToggleScreenOn(!keepScreenOn) },
-            ) {
-                Icon(
-                    imageVector = if (keepScreenOn) Icons.Filled.LightMode else Icons.Filled.ModeNight,
-                    contentDescription = "Keep screen on",
-                    tint = if (keepScreenOn) AppColors.gold else Color(0x80FFFFFF),
-                    modifier = Modifier.size(18.dp),
                 )
             }
         }
