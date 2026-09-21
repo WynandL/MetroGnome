@@ -57,7 +57,7 @@ class MetalKickTest {
     @Test
     fun theKickIsLoudCleanAndAudibleOnAPhone() {
         val kick = buffer("kickClick")
-        assertEquals("420 ms", sr * 420 / 1000, kick.size)
+        assertEquals("480 ms", sr * 480 / 1000, kick.size)
         val peak = kick.maxOf { abs(it) }
         assertTrue("peaks at its volume, got $peak", peak in 0.85f..0.92f)
         val clipped = kick.count { abs(it) >= 0.99f }
@@ -82,10 +82,12 @@ class MetalKickTest {
         // ...but it is still a kick: most of its power sits below 300 Hz.
         val above = powerAbove(kick, 300.0)
         assertTrue("still deep: ${(above * 100).toInt()}% above 300 Hz", above < 0.6)
-        // The body decays out: the last 50 ms is a sixth of the hit or less. (At a tempo
-        // faster than the voice is long, buildBeatBuffer fades the cut.)
+        // It ends at nothing: the last 5 ms are silent, and the last 50 ms a tenth of the
+        // hit or less. (At a tempo faster than the voice is long, buildBeatBuffer fades the cut.)
+        val last = kick.copyOfRange(kick.size - sr / 200, kick.size).maxOf { abs(it) }
+        assertTrue("ends at silence, last 5 ms peak $last", last < 0.01f)
         val tail = rms(kick, kick.size - sr / 20)
-        assertTrue("decays out, hit $hitRms vs tail $tail", tail < hitRms * 0.16f)
+        assertTrue("decays out, hit $hitRms vs tail $tail", tail < hitRms * 0.1f)
     }
 
     @Test

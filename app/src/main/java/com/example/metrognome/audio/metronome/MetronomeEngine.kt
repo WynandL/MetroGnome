@@ -49,8 +49,8 @@ class MetronomeEngine {
     private val cowbellClick  = generateCowbellClick(baseFrequency = 540.0, durationMs = 150, volume = 0.82f)
     private val cowbellAccent = generateCowbellClick(baseFrequency = 660.0, durationMs = 170, volume = 0.96f)
     // Premium (index 8): metal kick, a deep sustained doof with a beater on top
-    private val kickClick  = generateMetalKick(startHz = 160.0, endHz = 58.0, durationMs = 420, volume = 0.88f)
-    private val kickAccent = generateMetalKick(startHz = 190.0, endHz = 62.0, durationMs = 460, volume = 0.98f)
+    private val kickClick  = generateMetalKick(startHz = 160.0, endHz = 58.0, durationMs = 480, volume = 0.88f)
+    private val kickAccent = generateMetalKick(startHz = 190.0, endHz = 62.0, durationMs = 520, volume = 0.98f)
 
     // Mutable settings — read from audio thread, written from main thread (volatile)
     @Volatile
@@ -237,8 +237,8 @@ class MetronomeEngine {
         val len = minOf(click.size, samplesPerBeat)
         val vol = volume.coerceIn(0f, 1f)
         // A voice longer than the beat (the Metal Kick at a fast tempo) is cut short; fade
-        // the cut over 8 ms, or the body ends mid-swing and every beat carries a click.
-        val fade = if (len < click.size) (sampleRate * 8 / 1000).coerceAtMost(len) else 0
+        // the cut over 20 ms, or the body ends mid-swing and every beat carries a click.
+        val fade = if (len < click.size) (sampleRate * 20 / 1000).coerceAtMost(len) else 0
         for (i in 0 until len) {
             val g = if (fade > 0 && i >= len - fade) (len - i).toFloat() / fade else 1f
             buf[i] = (click[i] * vol * g).toInt().toShort()
@@ -419,7 +419,9 @@ class MetronomeEngine {
      * Three earlier cuts are worth remembering: a big gated room read as reverb, a
      * click-forward voice read as thin ("soft and boring"), and a pure-sine sub set the
      * peak while being inaudible. Each hit is normalised to its own [volume]; the accent
-     * starts higher, holds longer and is louder, a harder hit on the same drum.
+     * starts higher, holds longer and is louder, a harder hit on the same drum. The whole
+     * hit fades out over its last 60 ms: an exponential decay never reaches zero, and the
+     * dev heard the buffer's end as "an immediate stop, like the engine closing".
      */
     private fun generateMetalKick(startHz: Double, endHz: Double, durationMs: Int, volume: Float): ShortArray {
         val numSamples = sampleRate * durationMs / 1000
@@ -460,6 +462,7 @@ class MetronomeEngine {
         }
 
         val fadeIn = (0.001 * sampleRate).toInt().coerceAtLeast(1)
+        val fadeOutSamples = (0.060 * sampleRate).toInt()
         val dry = FloatArray(numSamples) { i ->
             val onset = if (i < fadeIn) i.toFloat() / fadeIn else 1f
             (body[i] * 1.0f + punch[i] * 0.9f + click[i] * 0.4f) * onset
@@ -483,7 +486,11 @@ class MetronomeEngine {
                 i < gateAt + gateFade -> 1f - (i - gateAt).toFloat() / gateFade
                 else -> 0f
             }
-            wet[i] = v + tail * gate
+            // The body's exponential decay never reaches zero on its own; without this
+            // the buffer ended with the body still at ~13% and every hit stopped dead.
+            val remaining = numSamples - i
+            val fadeOut = if (remaining < fadeOutSamples) 0.5f * (1f - cos(PI * remaining / fadeOutSamples).toFloat()) else 1f
+            wet[i] = (v + tail * gate) * fadeOut
         }
         val peak = wet.maxOf { abs(it) }
         val scale = if (peak > 0f) volume / peak else 0f
