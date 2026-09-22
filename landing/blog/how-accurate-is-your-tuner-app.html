@@ -23,7 +23,7 @@
     "headline": "How Accurate Is Your Phone Tuner?",
     "description": "Phone hardware is not what separates a good tuner from a bad one. The algorithm is. Here is what Metro Gnome's tuner does differently, in plain engineering terms.",
     "datePublished": "2026-06-17",
-    "dateModified": "2026-06-17",
+    "dateModified": "2026-09-22",
     "author": { "@type": "Person", "name": "Wynand L" },
     "publisher": {
       "@type": "Organization",
@@ -130,6 +130,20 @@
       <h2>What "Accurate Enough" Actually Means</h2>
 
       <p>For noodling at home, almost any tuner is fine. The differences between algorithms become significant when you are working on precision intonation: matching equal temperament on a fretless or fretted instrument with worn frets, tuning a piano or a hammered dulcimer, matching pitch with other players in a chamber group. Those are also the conditions where rooms are often noisy, notes are decaying, and the harmonic content of the instrument is most complex.</p>
+
+      <h2>Does a Dedicated Tuner Beat a Phone App?</h2>
+
+      <p>This deserves a straight answer, because it is easy to get wrong in both directions. Cents resolution is set by window length, sample rate, and interpolation, all of which are just arithmetic. A phone's microphone and processor can run that arithmetic as well as a dedicated chip can. So the flat claim that a piece of hardware is "more accurate" than an app, purely as a measurement, does not hold up. It depends entirely on what algorithm each one is actually running.</p>
+
+      <p>Where clip-on tuners (Peterson, Boss, Korg, Snark and similar) do have a real, structural edge is the signal path, not the maths. Most of them sense through a piezo pickup clipped to the headstock, reading the string's vibration directly. There is no room noise in that signal, no other strings ringing, nothing to filter out, because the sensor only touches the one thing it needs to hear. A phone has to solve a harder problem: pull a clean fundamental out of a room through a microphone, which is exactly why this tuner spends 900 milliseconds profiling the room on start-up and runs the noise handling described above. That is a genuine advantage for contact pickups. It is a noise problem, not a precision problem, and a phone with a good noise model narrows it rather than closes it outright.</p>
+
+      <p>"Strobe tuner" is also not quite what it used to mean. The original electromechanical strobe tuners spun a physical disc under a light, and the eye reading that disc integrated pitch drift over time, which is where their famous precision came from. Almost everything sold as a strobe tuner today, including on a phone, is a digital pitch estimate driving a simulated strobe animation. It is a pleasant way to display the same underlying number, not a second, more accurate measurement sitting behind it.</p>
+
+      <p>Piano is the one place where the question changes shape entirely. A chromatic tuner, phone or hardware, tunes every note to flat equal temperament. A correctly tuned piano is not flat equal temperament: piano strings are stiff enough that their overtones run sharp of true integer multiples (inharmonicity), so a piano tuned by ear or by a purpose-built electronic tuning device is deliberately stretched, sharper than standard pitch toward the top of the keyboard and flatter toward the bottom, following a curve unique to that instrument. A generic chromatic tuner was never built to compute that curve. For piano specifically, a professional piano tuner, human or a piano-specific tuning device, is doing a different and harder job than any chromatic tuner attempts, and that is a real, not a marketing, distinction.</p>
+
+      <div class="callout">
+        <strong>The short version:</strong> for tuning a guitar, violin, wind instrument or voice to standard pitch, a well-built, calibrated phone app can match a clip-on tuner's numeric precision. The honest gap is noise rejection, not resolution. For piano, a dedicated piano tuner is solving a different problem, stretch tuning for inharmonicity, that no generic chromatic tuner attempts.
+      </div>
 
       <p>The engineering described here is not here to impress. It is here because the alternative, a simpler algorithm in a noisier room on a richer instrument, is where tuners visibly fail. And <a href="guitar-tuner-showing-wrong-note.html">when a tuner shows the wrong note</a>, the most common cause is exactly the harmonic problem that MPM was designed to solve.</p>
 
