@@ -24,8 +24,15 @@
       <div class="bpm-readout" id="mainReadout">--</div>
       <div class="bpm-unit" id="mainUnit">groove score</div>
       <div class="marking" id="statusLabel">Ready when you are</div>
+      <div class="best-line" id="bestLine" aria-live="polite"></div>
 
       <div class="beat-dots" id="beatDots" aria-hidden="true"></div>
+
+      <div class="preset-row tempo-row" id="tempoRow" role="group" aria-label="Test tempo">
+        <button class="preset-chip" type="button" data-bpm="60">60 BPM</button>
+        <button class="preset-chip active" type="button" data-bpm="100" aria-pressed="true">100 BPM</button>
+        <button class="preset-chip" type="button" data-bpm="140">140 BPM</button>
+      </div>
 
       <button class="tap-pad" id="tapPad" type="button">START TEST</button>
 
@@ -44,13 +51,18 @@
         </div>
       </div>
 
+      <figure class="tap-strip" id="tapStrip" hidden>
+        <svg id="tapStripSvg" viewBox="0 0 320 128" role="img" aria-label="Each tap plotted early or late against your own centre"></svg>
+        <figcaption>Each dot is one tap, placed against your own centre rather than the click, so device delay drops out. The gold band is &plusmn;25 ms, the spread that earns a full score.</figcaption>
+      </figure>
+
       <p class="verdict" id="verdict" hidden></p>
 
       <div class="tool-controls">
         <button class="btn-ghost" id="retryBtn" type="button" hidden>Try again</button>
       </div>
 
-      <p class="tool-hint">Use <kbd>Space</kbd> or tap the button. Headphones give a cleaner result than speakers. Four count-in beats come first, then sixteen scored beats at 100 BPM.</p>
+      <p class="tool-hint">Use <kbd>Space</kbd> or tap the button. Headphones give a cleaner result than speakers. Four count-in beats come first, then sixteen scored beats at the tempo you picked.</p>
       <p class="embed-credit">
         <a href="https://metrognome.co.za/tools/rhythm-timing-test.html?ref=embed" target="_blank" rel="noopener">Rhythm timing test</a>
         by <a href="https://metrognome.co.za/?ref=embed" target="_blank" rel="noopener">Metro Gnome</a>
@@ -72,6 +84,10 @@
     var verdict    = document.getElementById('verdict');
     var metroImg   = document.getElementById('metroImg');
     var bandRows   = Array.prototype.slice.call(document.querySelectorAll('#bandTableBody tr'));
+    var bestLine   = document.getElementById('bestLine');
+    var tapStrip   = document.getElementById('tapStrip');
+    var stripSvg   = document.getElementById('tapStripSvg');
+    var tempoBtns  = Array.prototype.slice.call(document.querySelectorAll('#tempoRow .preset-chip'));
 
     /* Same tuning constants the app grades a session with:
        spread <= TIGHT earns full credit, >= LOOSE earns none. */
@@ -80,10 +96,12 @@
     var BIAS_GRACE = 60;
     var MIN_HITS   = 5;
 
+    var TEMPOS     = [60, 100, 140];
     var BPM        = 100;
     var COUNT_IN   = 4;
     var SCORED     = 16;
     var interval   = 60 / BPM;              // seconds per beat
+    var lastTapAt  = -Infinity;             // performance.now() of the last press-registered tap
 
     var audioCtx = null;
     var state = 'idle';                     // idle | running | done
@@ -111,6 +129,48 @@
       if (d) d.className = 'beat-dot ' + cls;
     }
     buildDots();
+
+    /* ── tempo ────────────────────────────────────────────────────────── */
+    function setTempo(bpm) {
+      if (state === 'running' || TEMPOS.indexOf(bpm) < 0) return;
+      BPM = bpm;
+      interval = 60 / BPM;
+      tempoBtns.forEach(function (b) {
+        var on = Number(b.getAttribute('data-bpm')) === BPM;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      showBest(false);
+    }
+    function lockTempo(locked) {
+      tempoBtns.forEach(function (b) { b.disabled = locked; });
+    }
+    tempoBtns.forEach(function (b) {
+      b.addEventListener('click', function () { setTempo(Number(b.getAttribute('data-bpm'))); });
+    });
+
+    /* ── best score, per tempo, in this browser only ──────────────────── */
+    function bestKey() { return 'metrognome.rhythmTest.best.' + BPM; }
+    function readBest() {
+      try {
+        var v = Number(window.localStorage.getItem(bestKey()));
+        return v > 0 ? v : null;
+      } catch (e) { return null; }
+    }
+    function saveBest(score) {
+      try { window.localStorage.setItem(bestKey(), String(score)); } catch (e) {}
+    }
+    function showBest(isNew) {
+      var best = readBest();
+      bestLine.classList.toggle('is-new', isNew);
+      if (isNew) {
+        bestLine.textContent = 'New best at ' + BPM + ' BPM';
+      } else if (best !== null) {
+        bestLine.textContent = 'Your best at ' + BPM + ' BPM: ' + best;
+      } else {
+        bestLine.textContent = '';
+      }
+    }
 
     /* ── audio clock <-> performance clock ────────────────────────────── */
     function syncClocks() {
@@ -196,6 +256,9 @@
       if (audioCtx.state === 'suspended') audioCtx.resume();
 
       state = 'running';
+      lockTempo(true);
+      showBest(false);
+      tapStrip.hidden = true;
       taps = [];
       beatPerfTimes = [];
       beatIndex = 0;
@@ -223,9 +286,19 @@
       setTimeout(function () { if (state === 'running') syncClocks(); }, 1200);
     }
 
-    function registerTap() {
+    /* The moment of the press. An input event's timeStamp is when the
+       browser received it, on the same clock as performance.now(), so it
+       leaves out however long the page took to reach the handler. Anything
+       implausible (old engines used epoch time) falls back to now. */
+    function pressTime(e) {
+      var now = performance.now();
+      var t = e && typeof e.timeStamp === 'number' ? e.timeStamp : NaN;
+      return (t > 0 && t <= now && now - t < 1000) ? t : now;
+    }
+
+    function registerTap(t) {
       if (state !== 'running') return;
-      var t = performance.now();
+      lastTapAt = t;
       taps.push(t);
       bump();
 
@@ -258,6 +331,7 @@
 
     function finish() {
       state = 'done';
+      lockTempo(false);
       tapPad.classList.remove('is-live');
       tapPad.textContent = 'START TEST';
       retryBtn.hidden = false;
@@ -265,6 +339,7 @@
       /* Fold every tap onto its nearest beat; anything further than half a
          beat away cannot be attributed to a beat and is dropped. */
       var devs = [];
+      var byBeat = [];                      /* deviation per scored beat, undefined if missed */
       var used = {};
       for (var i = 0; i < taps.length; i++) {
         var best = -1, bestAbs = Infinity, bestDev = 0;
@@ -275,6 +350,7 @@
         if (best >= 0 && bestAbs <= interval * 500 && !used[best]) {
           used[best] = true;
           devs.push(bestDev);
+          byBeat[best] = bestDev;
         }
       }
 
@@ -309,8 +385,75 @@
         r.classList.toggle('current-row', score >= lo && score <= hi);
       });
 
+      /* a first-ever score is saved quietly; "New best" means beating one */
+      var prevBest = readBest();
+      if (prevBest === null || score > prevBest) saveBest(score);
+      showBest(prevBest !== null && score > prevBest);
+
+      drawStrip(byBeat, median(devs));
+
       verdict.hidden = false;
       verdict.textContent = readOut(score, spread, bias, devs.length);
+    }
+
+    /* ── tap strip: every tap, early or late against the player's own
+       centre (the median the spread is measured around), so a constant
+       device delay drops out of the picture exactly as it does from the
+       score. ─────────────────────────────────────────────────────────── */
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+    function el(name, attrs, text) {
+      var n = document.createElementNS(SVG_NS, name);
+      for (var k in attrs) n.setAttribute(k, attrs[k]);
+      if (text) n.textContent = text;
+      return n;
+    }
+    function drawStrip(byBeat, centre) {
+      var W = 320, LEFT = 56, RIGHT = 50, MID = 64;
+      var RANGE_MS = 110, HALF = 55;        /* +-110 ms fills +-55 px; beyond is pinned to the edge */
+      function y(ms) {
+        var c = Math.max(-RANGE_MS, Math.min(RANGE_MS, ms));
+        return MID + c / RANGE_MS * HALF;
+      }
+      function x(i) { return LEFT + (W - LEFT - RIGHT) * (i + 0.5) / SCORED; }
+
+      while (stripSvg.firstChild) stripSvg.removeChild(stripSvg.firstChild);
+
+      stripSvg.appendChild(el('rect', { 'class': 'ts-band', x: LEFT - 4, y: y(-TIGHT_MS),
+        width: W - LEFT - RIGHT + 8, height: y(TIGHT_MS) - y(-TIGHT_MS), rx: 4 }));
+      [-100, 100].forEach(function (ms) {
+        stripSvg.appendChild(el('line', { 'class': 'ts-grid', x1: LEFT - 4, x2: W - RIGHT + 4, y1: y(ms), y2: y(ms) }));
+        stripSvg.appendChild(el('text', { 'class': 'ts-label', x: W - RIGHT + 8, y: y(ms) + 4 }, '100 ms'));
+      });
+      stripSvg.appendChild(el('line', { 'class': 'ts-centre', x1: LEFT - 4, x2: W - RIGHT + 4, y1: MID, y2: MID }));
+      stripSvg.appendChild(el('text', { 'class': 'ts-label', x: 2, y: y(-100) + 3.5 }, 'Early'));
+      stripSvg.appendChild(el('text', { 'class': 'ts-label ts-strong', x: 2, y: MID + 3.5 }, 'Centre'));
+      stripSvg.appendChild(el('text', { 'class': 'ts-label', x: 2, y: y(100) + 3.5 }, 'Late'));
+
+      var pts = [];
+      for (var i = 0; i < SCORED; i++) {
+        if (typeof byBeat[i] === 'number') pts.push(x(i).toFixed(1) + ',' + y(byBeat[i] - centre).toFixed(1));
+      }
+      if (pts.length > 1) stripSvg.appendChild(el('polyline', { 'class': 'ts-path', points: pts.join(' ') }));
+
+      for (var j = 0; j < SCORED; j++) {
+        var d = byBeat[j];
+        if (typeof d !== 'number') {
+          var miss = el('circle', { 'class': 'ts-miss', cx: x(j), cy: MID, r: 3.2 });
+          miss.appendChild(el('title', {}, 'Beat ' + (j + 1) + ': no tap counted'));
+          stripSvg.appendChild(miss);
+          continue;
+        }
+        var off = d - centre;
+        var dot = el('circle', {
+          'class': 'ts-tap' + (Math.abs(off) <= TIGHT_MS ? ' tight' : ''),
+          cx: x(j), cy: y(off), r: 4.6
+        });
+        dot.style.animationDelay = (j * 35) + 'ms';
+        dot.appendChild(el('title', {}, 'Beat ' + (j + 1) + ': ' + Math.abs(Math.round(off)) + ' ms ' +
+          (off < 0 ? 'early' : 'late') + ' against your centre'));
+        stripSvg.appendChild(dot);
+      }
+      tapStrip.hidden = false;
     }
 
     function bandName(score) {
@@ -331,6 +474,9 @@
       } else {
         s = 'Loose, on this attempt. A spread of about ' + Math.round(spread) + ' ms is audible to a listener, and it is also the band that improves fastest with deliberate practice.';
       }
+      if (score >= 65 && BPM !== 60) {
+        s += ' Now try it at 60 BPM, where the longer gaps leave more room to drift.';
+      }
       if (Math.abs(bias) > BIAS_GRACE) {
         s += ' You also sat ' + Math.round(Math.abs(bias)) + ' ms ' + (bias < 0 ? 'ahead of' : 'behind') +
              ' the click on average, though on a browser some of that offset is your device rather than you.';
@@ -342,20 +488,35 @@
     }
 
     /* ── input ────────────────────────────────────────────────────────── */
-    tapPad.addEventListener('click', function () {
-      if (state === 'running') registerTap(); else start();
+    /* Taps count on the press, never the release. A click fires when the
+       finger or button comes back up, and how long it rests varies from tap
+       to tap, which would be scored as the player's own spread. Starting a
+       test stays on click, since on touch only the release may unlock audio. */
+    tapPad.addEventListener('pointerdown', function (e) {
+      if (state !== 'running') return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      registerTap(pressTime(e));
     });
+    /* The release of the final tap, or a focused button's own click on
+       Space, must not start a new test the moment the last one is scored. */
+    function mayStart() { return state !== 'running' && performance.now() - lastTapAt >= 800; }
+    tapPad.addEventListener('click', function () { if (mayStart()) start(); });
     retryBtn.addEventListener('click', start);
 
     window.addEventListener('keydown', function (e) {
       if (e.code !== 'Space' || e.repeat) return;
       e.preventDefault();
       tapPad.classList.add('pressed');
-      if (state === 'running') registerTap(); else start();
+      if (state === 'running') registerTap(pressTime(e));
+      else if (mayStart()) start();
     });
     window.addEventListener('keyup', function (e) {
       if (e.code === 'Space') tapPad.classList.remove('pressed');
     });
+
+    /* ?bpm=60 opens the test at that tempo (the slow-practice advice links here) */
+    var bpmParam = /[?&]bpm=(\d+)/.exec(window.location.search);
+    setTempo(bpmParam ? Number(bpmParam[1]) : BPM);
   })();
   </script>
 

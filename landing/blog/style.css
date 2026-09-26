@@ -584,6 +584,42 @@ table.data-table {
 .beat-dot.hit-great { background: var(--gold); transform: scale(1.25); }
 
 .tap-pad.is-live { background: var(--purple); border-color: var(--purple-light); }
+/* taps register on pointerdown: no double-tap zoom or long-press menu on the pad */
+.tap-pad { touch-action: manipulation; -webkit-touch-callout: none; }
+
+.best-line {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-height: 1.3em;
+  margin-top: 0.15rem;
+}
+.best-line.is-new { color: var(--gold); }
+
+.tempo-row { margin-top: 1.1rem; }
+.tempo-row + .tap-pad { margin-top: 0.9rem; }
+.preset-chip:disabled { opacity: 0.45; cursor: default; }
+.preset-chip:disabled:hover { border-color: var(--surface-up); color: var(--text-muted); }
+.preset-chip.active:disabled:hover { border-color: var(--gold); color: var(--gold); }
+
+.tap-strip { margin: 1.2rem auto 0; max-width: 440px; }
+.tap-strip svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tap-strip figcaption {
+  margin-top: 0.35rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.ts-band   { fill: rgba(255, 215, 0, 0.13); stroke: rgba(255, 215, 0, 0.28); stroke-width: 1; }
+.ts-grid   { stroke: var(--surface-up); stroke-width: 1; stroke-dasharray: 2 4; }
+.ts-centre { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.7; }
+.ts-label  { fill: var(--text-muted); font-size: 12px; font-weight: 700; font-family: inherit; }
+.ts-strong { fill: var(--gold-light); }
+.ts-path   { fill: none; stroke: var(--purple-light); stroke-width: 1.2; opacity: 0.35; }
+.ts-miss   { fill: none; stroke: var(--text-muted); stroke-width: 1.2; opacity: 0.55; }
+.ts-tap    { fill: var(--purple-light); animation: ts-pop 0.28s ease-out both; transform-box: fill-box; transform-origin: center; }
+.ts-tap.tight { fill: var(--gold); }
+@keyframes ts-pop { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
 
 .stat-row {
   display: flex;
@@ -592,6 +628,8 @@ table.data-table {
   gap: 0.5rem 1.75rem;
   margin: 1.4rem 0 0.2rem;
 }
+/* display:flex above would otherwise override the hidden attribute */
+.stat-row[hidden] { display: none; }
 .stat { display: flex; flex-direction: column; align-items: center; min-width: 88px; }
 .stat-value {
   font-family: var(--mono);
@@ -618,6 +656,7 @@ table.data-table {
 
 @media (prefers-reduced-motion: reduce) {
   .metro-wrap img, .tap-pad, .btn-play, .beat-dot { transition: none; }
+  .ts-tap { animation: none; }
 }
 
 /* ── Tools: odd meter (steppers, presets, group visualisation) ──────── */
