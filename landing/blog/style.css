@@ -1127,3 +1127,94 @@ details[open] summary::after { transform: rotate(45deg); }
 }
 .chord-actions { display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; }
 .chord-actions .tap-pad { margin: 1.2rem 0 0.4rem; max-width: 220px; padding: 0.85rem 1rem; font-size: 0.95rem; }
+
+/* ── Tools index: catalogue grid with a screenshot per tool ─────────── */
+.container.tools-wide { max-width: 1040px; }
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  padding-top: 2.5rem;
+}
+.tool-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--surface-up);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.tool-card:hover { border-color: var(--purple); transform: translateY(-3px); }
+.tc-shot { display: block; background: var(--surface-deep); border-bottom: 1px solid var(--surface-up); }
+.tc-shot img { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; }
+.tc-body { display: flex; flex-direction: column; flex: 1; padding: 1.25rem 1.35rem 1.4rem; }
+.tc-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.35rem;
+}
+.tool-card h2, .guide-strip h2 { font-size: 1.3rem; font-weight: 800; line-height: 1.2; margin-bottom: 0.45rem; }
+.tool-card h2 a, .guide-strip h2 a { color: var(--text); }
+.tool-card h2 a:hover, .guide-strip h2 a:hover { color: var(--gold); }
+.tc-body p:not(.tc-label), .guide-strip .gs-copy p:not(.tc-label), .embed-strip p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+.tc-body p:not(.tc-label) { margin-bottom: 1.1rem; }
+.tc-open {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--gold);
+  padding: 0.5rem 1rem;
+  border: 1.5px solid var(--gold);
+  border-radius: 50px;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s;
+}
+.tc-open:hover { background: var(--gold); color: #0D0B1E; }
+.tc-open svg { width: 14px; height: 14px; }
+
+.guide-strip {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--surface-up);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.35rem;
+}
+.guide-strip .gs-copy { flex: 1 1 320px; }
+.guide-strip .gs-chips { flex: 1 1 280px; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.guide-strip .preset-chip { text-decoration: none; }
+
+.embed-strip {
+  margin: 1.25rem 0 4rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem 1.5rem;
+  padding: 1.1rem 1.35rem;
+  border: 1px dashed var(--surface-up);
+  border-radius: var(--radius);
+}
+.embed-strip p { flex: 1 1 320px; }
+.embed-strip strong { color: var(--text); }
+.embed-strip .tc-open { margin-top: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-card { transition: none; }
+  .tool-card:hover { transform: none; }
+}
