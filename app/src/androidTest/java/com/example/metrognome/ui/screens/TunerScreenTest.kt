@@ -42,7 +42,6 @@ class TunerScreenTest {
         calibration: CalibrationState = CalibrationState.Idle,
         calibrationInfo: CalibrationInfo = CalibrationInfo(1f, Float.NaN, calibrated = false),
         micGranted: Boolean = true,
-        keepScreenOn: Boolean = false,
         ambientLevel: AmbientTuning.Level = AmbientTuning.Level.MAX,
         onRequestMic: () -> Unit = {},
         onNudgeReference: (Float) -> Unit = {},
@@ -52,7 +51,6 @@ class TunerScreenTest {
         onDismissCalibration: () -> Unit = {},
         onClearCalibration: () -> Unit = {},
         onCalibrateToNote: (Tuner.Reading) -> Unit = {},
-        onToggleScreenOn: (Boolean) -> Unit = {},
         onSetAmbientLevel: (AmbientTuning.Level) -> Unit = {},
     ) {
         rule.setContent {
@@ -65,7 +63,6 @@ class TunerScreenTest {
                     calibration = calibration,
                     calibrationInfo = calibrationInfo,
                     micGranted = micGranted,
-                    keepScreenOn = keepScreenOn,
                     onRequestMic = onRequestMic,
                     onNudgeReference = onNudgeReference,
                     onSetReferenceHz = onSetReferenceHz,
@@ -74,7 +71,6 @@ class TunerScreenTest {
                     onDismissCalibration = onDismissCalibration,
                     onClearCalibration = onClearCalibration,
                     onCalibrateToNote = onCalibrateToNote,
-                    onToggleScreenOn = onToggleScreenOn,
                     ambientLevel = ambientLevel,
                     onSetAmbientLevel = onSetAmbientLevel,
                 )

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -276,7 +278,12 @@ fun MetroGnomeApp(
 
     CompositionLocalProvider(LocalHaptics provides hapticEngine) {
     Box(modifier = Modifier.fillMaxSize()) {
+    // layoutType is passed explicitly so the scaffold's default, currentWindowAdaptiveInfo(), never runs:
+    // androidx.window 1.5.x calls WindowMetrics.getDensity() (API 34) on some devices whose framework lacks it,
+    // which crashed at launch with NoSuchMethodError. Configuration needs no such call.
     NavigationSuiteScaffold(
+        layoutType = if (LocalConfiguration.current.screenWidthDp >= 600) NavigationSuiteType.NavigationRail
+                     else NavigationSuiteType.NavigationBar,
         navigationSuiteItems = {
             visibleTabs.forEach { tab ->
                 item(
