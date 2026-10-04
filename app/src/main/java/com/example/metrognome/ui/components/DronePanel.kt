@@ -19,6 +19,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -104,12 +105,7 @@ fun DronePanel(
 ) {
     val chevronDeg by animateFloatAsState(if (expanded) 180f else 0f, label = "droneChevron")
 
-    Surface(
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(16.dp),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 12.dp)) {
+    AppCard(modifier = modifier.fillMaxWidth(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 12.dp)) {
 
             // ── Header: wave glyph + what is loaded + expand chevron ──────────────
             Row(
@@ -295,7 +291,6 @@ fun DronePanel(
                 }
             }
         }
-    }
 }
 
 /** Caps heading, a scrollable chip row, and the one-line explanation of what is selected. */
@@ -320,6 +315,7 @@ private fun ChipSection(
         ) {
             chips()
         }
+        Spacer(Modifier.height(8.dp))
         Crossfade(targetState = caption, animationSpec = tween(200), label = "droneCaption") { text ->
             // The chip row already says which one is selected, so the caption's job is to
             // say what it is for. Capped at two lines so switching chips never reflows the card.

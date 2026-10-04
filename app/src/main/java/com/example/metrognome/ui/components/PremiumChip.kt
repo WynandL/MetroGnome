@@ -40,9 +40,7 @@ fun PremiumChip(
             Text(label)
             Text(
                 "  ★",
-                // On the filled chip the gold would sit on purple and lose its shine, so the
-                // star borrows the selected label's own colour instead.
-                color = if (selected) Color.White else AppColors.gold,
+                color = AppColors.gold,
                 fontSize = 9.sp,
             )
         }

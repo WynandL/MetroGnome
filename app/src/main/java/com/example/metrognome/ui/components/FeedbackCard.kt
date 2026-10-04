@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.theme.AppColors
 
 /**
@@ -173,14 +174,7 @@ fun FeedbackQuestion(
                     )
                 }
             }
-            IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    Icons.Filled.Close,
-                    contentDescription = "Dismiss",
-                    tint = AppColors.textDim,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
+            DialogCloseButton(onClick = onDismiss)
         }
         Spacer(Modifier.height(12.dp))
         Row(modifier = Modifier.fillMaxWidth().padding(end = 10.dp)) {
@@ -215,7 +209,7 @@ private fun FeedbackButton(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(14.dp),
-        color = if (positive) AppColors.gold.copy(alpha = 0.10f) else Color.Transparent,
+        color = if (positive) AppColors.goldTint else Color.Transparent,
         border = BorderStroke(
             1.dp,
             if (positive) AppColors.gold.copy(alpha = 0.75f) else AppColors.textDim.copy(alpha = 0.5f),

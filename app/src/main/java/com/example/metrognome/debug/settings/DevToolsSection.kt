@@ -130,155 +130,99 @@ fun DevToolsSection(
 
     Column(modifier = modifier.fillMaxWidth()) {
         // ── DEV ONLY ──────────────────────────────────────────────────────────
-        OutlinedButton(
-            onClick = { vm.toggleCheatMode() },
+        DevButton(
+            if (cheatModeEnabled) "All Items ON" else "All Items OFF",
+            { vm.toggleCheatMode() },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = if (cheatModeEnabled) AppColors.gold else AppColors.devGrey
-            ),
-            border = BorderStroke(
-                1.dp,
-                if (cheatModeEnabled) AppColors.gold else AppColors.devDarkBorder
+            kind = if (cheatModeEnabled) DevButtonKind.HIGHLIGHT else DevButtonKind.NEUTRAL,
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            DevButton(
+                "Preview Popup",
+                { vm.previewUnlockCelebration(previewIndex) },
+                modifier = Modifier.weight(1f),
+                kind = DevButtonKind.PREVIEW,
             )
-        ) {
-            Text(
-                if (cheatModeEnabled) "All Items ON" else "All Items OFF",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Spacer(Modifier.height(6.dp))
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = { vm.previewUnlockCelebration(previewIndex) },
-                modifier = Modifier.weight(1f).padding(end = 4.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.mediumPurple),
-                border = BorderStroke(1.dp, AppColors.deepPurple)
-            ) {
-                Text("Preview Popup", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-            OutlinedButton(
-                onClick = { if (METRO_ITEM_REGISTRY.isNotEmpty()) previewIndex = (previewIndex + 1) % METRO_ITEM_REGISTRY.size },
-                modifier = Modifier.padding(start = 4.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
-                border = BorderStroke(1.dp, AppColors.surfaceVariant)
-            ) {
-                Text(
-                    "#${previewIndex + 1}/${METRO_ITEM_REGISTRY.size}",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-
-        OutlinedButton(
-            onClick = { showMetroAvatar = true },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.mediumPurple),
-            border = BorderStroke(1.dp, AppColors.deepPurple)
-        ) {
-            Text("Metro Avatar Preview", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
-
-        Spacer(Modifier.height(6.dp))
-
-        OutlinedButton(
-            onClick = { showAdPolicy = true },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-            border = BorderStroke(1.dp, AppColors.devBlueBorder)
-        ) {
-            Text("Show Ad Policy", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
-
-        Spacer(Modifier.height(6.dp))
-
-        OutlinedButton(
-            onClick = { vm.resetAllProgress() },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-            border = BorderStroke(1.dp, AppColors.devRedBorder)
-        ) {
-            Text("Reset All Progress", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
-
-        Spacer(Modifier.height(6.dp))
-
-        OutlinedButton(
-            onClick = { vm.debugClearAdFree() },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-            border = BorderStroke(1.dp, AppColors.devRedBorder)
-        ) {
-            Text(
-                if (isAdFree) "Clear Ad-Free State" else "Ad-Free Already Cleared",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
+            DevButton(
+                "#${previewIndex + 1}/${METRO_ITEM_REGISTRY.size}",
+                { if (METRO_ITEM_REGISTRY.isNotEmpty()) previewIndex = (previewIndex + 1) % METRO_ITEM_REGISTRY.size },
+                kind = DevButtonKind.NEUTRAL,
             )
         }
+        Spacer(Modifier.height(6.dp))
+
+        DevButton(
+            "Metro Avatar Preview",
+            { showMetroAvatar = true },
+            modifier = Modifier.fillMaxWidth(),
+            kind = DevButtonKind.PREVIEW,
+        )
 
         Spacer(Modifier.height(6.dp))
 
-        OutlinedButton(
-            onClick = { vm.debugClearSoundPurchases() },
+        DevButton(
+            "Show Ad Policy",
+            { showAdPolicy = true },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-            border = BorderStroke(1.dp, AppColors.devRedBorder)
-        ) {
-            Text(
-                if (purchasedSoundIds.isNotEmpty()) "Clear Sound Purchases" else "No Sound Purchases to Clear",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            kind = DevButtonKind.ACTION,
+        )
 
         Spacer(Modifier.height(6.dp))
 
-        OutlinedButton(
-            onClick = { vm.debugClearItemPurchases() },
+        DevButton(
+            "Reset All Progress",
+            { vm.resetAllProgress() },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-            border = BorderStroke(1.dp, AppColors.devRedBorder)
-        ) {
-            Text(
-                if (purchasedItemProductIds.isNotEmpty()) "Clear Item Purchases" else "No Item Purchases to Clear",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            kind = DevButtonKind.DESTRUCTIVE,
+        )
 
         Spacer(Modifier.height(6.dp))
 
-        OutlinedButton(
-            onClick = { vm.debugClearPresets() },
+        DevButton(
+            if (isAdFree) "Clear Ad-Free State" else "Ad-Free Already Cleared",
+            { vm.debugClearAdFree() },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-            border = BorderStroke(1.dp, AppColors.devRedBorder)
-        ) {
-            Text(
-                "Clear Presets + Data",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            kind = DevButtonKind.DESTRUCTIVE,
+        )
 
         Spacer(Modifier.height(6.dp))
 
-        OutlinedButton(
-            onClick = { vm.debugClearPracticeMode() },
+        DevButton(
+            if (purchasedSoundIds.isNotEmpty()) "Clear Sound Purchases" else "No Sound Purchases to Clear",
+            { vm.debugClearSoundPurchases() },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-            border = BorderStroke(1.dp, AppColors.devRedBorder)
-        ) {
-            Text(
-                "Clear Practice + Streak",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            kind = DevButtonKind.DESTRUCTIVE,
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        DevButton(
+            if (purchasedItemProductIds.isNotEmpty()) "Clear Item Purchases" else "No Item Purchases to Clear",
+            { vm.debugClearItemPurchases() },
+            modifier = Modifier.fillMaxWidth(),
+            kind = DevButtonKind.DESTRUCTIVE,
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        DevButton(
+            "Clear Presets + Data",
+            { vm.debugClearPresets() },
+            modifier = Modifier.fillMaxWidth(),
+            kind = DevButtonKind.DESTRUCTIVE,
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        DevButton(
+            "Clear Practice + Streak",
+            { vm.debugClearPracticeMode() },
+            modifier = Modifier.fillMaxWidth(),
+            kind = DevButtonKind.DESTRUCTIVE,
+        )
 
         Spacer(Modifier.height(6.dp))
         StreakSimulator(
@@ -288,36 +232,30 @@ fun DevToolsSection(
         )
         Spacer(Modifier.height(6.dp))
 
-        OutlinedButton(
-            onClick = { vm.debugResetWhatsNew() },
+        DevButton(
+            "Show ${AppWhatsNew.ALL.last()} What's New Again",
+            { vm.debugResetWhatsNew() },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-            border = BorderStroke(1.dp, AppColors.devBlueBorder)
-        ) {
-            Text("Show ${AppWhatsNew.ALL.last()} What's New Again", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
+            kind = DevButtonKind.ACTION,
+        )
 
         Spacer(Modifier.height(6.dp))
 
-        OutlinedButton(
-            onClick = { vm.debugResetReview() },
+        DevButton(
+            "Reset Review Prompt",
+            { vm.debugResetReview() },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-            border = BorderStroke(1.dp, AppColors.devBlueBorder)
-        ) {
-            Text("Reset Review Prompt", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
+            kind = DevButtonKind.ACTION,
+        )
 
         Spacer(Modifier.height(6.dp))
 
-        OutlinedButton(
-            onClick = onTriggerFeedback,
+        DevButton(
+            "Trigger Tuner Feedback Card",
+            onTriggerFeedback,
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-            border = BorderStroke(1.dp, AppColors.devBlueBorder)
-        ) {
-            Text("Trigger Tuner Feedback Card", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
+            kind = DevButtonKind.ACTION,
+        )
 
         Spacer(Modifier.height(6.dp))
 
@@ -325,34 +263,24 @@ fun DevToolsSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            OutlinedButton(
-                onClick = { showPollPreview = true },
+            DevButton(
+                "Preview Poll Banner",
+                { showPollPreview = true },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = BorderStroke(1.dp, AppColors.devBlueBorder)
-            ) {
-                Text("Preview Poll Banner", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            }
-            OutlinedButton(
-                onClick = {
-                    context.getSharedPreferences("poll_state", Context.MODE_PRIVATE)
-                        .edit { clear() }
-                    pollResetKey++
-                },
+                kind = DevButtonKind.ACTION,
+                maxLines = 1,
+            )
+            DevButton(
+                if (pollAnswered) "Reset Poll (answered)" else "Reset Poll (open)",
+                {
+                                    context.getSharedPreferences("poll_state", Context.MODE_PRIVATE)
+                                        .edit { clear() }
+                                    pollResetKey++
+                                },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (pollAnswered) AppColors.devRed else AppColors.devGrey
-                ),
-                border = BorderStroke(
-                    1.dp,
-                    if (pollAnswered) AppColors.devRedBorder else AppColors.devDarkBorder
-                )
-            ) {
-                Text(
-                    if (pollAnswered) "Reset Poll (answered)" else "Reset Poll (open)",
-                    fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
-                )
-            }
+                kind = if (pollAnswered) DevButtonKind.DESTRUCTIVE else DevButtonKind.NEUTRAL,
+                maxLines = 1,
+            )
         }
 
         if (showPollPreview) {
@@ -373,65 +301,51 @@ fun DevToolsSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            OutlinedButton(
-                onClick = onSimulateTuner,
+            DevButton(
+                "Simulate Tuner Note (cycles)",
+                onSimulateTuner,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = BorderStroke(1.dp, AppColors.devBlueBorder)
-            ) {
-                Text("Simulate Tuner Note (cycles)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-            OutlinedButton(
-                onClick = onStopTunerSimulation,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = BorderStroke(1.dp, AppColors.devBlueBorder)
-            ) {
-                Text("Stop", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
+                kind = DevButtonKind.ACTION,
+            )
+            DevButton(
+                "Stop",
+                onStopTunerSimulation,
+                kind = DevButtonKind.ACTION,
+            )
         }
 
         Spacer(Modifier.height(6.dp))
 
-        OutlinedButton(
-            onClick = {
-                val limit = 3
-                PointsBannerQueue.postActivity(
-                    "Rhythm Game",
-                    1,
-                    testBannerCount,
-                    limit,
-                )
-                testBannerCount = if (testBannerCount >= limit + 1) 1 else testBannerCount + 1
-            },
+        DevButton(
+            "Test Gnotes Banner  ($testBannerCount / 3)",
+            {
+                            val limit = 3
+                            PointsBannerQueue.postActivity(
+                                "Rhythm Game",
+                                1,
+                                testBannerCount,
+                                limit,
+                            )
+                            testBannerCount = if (testBannerCount >= limit + 1) 1 else testBannerCount + 1
+                        },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-            border = BorderStroke(1.dp, AppColors.devBlueBorder)
-        ) {
-            Text(
-                "Test Gnotes Banner  ($testBannerCount / 3)",
-                fontSize = 12.sp, fontWeight = FontWeight.Bold
-            )
-        }
+            kind = DevButtonKind.ACTION,
+        )
 
         val milestoneDays = listOf(7, 30, 60, 100, 365)
         var testMilestoneIndex by remember { mutableIntStateOf(0) }
         Spacer(Modifier.height(6.dp))
-        OutlinedButton(
-            onClick = {
-                PointsBannerQueue.postMilestone(
-                    milestoneDays[testMilestoneIndex]
-                )
-                testMilestoneIndex = (testMilestoneIndex + 1) % milestoneDays.size
-            },
+        DevButton(
+            "Test Loyalty Banner  (${milestoneDays[testMilestoneIndex]} days)",
+            {
+                            PointsBannerQueue.postMilestone(
+                                milestoneDays[testMilestoneIndex]
+                            )
+                            testMilestoneIndex = (testMilestoneIndex + 1) % milestoneDays.size
+                        },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-            border = BorderStroke(1.dp, AppColors.devBlueBorder)
-        ) {
-            Text(
-                "Test Loyalty Banner  (${milestoneDays[testMilestoneIndex]} days)",
-                fontSize = 12.sp, fontWeight = FontWeight.Bold
-            )
-        }
+            kind = DevButtonKind.ACTION,
+        )
 
         Spacer(Modifier.height(6.dp))
 
@@ -442,65 +356,55 @@ fun DevToolsSection(
         val loopState by ChordLoopDiagnostic.state.collectAsStateWithLifecycle()
         val loopRunning = loopState.status == ChordLoopDiagnostic.Status.RUNNING ||
             loopState.status == ChordLoopDiagnostic.Status.WAITING_FOR_MIC
-        OutlinedButton(
-            onClick = { if (loopRunning) ChordLoopDiagnostic.cancel() else showChordLoop = true },
+        DevButton(
+            if (loopRunning) "Cancel Chord Test" else "Chord Test UI",
+            { if (loopRunning) ChordLoopDiagnostic.cancel() else showChordLoop = true },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = if (loopRunning) AppColors.devRed else AppColors.devBlue),
-            border = BorderStroke(1.dp, if (loopRunning) AppColors.devRedBorder else AppColors.devBlueBorder)
-        ) {
-            Text(
-                if (loopRunning) "Cancel Chord Test" else "Chord Test UI",
-                fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
-            )
-        }
+            kind = if (loopRunning) DevButtonKind.DESTRUCTIVE else DevButtonKind.ACTION,
+            maxLines = 1,
+        )
 
         Spacer(Modifier.height(6.dp))
 
         // Non-destructive profile capture/restore round-trip: proves every progress field
         // survives a write+read with no loss. Shows a per-field PASS/FAIL diff.
-        OutlinedButton(
-            onClick = { showProfileRoundTrip = true },
+        DevButton(
+            "Profile Round-Trip",
+            { showProfileRoundTrip = true },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
-            border = BorderStroke(1.dp, AppColors.gold)
-        ) {
-            Text("Profile Round-Trip", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-        }
+            kind = DevButtonKind.HIGHLIGHT,
+            maxLines = 1,
+        )
 
         Spacer(Modifier.height(6.dp))
 
         // Mic acoustic-loopback self-test launcher + calibration reset, side by side.
         // The self-test is the single canonical launcher for the engineering report.
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = { showMicSelfTest = true },
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            DevButton(
+                "Mic Self-Test",
+                { showMicSelfTest = true },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
-                border = BorderStroke(1.dp, AppColors.gold)
-            ) {
-                Text("Mic Self-Test", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            }
+                kind = DevButtonKind.HIGHLIGHT,
+                maxLines = 1,
+            )
 
             Spacer(Modifier.width(8.dp))
 
-            OutlinedButton(
-                onClick = {
-                    SelfTestCalibrationStore(context).clear()
-                    onMicStateChanged()
-                },
+            DevButton(
+                when {
+                                        micCal.isCalibrated  -> "Reset (${micCal.latencyMs.toInt()} ms)"
+                                        micCal.isUnsupported -> "Reset (failed)"
+                                        else                 -> "Reset (not run)"
+                                    },
+                {
+                                    SelfTestCalibrationStore(context).clear()
+                                    onMicStateChanged()
+                                },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-                border = BorderStroke(1.dp, AppColors.devRedBorder)
-            ) {
-                Text(
-                    when {
-                        micCal.isCalibrated  -> "Reset (${micCal.latencyMs.toInt()} ms)"
-                        micCal.isUnsupported -> "Reset (failed)"
-                        else                 -> "Reset (not run)"
-                    },
-                    fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
-                )
-            }
+                kind = DevButtonKind.DESTRUCTIVE,
+                maxLines = 1,
+            )
         }
 
         Spacer(Modifier.height(6.dp))
@@ -511,51 +415,42 @@ fun DevToolsSection(
         //   "real"     - uses the actual mic, so a bad mic / no claps genuinely yields 0 bonus.
         //   "simulate" - also synthesizes plausible timing so the bonus + result UI appear even
         //                with no real input (the bonus is fake; do not read it as a measurement).
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = {
-                    // Without RECORD_AUDIO the real mic can't capture - request it first instead of
-                    // silently arming a dead mic. Once granted, a second tap forces the pass.
-                    if (!hasMicPerm) {
-                        micPermLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        return@OutlinedButton
-                    }
-                    val store = SelfTestCalibrationStore(context)
-                    val route = AudioRouteMonitor(context).currentRoute()
-                    store.devForcePass((45..95).random().toFloat(), route)
-                    store.devSimulateTiming = false
-                    onMicStateChanged()
-                },
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            DevButton(
+                if (hasMicPerm) "Real mic" else "Real mic ⚠",
+                {
+                                    // Without RECORD_AUDIO the real mic can't capture - request it first instead of
+                                    // silently arming a dead mic. Once granted, a second tap forces the pass.
+                                    if (!hasMicPerm) {
+                                        micPermLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                        return@DevButton
+                                    }
+                                    val store = SelfTestCalibrationStore(context)
+                                    val route = AudioRouteMonitor(context).currentRoute()
+                                    store.devForcePass((45..95).random().toFloat(), route)
+                                    store.devSimulateTiming = false
+                                    onMicStateChanged()
+                                },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (hasMicPerm) AppColors.devBlue else AppColors.devRed
-                ),
-                border = BorderStroke(1.dp, if (hasMicPerm) AppColors.devBlueBorder else AppColors.devRedBorder)
-            ) {
-                Text(
-                    if (hasMicPerm) "Real mic" else "Real mic ⚠",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                )
-            }
+                kind = if (hasMicPerm) DevButtonKind.ACTION else DevButtonKind.DESTRUCTIVE,
+                maxLines = 1,
+            )
 
             Spacer(Modifier.width(8.dp))
 
-            OutlinedButton(
-                onClick = {
-                    val store = SelfTestCalibrationStore(context)
-                    val route = AudioRouteMonitor(context).currentRoute()
-                    store.devForcePass((45..95).random().toFloat(), route)
-                    store.devSimulateTiming = true
-                    onMicStateChanged()
-                },
+            DevButton(
+                "Simulate",
+                {
+                                    val store = SelfTestCalibrationStore(context)
+                                    val route = AudioRouteMonitor(context).currentRoute()
+                                    store.devForcePass((45..95).random().toFloat(), route)
+                                    store.devSimulateTiming = true
+                                    onMicStateChanged()
+                                },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border = BorderStroke(1.dp, AppColors.devBlueBorder)
-            ) {
-                Text("Simulate", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            }
+                kind = DevButtonKind.ACTION,
+                maxLines = 1,
+            )
         }
 
         Text(
@@ -579,26 +474,24 @@ fun DevToolsSection(
         // toggle is the stop and TunerReadingRecordingPill on the Tuner tab counts samples
         // and stops it too. The suppression *strength* is a user-facing control on the Tuner
         // page (Ambient Suppression: Standard/Enhanced/Max), so it is not duplicated here.
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = { showMicTimingLog = true },
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            DevButton(
+                "Mic Timing Log",
+                { showMicTimingLog = true },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
-                border = BorderStroke(1.dp, AppColors.gold)
-            ) {
-                Text("Mic Timing Log", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            }
+                kind = DevButtonKind.HIGHLIGHT,
+                maxLines = 1,
+            )
 
             Spacer(Modifier.width(8.dp))
 
-            OutlinedButton(
-                onClick = { showTunerLockLog = true },
+            DevButton(
+                "Tuner Lock Log",
+                { showTunerLockLog = true },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
-                border = BorderStroke(1.dp, AppColors.gold)
-            ) {
-                Text("Tuner Lock Log", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            }
+                kind = DevButtonKind.HIGHLIGHT,
+                maxLines = 1,
+            )
         }
 
         Text(
@@ -612,31 +505,24 @@ fun DevToolsSection(
 
         Spacer(Modifier.height(6.dp))
 
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = { if (recordReadings) TunerReadingLog.stop() else TunerReadingLog.start() },
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            DevButton(
+                if (recordReadings) "Stop Recording" else "Record Readings",
+                { if (recordReadings) TunerReadingLog.stop() else TunerReadingLog.start() },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (recordReadings) AppColors.devRed else AppColors.devBlue
-                ),
-                border = BorderStroke(1.dp, if (recordReadings) AppColors.devRedBorder else AppColors.devBlueBorder)
-            ) {
-                Text(
-                    if (recordReadings) "Stop Recording" else "Record Readings",
-                    fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
-                )
-            }
+                kind = if (recordReadings) DevButtonKind.DESTRUCTIVE else DevButtonKind.ACTION,
+                maxLines = 1,
+            )
 
             Spacer(Modifier.width(8.dp))
 
-            OutlinedButton(
-                onClick = { showTunerReadingLog = true },
+            DevButton(
+                "Tuner Reading Log",
+                { showTunerReadingLog = true },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
-                border = BorderStroke(1.dp, AppColors.gold)
-            ) {
-                Text("Tuner Reading Log", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            }
+                kind = DevButtonKind.HIGHLIGHT,
+                maxLines = 1,
+            )
         }
 
         Text(
@@ -707,14 +593,7 @@ private fun StreakSimulator(
                 modifier   = Modifier.weight(1f),
                 maxLines   = 1,
             )
-            OutlinedButton(
-                onClick        = { if (days > 0) days-- },
-                modifier       = Modifier.size(36.dp),
-                shape          = shape,
-                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
-                border         = BorderStroke(1.dp, AppColors.devDarkBorder),
-                contentPadding = btnPadding,
-            ) { Text("−", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
+            DevButton("−", { if (days > 0) days-- }, kind = DevButtonKind.NEUTRAL, compact = true, modifier = Modifier.size(36.dp))
 
             Text(
                 text       = "$days",
@@ -725,32 +604,11 @@ private fun StreakSimulator(
                 textAlign  = TextAlign.Center,
             )
 
-            OutlinedButton(
-                onClick        = { days++ },
-                modifier       = Modifier.size(36.dp),
-                shape          = shape,
-                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
-                border         = BorderStroke(1.dp, AppColors.devDarkBorder),
-                contentPadding = btnPadding,
-            ) { Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
+            DevButton("+", { days++ }, kind = DevButtonKind.NEUTRAL, compact = true, modifier = Modifier.size(36.dp))
 
-            OutlinedButton(
-                onClick        = { onApply(days) },
-                modifier       = Modifier.height(36.dp),
-                shape          = shape,
-                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devBlue),
-                border         = BorderStroke(1.dp, AppColors.devBlueBorder),
-                contentPadding = PaddingValues(horizontal = 10.dp),
-            ) { Text("Apply", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+            DevButton("Apply", { onApply(days) }, kind = DevButtonKind.ACTION, compact = true)
 
-            OutlinedButton(
-                onClick        = onReset,
-                modifier       = Modifier.height(36.dp),
-                shape          = shape,
-                colors         = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devGrey),
-                border         = BorderStroke(1.dp, AppColors.devDarkBorder),
-                contentPadding = PaddingValues(horizontal = 10.dp),
-            ) { Text("Reset", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+            DevButton("Reset", onReset, kind = DevButtonKind.NEUTRAL, compact = true)
         }
     }
 }
@@ -837,11 +695,7 @@ private fun AdPolicyDialog(onDismiss: () -> Unit) {
                 )
                 Spacer(Modifier.height(12.dp))
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Close", color = AppColors.textAccent, fontWeight = FontWeight.Bold)
-                    }
-                }
+                DevButton("Close", onDismiss, modifier = Modifier.fillMaxWidth(), kind = DevButtonKind.NEUTRAL)
             }
         }
     }

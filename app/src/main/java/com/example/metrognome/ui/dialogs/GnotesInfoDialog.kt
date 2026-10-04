@@ -32,12 +32,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.points.PointsConfig
 import com.example.metrognome.points.PointsSnapshot
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.PrimaryButton
+import com.example.metrognome.ui.components.AppDivider
 import com.example.metrognome.ui.theme.AppColors
 
 @Composable
@@ -60,9 +64,9 @@ fun GnotesInfoDialog(
             modifier = Modifier
                 .fillMaxWidth(0.88f)
                 .heightIn(max = maxDialogHeight),
-            shape = RoundedCornerShape(20.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
-            border = BorderStroke(1.dp, AppColors.surfaceVariant),
+            border = AppCardDefaults.Border,
         ) {
             Column {
 
@@ -72,26 +76,14 @@ fun GnotesInfoDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .background(AppColors.gold.copy(alpha = 0.14f), CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
+                    Icon(
                             imageVector        = Icons.Filled.Bolt,
                             contentDescription = null,
                             tint               = AppColors.gold,
-                            modifier           = Modifier.size(22.dp),
+                            modifier           = Modifier.size(24.dp),
                         )
-                    }
                     Column {
-                        Text(
-                            text       = "You have ${snapshot.total} ${if (snapshot.total == 1) PointsConfig.CURRENCY_NAME_SINGULAR else PointsConfig.CURRENCY_NAME}",
-                            color      = AppColors.gold,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize   = 17.sp,
-                        )
+                        DialogTitle("You have ${snapshot.total} ${if (snapshot.total == 1) PointsConfig.CURRENCY_NAME_SINGULAR else PointsConfig.CURRENCY_NAME}", textAlign = TextAlign.Start)
                         Text(
                             text       = "Your MetroGnome practice currency",
                             color      = AppColors.textMuted,
@@ -101,7 +93,7 @@ fun GnotesInfoDialog(
                     }
                 }
 
-                HorizontalDivider(color = AppColors.surfaceVariant)
+                AppDivider()
 
                 // ── Body (scrolls independently so a long breakdown never pushes
                 //   the footer off-screen on a small device) ───────────────────
@@ -127,7 +119,7 @@ fun GnotesInfoDialog(
 
                     if (snapshot.contributions.isNotEmpty()) {
                         Spacer(Modifier.height(14.dp))
-                        HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.6f))
+                        AppDivider()
                         Spacer(Modifier.height(10.dp))
                         snapshot.contributions.forEach { c ->
                             Row(
@@ -158,7 +150,7 @@ fun GnotesInfoDialog(
                     // Column's own 16dp bottom padding = 20dp; the gap above needs to match
                     // that (4dp internal + 16dp spacer here), not a smaller ad-hoc value.
                     Spacer(Modifier.height(10.dp))
-                    HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.6f))
+                    AppDivider()
                     Spacer(Modifier.height(16.dp))
                     com.example.metrognome.ui.components.DailyBonusCta(
                         canWatchToday  = canWatchAdToday,
@@ -169,19 +161,12 @@ fun GnotesInfoDialog(
                 }
 
                 // ── Footer ────────────────────────────────────────────────────
-                HorizontalDivider(color = AppColors.surfaceVariant)
+                AppDivider()
                 Box(
                     modifier         = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
                     contentAlignment = Alignment.CenterEnd,
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(
-                            text       = "Got it",
-                            color      = AppColors.gold,
-                            fontWeight = FontWeight.Bold,
-                            fontSize   = 14.sp,
-                        )
-                    }
+                    PrimaryButton("Got it", onDismiss, Modifier.fillMaxWidth())
                 }
             }
         }

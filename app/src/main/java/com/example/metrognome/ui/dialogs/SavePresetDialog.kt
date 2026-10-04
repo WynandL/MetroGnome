@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -37,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.PrimaryButton
 import com.example.metrognome.ui.theme.AppColors
 
 /**
@@ -55,7 +58,9 @@ fun SavePresetDialog(
     onSave: (name: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var name by remember { mutableStateOf("♩ $bpm") }
+    // Starts empty: a blank name saves as "♩ <bpm>" (BpmPresetsManager), shown live in the preview
+    // below. Pre-filling "♩ 120" put the note glyph in the field, where the text font draws it as a dot.
+    var name by remember { mutableStateOf("") }
     val trimmed = name.trim()
     val isDuplicate = trimmed.isNotEmpty() &&
             existingNames.any { it.equals(trimmed, ignoreCase = true) }
@@ -78,8 +83,9 @@ fun SavePresetDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 24.dp,
             modifier = Modifier
                 .padding(horizontal = 20.dp)
@@ -101,13 +107,7 @@ fun SavePresetDialog(
 
                 Spacer(Modifier.height(2.dp))
 
-                Text(
-                    text = "Save Preset",
-                    color = AppColors.gold,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = (-0.5).sp,
-                )
+                DialogTitle("Save Preset")
 
                 Spacer(Modifier.height(14.dp))
 
@@ -127,11 +127,29 @@ fun SavePresetDialog(
                     singleLine = true,
                     isError = isDuplicate,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    label = { Text("Preset name") },
+                    placeholder = { Text("Optional, e.g. Verse or Warm-up", fontSize = 13.sp) },
+                    trailingIcon = {
+                        Icon(
+                            Icons.Filled.Edit,
+                            contentDescription = null,
+                            tint = if (name.isEmpty()) AppColors.textMuted else AppColors.gold,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = AppColors.background,
+                        unfocusedContainerColor = AppColors.background,
+                        errorContainerColor = AppColors.background,
                         focusedBorderColor = if (isDuplicate) AppColors.warning else AppColors.gold,
-                        unfocusedBorderColor = if (isDuplicate) AppColors.warning.copy(alpha = 0.7f) else AppColors.surfaceVariant,
+                        unfocusedBorderColor = if (isDuplicate) AppColors.warning.copy(alpha = 0.7f) else AppColors.textDim,
+                        focusedLabelColor = AppColors.gold,
+                        unfocusedLabelColor = AppColors.textMuted,
                         focusedTextColor = Color.White,
-                        unfocusedTextColor = AppColors.textSecondary,
+                        unfocusedTextColor = Color.White,
+                        focusedPlaceholderColor = AppColors.textMuted,
+                        unfocusedPlaceholderColor = AppColors.textMuted,
                         cursorColor = AppColors.gold,
                         errorBorderColor = AppColors.warning,
                         errorCursorColor = AppColors.gold,
@@ -156,35 +174,7 @@ fun SavePresetDialog(
 
                 Spacer(Modifier.height(18.dp))
 
-                Surface(
-                    onClick = { onSave(name) },
-                    shape = RoundedCornerShape(14.dp),
-                    color = AppColors.primaryPurple,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Icon(
-                                Icons.Filled.Favorite,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Text(
-                                "SAVE PRESET",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 1.5.sp,
-                            )
-                        }
-                    }
-                }
+                PrimaryButton("SAVE PRESET", { onSave(name) }, Modifier.fillMaxWidth(), icon = Icons.Filled.Favorite)
             }
         }
     }
@@ -194,9 +184,9 @@ fun SavePresetDialog(
 @Composable
 private fun PresetChipPreview(label: String) {
     Surface(
-        color = AppColors.surfaceActive,
+        color = AppColors.goldTint,
         shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.5.dp, AppColors.gold),
+        border = BorderStroke(1.dp, AppColors.goldBorder),
     ) {
         Box(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),

@@ -118,7 +118,7 @@ fun GoldSlider(
                     // Radial bloom where the rail meets the thumb.
                     drawCircle(
                         brush = Brush.radialGradient(
-                            colors = listOf(AppColors.gold.copy(alpha = 0.35f), Color.Transparent),
+                            colors = listOf(AppColors.goldBorder, Color.Transparent),
                             center = Offset(thumbX, centreY),
                             radius = 12.dp.toPx(),
                         ),

@@ -51,6 +51,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.metrognome.audio.NoteNames
 import com.example.metrognome.audio.chords.ChordEngine
 import com.example.metrognome.ui.components.AppFilterChip
+import com.example.metrognome.debug.settings.DevButton
+import com.example.metrognome.debug.settings.DevButtonKind
+import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.ChordFinderViewModel
 import kotlinx.coroutines.Dispatchers
@@ -129,18 +132,7 @@ fun ChordLoopDiagnosticOverlay(onDismiss: () -> Unit) {
                         fontFamily = FontFamily.Monospace,
                     )
                     Spacer(Modifier.weight(1f))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = onDismiss,
-                            )
-                            .padding(6.dp),
-                    ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = AppColors.textMuted)
-                    }
+                    DialogCloseButton(onClick = onDismiss)
                 }
 
                 Spacer(Modifier.height(10.dp))
@@ -162,52 +154,49 @@ fun ChordLoopDiagnosticOverlay(onDismiss: () -> Unit) {
                 Spacer(Modifier.height(10.dp))
                 // ── Controls ──────────────────────────────────────────────────
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
-                        onClick = {
-                            if (running) {
-                                ChordLoopDiagnostic.cancel()
-                            } else {
-                                val ref = context.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE).getFloat("reference_hz", 440f)
-                                ChordLoopDiagnostic.start(vm, store, ref, mode, context.filesDir)
-                                Toast.makeText(context, "Go to the Chords tab: the loop starts when its mic opens", Toast.LENGTH_LONG).show()
-                                onDismiss()
-                            }
-                        },
+                    DevButton(
+                        if (running) "Cancel" else "Run ${mode.label}",
+                        {
+                                                    if (running) {
+                                                        ChordLoopDiagnostic.cancel()
+                                                    } else {
+                                                        val ref = context.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE).getFloat("reference_hz", 440f)
+                                                        ChordLoopDiagnostic.start(vm, store, ref, mode, context.filesDir)
+                                                        Toast.makeText(context, "Go to the Chords tab: the loop starts when its mic opens", Toast.LENGTH_LONG).show()
+                                                        onDismiss()
+                                                    }
+                                                },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = if (running) failColor else AppColors.gold),
-                        border = BorderStroke(1.dp, if (running) failColor else AppColors.gold),
-                    ) {
-                        Text(if (running) "Cancel" else "Run ${mode.label}", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            store.clear()
-                            Toast.makeText(context, "Timings reset to defaults", Toast.LENGTH_SHORT).show()
-                        },
+                        kind = if (running) DevButtonKind.DESTRUCTIVE else DevButtonKind.HIGHLIGHT,
+                        maxLines = 1,
+                    )
+                    DevButton(
+                        "Reset timings",
+                        {
+                                                    store.clear()
+                                                    Toast.makeText(context, "Timings reset to defaults", Toast.LENGTH_SHORT).show()
+                                                },
+                        modifier = Modifier.weight(1f),
+                        kind = DevButtonKind.DESTRUCTIVE,
                         enabled = !running,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.devRed),
-                        border = BorderStroke(1.dp, AppColors.devRedBorder),
-                    ) {
-                        Text("Reset timings", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                    }
+                        maxLines = 1,
+                    )
                 }
 
                 val hasReport = state.rounds.isNotEmpty() || state.legato.isNotEmpty()
                 if (hasReport) {
                     Spacer(Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = {
-                            val stamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
-                            saveLog.launch("chord_loop_${state.mode.name.lowercase()}_$stamp.json")
-                        },
-                        enabled = !running,
+                    DevButton(
+                        "Save Log (JSON, every frame)",
+                        {
+                                                    val stamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
+                                                    saveLog.launch("chord_loop_${state.mode.name.lowercase()}_$stamp.json")
+                                                },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.textAccent),
-                        border = BorderStroke(1.dp, AppColors.textAccent),
-                    ) {
-                        Text("Save Log (JSON, every frame)", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                    }
+                        kind = DevButtonKind.ACTION,
+                        enabled = !running,
+                        maxLines = 1,
+                    )
                 }
 
                 Spacer(Modifier.height(12.dp))

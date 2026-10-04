@@ -43,7 +43,7 @@ fun PerformanceBonusReward(
 ) {
     Column(
         modifier = modifier
-            .background(AppColors.gold.copy(alpha = 0.10f), RoundedCornerShape(16.dp))
+            .background(AppColors.goldTint, AppCardDefaults.Shape)
             .padding(vertical = 16.dp, horizontal = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

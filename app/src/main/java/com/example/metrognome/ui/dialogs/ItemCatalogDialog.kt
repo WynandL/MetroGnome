@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -50,6 +51,11 @@ import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.ui.components.metro_items.progressLabel
 import com.example.metrognome.ui.components.metro_items.unlockProgress
 import com.example.metrognome.ui.overlays.ItemPreviewCanvas
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.PrimaryButton
+import com.example.metrognome.ui.components.AppInset
+import com.example.metrognome.ui.components.MetroCollectionIcon
+import com.example.metrognome.ui.components.AppDivider
 import com.example.metrognome.ui.theme.AppColors
 
 /**
@@ -100,9 +106,9 @@ fun ItemCatalogDialog(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .fillMaxHeight(0.88f),
-            shape  = RoundedCornerShape(20.dp),
+            shape  = AppCardDefaults.DialogShape,
             color  = AppColors.surfaceDeep,
-            border = BorderStroke(1.dp, AppColors.surfaceVariant),
+            border = AppCardDefaults.Border,
         ) {
             Column {
 
@@ -112,26 +118,9 @@ fun ItemCatalogDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .background(AppColors.gold.copy(alpha = 0.14f), CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector        = Icons.Filled.Stars,
-                            contentDescription = null,
-                            tint               = AppColors.gold,
-                            modifier           = Modifier.size(20.dp),
-                        )
-                    }
+                    MetroCollectionIcon(size = 28.dp)
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text       = "Metro's Collection",
-                            color      = AppColors.textPrimary,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize   = 16.sp,
-                        )
+                        DialogTitle("Metro's Collection", textAlign = TextAlign.Start)
                         Text(
                             text       = "Items Metro wears and the world he lives in",
                             color      = AppColors.textMuted,
@@ -142,9 +131,9 @@ fun ItemCatalogDialog(
                     }
                     // Unlocked count badge
                     Surface(
-                        color  = AppColors.gold.copy(alpha = 0.15f),
+                        color  = AppColors.goldTintActive,
                         shape  = RoundedCornerShape(50.dp),
-                        border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.35f)),
+                        border = BorderStroke(1.dp, AppColors.goldBorder),
                     ) {
                         Text(
                             text       = "$unlockedCount / $totalCount",
@@ -156,7 +145,7 @@ fun ItemCatalogDialog(
                     }
                 }
 
-                HorizontalDivider(color = AppColors.surfaceVariant)
+                AppDivider()
 
                 // ── Grid ──────────────────────────────────────────────────────
                 LazyVerticalGrid(
@@ -181,19 +170,12 @@ fun ItemCatalogDialog(
                 }
 
                 // ── Close ─────────────────────────────────────────────────────
-                HorizontalDivider(color = AppColors.surfaceVariant)
+                AppDivider()
                 Box(
                     modifier         = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
                     contentAlignment = Alignment.CenterEnd,
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(
-                            text       = "Close",
-                            color      = AppColors.gold,
-                            fontWeight = FontWeight.Bold,
-                            fontSize   = 14.sp,
-                        )
-                    }
+                    PrimaryButton("Close", onDismiss, Modifier.fillMaxWidth())
                 }
             }
         }
@@ -208,15 +190,7 @@ private fun ItemCard(
     progressLabel: String = "",
 ) {
     val shape = RoundedCornerShape(12.dp)
-    Surface(
-        color    = AppColors.surface,
-        shape    = shape,
-        border   = BorderStroke(
-            1.dp,
-            if (isUnlocked) AppColors.gold.copy(alpha = 0.40f) else AppColors.surfaceVariant,
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    AppInset(highlighted = isUnlocked, shape = shape, modifier = Modifier.fillMaxWidth()) {
         Column {
             // ── Preview area ──────────────────────────────────────────────────
             Box {

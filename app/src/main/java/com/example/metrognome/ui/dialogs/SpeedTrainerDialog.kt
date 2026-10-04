@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.example.metrognome.speedtrainer.SpeedTrainerConfig
 import com.example.metrognome.ui.components.CircleButton
 import com.example.metrognome.ui.components.MicTimingNudge
+import com.example.metrognome.ui.components.PrimaryButton
 import com.example.metrognome.ui.theme.AppColors
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -72,14 +73,7 @@ fun SpeedTrainerDialog(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                "Speed Trainer",
-                color = AppColors.gold,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = (-0.3).sp,
-                modifier = Modifier.weight(1f),
-            )
+            DialogTitle("Speed Trainer", Modifier.weight(1f), textAlign = TextAlign.Start)
             DialogCloseButton(onClick = onDismiss)
         }
 
@@ -276,35 +270,7 @@ fun SpeedTrainerDialog(
         Spacer(Modifier.height(16.dp))
 
         // ── Begin button ──────────────────────────────────────────────────────
-        Surface(
-            onClick = onBeginTraining,
-            shape = RoundedCornerShape(14.dp),
-            color = AppColors.primaryPurple,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Icon(
-                        Icons.Filled.Bolt,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Text(
-                        "START TRAINING",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.5.sp,
-                    )
-                }
-            }
-        }
+        PrimaryButton("START TRAINING", onBeginTraining, Modifier.fillMaxWidth(), icon = Icons.Filled.Bolt)
     }
 }
 
@@ -376,7 +342,7 @@ private fun RampArc(config: SpeedTrainerConfig, modifier: Modifier = Modifier) {
                 // Glow beneath the stroke, then the crisp gradient stroke on top.
                 drawPath(
                     path = curve,
-                    color = AppColors.gold.copy(alpha = 0.16f),
+                    color = AppColors.goldTintActive,
                     style = Stroke(width = 7.dp.toPx(), cap = StrokeCap.Round),
                 )
                 drawPath(
@@ -435,7 +401,7 @@ private fun ConfigTile(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        color = AppColors.surfaceDim,
+        color = AppColors.card,
         shape = RoundedCornerShape(12.dp),
         modifier = modifier.height(80.dp),
     ) {
@@ -510,7 +476,7 @@ private fun IncrementModeToggle(
     )
     Surface(
         onClick = onToggle,
-        color = AppColors.surfaceDim,
+        color = AppColors.card,
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, activeColor.copy(alpha = 0.5f)),
         modifier = modifier.height(80.dp),

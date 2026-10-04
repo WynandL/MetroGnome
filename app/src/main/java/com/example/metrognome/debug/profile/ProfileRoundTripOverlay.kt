@@ -44,6 +44,9 @@ import com.example.metrognome.usage.ActivitySummary
 import com.example.metrognome.usage.ActivitySummaryLogger
 import com.example.metrognome.usage.ActivitySummaryRestorer
 import com.example.metrognome.usage.mergeSummaries
+import com.example.metrognome.ui.dialogs.DialogCloseButton
+import com.example.metrognome.ui.components.AppFilterChip
+import androidx.compose.ui.text.style.TextAlign
 import com.example.metrognome.ui.theme.AppColors
 import kotlin.math.max
 import kotlin.math.min
@@ -121,18 +124,7 @@ fun ProfileRoundTripOverlay(onDismiss: () -> Unit) {
                         fontFamily = FontFamily.Monospace,
                     )
                     Spacer(Modifier.weight(1f))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = onDismiss,
-                            )
-                            .padding(6.dp),
-                    ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = AppColors.textMuted)
-                    }
+                    DialogCloseButton(onClick = onDismiss)
                 }
 
                 Spacer(Modifier.height(10.dp))
@@ -156,28 +148,13 @@ fun ProfileRoundTripOverlay(onDismiss: () -> Unit) {
 
 @Composable
 private fun ModePill(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Surface(
-        color = if (selected) AppColors.gold.copy(alpha = 0.18f) else Color.Transparent,
-        shape = RoundedCornerShape(10.dp),
-        modifier = modifier
-            .height(34.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick,
-            ),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                label,
-                color = if (selected) AppColors.gold else AppColors.textMuted,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            )
-        }
-    }
+    AppFilterChip(
+        selected = selected,
+        onClick = onClick,
+        endPadding = 0.dp,
+        modifier = modifier,
+        label = { Text(label, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) },
+    )
 }
 
 // ── Round-trip ──────────────────────────────────────────────────────────────────

@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.metrognome.ui.components.MetroAvatar
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.PrimaryButton
 import com.example.metrognome.ui.theme.AppColors
 
 /**
@@ -35,8 +37,9 @@ fun MetroAvatarDialog(onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.padding(horizontal = 22.dp),
-            shape = RoundedCornerShape(28.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 28.dp,
         ) {
             Column(
@@ -66,20 +69,7 @@ fun MetroAvatarDialog(onDismiss: () -> Unit) {
 
                 Spacer(Modifier.height(26.dp))
 
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
-                    shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier.fillMaxWidth(0.65f),
-                ) {
-                    Text(
-                        text = "Close",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(vertical = 4.dp),
-                    )
-                }
+                PrimaryButton("Close", onDismiss, Modifier.fillMaxWidth(0.65f))
             }
         }
     }

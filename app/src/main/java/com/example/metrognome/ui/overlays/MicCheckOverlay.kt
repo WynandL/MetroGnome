@@ -72,6 +72,10 @@ import com.example.metrognome.ui.components.Seal
 import com.example.metrognome.ui.components.SealStyle
 import com.example.metrognome.ui.components.rememberMediaVolumeFraction
 import com.example.metrognome.ui.dialogs.DialogCloseButton
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.GhostButton
+import com.example.metrognome.ui.components.PrimaryButton
+import com.example.metrognome.ui.dialogs.DialogTitle
 import com.example.metrognome.ui.theme.AppColors
 
 /**
@@ -175,8 +179,9 @@ fun MicCheckOverlay(
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 24.dp,
             modifier = Modifier
                 .padding(horizontal = 24.dp)
@@ -257,8 +262,7 @@ private fun IntroContent(volumeFraction: Float, route: AudioRoute, onStart: () -
     val routeOk = route.isBuiltInSpeaker
     PulsingNote(AppColors.gold)
     Spacer(Modifier.height(16.dp))
-    Text("Microphone check", color = Color.White, fontSize = 18.sp,
-        fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    DialogTitle("Microphone check")
     Spacer(Modifier.height(8.dp))
     Text(
         "This lets the Speed Trainer, Practice, and Rhythm Game use your microphone to " +
@@ -302,8 +306,7 @@ private fun IntroContent(volumeFraction: Float, route: AudioRoute, onStart: () -
 private fun RunningContent(phase: SelfTestPhase, status: String) {
     PulsingNote(AppColors.gold)
     Spacer(Modifier.height(16.dp))
-    Text("Listening…", color = Color.White, fontSize = 18.sp,
-        fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    DialogTitle("Listening…")
     Spacer(Modifier.height(16.dp))
 
     val animated by animateFloatAsState(
@@ -339,8 +342,7 @@ private fun PassContent(onDone: () -> Unit) {
     // word is literal: the device has just been certified to follow the player's timing.
     Seal(modifier = Modifier.size(56.dp), style = SealStyle.Emblem, entrance = true)
     Spacer(Modifier.height(12.dp))
-    Text("You're all set", color = Color.White, fontSize = 18.sp,
-        fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    DialogTitle("You're all set")
     Spacer(Modifier.height(6.dp))
     Text(
         "Metro can follow your timing on this phone. Mic features are ready to use.",
@@ -353,10 +355,9 @@ private fun PassContent(onDone: () -> Unit) {
 
 @Composable
 private fun FixableContent(message: String, onRetry: () -> Unit, onCancel: () -> Unit) {
-    ResultIcon(AppColors.gold, AppColors.gold.copy(alpha = 0.12f), Icons.Filled.Warning)
+    ResultIcon(AppColors.gold, AppColors.goldTint, Icons.Filled.Warning)
     Spacer(Modifier.height(12.dp))
-    Text("Almost there", color = Color.White, fontSize = 18.sp,
-        fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    DialogTitle("Almost there")
     Spacer(Modifier.height(6.dp))
     Text(message, color = AppColors.textSecondary, fontSize = 13.sp, lineHeight = 19.sp,
         textAlign = TextAlign.Center)
@@ -369,10 +370,9 @@ private fun FixableContent(message: String, onRetry: () -> Unit, onCancel: () ->
 
 @Composable
 private fun IncapableContent(onDismiss: () -> Unit, onRetry: () -> Unit) {
-    ResultIcon(AppColors.gold, AppColors.gold.copy(alpha = 0.12f), Icons.Filled.MusicNote)
+    ResultIcon(AppColors.gold, AppColors.goldTint, Icons.Filled.MusicNote)
     Spacer(Modifier.height(12.dp))
-    Text("You're good to go", color = Color.White, fontSize = 18.sp,
-        fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    DialogTitle("You're good to go")
     Spacer(Modifier.height(6.dp))
     Text(
         "We'll leave the microphone features off for now, just to keep your experience " +
@@ -396,10 +396,9 @@ private fun IncapableContent(onDismiss: () -> Unit, onRetry: () -> Unit) {
  */
 @Composable
 private fun UnmeasurableContent(onDismiss: () -> Unit) {
-    ResultIcon(AppColors.gold, AppColors.gold.copy(alpha = 0.12f), Icons.Filled.MusicNote)
+    ResultIcon(AppColors.gold, AppColors.goldTint, Icons.Filled.MusicNote)
     Spacer(Modifier.height(12.dp))
-    Text("Not available on this phone", color = Color.White, fontSize = 18.sp,
-        fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    DialogTitle("Not available on this phone")
     Spacer(Modifier.height(6.dp))
     Text(
         "This phone doesn't report the audio timing the microphone features need, so Metro " +
@@ -456,28 +455,6 @@ private fun ResultIcon(tint: Color, bg: Color, icon: androidx.compose.ui.graphic
     }
 }
 
-@Composable
-private fun PrimaryButton(
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) {
-    val tint = if (enabled) AppColors.gold else AppColors.textMuted
-    Surface(
-        onClick = onClick,
-        enabled = enabled,
-        shape = RoundedCornerShape(14.dp),
-        color = tint.copy(alpha = 0.10f),
-        border = BorderStroke(1.dp, tint.copy(alpha = if (enabled) 0.75f else 0.4f)),
-        modifier = modifier.height(44.dp),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(label, color = tint, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
 /**
  * Tooling-only: the pass card as the user sees it, for exercising the VerifiedSeal
  * animation via Start Interactive Preview (an emulator cannot reach PASS - the
@@ -502,18 +479,7 @@ private fun TwoButtonRow(
     primaryLabel: String, onPrimary: () -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxWidth()) {
-        Surface(
-            onClick = onSecondary,
-            shape = RoundedCornerShape(14.dp),
-            color = Color.Transparent,
-            border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
-            modifier = Modifier.weight(1f).height(44.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(secondaryLabel, color = AppColors.textSecondary, fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium)
-            }
-        }
+        GhostButton(secondaryLabel, onSecondary, Modifier.weight(1f))
         Spacer(Modifier.width(10.dp))
         PrimaryButton(primaryLabel, onPrimary, Modifier.weight(1f))
     }

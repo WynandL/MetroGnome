@@ -10,6 +10,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,18 +27,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ButtonDefaults
+import com.example.metrognome.ui.components.AppCard
 import com.example.metrognome.ui.components.AppFilterChip
+import com.example.metrognome.ui.components.AppSwitch
+import com.example.metrognome.ui.components.CHIP_ROW_GAP
+import com.example.metrognome.ui.components.CardGap
+import com.example.metrognome.ui.components.CardHeader
+import com.example.metrognome.ui.components.GoldSlider
+import com.example.metrognome.ui.components.tapDelight
 import com.example.metrognome.ui.components.PremiumChip
 import com.example.metrognome.ui.components.TimeSignaturePicker
 import com.example.metrognome.theory.Meter
 import com.example.metrognome.theory.MeterTheory
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.material3.TextButton
@@ -80,6 +86,7 @@ import com.example.metrognome.ui.components.instruments.InstrumentAffinityBadges
 import com.example.metrognome.ui.dialogs.AudioShowcase
 import com.example.metrognome.ui.dialogs.GrooveCheckRecalibrateDialog
 import com.example.metrognome.notifications.NotificationPermissionState
+import com.example.metrognome.ui.components.GoldButton
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import kotlin.math.roundToInt
@@ -179,197 +186,184 @@ fun SettingsScreen(
         ) {
             Spacer(Modifier.height(16.dp))
 
-            SettingsSectionTitle("Tempo & Rhythm")
+            SettingsCard("Tempo & Rhythm") {
 
-            // BPM slider
-            SettingsSliderRow(
-                label = "Tempo",
-                value = bpm.toFloat(),
-                valueText = "$bpm BPM · ${tempoLabel(bpm)}",
-                range = 20f..300f,
-                onValueChange = { vm.setBpm(it.roundToInt()) }
-            )
-
-            // Time signature: presets + custom stepper + accent editor. The live classification
-            // (e.g. "Compound triple") rides next to the heading as a quiet annotation.
-            SettingsRow(
-                label = "Time Signature",
-                trailing = {
-                    Text(
-                        MeterTheory.label(Meter(timeSig, timeSigDenom)),
-                        color = AppColors.textMuted,
-                        fontSize = 13.sp,
-                    )
-                },
-            ) {
-                TimeSignaturePicker(
-                    top = timeSig,
-                    bottom = timeSigDenom,
-                    accentBeats = accentBeats,
-                    onMeterChange = { top, bottom -> vm.setMeter(top, bottom) },
-                    onToggleAccent = { vm.toggleAccent(it) },
+                // BPM slider
+                SettingsSliderRow(
+                    label = "Tempo",
+                    value = bpm.toFloat(),
+                    valueText = "$bpm BPM · ${tempoLabel(bpm)}",
+                    range = 20f..300f,
+                    onValueChange = { vm.setBpm(it.roundToInt()) }
                 )
-            }
 
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = AppColors.surfaceVariant)
-            Spacer(Modifier.height(8.dp))
-
-            SettingsSectionTitle("Sound")
-
-            // The single, app-wide mic-mode toggle. Speed Trainer, Practice, and the
-            // Rhythm Game all use the result; there is no per-feature toggle. Turning it on
-            // requires a passing self-test — if the device is not calibrated yet, the check
-            // runs first and the toggle reflects the outcome (so the X / a fail leaves it
-            // off). Kept first under Sound so it's seen before the click-sound chips rather
-            // than after, since mic mode overrides the effective sound type when active.
-            MicOptIn(
-                // ANDed with live permission: if the OS grant is gone (stale post-reinstall
-                // state) the switch reads as off, so the "permission required" copy and the
-                // onRequestPermission path actually engage instead of silently no-op'ing.
-                enabled = micCal.isActive && micRecovery.micGranted,
-                hasMicPermission = micRecovery.micGranted,
-                onToggle = {
-                    val store = com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context)
-                    when {
-                        micCal.isActive    -> { store.micModeEnabled = false; micCheckRefresh++ }
-                        // Already calibrated and turning back on: ask whether to re-enable as-is
-                        // or re-run the check, rather than silently re-enabling.
-                        micCal.isCalibrated -> showRecalPrompt = true
-                        else                -> showMicCheck = true
-                    }
-                },
-                onRequestPermission = {
-                    // Reinstall recovery: this device already proved itself, so if it's
-                    // calibrated only the OS grant is missing - go straight for it (or App
-                    // Settings if permanently denied) instead of re-running the whole check.
-                    if (micCal.isCalibrated) micRecovery.fixPermission()
-                    else showMicCheck = true
-                },
-                isPermanentlyDenied = micRecovery.micPermanentlyDenied,
-            )
-
-            Spacer(Modifier.height(10.dp))
-
-            // Sound type chips, with the instrument-affinity nudge inline in the heading row:
-            // the instruments the selected sound suits glow gold, the rest stay dim.
-            SettingsRow(
-                label = "Click Sound",
-                trailing = { InstrumentAffinityRow(soundType = soundType) },
-                trailingFillWidth = true,
-                trailingSpacing = 20.dp,
-            ) {
-                FlowRow(modifier = Modifier.fillMaxWidth()) {
-                    listOf("Classic", "Hi-Hat", "Wood", "Warm").forEachIndexed { index, name ->
-                        AppFilterChip(
-                            selected = index == soundType,
-                            onClick = { vm.setSoundType(index) },
-                            label = name,
+                // Time signature: presets + custom stepper + accent editor. The live classification
+                // (e.g. "Compound triple") rides next to the heading as a quiet annotation.
+                SettingsRow(
+                    label = "Time Signature",
+                    trailing = {
+                        Text(
+                            MeterTheory.label(Meter(timeSig, timeSigDenom)),
+                            color = AppColors.textMuted,
+                            fontSize = 13.sp,
                         )
-                    }
-                    // Premium sounds — one chip per registry entry
-                    PREMIUM_SOUND_REGISTRY.forEach { def ->
-                        val owned = def.productId in purchasedSoundIds
-                        PremiumChip(
-                            selected = soundType == def.soundTypeIndex,
-                            label = def.displayName,
-                            onClick = {
-                                if (owned) vm.setSoundType(def.soundTypeIndex)
-                                else dialogSoundDef = def
-                            },
-                        )
-                    }
+                    },
+                ) {
+                    TimeSignaturePicker(
+                        top = timeSig,
+                        bottom = timeSigDenom,
+                        accentBeats = accentBeats,
+                        onMeterChange = { top, bottom -> vm.setMeter(top, bottom) },
+                        onToggleAccent = { vm.toggleAccent(it) },
+                    )
                 }
             }
+            Spacer(Modifier.height(CardGap))
+            SettingsCard("Sound") {
 
-            // Volume slider
-            SettingsSliderRow(
-                label = "Click Volume",
-                value = volume,
-                valueText = "${(volume * 100).roundToInt()}%",
-                range = 0f..1f,
-                onValueChange = { vm.setVolume(it) },
-            )
+                // The single, app-wide mic-mode toggle. Speed Trainer, Practice, and the
+                // Rhythm Game all use the result; there is no per-feature toggle. Turning it on
+                // requires a passing self-test — if the device is not calibrated yet, the check
+                // runs first and the toggle reflects the outcome (so the X / a fail leaves it
+                // off). Kept first under Sound so it's seen before the click-sound chips rather
+                // than after, since mic mode overrides the effective sound type when active.
+                MicOptIn(
+                    // ANDed with live permission: if the OS grant is gone (stale post-reinstall
+                    // state) the switch reads as off, so the "permission required" copy and the
+                    // onRequestPermission path actually engage instead of silently no-op'ing.
+                    enabled = micCal.isActive && micRecovery.micGranted,
+                    hasMicPermission = micRecovery.micGranted,
+                    onToggle = {
+                        val store = com.example.metrognome.audio.selftest.SelfTestCalibrationStore(context)
+                        when {
+                            micCal.isActive    -> { store.micModeEnabled = false; micCheckRefresh++ }
+                            // Already calibrated and turning back on: ask whether to re-enable as-is
+                            // or re-run the check, rather than silently re-enabling.
+                            micCal.isCalibrated -> showRecalPrompt = true
+                            else                -> showMicCheck = true
+                        }
+                    },
+                    onRequestPermission = {
+                        // Reinstall recovery: this device already proved itself, so if it's
+                        // calibrated only the OS grant is missing - go straight for it (or App
+                        // Settings if permanently denied) instead of re-running the whole check.
+                        if (micCal.isCalibrated) micRecovery.fixPermission()
+                        else showMicCheck = true
+                    },
+                    isPermanentlyDenied = micRecovery.micPermanentlyDenied,
+                )
 
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = AppColors.surfaceVariant)
-            Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
 
-            SettingsSectionTitle("Visual")
+                // Sound type chips, with the instrument-affinity nudge inline in the heading row:
+                // the instruments the selected sound suits glow gold, the rest stay dim.
+                SettingsRow(
+                    label = "Click Sound",
+                    trailing = { InstrumentAffinityRow(soundType = soundType) },
+                    trailingFillWidth = true,
+                    trailingSpacing = 20.dp,
+                ) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(CHIP_ROW_GAP),
+                    ) {
+                        listOf("Classic", "Hi-Hat", "Wood", "Warm").forEachIndexed { index, name ->
+                            AppFilterChip(
+                                selected = index == soundType,
+                                onClick = { vm.setSoundType(index) },
+                                label = name,
+                            )
+                        }
+                        // Premium sounds — one chip per registry entry
+                        PREMIUM_SOUND_REGISTRY.forEach { def ->
+                            val owned = def.productId in purchasedSoundIds
+                            PremiumChip(
+                                selected = soundType == def.soundTypeIndex,
+                                label = def.displayName,
+                                onClick = {
+                                    if (owned) vm.setSoundType(def.soundTypeIndex)
+                                    else dialogSoundDef = def
+                                },
+                            )
+                        }
+                    }
+                }
 
-            SettingsSwitchRow(
-                checked = flashOnBeat,
-                onChecked = { vm.setFlashOnBeat(it) }
-            )
-
-            if (notificationPermission != null) {
-                Spacer(Modifier.height(8.dp))
-                HorizontalDivider(color = AppColors.surfaceVariant)
-                Spacer(Modifier.height(8.dp))
-
-                SettingsSectionTitle("System")
-                NotificationsRow(state = notificationPermission)
-            }
-
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = AppColors.surfaceVariant)
-            Spacer(Modifier.height(8.dp))
-
-            SettingsSectionTitle("Items")
-
-            PURCHASABLE_ITEM_REGISTRY.forEach { def ->
-                val alreadyUnlocked = def.itemId in activeItemIds
-                PurchasableItemRow(
-                    def = def,
-                    alreadyUnlocked = alreadyUnlocked,
-                    priceText = itemPrices[def.productId],
-                    isBillingConnecting = isBillingConnecting,
-                    isAvailable = def.productId in availableItemProductIds,
-                    ownedMessage = itemOwnedMessages[def.itemId] ?: "She's all yours.",
-                    onClick = { dialogItemDef = def }
+                // Volume slider
+                SettingsSliderRow(
+                    label = "Click Volume",
+                    value = volume,
+                    valueText = "${(volume * 100).roundToInt()}%",
+                    range = 0f..1f,
+                    onValueChange = { vm.setVolume(it) },
                 )
             }
+            Spacer(Modifier.height(CardGap))
+            SettingsCard("Visual") {
 
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = AppColors.surfaceVariant)
-            Spacer(Modifier.height(8.dp))
+                SettingsSwitchRow(
+                    checked = flashOnBeat,
+                    onChecked = { vm.setFlashOnBeat(it) }
+                )
+            }
+            if (notificationPermission != null) {
+                Spacer(Modifier.height(CardGap))
+                SettingsCard("System") {
+                    NotificationsRow(state = notificationPermission)
+                }
+            }
+            Spacer(Modifier.height(CardGap))
+            SettingsCard("Items") {
 
-            SettingsSectionTitle("Remove Ads")
-
-            RemoveAdsSection(
-                isAdFree = isAdFree,
-                priceText = removeAdsPriceText,
-                isBillingAvailable = isBillingAvailable,
-                isPurchasing = isPurchasing,
-                isBillingConnecting = isBillingConnecting,
-                onPurchase = { activity?.let { vm.purchaseRemoveAds(it) } },
-                onRestore  = { vm.restorePurchases() },
-            )
-
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(color = AppColors.surfaceVariant)
-            Spacer(Modifier.height(8.dp))
-
-            SettingsSectionTitle("About")
-
-            DevTapTarget(onToggled = { isDevMode = it }) {
-                Column {
-                    Text(
-                        "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-                        color = AppColors.textMuted,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(bottom = 4.dp)
+                PURCHASABLE_ITEM_REGISTRY.forEach { def ->
+                    val alreadyUnlocked = def.itemId in activeItemIds
+                    PurchasableItemRow(
+                        def = def,
+                        alreadyUnlocked = alreadyUnlocked,
+                        priceText = itemPrices[def.productId],
+                        isBillingConnecting = isBillingConnecting,
+                        isAvailable = def.productId in availableItemProductIds,
+                        ownedMessage = itemOwnedMessages[def.itemId] ?: "She's all yours.",
+                        onClick = { dialogItemDef = def }
                     )
-                    Text(
-                        buildString {
-                            append("Build: ${if (BuildConfig.DEBUG) "Debug" else "Release"}")
-                            if (!BuildConfig.DEBUG && DevEasterEgg.isManuallyEnabled(context)) {
-                                append(" · Dev Mode ✓")
-                            }
-                        },
-                        color = if (isDevMode) AppColors.gold else AppColors.textMuted,
-                        fontSize = 12.sp
-                    )
+                }
+            }
+            Spacer(Modifier.height(CardGap))
+            SettingsCard("Remove Ads") {
+
+                RemoveAdsSection(
+                    isAdFree = isAdFree,
+                    priceText = removeAdsPriceText,
+                    isBillingAvailable = isBillingAvailable,
+                    isPurchasing = isPurchasing,
+                    isBillingConnecting = isBillingConnecting,
+                    onPurchase = { activity?.let { vm.purchaseRemoveAds(it) } },
+                    onRestore  = { vm.restorePurchases() },
+                )
+            }
+            Spacer(Modifier.height(CardGap))
+            // The whole card is the tap target (header and padding included), so the
+            // squash and the burst belong to the card, not just to its two lines of text.
+            DevTapTarget(modifier = Modifier.fillMaxWidth().tapDelight(), onToggled = { isDevMode = it }) {
+                SettingsCard("About") {
+                    Column {
+                        Text(
+                            "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                            color = AppColors.textMuted,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(
+                            buildString {
+                                append("Build: ${if (BuildConfig.DEBUG) "Debug" else "Release"}")
+                                if (!BuildConfig.DEBUG && DevEasterEgg.isManuallyEnabled(context)) {
+                                    append(" · Dev Mode ✓")
+                                }
+                            },
+                            color = if (isDevMode) AppColors.gold else AppColors.textMuted,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
 
@@ -518,14 +512,7 @@ private fun PurchasableItemRow(
             else -> {
                 val buttonLabel = if (priceText != null) "Get ${def.displayName} - $priceText"
                                   else "Get ${def.displayName}"
-                OutlinedButton(
-                    onClick = onClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.gold),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.gold)
-                ) {
-                    Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                }
+                GoldButton(buttonLabel, onClick, Modifier.fillMaxWidth())
             }
         }
     }
@@ -664,44 +651,20 @@ private fun RemoveAdsSection(
                     priceText != null -> "Remove Ads - $priceText"
                     else -> "Remove Ads"
                 }
-                OutlinedButton(
-                    onClick = onPurchase,
-                    enabled = !isPurchasing && isBillingAvailable,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = AppColors.gold,
-                        disabledContentColor = AppColors.textMuted,
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (!isPurchasing) AppColors.gold else AppColors.surfaceVariant
-                    ),
-                ) {
-                    Text(buttonLabel, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
-
-                TextButton(onClick = onRestore, enabled = !isPurchasing) {
-                    Text(
-                        "Already purchased? Restore",
-                        color = if (!isPurchasing) AppColors.textDim else Color(0x22FFFFFF),
-                        fontSize = 11.sp
-                    )
-                }
+                GoldButton(buttonLabel, onPurchase, Modifier.fillMaxWidth(), enabled = !isPurchasing && isBillingAvailable)
             }
         }
     }
 }
 
+/** One Settings section: the app's card with the standard caps header. */
 @Composable
-private fun SettingsSectionTitle(title: String) {
-    Text(
-        text = title.uppercase(),
-        style = MaterialTheme.typography.labelLarge,
-        color = AppColors.gold,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 1.sp,
-        modifier = Modifier.padding(bottom = 12.dp)
-    )
+private fun SettingsCard(title: String, content: @Composable () -> Unit) {
+    AppCard(contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 4.dp)) {
+        CardHeader(title.uppercase())
+        Spacer(Modifier.height(14.dp))
+        content()
+    }
 }
 
 @Composable
@@ -722,20 +685,15 @@ private fun SettingsSliderRow(
                 modifier = Modifier.weight(1f))
             Text(
                 valueText,
-                color = AppColors.textAccent,
+                color = AppColors.textSecondary,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp
             )
         }
-        Slider(
+        GoldSlider(
             value = value,
             onValueChange = onValueChange,
             valueRange = range,
-            colors = SliderDefaults.colors(
-                thumbColor = AppColors.gold,
-                activeTrackColor = AppColors.mediumPurple,
-                inactiveTrackColor = AppColors.surfaceVariant
-            )
         )
     }
 }
@@ -786,15 +744,9 @@ private fun SettingsSwitchRow(
             Text("Golden screen flash on each beat", color = AppColors.textMuted, fontSize = 12.sp)
         }
         Spacer(Modifier.width(12.dp))
-        Switch(
+        AppSwitch(
             checked = checked,
-            onCheckedChange = onChecked,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = AppColors.gold,
-                checkedTrackColor = AppColors.primaryPurple,
-                uncheckedThumbColor = AppColors.controlInactive,
-                uncheckedTrackColor = AppColors.surfaceVariant
-            )
+            onCheckedChange = onChecked
         )
     }
 }
@@ -831,7 +783,7 @@ private fun NotificationsRow(state: NotificationPermissionState) {
             )
         }
         Spacer(Modifier.width(12.dp))
-        Switch(
+        AppSwitch(
             checked = state.granted,
             onCheckedChange = {
                 if (state.granted) {
@@ -843,13 +795,7 @@ private fun NotificationsRow(state: NotificationPermissionState) {
                 } else {
                     state.request()
                 }
-            },
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = AppColors.gold,
-                checkedTrackColor = AppColors.primaryPurple,
-                uncheckedThumbColor = AppColors.controlInactive,
-                uncheckedTrackColor = AppColors.surfaceVariant
-            )
+            }
         )
     }
 }

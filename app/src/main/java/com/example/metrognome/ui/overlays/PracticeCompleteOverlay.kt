@@ -38,6 +38,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.ui.components.PerformanceBonusReward
 import com.example.metrognome.ui.components.StreakIcon
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.GhostButton
+import com.example.metrognome.ui.components.PrimaryButton
+import com.example.metrognome.ui.dialogs.DialogTitle
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.PracticeResult
 import kotlinx.coroutines.launch
@@ -88,8 +92,9 @@ fun PracticeCompleteOverlay(
                     scaleY = cardScale.value
                     alpha  = ((cardScale.value - 0.15f) / 0.85f).coerceIn(0f, 1f)
                 },
-            shape          = RoundedCornerShape(24.dp),
+            shape          = AppCardDefaults.DialogShape,
             color          = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 32.dp,
         ) {
             Column(
@@ -120,12 +125,7 @@ fun PracticeCompleteOverlay(
                 ) {
                     StreakIcon(Modifier.size(20.dp))
                     Spacer(Modifier.width(7.dp))
-                    Text(
-                        text       = "Day ${result.streak} streak",
-                        color      = AppColors.gold,
-                        fontSize   = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    DialogTitle("Day ${result.streak} streak", fillWidth = false)
                 }
 
                 // Groove Check grade from mic mode, when a qualifying session ran. Shown whenever
@@ -141,24 +141,7 @@ fun PracticeCompleteOverlay(
 
                 Spacer(Modifier.height(20.dp))
 
-                Surface(
-                    onClick = onDismiss,
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color.Transparent,
-                    border = BorderStroke(1.dp, AppColors.gold),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(46.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            "Sweet!",
-                            color = AppColors.gold,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
+                PrimaryButton("Sweet!", onDismiss, Modifier.fillMaxWidth())
             }
         }
     }

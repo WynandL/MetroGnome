@@ -45,6 +45,9 @@ import com.example.metrognome.audio.selftest.ScoringPoint
 import com.example.metrognome.audio.selftest.SelfTestPhase
 import com.example.metrognome.audio.selftest.SelfTestReport
 import com.example.metrognome.audio.selftest.SelfTestThresholds
+import com.example.metrognome.ui.dialogs.DialogCloseButton
+import com.example.metrognome.debug.settings.DevButton
+import com.example.metrognome.debug.settings.DevButtonKind
 import com.example.metrognome.ui.theme.AppColors
 
 private val passColor = Color(0xFF4CAF50)
@@ -107,7 +110,7 @@ fun MicDiagnosticsOverlay(onDismiss: () -> Unit) {
                         fontFamily = FontFamily.Monospace,
                     )
                     Spacer(Modifier.weight(1f))
-                    CloseButton(onDismiss)
+                    DialogCloseButton(onClick = onDismiss)
                 }
 
                 Spacer(Modifier.height(14.dp))
@@ -375,33 +378,7 @@ private fun MonoBody(text: String) {
 
 @Composable
 private fun RunButton(label: String, onClick: () -> Unit) {
-    Surface(
-        color = AppColors.gold,
-        shape = RoundedCornerShape(8.dp),
-        modifier = Modifier.clickable(onClick = onClick),
-    ) {
-        Text(label, color = AppColors.background, fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, letterSpacing = 1.sp,
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp))
-    }
-}
-
-@Composable
-private fun CloseButton(onDismiss: () -> Unit) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(26.dp)
-            .clip(CircleShape)
-            .background(AppColors.surfaceVariant)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onDismiss,
-            ),
-    ) {
-        Text("✕", color = AppColors.textSecondary, fontSize = 12.sp)
-    }
+    DevButton(label, onClick, kind = DevButtonKind.HIGHLIGHT)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

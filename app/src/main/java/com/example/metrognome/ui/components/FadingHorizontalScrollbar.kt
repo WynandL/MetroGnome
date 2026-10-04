@@ -48,7 +48,7 @@ fun FadingHorizontalScrollbar(
      * around it. Fades with the bar. With a hint the bar is [SCROLLBAR_HINT_HEIGHT] tall, not 2.5 dp.
      */
     hint: String? = null,
-    hintBackground: Color = AppColors.surfaceDim,
+    hintBackground: Color = AppColors.card,
 ) {
     if (scrollState.maxValue <= 0) return
 

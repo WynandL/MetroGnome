@@ -46,6 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.ui.components.metro_items.MetroItemEntry
 import com.example.metrognome.ui.components.metro_items.displayText
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.PrimaryButton
+import com.example.metrognome.ui.dialogs.DialogTitle
 import com.example.metrognome.ui.theme.AppColors
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -170,8 +173,9 @@ fun UnlockCelebrationOverlay(
                     scaleY = cardScale.value
                     alpha = (cardScale.value - 0.15f) / 0.85f
                 },
-            shape = RoundedCornerShape(28.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 28.dp,
         ) {
             Column(
@@ -194,13 +198,7 @@ fun UnlockCelebrationOverlay(
 
                 Spacer(Modifier.height(20.dp))
 
-                Text(
-                    text = entry.item.displayName,
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
+                DialogTitle(entry.item.displayName)
 
                 Spacer(Modifier.height(6.dp))
 
@@ -224,20 +222,7 @@ fun UnlockCelebrationOverlay(
 
                 Spacer(Modifier.height(26.dp))
 
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
-                    shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier.fillMaxWidth(0.65f),
-                ) {
-                    Text(
-                        text = "Sweet!",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(vertical = 4.dp),
-                    )
-                }
+                PrimaryButton("Sweet!", onDismiss, Modifier.fillMaxWidth(0.65f))
             }
         }
     }

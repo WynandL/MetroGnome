@@ -20,6 +20,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -97,6 +98,8 @@ import com.example.metrognome.ui.components.PianoKeyboard
 import com.example.metrognome.ui.components.fretboardPositionFractions
 import com.example.metrognome.ui.components.pianoKeyCentreFraction
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
+import com.example.metrognome.ui.components.AppCard
+import com.example.metrognome.ui.components.AppInset
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.ChordFinderViewModel
 import com.example.metrognome.viewmodel.ChordInstrument
@@ -435,12 +438,7 @@ private fun InstrumentCard(
         label = "instrumentAccent",
     )
 
-    Surface(
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(top = 12.dp, bottom = 12.dp)) {
+    AppCard(contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -548,7 +546,6 @@ private fun InstrumentCard(
                 )
             }
         }
-    }
 }
 
 // ── Listening card ───────────────────────────────────────────────────────────────
@@ -584,12 +581,7 @@ private fun ListeningCard(
     onToggleMic: () -> Unit,
     onRequestMic: () -> Unit,
 ) {
-    Surface(
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp)) {
+    AppCard {
             // Header: label left, mode (and the heard note) right.
             PinnedSlot(lineHeight = 18.sp) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -660,7 +652,6 @@ private fun ListeningCard(
                 }
             }
         }
-    }
 }
 
 /** Mic toggle, level meter, and the ear-or-lock badge: the tuner's input line, without the note (the header carries it). */
@@ -832,9 +823,8 @@ private fun NoteChip(
     degree: String,
     onRemove: () -> Unit,
 ) {
-    Surface(
+    AppInset(
         onClick = onRemove,
-        color = AppColors.surfaceVariant,
         shape = RoundedCornerShape(10.dp),
         modifier = Modifier
             .height(NOTES_STRIP_HEIGHT)
@@ -878,12 +868,7 @@ private fun NoteChip(
 
 @Composable
 private fun ChordHero(reading: ChordReading) {
-    Surface(
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 14.dp)) {
+    AppCard(contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 14.dp)) {
             // The reading changes as a whole, so it crossfades as a whole. Every line below
             // has a pinned line count, so the card is the same height for every reading.
             Crossfade(targetState = reading, animationSpec = tween(220), label = "chordHero") { r ->
@@ -959,7 +944,6 @@ private fun ChordHero(reading: ChordReading) {
                 }
             }
         }
-    }
 }
 
 // ── Hear-it strip ────────────────────────────────────────────────────────────────
@@ -993,12 +977,7 @@ private fun HearStrip(
     onHear: () -> Unit,
     onSetPace: (ChordPlaybackPace) -> Unit,
 ) {
-    Surface(
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp)) {
+    AppCard {
             // Header: label left, the pace (or "Sounding") right, as the Listening card does.
             PinnedSlot(lineHeight = 18.sp) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -1061,7 +1040,6 @@ private fun HearStrip(
                 )
             }
         }
-    }
 }
 
 // ── Tip strip: other readings, or what to do next ────────────────────────────────
@@ -1102,11 +1080,7 @@ private fun tipFor(reading: ChordReading, engine: ChordEngine): String {
 
 @Composable
 private fun TipStrip(reading: ChordReading, engine: ChordEngine) {
-    Surface(
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    AppCard(contentPadding = PaddingValues(0.dp)) {
         Crossfade(targetState = reading, animationSpec = tween(220), label = "chordTip") { r ->
             val alternatives = (r as? ChordReading.Identified)?.alternatives.orEmpty()
             // Fixed row height with room for two lines of tip, so a longer sentence wraps

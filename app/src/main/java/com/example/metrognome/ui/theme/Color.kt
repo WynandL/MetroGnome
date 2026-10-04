@@ -97,7 +97,12 @@ object AppColors {
     val surface         = Color(0xFF1E1B3A)
     val surfaceVariant  = Color(0xFF2A2550)
     val surfaceDeep     = Color(0xFF13102A)   // deep dialog / unlock card
-    val surfaceDim      = Color(0xFF1A1838)   // game lanes, result card, mic bg
+    // One card surface for the whole app (the Rhythm page's shade, settled 2026-10-04).
+    // `surfaceDim` was a lighter violet (0xFF1A1838) that Tuner/Chords/Home cards used while
+    // Rhythm used `surfaceDeep`; it is now an alias so the two can never drift apart again.
+    // New code says `card`.
+    val card            = surfaceDeep
+    val surfaceDim      = card                // game lanes, result card, mic bg
     val surfaceActive   = Color(0xFF1A1F3A)   // mic-mode / toggle-active surface
 
     // Text
@@ -115,6 +120,13 @@ object AppColors {
     val mediumPurple    = Color(0xFF7B4DB0)
     val deepPurple      = Color(0xFF3A2560)
     val darkPurple      = Color(0xFF2A1F55)
+    // Gold as a tint on the dark card, the Rhythm page's recipe. Gold is used as a *wash and a
+    // hairline*, not as a bright fill: `goldTint` behind a selected/played element,
+    // `goldBorder` around it, `goldBorderStrong` for a tappable pill's rim.
+    val goldTint         = gold.copy(alpha = 0.10f)
+    val goldTintActive   = gold.copy(alpha = 0.16f)
+    val goldBorder       = gold.copy(alpha = 0.35f)
+    val goldBorderStrong = gold.copy(alpha = 0.55f)
     val danger          = Color(0xFFCC2233)   // play-button stop, destructive
     val warning         = Color(0xFFFFAA33)   // soft warning (duplicate name, etc.)
 
@@ -159,6 +171,10 @@ object AppColors {
     val devBlueBorder   = Color(0xFF223355)
     val devRed          = Color(0xFFFF6B6B)
     val devRedBorder    = Color(0xFF552233)
+    // Raised-key fills for DevButton (dark enough to sit on the card, tinted enough to say which kind)
+    val devBlueFill     = Color(0xFF1B3358)
+    val devRedFill      = Color(0xFF55202C)
+    val devGoldFill     = Color(0xFF55410F)
 }
 
 // ── Rhythm game colors ────────────────────────────────────────────────────────

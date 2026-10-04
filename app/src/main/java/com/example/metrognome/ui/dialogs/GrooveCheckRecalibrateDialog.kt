@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.metrognome.ui.components.GhostButton
+import com.example.metrognome.ui.components.GoldButton
 import com.example.metrognome.ui.theme.AppColors
 
 /**
@@ -33,13 +35,7 @@ fun GrooveCheckRecalibrateDialog(
     onDismiss: () -> Unit,
 ) {
     AppDialog(onDismiss = onDismiss) {
-        Text(
-            "Groove Check",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-        )
+        DialogTitle("Groove Check")
         Spacer(Modifier.height(10.dp))
         Text(
             "This phone is already set up for Groove Check. Turn it back on, or run the quick " +
@@ -51,33 +47,9 @@ fun GrooveCheckRecalibrateDialog(
         )
         Spacer(Modifier.height(22.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
-            Surface(
-                onClick = onRecalibrate,
-                shape = RoundedCornerShape(14.dp),
-                color = Color.Transparent,
-                border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text("Re-check", color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                }
-            }
+            GhostButton("Re-check", onRecalibrate, Modifier.weight(1f))
             Spacer(Modifier.width(10.dp))
-            Surface(
-                onClick = onReEnable,
-                shape = RoundedCornerShape(14.dp),
-                color = AppColors.gold.copy(alpha = 0.10f),
-                border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.75f)),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text("Re-enable", color = AppColors.gold, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                }
-            }
+            GoldButton("Re-enable", onReEnable, Modifier.weight(1f))
         }
     }
 }

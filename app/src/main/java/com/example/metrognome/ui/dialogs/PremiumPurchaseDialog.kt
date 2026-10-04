@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.ui.overlays.drawConfetti
+import com.example.metrognome.ui.components.AppCardDefaults
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.ItemPalette
 
@@ -147,9 +148,10 @@ fun PremiumPurchaseDialog(
             }
 
             Surface(
-                shape           = RoundedCornerShape(28.dp),
+                shape           = AppCardDefaults.DialogShape,
                 color           = AppColors.surfaceDeep,
-                shadowElevation = 28.dp,
+                border = AppCardDefaults.Border,
+            shadowElevation = 28.dp,
                 modifier        = Modifier
                     .padding(horizontal = 20.dp)
                     .widthIn(min = 290.dp, max = 392.dp)
@@ -189,14 +191,7 @@ fun PremiumPurchaseDialog(
                     Spacer(Modifier.height(8.dp))
 
                     // ── Title ───────────────────────────────────────────────
-                    Text(
-                        text          = title,
-                        color         = AppColors.gold,
-                        fontSize      = 25.sp,
-                        fontWeight    = FontWeight.ExtraBold,
-                        letterSpacing = (-0.5).sp,
-                        textAlign     = TextAlign.Center,
-                    )
+                    DialogTitle(title)
 
                     Spacer(Modifier.height(18.dp))
 
@@ -285,7 +280,7 @@ fun ShowcaseFrame(
             .background(
                 Brush.verticalGradient(listOf(AppColors.previewBgTop, AppColors.previewBgBottom))
             )
-            .border(1.dp, AppColors.gold.copy(alpha = 0.22f), RoundedCornerShape(18.dp))
+            .border(1.dp, AppColors.goldBorder, RoundedCornerShape(18.dp))
             .padding(horizontal = 16.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -346,7 +341,7 @@ fun AudioShowcase(title: String, caption: String) {
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .size(54.dp)
-                        .background(AppColors.gold.copy(alpha = 0.14f), CircleShape),
+                        .background(AppColors.goldTint, CircleShape),
                 ) {
                     Icon(
                         imageVector        = Icons.Filled.MusicNote,
@@ -377,7 +372,7 @@ private fun HighlightRow(text: String) {
             modifier = Modifier
                 .size(18.dp)
                 .clip(CircleShape)
-                .background(AppColors.gold.copy(alpha = 0.16f)),
+                .background(AppColors.goldTintActive),
         ) {
             Icon(
                 imageVector        = Icons.Filled.Check,

@@ -38,10 +38,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.speedtrainer.SpeedTrainerConfig
 import com.example.metrognome.ui.components.PerformanceBonusReward
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.GhostButton
+import com.example.metrognome.ui.components.PrimaryButton
+import com.example.metrognome.ui.dialogs.DialogTitle
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.TrainerSessionState
 import kotlin.math.abs
@@ -69,8 +74,9 @@ fun SpeedTrainerResultOverlay(
         contentAlignment = Alignment.Center,
     ) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 32.dp,
             modifier = Modifier
                 .padding(horizontal = 24.dp)
@@ -95,7 +101,7 @@ fun SpeedTrainerResultOverlay(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .size(52.dp)
-                            .background(AppColors.gold.copy(alpha = 0.15f), CircleShape),
+                            .background(AppColors.goldTintActive, CircleShape),
                     ) {
                         Icon(
                             Icons.Filled.Bolt,
@@ -108,13 +114,7 @@ fun SpeedTrainerResultOverlay(
                     Column {
                         OverlayEyebrow("SPEED TRAINER", color = AppColors.textMuted)
                         Spacer(Modifier.height(3.dp))
-                        Text(
-                            if (state.micUsed) "Timing result" else "Full range covered",
-                            color = Color.White,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = 26.sp,
-                        )
+                        DialogTitle(if (state.micUsed) "Timing result" else "Full range covered", textAlign = TextAlign.Start)
                     }
                 }
 
@@ -130,24 +130,7 @@ fun SpeedTrainerResultOverlay(
                 Spacer(Modifier.height(20.dp))
 
                 // ── Done ──────────────────────────────────────────────────────
-                Surface(
-                    onClick = onDismiss,
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color.Transparent,
-                    border = BorderStroke(1.dp, AppColors.gold),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(46.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            "Done",
-                            color = AppColors.gold,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
+                PrimaryButton("Done", onDismiss, Modifier.fillMaxWidth())
             }
         }
     }
@@ -315,7 +298,7 @@ private fun CompletedRampArc(
 @Composable
 private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
     Surface(
-        color = AppColors.surfaceDim,
+        color = AppColors.card,
         shape = RoundedCornerShape(10.dp),
         modifier = modifier.height(56.dp),
     ) {

@@ -112,6 +112,9 @@ import com.example.metrognome.ui.components.GnomeCanvas
 import com.example.metrognome.ui.components.PresetChipsRow
 import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.components.RaisedControl
+import com.example.metrognome.ui.components.GoldSlider
+import com.example.metrognome.ui.dialogs.DialogTitle
+import com.example.metrognome.ui.components.PrimaryButton
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import androidx.compose.ui.tooling.preview.Preview
@@ -438,26 +441,19 @@ fun MetronomeScreen(
     }
 
     tappedItem?.let { item ->
-        AlertDialog(
-            onDismissRequest = { tappedItem = null },
-            title = {
-                Text(
-                    item.displayName,
-                    color = AppColors.gold,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Text(item.earnedMessage, color = AppColors.textPrimary)
-            },
-            confirmButton = {
-                TextButton(onClick = { tappedItem = null }) {
-                    Text("Nice!", color = AppColors.gold, fontWeight = FontWeight.Bold)
-                }
-            },
-            containerColor = AppColors.surface,
-            tonalElevation = 0.dp
-        )
+        AppDialog(onDismiss = { tappedItem = null }) {
+            DialogTitle(item.displayName)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                item.earnedMessage,
+                color = AppColors.textSecondary,
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(22.dp))
+            PrimaryButton("Nice!", { tappedItem = null }, Modifier.fillMaxWidth())
+        }
     }
 
     if (showCancelTrainerDialog) {
@@ -752,19 +748,22 @@ private fun CompactIconChip(
     modifier: Modifier = Modifier,
     accentColor: Color = AppColors.gold,
 ) {
-    val shape = RoundedCornerShape(12.dp)
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .clip(shape)
-            .background(if (active) AppColors.darkPurple else AppColors.surface)
-            .border(1.dp, if (active) accentColor else Color(0x33FFFFFF), shape)
-            .clickable(onClick = onClick)
+    // The same raised key as the BPM row above it: a neutral key at rest, the purple key when
+    // on (its icon takes the accent, or white where the accent is itself purple).
+    RaisedControl(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        tint = if (active) AppColors.primaryPurple else AppColors.surfaceVariant,
+        modifier = modifier,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = if (active) accentColor else Color(0x80FFFFFF),
+            tint = when {
+                !active -> Color(0x99FFFFFF)
+                accentColor == AppColors.primaryPurple -> Color.White
+                else -> accentColor
+            },
             modifier = Modifier.size(20.dp)
         )
     }
@@ -847,7 +846,7 @@ private fun PracticeProgressRow(
         modifier = modifier
             .height(38.dp)
             .clip(shape)
-            .background(AppColors.surfaceDim)
+            .background(AppColors.card)
             .border(1.dp, animatedBorder, shape)
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -1047,16 +1046,11 @@ private fun PracticeDurationDialog(
 
                 Spacer(Modifier.height(8.dp))
 
-                Slider(
+                GoldSlider(
                     value = selected.toFloat(),
                     onValueChange = { selected = it.roundToInt() },
                     valueRange = 5f..30f,
                     steps = 24,
-                    colors = SliderDefaults.colors(
-                        thumbColor = AppColors.gold,
-                        activeTrackColor = AppColors.mediumPurple,
-                        inactiveTrackColor = AppColors.surfaceVariant,
-                    ),
                     modifier = Modifier.fillMaxWidth(),
                 )
 

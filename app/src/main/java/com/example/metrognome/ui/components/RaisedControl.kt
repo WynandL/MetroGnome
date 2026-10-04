@@ -46,6 +46,30 @@ import com.example.metrognome.ui.theme.AppColors
  * that animates between purple and red without the highlight ever drifting out of agreement
  * with it.
  */
+/**
+ * The raised-key face as a modifier, so anything shaped like a key (chips, the primary action
+ * button, a switch track) gets the identical lift/sink gradient and bevel rim from one place.
+ */
+fun Modifier.raisedFace(shape: Shape, tint: Color): Modifier = this
+    .background(
+        brush = Brush.verticalGradient(
+            0.00f to lerp(tint, Color.White, FACE_TOP_LIFT),
+            0.52f to tint,
+            1.00f to lerp(tint, Color.Black, FACE_BOTTOM_SINK),
+        ),
+        shape = shape,
+    )
+    .border(
+        width = 1.dp,
+        brush = Brush.verticalGradient(
+            0.00f to Color.White.copy(alpha = RIM_TOP_ALPHA),
+            0.45f to Color.Transparent,
+            0.80f to Color.Transparent,
+            1.00f to Color.Black.copy(alpha = RIM_BOTTOM_ALPHA),
+        ),
+        shape = shape,
+    )
+
 @Composable
 fun RaisedControl(
     onClick: () -> Unit,
@@ -58,25 +82,7 @@ fun RaisedControl(
         onClick = onClick,
         shape = shape,
         color = Color.Transparent,
-        modifier = modifier
-            .background(
-                brush = Brush.verticalGradient(
-                    0.00f to lerp(tint, Color.White, FACE_TOP_LIFT),
-                    0.52f to tint,
-                    1.00f to lerp(tint, Color.Black, FACE_BOTTOM_SINK),
-                ),
-                shape = shape,
-            )
-            .border(
-                width = 1.dp,
-                brush = Brush.verticalGradient(
-                    0.00f to Color.White.copy(alpha = RIM_TOP_ALPHA),
-                    0.45f to Color.Transparent,
-                    0.80f to Color.Transparent,
-                    1.00f to Color.Black.copy(alpha = RIM_BOTTOM_ALPHA),
-                ),
-                shape = shape,
-            ),
+        modifier = modifier.raisedFace(shape, tint),
     ) {
         Box(contentAlignment = Alignment.Center, content = content)
     }

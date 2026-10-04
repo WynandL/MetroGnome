@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -93,17 +91,11 @@ fun MicOptIn(
                 )
             }
             Spacer(Modifier.width(12.dp))
-            Switch(
+            AppSwitch(
                 checked = enabled,
                 onCheckedChange = {
                     if (!hasMicPermission && !enabled) onRequestPermission() else onToggle()
                 },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = AppColors.gold,
-                    checkedTrackColor = AppColors.primaryPurple,
-                    uncheckedThumbColor = AppColors.controlInactive,
-                    uncheckedTrackColor = AppColors.surfaceVariant,
-                ),
             )
         }
 

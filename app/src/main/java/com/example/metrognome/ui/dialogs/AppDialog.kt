@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.metrognome.ui.components.AppCardDefaults
 import com.example.metrognome.ui.theme.AppColors
 
 /**
@@ -63,8 +64,9 @@ fun AppDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 24.dp,
             modifier = Modifier
                 .padding(horizontal = 24.dp)

@@ -59,9 +59,9 @@ fun PresetChipsRow(
             presets.forEachIndexed { index, preset ->
                 val isActive = preset.bpm == currentBpm
                 Surface(
-                    color = AppColors.surfaceActive,
+                    color = if (isActive) AppColors.goldTint else AppColors.surface,
                     shape = shape,
-                    border = if (isActive) BorderStroke(1.5.dp, AppColors.gold) else null,
+                    border = BorderStroke(1.dp, if (isActive) AppColors.goldBorder else AppColors.surfaceVariant),
                     modifier = Modifier.height(30.dp),
                 ) {
                     Box(

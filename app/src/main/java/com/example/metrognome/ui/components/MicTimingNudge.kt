@@ -105,7 +105,7 @@ private fun ActiveReminder(modifier: Modifier) {
             .fillMaxWidth()
             .padding(top = 12.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(AppColors.gold.copy(alpha = 0.10f))
+            .background(AppColors.goldTint)
             .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
@@ -138,7 +138,7 @@ private fun PermissionNeededReminder(modifier: Modifier, onFix: (() -> Unit)?) {
             .fillMaxWidth()
             .padding(top = 12.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(AppColors.gold.copy(alpha = 0.12f))
+            .background(AppColors.goldTint)
             .let { if (onFix != null) it.clickable(onClick = onFix) else it }
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -192,7 +192,7 @@ private fun StartCheckCta(modifier: Modifier, onStartCheck: () -> Unit) {
             .fillMaxWidth()
             .padding(top = 12.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(AppColors.gold.copy(alpha = 0.12f))
+            .background(AppColors.goldTint)
             .clickable(onClick = onStartCheck)
             .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,

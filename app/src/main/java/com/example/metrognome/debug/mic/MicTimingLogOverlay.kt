@@ -51,6 +51,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.groove.GrooveScorer
 import com.example.metrognome.groove.SessionAnalyzer
+import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.theme.AppColors
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
@@ -109,18 +110,7 @@ fun MicTimingLogOverlay(onDismiss: () -> Unit) {
                         fontFamily = FontFamily.Monospace,
                     )
                     Spacer(Modifier.weight(1f))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = onDismiss,
-                            )
-                            .padding(6.dp),
-                    ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = AppColors.textMuted)
-                    }
+                    DialogCloseButton(onClick = onDismiss)
                 }
 
                 Spacer(Modifier.height(12.dp))

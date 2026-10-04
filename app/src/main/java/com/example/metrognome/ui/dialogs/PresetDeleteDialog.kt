@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.presets.BpmPreset
+import com.example.metrognome.ui.components.GhostButton
+import com.example.metrognome.ui.components.DangerButton
 import com.example.metrognome.ui.theme.AppColors
 
 /**
@@ -57,13 +59,7 @@ fun PresetDeleteDialog(
 
                 Spacer(Modifier.height(14.dp))
 
-                Text(
-                    text = "Delete preset?",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
+                DialogTitle("Delete preset?")
 
                 Spacer(Modifier.height(8.dp))
 
@@ -77,45 +73,11 @@ fun PresetDeleteDialog(
                 Spacer(Modifier.height(22.dp))
 
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    Surface(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(14.dp),
-                        color = Color.Transparent,
-                        border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "Cancel",
-                                color = AppColors.textSecondary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                    }
+                    GhostButton("Cancel", onDismiss, Modifier.weight(1f))
 
                     Spacer(Modifier.width(10.dp))
 
-                    Surface(
-                        onClick = onConfirmDelete,
-                        shape = RoundedCornerShape(14.dp),
-                        color = AppColors.danger.copy(alpha = 0.18f),
-                        border = BorderStroke(1.dp, AppColors.danger.copy(alpha = 0.7f)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "Delete",
-                                color = AppColors.danger,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
+                    DangerButton("Delete", onConfirmDelete, Modifier.weight(1f))
                 }
     }
 }

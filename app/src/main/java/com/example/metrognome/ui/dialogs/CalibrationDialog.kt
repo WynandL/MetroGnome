@@ -48,6 +48,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.ui.components.VolumeNudge
 import com.example.metrognome.ui.components.rememberMediaVolumeOk
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.GhostButton
+import com.example.metrognome.ui.components.GoldButton
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.CalibrationMode
 import com.example.metrognome.viewmodel.CalibrationState
@@ -84,8 +87,9 @@ fun CalibrationDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 24.dp,
             modifier = Modifier
                 .padding(horizontal = 24.dp)
@@ -148,13 +152,7 @@ private fun RunningContent(state: CalibrationState.Running) {
         CalibrationMode.INSTRUMENT -> "Applying…"
     }
 
-    Text(
-        text = title,
-        color = Color.White,
-        fontSize = 18.sp,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
-    )
+    DialogTitle(title)
 
     Spacer(Modifier.height(16.dp))
 
@@ -206,7 +204,7 @@ private fun DoneLoopbackContent(
         val acc = if (result.accuracyCents.isNaN()) "<1" else "%.1f".format(result.accuracyCents)
         Quad(
             AppColors.gold,
-            AppColors.gold.copy(alpha = 0.12f),
+            AppColors.goldTint,
             "Verified",
             "Accuracy ±${acc}¢",
         )
@@ -221,8 +219,7 @@ private fun DoneLoopbackContent(
 
     ResultIcon(iconColor, bgColor, confirmed = result.confident)
     Spacer(Modifier.height(12.dp))
-    Text(headline, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center)
+    DialogTitle(headline)
     Spacer(Modifier.height(6.dp))
     Text(detail, color = AppColors.textSecondary, fontSize = 13.sp, textAlign = TextAlign.Center)
     Spacer(Modifier.height(22.dp))
@@ -242,7 +239,7 @@ private fun DoneReferenceContent(
         val spread = if (result.spreadCents.isNaN()) "<1" else "%.1f".format(result.spreadCents)
         Quad(
             AppColors.gold,
-            AppColors.gold.copy(alpha = 0.12f),
+            AppColors.goldTint,
             "Calibration set",
             "Spread ±${spread}¢  ·  ${fmtHz(result.measuredHz.toDouble())} detected",
         )
@@ -257,8 +254,7 @@ private fun DoneReferenceContent(
 
     ResultIcon(iconColor, bgColor, confirmed = result.confident)
     Spacer(Modifier.height(12.dp))
-    Text(headline, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center)
+    DialogTitle(headline)
     Spacer(Modifier.height(6.dp))
     Text(detail, color = AppColors.textSecondary, fontSize = 13.sp, textAlign = TextAlign.Center)
     Spacer(Modifier.height(22.dp))
@@ -275,8 +271,7 @@ private fun FailedContent(
 ) {
     ResultIcon(AppColors.danger, AppColors.danger.copy(alpha = 0.12f), confirmed = false)
     Spacer(Modifier.height(12.dp))
-    Text("Calibration failed", color = Color.White, fontSize = 18.sp,
-        fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    DialogTitle("Calibration failed")
     Spacer(Modifier.height(6.dp))
     Text(state.message, color = AppColors.textSecondary, fontSize = 13.sp,
         textAlign = TextAlign.Center)
@@ -306,37 +301,11 @@ private fun ResultIcon(tint: Color, bg: Color, confirmed: Boolean) {
 @Composable
 private fun ActionRow(onDismiss: () -> Unit, onRetry: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth()) {
-        Surface(
-            onClick = onRetry,
-            shape = RoundedCornerShape(14.dp),
-            color = Color.Transparent,
-            border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
-            modifier = Modifier
-                .weight(1f)
-                .height(44.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text("Retry", color = AppColors.textSecondary, fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium)
-            }
-        }
+        GhostButton("Retry", onRetry, Modifier.weight(1f))
 
         Spacer(Modifier.width(10.dp))
 
-        Surface(
-            onClick = onDismiss,
-            shape = RoundedCornerShape(14.dp),
-            color = AppColors.gold.copy(alpha = 0.10f),
-            border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.75f)),
-            modifier = Modifier
-                .weight(1f)
-                .height(44.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text("Done", color = AppColors.gold, fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold)
-            }
-        }
+        GoldButton("Done", onDismiss, Modifier.weight(1f))
     }
 }
 
@@ -393,8 +362,9 @@ fun CalibrationConfirmDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 24.dp,
             modifier = Modifier
                 .padding(horizontal = 24.dp)
@@ -413,7 +383,7 @@ fun CalibrationConfirmDialog(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .size(52.dp)
-                        .background(AppColors.gold.copy(alpha = 0.12f), CircleShape),
+                        .background(AppColors.goldTint, CircleShape),
                 ) {
                     Icon(
                         imageVector = iconVector,
@@ -423,13 +393,7 @@ fun CalibrationConfirmDialog(
                     )
                 }
                 Spacer(Modifier.height(12.dp))
-                Text(
-                    title,
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
+                DialogTitle(title)
                 Spacer(Modifier.height(10.dp))
                 Text(
                     body,
@@ -444,45 +408,9 @@ fun CalibrationConfirmDialog(
                     Spacer(Modifier.height(12.dp))
                 }
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    Surface(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(14.dp),
-                        color = Color.Transparent,
-                        border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                "Cancel",
-                                color = AppColors.textSecondary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                    }
+                    GhostButton("Cancel", onDismiss, Modifier.weight(1f))
                     Spacer(Modifier.width(10.dp))
-                    Surface(
-                        onClick = onConfirm,
-                        enabled = startEnabled,
-                        shape = RoundedCornerShape(14.dp),
-                        color = AppColors.gold.copy(alpha = 0.10f),
-                        border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.75f)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp)
-                            .alpha(if (startEnabled) 1f else 0.4f),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                "Start",
-                                color = AppColors.gold,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
+                    GoldButton("Start", onConfirm, Modifier.weight(1f), enabled = startEnabled)
                 }
             }
         }

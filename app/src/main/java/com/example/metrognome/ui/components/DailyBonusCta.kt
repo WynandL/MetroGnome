@@ -23,7 +23,10 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -35,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.points.PointsConfig
+import com.example.metrognome.ui.dialogs.AppDialog
+import com.example.metrognome.ui.dialogs.DialogTitle
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.ItemPalette
 
@@ -204,29 +209,22 @@ fun DailyBonusConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest  = onDismiss,
-        containerColor    = AppColors.surfaceDeep,
-        titleContentColor = AppColors.gold,
-        textContentColor  = AppColors.textSecondary,
-        title = { Text("Metro's Daily Bonus", fontWeight = FontWeight.Bold) },
-        text  = {
-            Text(
-                text = "Watch a short clip and Metro rewards you with $earn ${PointsConfig.CURRENCY_NAME} " +
-                       "right away. You can do this up to 3 times a day, resetting again tomorrow.",
-                fontSize   = 13.sp,
-                lineHeight = 19.sp,
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("Claim Reward", color = AppColors.primaryPurple, fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Not now", color = AppColors.textMuted)
-            }
-        },
-    )
+    AppDialog(onDismiss = onDismiss) {
+        DialogTitle("Metro's Daily Bonus")
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Watch a short clip and Metro rewards you with $earn ${PointsConfig.CURRENCY_NAME} " +
+                   "right away. You can do this up to 3 times a day, resetting again tomorrow.",
+            color = AppColors.textSecondary,
+            fontSize = 13.sp,
+            lineHeight = 19.sp,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(22.dp))
+        Row(modifier = Modifier.fillMaxWidth()) {
+            GhostButton("Not now", onDismiss, Modifier.weight(1f))
+            Spacer(Modifier.width(10.dp))
+            GoldButton("Claim Reward", onConfirm, Modifier.weight(1f))
+        }
+    }
 }

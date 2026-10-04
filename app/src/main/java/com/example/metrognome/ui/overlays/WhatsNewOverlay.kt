@@ -51,6 +51,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.ui.components.GuitarFretboard
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.PrimaryButton
+import com.example.metrognome.ui.dialogs.DialogTitle
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.whatsnew.AppWhatsNew
 import kotlinx.coroutines.launch
@@ -173,8 +176,9 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
                     scaleY = cardScale.value
                     alpha = (cardScale.value - 0.15f) / 0.85f
                 },
-            shape = RoundedCornerShape(28.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 28.dp,
         ) {
             Column(
@@ -284,13 +288,7 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
 
                 Spacer(Modifier.height(20.dp))
 
-                Text(
-                    text = "Train Faster. Play Better.",
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
+                DialogTitle("Train Faster. Play Better.")
 
                 Spacer(Modifier.height(6.dp))
 
@@ -314,20 +312,7 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
 
                 Spacer(Modifier.height(26.dp))
 
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
-                    shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier.fillMaxWidth(0.65f),
-                ) {
-                    Text(
-                        text = "Let's train!",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(vertical = 4.dp),
-                    )
-                }
+                PrimaryButton("Let's train!", onDismiss, Modifier.fillMaxWidth(0.65f))
             }
         }
     }
@@ -378,8 +363,9 @@ private fun V6FeatureIntroOverlay(onDismiss: () -> Unit) {
                     scaleY = cardScale.value
                     alpha = (cardScale.value - 0.15f) / 0.85f
                 },
-            shape = RoundedCornerShape(28.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 28.dp,
         ) {
             Column(
@@ -434,13 +420,7 @@ private fun V6FeatureIntroOverlay(onDismiss: () -> Unit) {
 
                 Spacer(Modifier.height(20.dp))
 
-                Text(
-                    text = "Meet the Chord Finder",
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
+                DialogTitle("Meet the Chord Finder")
 
                 Spacer(Modifier.height(6.dp))
 
@@ -467,20 +447,7 @@ private fun V6FeatureIntroOverlay(onDismiss: () -> Unit) {
                 // An acknowledgement, not a call to action: the button only dismisses, like
                 // every earlier version's, and "Name a chord!" read as a promise to open the
                 // tab. The body copy already says where to find it.
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
-                    shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier.fillMaxWidth(0.65f),
-                ) {
-                    Text(
-                        text = "Sounds good!",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(vertical = 4.dp),
-                    )
-                }
+                PrimaryButton("Sounds good!", onDismiss, Modifier.fillMaxWidth(0.65f))
             }
         }
     }
@@ -537,8 +504,9 @@ private fun V3FeatureIntroOverlay(onDismiss: () -> Unit) {
                     scaleY = cardScale.value
                     alpha = (cardScale.value - 0.15f) / 0.85f
                 },
-            shape = RoundedCornerShape(28.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 28.dp,
         ) {
             Column(
@@ -583,13 +551,7 @@ private fun V3FeatureIntroOverlay(onDismiss: () -> Unit) {
 
                 Spacer(Modifier.height(20.dp))
 
-                Text(
-                    text = "Metro Got a Glow-Up!",
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
+                DialogTitle("Metro Got a Glow-Up!")
 
                 Spacer(Modifier.height(6.dp))
 
@@ -613,20 +575,7 @@ private fun V3FeatureIntroOverlay(onDismiss: () -> Unit) {
 
                 Spacer(Modifier.height(26.dp))
 
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
-                    shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier.fillMaxWidth(0.65f),
-                ) {
-                    Text(
-                        text = "Let's Explore!",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(vertical = 4.dp),
-                    )
-                }
+                PrimaryButton("Let's Explore!", onDismiss, Modifier.fillMaxWidth(0.65f))
             }
         }
     }
@@ -676,8 +625,9 @@ private fun V4FeatureIntroOverlay(onDismiss: () -> Unit) {
                     scaleY = cardScale.value
                     alpha = (cardScale.value - 0.15f) / 0.85f
                 },
-            shape = RoundedCornerShape(28.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 28.dp,
         ) {
             Column(
@@ -729,13 +679,7 @@ private fun V4FeatureIntroOverlay(onDismiss: () -> Unit) {
 
                 Spacer(Modifier.height(20.dp))
 
-                Text(
-                    text = "Meet Your Built-In Tuner",
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
+                DialogTitle("Meet Your Built-In Tuner")
 
                 Spacer(Modifier.height(6.dp))
 
@@ -759,20 +703,7 @@ private fun V4FeatureIntroOverlay(onDismiss: () -> Unit) {
 
                 Spacer(Modifier.height(26.dp))
 
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.primaryPurple),
-                    shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier.fillMaxWidth(0.65f),
-                ) {
-                    Text(
-                        text = "Nice, let's go!",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(vertical = 4.dp),
-                    )
-                }
+                PrimaryButton("Nice, let's go!", onDismiss, Modifier.fillMaxWidth(0.65f))
             }
         }
     }

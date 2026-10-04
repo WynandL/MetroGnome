@@ -48,6 +48,10 @@ import com.example.metrognome.dev.DevEasterEgg
 import com.example.metrognome.points.EarnRule
 import com.example.metrognome.points.EARN_RULES
 import com.example.metrognome.points.PointsConfig
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.PrimaryButton
+import com.example.metrognome.ui.components.AppInset
+import com.example.metrognome.ui.components.AppDivider
 import com.example.metrognome.ui.theme.AppColors
 
 @Composable
@@ -63,9 +67,9 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth(0.93f)
                 .fillMaxHeight(0.88f),
-            shape = RoundedCornerShape(20.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
-            border = BorderStroke(1.dp, AppColors.surfaceVariant),
+            border = AppCardDefaults.Border,
         ) {
             Column {
 
@@ -75,26 +79,14 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .background(AppColors.gold.copy(alpha = 0.14f), CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
+                    Icon(
                             imageVector        = Icons.Filled.Bolt,
                             contentDescription = null,
                             tint               = AppColors.gold,
-                            modifier           = Modifier.size(20.dp),
+                            modifier           = Modifier.size(24.dp),
                         )
-                    }
                     Column {
-                        Text(
-                            text       = "How to Earn ${PointsConfig.CURRENCY_NAME}",
-                            color      = AppColors.textPrimary,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize   = 16.sp,
-                        )
+                        DialogTitle("How to Earn ${PointsConfig.CURRENCY_NAME}", textAlign = TextAlign.Start)
                         Text(
                             text       = "Earn ${PointsConfig.CURRENCY_NAME} by using the app. Daily limits reward consistent practice.",
                             color      = AppColors.textMuted,
@@ -105,7 +97,7 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
                     }
                 }
 
-                HorizontalDivider(color = AppColors.surfaceVariant)
+                AppDivider()
 
                 // ── Activity list ─────────────────────────────────────────────
                 Column(
@@ -118,7 +110,7 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
                     EARN_RULES.filter { !it.hidden }.forEach { rule -> EarnRuleCard(rule) }
 
                     // ── Footer ───────────────────────────────────────────────
-                    HorizontalDivider(color = AppColors.surfaceVariant, modifier = Modifier.padding(top = 4.dp))
+                    AppDivider(modifier = Modifier.padding(top = 4.dp))
 
                     if (isDevMode) {
                         Row(
@@ -150,19 +142,12 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
                 }
 
                 // ── Close ─────────────────────────────────────────────────────
-                HorizontalDivider(color = AppColors.surfaceVariant)
+                AppDivider()
                 Box(
                     modifier           = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
                     contentAlignment   = Alignment.CenterEnd,
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(
-                            text       = "Got it",
-                            color      = AppColors.gold,
-                            fontWeight = FontWeight.Bold,
-                            fontSize   = 14.sp,
-                        )
-                    }
+                    PrimaryButton("Got it", onDismiss, Modifier.fillMaxWidth())
                 }
             }
         }
@@ -171,29 +156,17 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
 
 @Composable
 private fun EarnRuleCard(rule: EarnRule) {
-    Surface(
-        color    = AppColors.surface,
-        shape    = RoundedCornerShape(12.dp),
-        border   = BorderStroke(1.dp, AppColors.surfaceVariant),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    AppInset(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(13.dp)) {
 
             // Icon + label + description
             Row(verticalAlignment = Alignment.Top) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .background(AppColors.gold.copy(alpha = 0.12f), CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
+                Icon(
                         imageVector        = iconFor(rule.iconKey),
                         contentDescription = null,
                         tint               = AppColors.gold,
-                        modifier           = Modifier.size(19.dp),
+                        modifier           = Modifier.size(24.dp),
                     )
-                }
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.padding(top = 1.dp)) {
                     Text(
@@ -251,7 +224,7 @@ private fun StatChip(
     Column(
         modifier = modifier
             .background(
-                color = if (highlighted) AppColors.gold.copy(alpha = 0.10f)
+                color = if (highlighted) AppColors.goldTint
                         else AppColors.surfaceDeep,
                 shape = RoundedCornerShape(8.dp),
             )

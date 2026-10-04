@@ -81,8 +81,8 @@ fun CollapsibleStreakCard(
     Column(
         modifier = modifier
             .clip(shape)
-            .background(AppColors.surfaceDim)
-            .border(1.dp, AppColors.primaryPurple.copy(alpha = 0.25f), shape)
+            .background(AppColors.card)
+            .border(1.dp, AppColors.goldBorder, shape)
             .clickable(onClick = onToggle),
     ) {
         // ── Collapsed header (always visible) ───────────────────────────────

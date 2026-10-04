@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.audio.tuner.TunerSessionSnapshot
+import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.theme.AppColors
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -148,9 +149,7 @@ private fun ReasonStep(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f).padding(top = 8.dp),
             )
-            IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Filled.Close, contentDescription = "Dismiss", tint = AppColors.textDim, modifier = Modifier.size(16.dp))
-            }
+            DialogCloseButton(onClick = onDismiss)
         }
         Spacer(Modifier.height(10.dp))
         // Chips wrap to a second line on narrow screens

@@ -59,7 +59,7 @@ fun GoldPill(
         Surface(
             onClick = onClick,
             shape = RoundedCornerShape(50.dp),
-            color = AppColors.gold.copy(alpha = 0.10f),
+            color = AppColors.goldTint,
             border = BorderStroke(1.dp, AppColors.gold.copy(alpha = borderAlpha)),
             modifier = modifier,
             content = rowContent,
@@ -67,7 +67,7 @@ fun GoldPill(
     } else {
         Surface(
             shape = RoundedCornerShape(50.dp),
-            color = AppColors.gold.copy(alpha = 0.10f),
+            color = AppColors.goldTint,
             border = BorderStroke(1.dp, AppColors.gold.copy(alpha = borderAlpha)),
             modifier = modifier,
             content = rowContent,

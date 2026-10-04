@@ -25,6 +25,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -97,6 +98,14 @@ import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.ui.dialogs.EarnRulesDialog
 import com.example.metrognome.ui.dialogs.ItemCatalogDialog
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
+import com.example.metrognome.ui.components.AppCard
+import com.example.metrognome.ui.components.MetroCollectionIcon
+import com.example.metrognome.ui.components.GhostButton
+import com.example.metrognome.ui.components.GoldButton
+import com.example.metrognome.ui.dialogs.AppDialog
+import com.example.metrognome.ui.dialogs.DialogTitle
+import com.example.metrognome.ui.components.AppDivider
+import com.example.metrognome.ui.components.AppCardDefaults
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.GameColors
 import com.example.metrognome.viewmodel.GamePhase
@@ -357,91 +366,26 @@ private fun GameCard(
     val pendingStart = remember { mutableStateOf<(() -> Unit)?>(null) }
 
     if (pendingStart.value != null) {
-        val cardScale = remember { Animatable(0.2f) }
-        LaunchedEffect(Unit) {
-            cardScale.animateTo(
-                targetValue = 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMediumLow,
-                ),
+        AppDialog(onDismiss = { pendingStart.value = null }) {
+            DialogTitle("Metronome is running")
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Stop it before starting the game, or let it keep playing in the background?",
+                color = AppColors.textSecondary,
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
+                textAlign = TextAlign.Center,
             )
-        }
-        Dialog(
-            onDismissRequest = { pendingStart.value = null },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-        ) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = AppColors.surfaceDeep,
-                shadowElevation = 24.dp,
-                modifier = Modifier
-                    .padding(horizontal = 24.dp)
-                    .widthIn(min = 280.dp, max = 360.dp)
-                    .graphicsLayer {
-                        scaleX = cardScale.value
-                        scaleY = cardScale.value
-                        alpha = ((cardScale.value - 0.2f) / 0.8f).coerceIn(0f, 1f)
-                    },
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = "Metronome is running",
-                        color = AppColors.gold,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (-0.3).sp,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = "Stop it before starting the game, or let it keep playing in the background?",
-                        color = AppColors.textSecondary,
-                        fontSize = 13.sp,
-                        lineHeight = 19.sp,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(22.dp))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Surface(
-                            onClick = { pendingStart.value?.invoke(); pendingStart.value = null },
-                            shape = RoundedCornerShape(14.dp),
-                            color = Color.Transparent,
-                            border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
-                            modifier = Modifier.weight(1f).height(46.dp),
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("Keep Playing", color = AppColors.textSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                            }
-                        }
-                        Spacer(Modifier.width(10.dp))
-                        Surface(
-                            onClick = { onStopMetronome(); pendingStart.value?.invoke(); pendingStart.value = null },
-                            shape = RoundedCornerShape(14.dp),
-                            color = AppColors.gold.copy(alpha = 0.16f),
-                            border = BorderStroke(1.dp, AppColors.gold),
-                            modifier = Modifier.weight(1f).height(46.dp),
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("Stop & Play", color = AppColors.gold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
+            Spacer(Modifier.height(22.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                GhostButton("Keep Playing", { pendingStart.value?.invoke(); pendingStart.value = null }, Modifier.weight(1f))
+                Spacer(Modifier.width(10.dp))
+                GoldButton("Stop & Play", { onStopMetronome(); pendingStart.value?.invoke(); pendingStart.value = null }, Modifier.weight(1f))
             }
         }
     }
 
-    Surface(
-        color = AppColors.surfaceDeep,
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.35f)),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+    AppCard {
             // ── Header ────────────────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -483,8 +427,8 @@ private fun GameCard(
                             if (isMetronomePlaying) pendingStart.value = start else start()
                         },
                         shape = RoundedCornerShape(10.dp),
-                        color = if (played) AppColors.gold.copy(alpha = 0.10f) else AppColors.surface,
-                        border = BorderStroke(1.dp, if (played) AppColors.gold.copy(alpha = 0.35f) else AppColors.surfaceVariant),
+                        color = if (played) AppColors.goldTint else AppColors.surface,
+                        border = BorderStroke(1.dp, if (played) AppColors.goldBorder else AppColors.surfaceVariant),
                         modifier = Modifier.weight(1f),
                     ) {
                         Column(
@@ -531,7 +475,6 @@ private fun GameCard(
             )
 
         }
-    }
 }
 
 // ── Daily target meter ────────────────────────────────────────────────────────
@@ -550,7 +493,7 @@ private fun DailyTargetMeter(earned: Int, cap: Int) {
         color    = AppColors.surface,
         border   = BorderStroke(
             1.dp,
-            if (reached) AppColors.gold.copy(alpha = 0.40f) else AppColors.surfaceVariant,
+            if (reached) AppColors.goldBorder else AppColors.surfaceVariant,
         ),
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -977,8 +920,8 @@ private fun NoteHighway(
             val railX2 = cx + noteR * 1.6f
 
             // Lane guidelines
-            drawLine(AppColors.surfaceDim, Offset(railX1, 0f), Offset(railX1, laneH), lineW * 0.5f)
-            drawLine(AppColors.surfaceDim, Offset(railX2, 0f), Offset(railX2, laneH), lineW * 0.5f)
+            drawLine(AppColors.card, Offset(railX1, 0f), Offset(railX1, laneH), lineW * 0.5f)
+            drawLine(AppColors.card, Offset(railX2, 0f), Offset(railX2, laneH), lineW * 0.5f)
 
             // Hit zone glow
             drawRect(
@@ -1165,24 +1108,17 @@ private fun ResultPanel(
         )
         Text("points", color = AppColors.textMuted, fontSize = 14.sp)
         Spacer(Modifier.height(18.dp))
-        Surface(
-            color = AppColors.surfaceDim,
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, AppColors.surfaceVariant),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+        AppCard(contentPadding = PaddingValues(20.dp)) {
                 ResultRow("Perfect", "${result.perfects}", AppColors.gold)
                 ResultRow("Good", "${result.goods}", GameColors.good)
                 ResultRow("Almost", "${result.almosts}", GameColors.almost)
                 ResultRow("Miss", "${result.misses}", GameColors.miss)
                 ResultRow("Max Combo", "×${result.maxCombo}", AppColors.textAccent)
             }
-        }
         Spacer(Modifier.height(22.dp))
         Surface(
             onClick = onPlayAgain,
-            shape = RoundedCornerShape(16.dp),
+            shape = AppCardDefaults.Shape,
             color = AppColors.primaryPurple,
             border = BorderStroke(1.dp, AppColors.mediumPurple),
             modifier = Modifier
@@ -1196,7 +1132,7 @@ private fun ResultPanel(
         Spacer(Modifier.height(10.dp))
         Surface(
             onClick = onDismiss,
-            shape = RoundedCornerShape(16.dp),
+            shape = AppCardDefaults.Shape,
             color = Color.Transparent,
             border = BorderStroke(1.dp, AppColors.surfaceVariant),
             modifier = Modifier
@@ -1270,11 +1206,11 @@ private fun PointsCard(
         }
     }
 
-    val shape = RoundedCornerShape(16.dp)
+    val shape = AppCardDefaults.Shape
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, AppColors.gold.copy(alpha = 0.25f), shape)
+            .border(1.dp, AppColors.goldBorder, shape)
             .clip(shape)
             .background(AppColors.surfaceDeep)
             .padding(horizontal = 20.dp, vertical = 18.dp),
@@ -1334,7 +1270,7 @@ private fun PointsCard(
         // padding = 22dp of trailing whitespace) - the gap above needs to match that, not
         // the smaller 4dp used when expanded (where contributions follow below instead).
         Spacer(Modifier.height(6.dp))
-        HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.5f))
+        AppDivider()
         Spacer(Modifier.height(if (expanded) 4.dp else 18.dp))
         com.example.metrognome.ui.components.DailyBonusCta(
             canWatchToday  = canWatchToday,
@@ -1360,7 +1296,7 @@ private fun PointsCard(
                     )
                 } else {
                     Spacer(Modifier.height(8.dp))
-                    HorizontalDivider(color = AppColors.surfaceVariant)
+                    AppDivider()
                     Spacer(Modifier.height(10.dp))
                     snapshot.contributions.forEach { c ->
                         Row(
@@ -1385,10 +1321,10 @@ private fun PointsCard(
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.6f))
+                AppDivider()
                 Text(
                     text       = "How to earn  →",
-                    color      = AppColors.gold.copy(alpha = 0.55f),
+                    color      = AppColors.goldBorderStrong,
                     fontSize   = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier   = Modifier
@@ -1405,12 +1341,12 @@ private fun LoyaltyCard(
     currentDays: Int,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = AppCardDefaults.Shape
     val nextMilestone = LOYALTY_MILESTONES.firstOrNull { currentDays < it.days }
 
     Column(
         modifier = modifier
-            .border(1.dp, AppColors.gold.copy(alpha = 0.20f), shape)
+            .border(1.dp, AppColors.goldBorder, shape)
             .clip(shape)
             .background(AppColors.surfaceDeep)
             .padding(horizontal = 20.dp, vertical = 16.dp),
@@ -1461,11 +1397,11 @@ private fun PracticeStreakCard(
     modifier: Modifier = Modifier,
 ) {
     var showInfo by remember { mutableStateOf(false) }
-    val shape = RoundedCornerShape(16.dp)
+    val shape = AppCardDefaults.Shape
 
     Column(
         modifier = modifier
-            .border(1.dp, AppColors.gold.copy(alpha = 0.20f), shape)
+            .border(1.dp, AppColors.goldBorder, shape)
             .clip(shape)
             .background(AppColors.surfaceDeep)
             .padding(horizontal = 20.dp, vertical = 16.dp),
@@ -1478,7 +1414,7 @@ private fun PracticeStreakCard(
         )
 
         Spacer(Modifier.height(12.dp))
-        HorizontalDivider(color = AppColors.surfaceVariant.copy(alpha = 0.5f))
+        AppDivider()
         Spacer(Modifier.height(8.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1535,11 +1471,11 @@ private fun PracticeStreakCard(
 private fun CollectionCard(activeItemIds: Set<String>, onClick: () -> Unit) {
     val total    = METRO_ITEM_REGISTRY.size
     val unlocked = METRO_ITEM_REGISTRY.count { it.item.id in activeItemIds }
-    val shape    = RoundedCornerShape(16.dp)
+    val shape    = AppCardDefaults.Shape
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, AppColors.gold.copy(alpha = 0.25f), shape)
+            .border(1.dp, AppColors.goldBorder, shape)
             .clip(shape)
             .clickable(onClick = onClick)
             .background(AppColors.surfaceDeep)
@@ -1551,19 +1487,7 @@ private fun CollectionCard(activeItemIds: Set<String>, onClick: () -> Unit) {
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(
-                modifier         = Modifier
-                    .size(36.dp)
-                    .background(AppColors.gold.copy(alpha = 0.14f), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector        = Icons.Filled.MusicNote,
-                    contentDescription = null,
-                    tint               = AppColors.gold,
-                    modifier           = Modifier.size(18.dp),
-                )
-            }
+            MetroCollectionIcon(size = 28.dp)
             Column {
                 Text(
                     text       = "Metro's Collection",
@@ -1581,7 +1505,7 @@ private fun CollectionCard(activeItemIds: Set<String>, onClick: () -> Unit) {
         }
         Text(
             text       = "See all  →",
-            color      = AppColors.gold.copy(alpha = 0.55f),
+            color      = AppColors.goldBorderStrong,
             fontSize   = 11.sp,
             fontWeight = FontWeight.SemiBold,
         )

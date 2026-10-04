@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.metrognome.ui.components.GhostButton
+import com.example.metrognome.ui.components.GoldButton
 import com.example.metrognome.ui.theme.AppColors
 
 /**
@@ -46,7 +48,7 @@ fun NotificationOptInDialog(
     AppDialog(onDismiss = onDismiss) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(52.dp).background(AppColors.gold.copy(alpha = 0.14f), CircleShape),
+            modifier = Modifier.size(52.dp).background(AppColors.goldTint, CircleShape),
         ) {
             Icon(
                 Icons.Filled.Notifications,
@@ -56,13 +58,7 @@ fun NotificationOptInDialog(
             )
         }
         Spacer(Modifier.height(12.dp))
-        Text(
-            "Stay in the loop",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-        )
+        DialogTitle("Stay in the loop")
         Spacer(Modifier.height(6.dp))
         Text(
             "Get notified about new sounds, features, and the occasional update from Metro. " +
@@ -74,29 +70,9 @@ fun NotificationOptInDialog(
         )
         Spacer(Modifier.height(22.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
-            Surface(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(14.dp),
-                color = Color.Transparent,
-                border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
-                modifier = Modifier.weight(1f).height(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text("Not now", color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                }
-            }
+            GhostButton("Not now", onDismiss, Modifier.weight(1f))
             Spacer(Modifier.width(10.dp))
-            Surface(
-                onClick = onEnable,
-                shape = RoundedCornerShape(14.dp),
-                color = AppColors.gold.copy(alpha = 0.10f),
-                border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.75f)),
-                modifier = Modifier.weight(1f).height(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text("Enable", color = AppColors.gold, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                }
-            }
+            GoldButton("Enable", onEnable, Modifier.weight(1f))
         }
     }
 }

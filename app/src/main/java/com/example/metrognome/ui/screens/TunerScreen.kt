@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -123,6 +124,9 @@ import com.example.metrognome.ui.dialogs.CalibrationConfirmDialog
 import com.example.metrognome.ui.dialogs.CalibrationDialog
 import com.example.metrognome.ui.dialogs.ConfirmDestructiveDialog
 import com.example.metrognome.ui.dialogs.InstrumentCalibrationDialog
+import com.example.metrognome.ui.components.AppCard
+import com.example.metrognome.ui.components.AppInset
+import com.example.metrognome.ui.components.GhostButton
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.GameColors
 import com.example.metrognome.viewmodel.CalibrationInfo
@@ -566,9 +570,9 @@ internal fun TunerScreenContent(
 @Composable
 private fun CalibrationNudgeBanner(onDismiss: () -> Unit) {
     Surface(
-        color = AppColors.gold.copy(alpha = 0.08f),
+        color = AppColors.goldTint,
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.35f)),
+        border = BorderStroke(1.dp, AppColors.goldBorder),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -813,12 +817,7 @@ private fun AmbientPanel(
         else { delay(900.milliseconds); shown = report }
     }
 
-    Surface(
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp)) {
+    AppCard(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp)) {
 
             // ── Header: pulsing orb + state label + note name + expand chevron ───
             Row(
@@ -1019,7 +1018,6 @@ private fun AmbientPanel(
                 }
             }
         }
-    }
 }
 
 /**
@@ -1091,7 +1089,7 @@ private fun FrequencyRail(
                 val x = frac(hz) * size.width
                 val isConcert = hz == 440f
                 drawLine(
-                    color = if (isConcert) AppColors.gold.copy(alpha = 0.55f)
+                    color = if (isConcert) AppColors.goldBorderStrong
                             else AppColors.textDim.copy(alpha = 0.5f),
                     start = Offset(x, cy - 5.dp.toPx()),
                     end = Offset(x, cy + 5.dp.toPx()),
@@ -1255,11 +1253,9 @@ private fun SuppressionLevelToggle(
     onCycle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
+    AppInset(
         onClick = onCycle,
-        color = AppColors.surfaceVariant,
         shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, Color(0x33FFFFFF)),
         modifier = modifier.semantics { contentDescription = "Ambient suppression, ${level.label}" },
     ) {
         val litCount = level.ordinal + 1
@@ -1359,12 +1355,7 @@ private fun ReferencePitchCard(
     val standardFraction = (440f - TunerViewModel.MIN_REFERENCE) /
                            (TunerViewModel.MAX_REFERENCE - TunerViewModel.MIN_REFERENCE)
 
-    Surface(
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+    AppCard {
 
             // Label + current value on one row
             Row(
@@ -1427,7 +1418,6 @@ private fun ReferencePitchCard(
                 )
             }
         }
-    }
 }
 
 @Composable
@@ -1458,12 +1448,7 @@ private fun CalibrationCard(
     onReferenceCalibrate: () -> Unit,
     onClear: () -> Unit,
 ) {
-    Surface(
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+    AppCard(contentPadding = PaddingValues(18.dp)) {
             Text(
                 "CALIBRATION", color = AppColors.textDim, fontSize = 12.sp,
                 fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
@@ -1471,7 +1456,6 @@ private fun CalibrationCard(
             Spacer(Modifier.height(14.dp))
             IdleCalibration(info, referenceHz, onLoopbackCalibrate, onReferenceCalibrate, onClear)
         }
-    }
 }
 
 @Composable
@@ -1524,12 +1508,7 @@ private fun IdleCalibration(
 
     if (info.calibrated) {
         Spacer(Modifier.height(10.dp))
-        OutlinedButton(
-            onClick = onClear,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.textMuted),
-        ) { Text("Clear Calibration", fontSize = 13.sp) }
+        GhostButton("Clear Calibration", onClear, Modifier.fillMaxWidth())
     }
 }
 
@@ -1540,11 +1519,9 @@ private fun CalibrationOptionButton(
     instruction: String,
     onClick: () -> Unit,
 ) {
-    Surface(
+    AppInset(
         onClick = onClick,
-        color = AppColors.surfaceVariant,
         shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, Color(0x33FFFFFF)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(

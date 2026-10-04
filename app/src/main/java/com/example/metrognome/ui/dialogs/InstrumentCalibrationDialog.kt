@@ -39,6 +39,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.audio.tuner.Tuner
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.GhostButton
+import com.example.metrognome.ui.components.GoldButton
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.GameColors
 import java.util.Locale
@@ -78,8 +81,9 @@ fun InstrumentCalibrationDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppCardDefaults.DialogShape,
             color = AppColors.surfaceDeep,
+            border = AppCardDefaults.Border,
             shadowElevation = 24.dp,
             modifier = Modifier
                 .padding(horizontal = 24.dp)
@@ -98,7 +102,7 @@ fun InstrumentCalibrationDialog(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .size(52.dp)
-                        .background(AppColors.gold.copy(alpha = 0.12f), CircleShape),
+                        .background(AppColors.goldTint, CircleShape),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.MusicNote,
@@ -110,13 +114,7 @@ fun InstrumentCalibrationDialog(
 
                 Spacer(Modifier.height(14.dp))
 
-                Text(
-                    "Calibrate to your $noteName?",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
+                DialogTitle("Calibrate to your $noteName?")
 
                 Spacer(Modifier.height(10.dp))
 
@@ -152,45 +150,11 @@ fun InstrumentCalibrationDialog(
                 Spacer(Modifier.height(22.dp))
 
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    Surface(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(14.dp),
-                        color = Color.Transparent,
-                        border = BorderStroke(1.dp, AppColors.textDim.copy(alpha = 0.5f)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                "Cancel",
-                                color = AppColors.textSecondary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                    }
+                    GhostButton("Cancel", onDismiss, Modifier.weight(1f))
 
                     Spacer(Modifier.width(10.dp))
 
-                    Surface(
-                        onClick = onConfirm,
-                        shape = RoundedCornerShape(14.dp),
-                        color = AppColors.gold.copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, AppColors.gold.copy(alpha = 0.8f)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                "Calibrate",
-                                color = AppColors.gold,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
+                    GoldButton("Calibrate", onConfirm, Modifier.weight(1f))
                 }
             }
         }

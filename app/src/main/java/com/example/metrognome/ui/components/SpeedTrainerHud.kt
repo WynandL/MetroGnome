@@ -105,8 +105,8 @@ fun SpeedTrainerHud(
         modifier = modifier
             .height(38.dp)
             .clip(shape)
-            .background(AppColors.surfaceDim)
-            .border(1.dp, AppColors.gold.copy(alpha = 0.30f), shape),
+            .background(AppColors.card)
+            .border(1.dp, AppColors.goldBorder, shape),
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width

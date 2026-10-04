@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,13 +49,10 @@ fun MicAccessStrip(
     val message = if (permanentlyDenied) "Microphone blocked, tap to open App Settings"
         else "Microphone access needed, tap to grant"
 
-    Surface(
+    AppCard(
         onClick = onClick,
-        color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(16.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .semantics { contentDescription = message },
+        contentPadding = PaddingValues(0.dp),
+        modifier = modifier.semantics { contentDescription = message },
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
