@@ -39,7 +39,7 @@ import com.example.metrognome.ui.theme.AppColors
  *  3. An optional [markerFraction] tick, for a rail with a canonical position on it (the
  *     reference pitch's 440 Hz), which lights up when the value is sitting on it.
  *
- * Extracted from `ReferencePitchCard` when the drone panel needed the same control. Any new
+ * Extracted from the reference pitch card (now `ReferencePitchControls`) when the drone panel needed the same control. Any new
  * slider on the tuner should use this rather than a stock `Slider`, so the screen does not
  * end up with two visual languages for the same gesture.
  */

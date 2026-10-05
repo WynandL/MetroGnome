@@ -344,7 +344,10 @@ fun SettingsScreen(
             Spacer(Modifier.height(CardGap))
             // The whole card is the tap target (header and padding included), so the
             // squash and the burst belong to the card, not just to its two lines of text.
-            DevTapTarget(modifier = Modifier.fillMaxWidth().tapDelight(), onToggled = { isDevMode = it }) {
+            // The dev egg lives on the Build line only. When it wrapped the whole card, the
+            // delight's escalating tap combo invited exactly the long-press-then-rapid-tapping
+            // the egg listens for, and players unlocked dev mode by playing with the card.
+            Box(Modifier.fillMaxWidth().tapDelight()) {
                 SettingsCard("About") {
                     Column {
                         Text(
@@ -353,16 +356,18 @@ fun SettingsScreen(
                             fontSize = 13.sp,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
-                        Text(
-                            buildString {
-                                append("Build: ${if (BuildConfig.DEBUG) "Debug" else "Release"}")
-                                if (!BuildConfig.DEBUG && DevEasterEgg.isManuallyEnabled(context)) {
-                                    append(" · Dev Mode ✓")
-                                }
-                            },
-                            color = if (isDevMode) AppColors.gold else AppColors.textMuted,
-                            fontSize = 12.sp
-                        )
+                        DevTapTarget(onToggled = { isDevMode = it }) {
+                            Text(
+                                buildString {
+                                    append("Build: ${if (BuildConfig.DEBUG) "Debug" else "Release"}")
+                                    if (!BuildConfig.DEBUG && DevEasterEgg.isManuallyEnabled(context)) {
+                                        append(" · Dev Mode ✓")
+                                    }
+                                },
+                                color = if (isDevMode) AppColors.gold else AppColors.textMuted,
+                                fontSize = 12.sp
+                            )
+                        }
                     }
                 }
             }

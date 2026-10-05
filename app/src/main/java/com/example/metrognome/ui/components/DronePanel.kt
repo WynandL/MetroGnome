@@ -51,6 +51,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import kotlin.math.roundToInt
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -285,6 +287,15 @@ fun DronePanel(
                             onValueChange = onSetVolume,
                             valueRange = 0f..1f,
                             modifier = Modifier.weight(1f),
+                        )
+                        // Fixed width, end-aligned, so the rail keeps its length from 0% to 100%.
+                        Text(
+                            "${(state.volume * 100).roundToInt()}%",
+                            color = AppColors.textSecondary,
+                            fontSize = 12.sp, lineHeight = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.width(44.dp),
                         )
                     }
                     Spacer(Modifier.height(2.dp))

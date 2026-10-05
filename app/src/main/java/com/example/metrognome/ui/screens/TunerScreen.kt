@@ -67,6 +67,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -125,6 +126,8 @@ import com.example.metrognome.ui.dialogs.CalibrationDialog
 import com.example.metrognome.ui.dialogs.ConfirmDestructiveDialog
 import com.example.metrognome.ui.dialogs.InstrumentCalibrationDialog
 import com.example.metrognome.ui.components.AppCard
+import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.MorphingPill
 import com.example.metrognome.ui.components.AppInset
 import com.example.metrognome.ui.components.GhostButton
 import com.example.metrognome.ui.theme.AppColors
@@ -385,17 +388,15 @@ internal fun TunerScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
         Spacer(Modifier.height(16.dp))
-        Box(
+        // Always shown, 440 Hz included: the reference slider is far below the fold, so a pill
+        // that came and went was never seen, and it moved the page when it did. A direct child
+        // of this column, so its morphed panel can draw over the gauge below it.
+        ReferencePitchMorph(
+            referenceHz = referenceHz,
+            onNudge = onNudgeReference,
+            onSet = onSetReferenceHz,
             modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (referenceHz != 440f) {
-                ReferencePitchPill(
-                    referenceHz = referenceHz,
-                    modifier = Modifier.align(Alignment.CenterStart),
-                )
-            }
-        }
+        )
         Spacer(Modifier.height(8.dp))
 
         if (!micGranted) {
@@ -483,12 +484,6 @@ internal fun TunerScreenContent(
             onClear = { showClearCalibrationDialog = true },
         )
 
-        Spacer(Modifier.height(12.dp))
-        ReferencePitchCard(
-            referenceHz = referenceHz,
-            onNudge = onNudgeReference,
-            onSet = onSetReferenceHz,
-        )
         Spacer(Modifier.height(24.dp))
     }
 
@@ -1345,8 +1340,13 @@ private fun DroneVoiceDialog(
 
 // ── Reference pitch ──────────────────────────────────────────────────────────────
 
+/**
+ * The reference pitch controls: header, slider with steppers, range labels. Shown only in the
+ * panel that morphs out of the header pill (the card that once sat at the bottom of the page
+ * was removed when the pill took over).
+ */
 @Composable
-private fun ReferencePitchCard(
+private fun ReferencePitchControls(
     referenceHz: Float,
     onNudge: (Float) -> Unit,
     onSet: (Float) -> Unit,
@@ -1355,8 +1355,7 @@ private fun ReferencePitchCard(
     val standardFraction = (440f - TunerViewModel.MIN_REFERENCE) /
                            (TunerViewModel.MAX_REFERENCE - TunerViewModel.MIN_REFERENCE)
 
-    AppCard {
-
+    Column {
             // Label + current value on one row
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1728,10 +1727,37 @@ private fun CalibrationStatus(info: CalibrationInfo) {
 
 // ── Reference pitch pill ─────────────────────────────────────────────────────────
 
-/** Informational-only pill shown in the header when reference pitch is not 440 Hz. */
+/**
+ * The header's reference pitch pill, 440 Hz included. A tap morphs it into the reference
+ * pitch controls over the top of the page, so the pitch can be changed without scrolling to
+ * the card at the bottom; it closes itself once left alone. The pill's look is GoldPill's
+ * text-only style, drawn here because [MorphingPill] owns the surface it morphs.
+ */
 @Composable
-private fun ReferencePitchPill(referenceHz: Float, modifier: Modifier = Modifier) {
-    GoldPill(text = "A4 = ${referenceHz.roundToInt()} Hz", modifier = modifier)
+private fun ReferencePitchMorph(
+    referenceHz: Float,
+    onNudge: (Float) -> Unit,
+    onSet: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    MorphingPill(
+        expanded = open,
+        onExpandedChange = { open = it },
+        modifier = modifier,
+        pill = {
+            Text(
+                "A4 = ${referenceHz.roundToInt()} Hz",
+                color = AppColors.gold, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        },
+        panel = {
+            Box(Modifier.padding(AppCardDefaults.ContentPadding)) {
+                ReferencePitchControls(referenceHz, onNudge, onSet)
+            }
+        },
+    )
 }
 
 // ── Formatting helpers ───────────────────────────────────────────────────────────
@@ -1776,6 +1802,6 @@ private fun AmbientPanelPreview() {
 
 @Preview(showBackground = true, backgroundColor = 0xFF0D0B1E, widthDp = 360)
 @Composable
-private fun ReferencePitchCardPreview() {
-    ReferencePitchCard(referenceHz = 440f, onNudge = {}, onSet = {})
+private fun ReferencePitchControlsPreview() {
+    ReferencePitchControls(referenceHz = 440f, onNudge = {}, onSet = {})
 }
