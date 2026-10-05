@@ -9,6 +9,7 @@ import androidx.annotation.RequiresPermission
 import com.example.metrognome.audio.NoteNames
 import com.example.metrognome.audio.dsp.PitchDetector
 import com.example.metrognome.cloud.TunerLockReporter
+import com.example.metrognome.debug.tuner.TunerFrameTrace
 import com.example.metrognome.debug.tuner.TunerLockLog
 import com.example.metrognome.debug.tuner.TunerReadingLog
 import kotlinx.coroutines.CoroutineScope
@@ -281,6 +282,11 @@ class Tuner {
                     }
 
                     _ambient.value = report
+                    TunerFrameTrace.record(
+                        pitchHz = pitch?.frequency, clarity = pitch?.clarity, rms = rms,
+                        presence = nearClarity, state = report.state.name, locked = report.locked,
+                        candidateHz = report.candidateHz, displayedHz = _reading.value?.frequency,
+                    )
 
                     // ── Lock diagnostics — record each completed lock for the dev viewer ──
                     val isLocked = report.locked
