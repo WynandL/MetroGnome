@@ -87,4 +87,14 @@ object GrooveScorer {
         if (beatIntervalMs <= 0f) return rawDeltaMs
         return rawDeltaMs - (rawDeltaMs / beatIntervalMs).roundToInt() * beatIntervalMs
     }
+
+    /**
+     * A clap's deviation from its nearest beat, with the device's output-to-capture
+     * [latencyMs] removed FIRST and only then folded. Folding first and subtracting after
+     * (as both paths did before 2026-10-05) shifts every hit by a whole beat once the
+     * latency passes half the interval: 120 ms of latency at 300 BPM (200 ms beats) turned
+     * a perfectly timed clap into a -200 ms one. Subtracting first keeps it at 0.
+     */
+    fun correctedBeatDeviation(onsetMs: Long, beatMs: Long, latencyMs: Float, beatIntervalMs: Float): Float =
+        nearestBeatDeviation((onsetMs - beatMs).toFloat() - latencyMs, beatIntervalMs)
 }

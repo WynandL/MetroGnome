@@ -169,4 +169,79 @@ class PitchDetectorTest {
         assertTrue("denoise should raise the buried tone's presence (off=$off on=$on)", on > off + 0.05f)
         assertTrue("denoised presence should clearly confirm the note (on=$on)", on > 0.5f)
     }
+
+    @Test
+    fun partialEvidenceSeparatesAnAbsentNoteFromAWeakOneUnderItsMultiple() {
+        // A note at k·f0 alone leaves f0's non-shared partials at the noise floor (ratio ~1);
+        // f0 present 26 dB under its multiple must clear the 10x bar the tuner uses with margin.
+        // Down to bass E1, at both capture rates (the first version had no floor band under ~60 Hz).
+        // Measured: absent at most 3.9; weak-present at least 24.6 (E1 under its octave, where the
+        // octave's leakage lifts the floor), 120+ from 55 Hz up apart from x2 at 48 kHz (48.8).
+        for (rate in listOf(44_100, 48_000)) {
+            val rng = Random(3)
+            fun noisy(vararg partials: Pair<Double, Double>) = FloatArray(windowSize) { i ->
+                var v = 0.0
+                for ((hz, a) in partials) v += a * sin(2.0 * PI * hz * i / rate)
+                (v + (rng.nextFloat() - 0.5f) * 0.007f).toFloat()
+            }
+            for (f0 in listOf(41.2, 55.0, 82.41, 110.0, 220.0, 440.0)) {
+                for (k in 2..4) {
+                    val d = PitchDetector(rate, windowSize)
+                    val absent = d.partialEvidence(noisy(k * f0 to 0.5, 2 * k * f0 to 0.25), f0.toFloat(), k)
+                    val weak = d.partialEvidence(noisy(f0 to 0.025, k * f0 to 0.5), f0.toFloat(), k)
+                    assertTrue("$rate Hz, f0 $f0 x$k absent read $absent", absent < 5f)
+                    assertTrue("$rate Hz, f0 $f0 x$k weak-but-present read $weak", weak > 20f)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun partialEvidenceSaysUnknownBelowItsResolutionNotAbsent() {
+        // Below the limit no partial has room for a floor band; that must read NaN ("cannot
+        // judge"), never 0 ("absent"). Limits: ~35.9 Hz at 44.1 kHz, ~39.1 Hz at 48 kHz.
+        for ((rate, below, above) in listOf(Triple(44_100, 35.5, 36.5), Triple(48_000, 38.7, 39.5))) {
+            val d = PitchDetector(rate, windowSize)
+            fun tone(f0: Double) = FloatArray(windowSize) { i ->
+                (0.025 * sin(2.0 * PI * f0 * i / rate) + 0.5 * sin(2.0 * PI * 2 * f0 * i / rate)).toFloat()
+            }
+            assertTrue("$rate Hz, $below should be unknown", d.partialEvidence(tone(below), below.toFloat(), 2).isNaN())
+            val e = d.partialEvidence(tone(above), above.toFloat(), 2)
+            assertTrue("$rate Hz, $above should be judged, read $e", !e.isNaN() && e > 20f)
+        }
+    }
+
+    @Test
+    fun theTopOfTheRangeIsNotReportedAnOctaveLow() {
+        // Above ~3.5 kHz the zero-lag hump ends before minLag, and the peak picker used to
+        // mistake the fundamental's own hump for the trivial one and report the octave
+        // below (4 kHz read as 2 kHz). Sweep the top of the range from several starting
+        // phases, with both window sizes the app uses, at the rates phones actually open
+        // (44.1 kHz is guaranteed on every Android device). The 16/22 kHz fallbacks are
+        // deliberately not covered: there a 2.5 kHz period is under 7 samples and the
+        // integer-sampled peak can fall below PEAK_PICK_RATIO, a separate coarseness limit.
+        for (rate in listOf(44_100, 48_000)) {
+            for (window in listOf(4096, 8192)) {
+                val d = PitchDetector(rate, window)
+                var hz = 1500.0
+                while (hz <= PitchDetector.MAX_FREQUENCY) {
+                    for (phase in listOf(0.0, 0.7, 1.9, 3.1)) {
+                        val tone = FloatArray(window) { i ->
+                            (0.5 * sin(2.0 * PI * hz * i / rate + phase)).toFloat()
+                        }
+                        val pitch = d.detect(tone)
+                        assertNotNull("no detection at $hz Hz, rate $rate, window $window", pitch)
+                        val err = centsError(pitch!!.frequency, hz)
+                        // A wrong period is hundreds of cents out; interpolation at low
+                        // rates costs a few cents up here, which is not what this guards.
+                        assertTrue(
+                            "$hz Hz at rate $rate, window $window read ${pitch.frequency} Hz",
+                            abs(err) < 20.0,
+                        )
+                    }
+                    hz += 97.0
+                }
+            }
+        }
+    }
 }

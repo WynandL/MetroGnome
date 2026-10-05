@@ -80,4 +80,17 @@ class GrooveScorerTest {
         assertEquals(123f, GrooveScorer.nearestBeatDeviation(123f, 0f), tol)
         assertEquals(123f, GrooveScorer.nearestBeatDeviation(123f, -10f), tol)
     }
+    @Test
+    fun latencyIsRemovedBeforeFoldingSoAFastTempoIsNotShiftedABeat() {
+        // 300 BPM (200 ms beats), 120 ms latency: a clap on the beat is heard back 120 ms after
+        // the callback. Folding first read it as -80 and then -200 after the subtraction.
+        assertEquals(0f, GrooveScorer.correctedBeatDeviation(10_120, 10_000, 120f, 200f), tol)
+        assertEquals(15f, GrooveScorer.correctedBeatDeviation(10_135, 10_000, 120f, 200f), tol)
+        assertEquals(-20f, GrooveScorer.correctedBeatDeviation(10_100, 10_000, 120f, 200f), tol)
+        // With small latency the result matches the old fold-then-subtract arithmetic.
+        assertEquals(
+            GrooveScorer.nearestBeatDeviation(130f, 500f) - 80f,
+            GrooveScorer.correctedBeatDeviation(10_130, 10_000, 80f, 500f), tol,
+        )
+    }
 }

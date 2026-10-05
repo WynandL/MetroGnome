@@ -83,7 +83,7 @@ class MicSelfTest(context: Context) {
     private data class CapOnset(
         val bootMs: Double,
         val isClap: Boolean,
-        val ratio: Double,      // window-integrated high/low (one acceptance axis)
+        val ratio: Double,      // window-integrated high/max(low, accent), ClapDetector's own axis
         val peakRatio: Double,  // largest single-hop high/low (diagnostic only)
         val flatness: Double,   // spectral flatness (the other acceptance axis)
     )
@@ -132,10 +132,29 @@ class MicSelfTest(context: Context) {
             finishAbort(route, notes + NoteCode.MIC_UNAVAILABLE, 0f, 0f)
             return
         }
-        startCapture()
+        val ownRecord = record
+        var stim: LoopbackStimulus? = null
+        // Every way out of a run (a verdict, an early FAIL/ABORT, cancellation, an exception,
+        // including a startRecording failure) stops the speaker and the mic here, the mic even
+        // if releasing the speaker throws. Before, the no-output-timestamp FAIL published its
+        // report and returned with the capture worker still running. The record is matched by
+        // identity so a late finally cannot stop a newer run's capture (a guard, not a full
+        // ownership protocol across concurrent run/cancel calls: that is the open A10/A11 work).
+        try {
+            startCapture()
+            stim = LoopbackStimulus(sampleRate)
+            runPhases(route, notes, stim)
+        } finally {
+            try {
+                stim?.release()
+            } finally {
+                stopCapture(ownRecord)
+            }
+        }
+    }
 
-        val stim = LoopbackStimulus(sampleRate)
-
+    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
+    private suspend fun runPhases(route: AudioRoute, notes: ArrayList<NoteCode>, stim: LoopbackStimulus) {
         // ── Phase 1: environment ────────────────────────────────────────────────
         val volFraction = systemVolumeFraction()
         val ambient = profileAmbient()
@@ -698,7 +717,11 @@ class MicSelfTest(context: Context) {
                         } else {
                             SystemClock.elapsedRealtime().toDouble()
                         }
-                        val ratio = if (onset.lowRms > 0.0) onset.highRms / onset.lowRms else 0.0
+                        // The same feature ClapDetector compares against clapBandRatio: high over
+                        // the LOUDER tonal band. Storing high/low (as before 2026-10-05) dropped the
+                        // accent band and tuned the threshold on a different number than production uses.
+                        val tonal = maxOf(onset.lowRms, onset.accentRms)
+                        val ratio = if (tonal > 0.0) onset.highRms / tonal else 0.0
                         captured.add(CapOnset(bootMs, onset.isClap, ratio, onset.peakRatio, onset.flatness))
                     }
                 }
@@ -708,9 +731,13 @@ class MicSelfTest(context: Context) {
         }
     }
 
-    private fun stopCapture() {
-        runCatching { record?.stop() }
-        record?.release()
+    private fun stopCapture() = stopCapture(record)
+
+    /** Stop and release [owner], and clear [record] only if it is still that same record. */
+    private fun stopCapture(owner: AudioRecord?) {
+        if (owner == null || record !== owner) return
+        runCatching { owner.stop() }
+        owner.release()
         record = null
     }
 

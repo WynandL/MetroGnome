@@ -18,6 +18,12 @@ import android.content.Context
  *  - [isUnsupported] a self-test FAIL is on record from the *current* gate rubric; a FAIL
  *                    from an older rubric reads as never tested, so the check is offered again.
  *  - [latencyMs]     the acoustic round-trip to subtract from raw onsets.
+ *  - [isUsable]      what a scoring session gates on: [isActive] AND the phone is on the
+ *                    output route the check was measured on ([calibratedRoute]). Bluetooth
+ *                    adds ~150-250 ms and headphones keep the click out of the mic, so a
+ *                    speaker calibration means nothing there; the session runs without mic
+ *                    scoring and [com.example.metrognome.ui.components.MicTimingNudge] says why.
+ *                    [isActive] alone still drives Settings and the permission recovery.
  *
  * Calibration is required for real use - there is no dev bypass, so the production flow
  * (turn on -> run check -> use the result) is exercised the same way in a debug build on
@@ -40,9 +46,16 @@ class MicCalibration private constructor(
     val clapBandRatio: Float?,
     /** Device-tuned clap flatness threshold, same contract as [clapBandRatio]. */
     val clapFlatnessMin: Float?,
+    /** The output route the passing check was measured on. */
+    val calibratedRoute: AudioRoute,
+    /** The output route at the moment of [read]. */
+    val currentRoute: AudioRoute,
 ) {
     /** The mic should run now: the user turned it on AND a passing calibration exists. */
     val isActive: Boolean get() = enabled && isCalibrated
+
+    /** A scoring session may use the mic: [isActive] on the route the calibration belongs to. */
+    val isUsable: Boolean get() = isActive && currentRoute == calibratedRoute
 
     companion object {
         fun read(context: Context): MicCalibration {
@@ -54,6 +67,8 @@ class MicCalibration private constructor(
                 latencyMs = store.latencyMs ?: 0f,
                 clapBandRatio = store.clapBandRatio,
                 clapFlatnessMin = store.clapFlatnessMin,
+                calibratedRoute = store.route,
+                currentRoute = AudioRouteMonitor(context).currentRoute(),
             )
         }
     }

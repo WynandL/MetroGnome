@@ -2,7 +2,9 @@ package com.example.metrognome.audio.metronome
 
 import android.media.AudioAttributes
 import android.media.AudioFormat
+import android.media.AudioTimestamp
 import android.media.AudioTrack
+import android.os.SystemClock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -71,6 +73,13 @@ class MetronomeEngine {
 
     var onBeat: ((beat: Int) -> Unit)? = null
 
+    /**
+     * Fires together with [onBeat], with the boot-clock ms at which this beat's click will
+     * actually leave the speaker (see [BeatPresentation]). Use it for anything timed against
+     * the microphone; [onBeat] alone is ~a buffer early and is only right for visuals.
+     */
+    var onBeatTimed: ((beat: Int, presentedMs: Long) -> Unit)? = null
+
     private var audioTrack: AudioTrack? = null
     private var job: Job? = null
     private val scope = CoroutineScope(Dispatchers.Default)
@@ -111,9 +120,13 @@ class MetronomeEngine {
 
         job = scope.launch {
             var beat = 0
+            val clock = BeatFrameClock(sampleRate)
+            val track = audioTrack ?: return@launch
+            val ts = AudioTimestamp()
+            var framesWritten = 0L   // frames handed to this track since play(): the beat's start frame
             while (isActive) {
                 val currentBpm = bpm.coerceIn(20, 300)
-                val samplesPerBeat = (sampleRate * 60.0 / currentBpm).toInt()
+                val samplesPerBeat = clock.next(currentBpm)
                 val isAccent = beat in accentBeats
                 val buffer = buildBeatBuffer(samplesPerBeat, isAccent)
 
@@ -129,6 +142,7 @@ class MetronomeEngine {
                 // audio data is handed to the driver. The hardware buffer latency (~23 ms)
                 // and the Compose frame latency (~16 ms) are close enough that audio and
                 // visuals land within one frame of each other.
+                onBeatTimed?.let { it(beat, presentedMs(track, ts, framesWritten)) }
                 onBeat?.invoke(beat)
                 beat = (beat + 1) % timeSignature
 
@@ -138,12 +152,25 @@ class MetronomeEngine {
                 try {
                     val written = audioTrack?.write(buffer, 0, buffer.size) ?: break
                     if (written < 0) break  // AudioTrack.ERROR_* — exit cleanly
+                    framesWritten += written
                 } catch (_: IllegalStateException) {
                     break  // track was released, exit cleanly
                 }
                 if (!isActive) break
             }
         }
+    }
+
+    /** When frame [beatFrame] of [track] will be presented, on the boot clock (ms). */
+    private fun presentedMs(track: AudioTrack, ts: AudioTimestamp, beatFrame: Long): Long {
+        val anchored = runCatching { track.getTimestamp(ts) && ts.framePosition > 0L }.getOrDefault(false)
+        if (anchored) {
+            // getTimestamp's nanoTime is CLOCK_MONOTONIC; the mic stamps onsets on BOOTTIME.
+            val boot = ts.nanoTime + (SystemClock.elapsedRealtimeNanos() - System.nanoTime())
+            return BeatPresentation.fromTimestamp(beatFrame, ts.framePosition, boot, sampleRate)
+        }
+        val head = runCatching { track.playbackHeadPosition.toLong() and 0xFFFFFFFFL }.getOrDefault(beatFrame)
+        return BeatPresentation.fromQueue(beatFrame, head, SystemClock.elapsedRealtime(), sampleRate)
     }
 
     fun stop() {

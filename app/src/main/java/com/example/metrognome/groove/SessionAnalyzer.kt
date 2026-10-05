@@ -161,7 +161,7 @@ object SessionAnalyzer {
         var c = 0.0
         var s = 0.0
         for (t in window) {
-            val angle = TWO_PI * (((t - t0) % period.toLong()).toDouble() / period)
+            val angle = TWO_PI * (((t - t0).toDouble() % period) / period)
             c += cos(angle); s += sin(angle)
         }
         val n = window.size
@@ -170,7 +170,7 @@ object SessionAnalyzer {
         val tol = minOf(INLIER_TOL_MS, period * INLIER_TOL_FRACTION)
         val residuals = ArrayList<Float>(n)
         for (t in window) {
-            val angle = TWO_PI * (((t - t0) % period.toLong()).toDouble() / period)
+            val angle = TWO_PI * (((t - t0).toDouble() % period) / period)
             var d = angle - meanAngle
             while (d > Math.PI) d -= TWO_PI
             while (d < -Math.PI) d += TWO_PI

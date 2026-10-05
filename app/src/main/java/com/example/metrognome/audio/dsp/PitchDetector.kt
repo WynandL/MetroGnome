@@ -1,6 +1,10 @@
 package com.example.metrognome.audio.dsp
 
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 /**
@@ -83,6 +87,20 @@ class PitchDetector(
          * is still far above what this removes.
          */
         private const val RESIDUAL_OVERSUBTRACT = 2.0f
+
+        // ── Partial evidence (see [partialEvidence]) ─────────────────────────────────
+
+        /** Partials of the old note examined: f0..8f0, skipping those the multiple shares. */
+        private const val EVIDENCE_PARTIALS = 8
+
+        /** Half-width (cents) searched for a partial's peak; vibrato and calibration drift. */
+        private const val EVIDENCE_PEAK_CENTS = 30.0
+
+        /** Floor band half-width cap as a fraction of f0: neighbouring shared partials are f0 away. */
+        private const val EVIDENCE_FLOOR_SPAN = 0.6f
+
+        /** Fewest floor bins a median is taken over; fewer and the partial is not judged. */
+        private const val EVIDENCE_MIN_FLOOR_BINS = 4
     }
 
     /** A successful detection. [clarity] is 0..1 — higher means a purer, more certain pitch. */
@@ -111,6 +129,9 @@ class PitchDetector(
     private val powerPrefix = DoubleArray(windowSize + 1)
     private val keyLags = IntArray(MAX_KEY_MAXIMA)
     private val keyVals = FloatArray(MAX_KEY_MAXIMA)
+    private val hann = FloatArray(windowSize) { 0.5f - 0.5f * cos(2.0 * PI * it / (windowSize - 1)).toFloat() }
+    private val evidenceMag = FloatArray(fftSize / 2 + 1)
+    private val evidenceFloor = FloatArray(fftSize / 2 + 1)
 
     private val minLag = (sampleRate / MAX_FREQUENCY).toInt().coerceAtLeast(2)
     private val maxLag = (sampleRate / MIN_FREQUENCY).toInt().coerceAtMost(windowSize / 2)
@@ -256,6 +277,71 @@ class PitchDetector(
         return Pitch(frequency, refinedValue.coerceIn(0f, 1f))
     }
 
+    /**
+     * How clearly a note at [f0] is still physically sounding in [window], judged only by
+     * the partials a note at [multiple]·[f0] cannot produce (for an octave: f0, 3f0, 5f0...).
+     *
+     * [presenceAt] cannot answer this: a note at an integer multiple repeats at f0's period
+     * too, so the NSDF there reads ~1.0 whether f0 is present or not. The non-shared
+     * partials can: a note at the multiple puts no energy there, so energy found there is
+     * evidence of the old note (or of some other source in that band; this is a narrow
+     * test for one ambiguity, not source separation). Returns the largest
+     * peak-to-local-floor magnitude ratio among them (Hann-windowed spectrum, peak within
+     * ±[EVIDENCE_PEAK_CENTS] (at least one bin); floor = median of the band
+     * outside that search plus a main lobe, and short of the neighbouring shared partials'
+     * main lobes), so ~1
+     * means nothing there and the value scales with how far the partial stands above the
+     * room. 0 for a silent window.
+     *
+     * Returns NaN when the spectrum cannot resolve the question: when f0 is so low that no
+     * partial has room for a floor band between its own main lobe and its neighbours' (about
+     * 36 Hz at 44.1 kHz and 39 Hz at 48 kHz with an 8192 window). That is "unknown", not
+     * "absent", and callers must not treat it as absence.
+     */
+    fun partialEvidence(window: FloatArray, f0: Float, multiple: Int): Float {
+        require(window.size == windowSize) { "expected $windowSize samples, got ${window.size}" }
+        if (multiple < 2 || f0 <= 0f || !loadWork(window)) return 0f
+        for (i in 0 until windowSize) { re[i] = work[i] * hann[i]; im[i] = 0f }
+        for (i in windowSize until fftSize) { re[i] = 0f; im[i] = 0f }
+        fft.transform(re, im, inverse = false)
+        val half = fftSize / 2
+        for (i in 0..half) evidenceMag[i] = sqrt(re[i] * re[i] + im[i] * im[i])
+
+        val binHz = sampleRate.toFloat() / fftSize
+        // Hann main lobe is ±2 bins of the unpadded window, ±4 of this 2x-padded FFT.
+        val peakHalfMin = 2 * fftSize / windowSize
+        val mainLobeHz = peakHalfMin * binHz
+        // The floor band ends a bin short of where the neighbouring shared partial's main
+        // lobe begins (f0 away), and never wider than EVIDENCE_FLOOR_SPAN of f0.
+        val floorHalf = (minOf(f0 * EVIDENCE_FLOOR_SPAN, f0 - mainLobeHz) / binHz).toInt() - 1
+        var best = Float.NaN
+        for (m in 1..EVIDENCE_PARTIALS) {
+            if (m % multiple == 0) continue
+            val hz = m * f0
+            if (hz > sampleRate * 0.45f) break
+            val centre = (hz / binHz).roundToInt()
+            // A partial's peak sits at its own frequency, so the search only needs the
+            // ±EVIDENCE_PEAK_CENTS tolerance (searching the whole main lobe let the largest of
+            // several noise bins pose as a peak); the floor excludes the main lobe around it.
+            val searchHalf = maxOf(1, (centre * (2.0.pow(EVIDENCE_PEAK_CENTS / 1200.0) - 1.0)).roundToInt())
+            val exclude = searchHalf + peakHalfMin
+            var peak = 0f
+            for (i in (centre - searchHalf).coerceAtLeast(0)..(centre + searchHalf).coerceAtMost(half))
+                if (evidenceMag[i] > peak) peak = evidenceMag[i]
+            var n = 0
+            for (i in (centre - floorHalf).coerceAtLeast(0)..(centre + floorHalf).coerceAtMost(half)) {
+                if (abs(i - centre) <= exclude) continue
+                evidenceFloor[n++] = evidenceMag[i]
+            }
+            if (n < EVIDENCE_MIN_FLOOR_BINS) continue   // no room for a floor at this resolution
+            java.util.Arrays.sort(evidenceFloor, 0, n)
+            val floor = evidenceFloor[n / 2].coerceAtLeast(1e-9f)
+            val ratio = peak / floor
+            if (best.isNaN() || ratio > best) best = ratio
+        }
+        return best
+    }
+
     /** DC-remove [window] into [work]; returns false if the window is below the silence floor. */
     private fun loadWork(window: FloatArray): Boolean {
         var mean = 0.0
@@ -369,8 +455,12 @@ class PitchDetector(
      * reaches [PEAK_PICK_RATIO] of the tallest one found.
      */
     private fun pickPeakLag(): Int? {
-        var tau = minLag
-        while (tau <= maxLag && nsdf[tau] > 0f) tau++   // skip the trivial τ≈0 hump
+        // Skip the trivial τ≈0 hump from lag 1, not from minLag: for a high note
+        // (4 kHz at 44.1 kHz has a period of 11 lags, minLag is 9) the zero-lag hump
+        // ends well before minLag, and starting there would skip the fundamental's
+        // own hump as if it were the trivial one, reporting the octave below.
+        var tau = 1
+        while (tau <= maxLag && nsdf[tau] > 0f) tau++
 
         var count = 0
         var highest = 0f
@@ -383,6 +473,8 @@ class PitchDetector(
                 if (nsdf[tau] > peakVal) { peakVal = nsdf[tau]; peakTau = tau }
                 tau++
             }
+            // A hump peaking under minLag is above MAX_FREQUENCY: not a candidate.
+            if (peakTau < minLag) continue
             keyLags[count] = peakTau
             keyVals[count] = peakVal
             if (peakVal > highest) highest = peakVal

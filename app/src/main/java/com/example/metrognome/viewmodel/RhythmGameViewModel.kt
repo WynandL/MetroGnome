@@ -323,10 +323,10 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         // the mic automatically when it is on. Only start if RECORD_AUDIO is actually held
         // (granted during calibration; a later revoke falls back to tap mode).
         val cal = MicCalibration.read(getApplication())
-        _useMic.value = cal.isActive
+        _useMic.value = cal.isUsable   // off the calibrated route the game falls back to taps
         // Clapping is far less precise than an instant screen tap, so widen the windows when the
         // mic is scoring. The tolerance-scaled tap windows above stay for tap mode.
-        if (cal.isActive) {
+        if (cal.isUsable) {
             // Wide clap windows, but clamped so no window exceeds ~45% of the beat interval.
             // Beyond that, adjacent notes' hit windows overlap at faster tempos (Hard/Expert) and
             // a clap or stray onset can be matched to the wrong note. Clamping keeps every clap

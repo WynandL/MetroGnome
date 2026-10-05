@@ -227,6 +227,36 @@ class AmbientDetectorTest {
         assertEquals(ListeningState.LOCKED, r.state)
     }
 
+    @Test
+    fun alternatingSilenceAndAWrongNoteCannotHoldALockForever() {
+        // Each kind of absence used to reset the other's counter, so quiet / 330 / quiet / 330
+        // kept a 220 lock alive indefinitely (18 s in the review's probe). The total absence is
+        // now bounded by the longer ride-out (800 ms, at most doubled): well under 4 s.
+        val d = detector()
+        d.profileQuiet()
+        var r = d.tone(220f)
+        repeat(12) { r = d.tone(220f) }
+        assertTrue(r.locked)
+        repeat(40) { i -> r = if (i % 2 == 0) d.quiet() else d.tone(330f) }
+        assertFalse("a lock with no confirmation for 3.7 s must expire (still on ${r.candidateHz})",
+            r.locked && r.candidateHz == 220f)
+    }
+
+    @Test
+    fun aStrayFrameForgivenByTheSpreadIsNotTheNoteThatLocks() {
+        // The trimmed spread ignores one outlier so it cannot block a lock; it used to then
+        // lock on that very outlier (five 220s and one 330 locked 330).
+        val d = detector()
+        d.profileQuiet()
+        var r = d.tone(220f)
+        repeat(4) { r = d.tone(220f) }
+        r = d.tone(330f)
+        assertFalse("a single 330 frame must not become the lock", r.locked && r.candidateHz == 330f)
+        repeat(10) { r = d.tone(220f) }
+        assertTrue(r.locked)
+        assertEquals(220f, r.candidateHz!!, 0.01f)
+    }
+
     private companion object {
         /** ceil(PROFILE_MS / hopMs) for the 900 ms profile at a 93 ms hop. */
         const val PROFILE_FRAMES = 10

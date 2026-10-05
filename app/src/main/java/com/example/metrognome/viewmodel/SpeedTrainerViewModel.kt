@@ -131,7 +131,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
     // Feeds the per-hit Timing Bonus score so one wild hit can't sink an otherwise-good run.
     private val sessionDeviations = mutableListOf<Float>()
 
-    // Raw accepted-onset and beat timestamps (elapsedRealtime) for the post-session SessionAnalyzer,
+    // Raw accepted-onset times and beats' presented times (elapsedRealtime) for the post-session SessionAnalyzer,
     // which does the rhythm/inlier statistics on the COMPLETE session rather than per-hit deviations.
     private val sessionOnsetTimes = mutableListOf<Long>()
     private val sessionBeatTimes = mutableListOf<Long>()
@@ -179,7 +179,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
 
         // Mic mode is the single app-wide toggle (MicCalibration.isActive) - no per-session
         // opt-in. Whether it actually ran drives the result layout.
-        val micRunning = micCal.isActive && hasMicPermission()
+        val micRunning = micCal.isUsable && hasMicPermission()
         // Dev sim shows the mic result layout (and a synthetic bonus) even without a real mic.
         sessionMicUsed = micRunning || devSimulateTiming
 
@@ -234,13 +234,20 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
 
     // ── Beat counting (called from MetronomeScreen on each beat event) ────────
 
-    fun onBeat(beat: Int) {
-        lastBeatMs = SystemClock.elapsedRealtime()
+    /**
+     * [presentedMs] is when the beat's click leaves the speaker (BeatEvent.presentedMs). It used
+     * to be stamped here, on arrival from the screen's collector: later than the engine
+     * callback, but still well before the click is heard.
+     */
+    fun onBeat(beat: Int, presentedMs: Long) {
+        lastBeatMs = presentedMs
         sessionBeatTimes.add(lastBeatMs)
 
         // The detector rejects the metronome click spectrally, so there is no
         // time-suppression window any more; a hit landing on the beat still scores.
-        if (isDevMode) {
+        // Logged only during a session: beat events arrive from every metronome run, and
+        // logging them all duplicated Practice's own beat rows in the shared mic log.
+        if (isDevMode && _sessionState.value !is TrainerSessionState.Idle) {
             MicDiagnosticsBuffer.logBeat(
                 beat = beat,
                 suppressUntilMs = 0L,   // spectral mode has no suppression window
@@ -305,11 +312,14 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         // reads as early, not as a near-full-interval-late hit. See GrooveScorer.nearestBeatDeviation.
         val stepBpm = steps.getOrElse(currentStepIndex) { 0 }.coerceAtLeast(1)
         val intervalMs = 60_000f / stepBpm
-        val rawDeviation = com.example.metrognome.groove.GrooveScorer
-            .nearestBeatDeviation((onsetMs - lastBeatMs).toFloat(), intervalMs)
+        // Latency is removed before the fold, so a high-latency device at a fast tempo is not
+        // shifted a whole beat (see GrooveScorer.correctedBeatDeviation).
+        val deviation = com.example.metrognome.groove.GrooveScorer
+            .correctedBeatDeviation(onsetMs, lastBeatMs, latencyBiasMs, intervalMs)
+        val rawDeviation = deviation + latencyBiasMs   // diagnostics: relative to the beat callback
 
         // Reject anything outside a generous ±500ms window around the beat.
-        if (abs(rawDeviation) > 500f) {
+        if (abs(deviation) > 500f) {
             if (isDevMode) MicDiagnosticsBuffer.logOnsetRejected(onsetMs, rawDeviation)
             return
         }
@@ -318,9 +328,8 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
             // During the count-in the player is only getting ready; onsets are ignored
             // (no measurement happens here any more - latency comes from the self-test).
             is TrainerSessionState.Running -> {
-                // Apply the per-session latency correction so deviation is centred on 0
-                // for a musician playing in time, rather than offset by output latency.
-                val deviation = rawDeviation - latencyBiasMs
+                // [deviation] already carries the per-session latency correction, so it is
+                // centred on 0 for a musician playing in time.
                 if (isDevMode) MicDiagnosticsBuffer.logOnsetAccepted(onsetMs, rawDeviation, deviation)
 
                 // A very accurate clap fires a celebratory firework (visual only).
@@ -422,7 +431,7 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         // shown to the player; the Gnotes bonus is a separate, length-bounded reward.
         val totalHits = sessionOnsetTimes.size
         val analysis = com.example.metrognome.groove.SessionAnalyzer
-            .analyze(sessionOnsetTimes.toList(), sessionBeatTimes.toList())
+            .analyze(sessionOnsetTimes.map { it - latencyBiasMs.toLong() }, sessionBeatTimes.toList())
         val realGroove = com.example.metrognome.groove.GrooveScorer.Result(
             grooveScore = analysis.grooveScore,
             fraction = analysis.fraction,

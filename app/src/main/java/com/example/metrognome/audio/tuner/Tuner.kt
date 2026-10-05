@@ -261,7 +261,13 @@ class Tuner {
                     ambientDetector.maxHoldScale = level.maxHoldScale
                     val prev = _ambient.value
                     val target = if (prev.locked) prev.candidateHz else null
-                    val nearClarity = if (target != null) detector.presenceAt(analysis, target) else 0f
+                    // Presence cannot tell the locked note from a note at a multiple of it
+                    // (A5 repeats at A4's period too); in that case only spectral evidence
+                    // that the old note still sounds may confirm the lock.
+                    val nearClarity = HarmonicPresenceGuard.gate(
+                        detector, analysis, pitch, target,
+                        if (target != null) detector.presenceAt(analysis, target) else 0f,
+                    )
 
                     val report = ambientDetector.observe(pitch, rms, nearClarity)
 

@@ -253,8 +253,11 @@ object SelfTestThresholds {
      *      zero-tolerance 0.95 (effectively demanding a perfect 12/12) to 0.85 (one miss
      *      tolerated), since a hard sample size of 12 makes "perfect" a fragile bar
      *      (2026-07-27).
+     *  5 - the ratio axis is measured as high/max(low, accent), exactly what ClapDetector
+     *      compares at runtime, instead of high/low, which ignored the accent band and
+     *      derived the per-device ratio threshold from a different feature (2026-10-05).
      */
-    const val GATE_LOGIC_VERSION = 4
+    const val GATE_LOGIC_VERSION = 5
 
 
     // ── Environment (ABORT, not FAIL - user-fixable) ──

@@ -41,7 +41,12 @@ import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import com.example.metrognome.analytics.AnalyticsTracker
 
-data class BeatEvent(val beat: Int)
+/**
+ * One metronome beat. [presentedMs] is when its click actually leaves the speaker, on the
+ * boot clock the mic stamps onsets on; the event itself arrives ~a buffer earlier, which is
+ * right for visuals. Anything timed against the mic uses [presentedMs].
+ */
+data class BeatEvent(val beat: Int, val presentedMs: Long)
 data class PracticeResult(
     val durationMinutes: Int,
     val streak: Int,
@@ -147,7 +152,8 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private var lastBeatMs = 0L
     private var practiceLatencyMs = 0f
     private val practiceDeviations = mutableListOf<Float>()
-    // Raw accepted-onset and beat timestamps (elapsedRealtime) for the post-session SessionAnalyzer.
+    // Raw accepted-onset times and the beats' presented times (both elapsedRealtime) for the
+    // post-session SessionAnalyzer.
     private val practiceOnsetTimes = mutableListOf<Long>()
     private val practiceBeatTimes = mutableListOf<Long>()
 
@@ -283,7 +289,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         practiceBeatTimes.clear()
         practiceLatencyMs = 0f
         roomNoiseMonitor.reset()
-        if (!(micCal.isActive && hasMicPermission())) return
+        if (!(micCal.isUsable && hasMicPermission())) return
 
         practiceLatencyMs = micCal.latencyMs
         // Spectral mode: the detector rejects the metronome click by its signature, so a hit
@@ -319,13 +325,14 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         // Fold onto the nearest beat (not just the previous one): an early clap reads as early,
         // not as a near-full-interval-late hit. See GrooveScorer.nearestBeatDeviation.
         val intervalMs = 60_000f / _bpm.value.coerceAtLeast(1)
-        val raw = com.example.metrognome.groove.GrooveScorer
-            .nearestBeatDeviation((onsetMs - lastBeatMs).toFloat(), intervalMs)
-        if (kotlin.math.abs(raw) > 500f) {            // outside a generous window — not a beat hit
+        // Latency is removed before the fold (see GrooveScorer.correctedBeatDeviation).
+        val calibrated = com.example.metrognome.groove.GrooveScorer
+            .correctedBeatDeviation(onsetMs, lastBeatMs, practiceLatencyMs, intervalMs)
+        val raw = calibrated + practiceLatencyMs      // diagnostics: relative to the beat callback
+        if (kotlin.math.abs(calibrated) > 500f) {     // outside a generous window — not a beat hit
             if (isDevMode) MicDiagnosticsBuffer.logOnsetRejected(onsetMs, raw)
             return
         }
-        val calibrated = raw - practiceLatencyMs
         if (isDevMode) MicDiagnosticsBuffer.logOnsetAccepted(onsetMs, raw, calibrated)
         // A very accurate clap fires a celebratory firework (visual only).
         if (kotlin.math.abs(calibrated) <= com.example.metrognome.groove.GrooveScorer.GREAT_HIT_MS) {
@@ -442,7 +449,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         // self-consistency - so steady-but-off-the-click still scores). Adapted into the shared
         // GrooveScorer.Result so the bonus + result UI are unchanged.
         val analysis = com.example.metrognome.groove.SessionAnalyzer
-            .analyze(practiceOnsetTimes.toList(), practiceBeatTimes.toList())
+            .analyze(practiceOnsetTimes.map { it - practiceLatencyMs.toLong() }, practiceBeatTimes.toList())
         val realGroove = com.example.metrognome.groove.GrooveScorer.Result(
             grooveScore = analysis.grooveScore,
             fraction = analysis.fraction,
@@ -657,10 +664,12 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
-        engine.onBeat = { beat ->
-            // Stamp the beat for practice-mic deviation math. The detector rejects the click
-            // spectrally, so no time-suppression window is needed any more.
-            lastBeatMs = SystemClock.elapsedRealtime()
+        engine.onBeatTimed = { beat, presentedMs ->
+            // Stamp the beat for practice-mic deviation math at the moment its click is
+            // presented, not at this callback (~a buffer earlier; it read on-time claps ~190 ms
+            // late on a real phone). The detector rejects the click spectrally, so no
+            // time-suppression window is needed any more.
+            lastBeatMs = presentedMs
             if (practiceDetector != null) practiceBeatTimes.add(lastBeatMs)
             if (isDevMode && practiceDetector != null) {
                 MicDiagnosticsBuffer.logBeat(
@@ -671,7 +680,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             }
             viewModelScope.launch {
                 _currentBeat.value = beat
-                _beatEvents.emit(BeatEvent(beat))
+                _beatEvents.emit(BeatEvent(beat, presentedMs))
             }
         }
         syncEngineSettings()
@@ -880,7 +889,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun setMicSoundOverride(sessionActive: Boolean) {
         val shouldForce = sessionActive &&
-                MicCalibration.read(getApplication()).isActive && hasMicPermission()
+                MicCalibration.read(getApplication()).isUsable && hasMicPermission()
         if (forceClassicForMic == shouldForce) return
         forceClassicForMic = shouldForce
         // The clap detector rejects both the 1100 Hz click and the 1800 Hz accent narrowly, so the

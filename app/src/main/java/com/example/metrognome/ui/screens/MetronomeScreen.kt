@@ -206,7 +206,7 @@ fun MetronomeScreen(
     // Forward beat events to the trainer for bar counting
     LaunchedEffect(trainerVm) {
         vm.beatEvents.collect { event ->
-            trainerVm.onBeat(event.beat)
+            trainerVm.onBeat(event.beat, event.presentedMs)
         }
     }
 

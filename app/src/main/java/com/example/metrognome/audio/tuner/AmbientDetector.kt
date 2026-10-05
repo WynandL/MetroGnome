@@ -225,6 +225,10 @@ class AmbientDetector(hopMillis: Double) {
     private var steadyRun = 0
     private var gapRun = 0
     private var disturbRun = 0      // frames of active-but-wrong-pitch while engaged
+    // Frames since the lock was last confirmed, whatever the reason it was not. gapRun and
+    // disturbRun each reset the other, so alternating silence and a wrong note used to keep
+    // a lock alive forever; this one only resets on a confirmation.
+    private var absentRun = 0
     private var engaged = false
     private var lockedHz = 0f
 
@@ -312,6 +316,7 @@ class AmbientDetector(hopMillis: Double) {
                 if (onNoteByPitch) lockedHz = rawHz   // track a slow glide via the real pitch
                 gapRun = 0
                 disturbRun = 0
+                absentRun = 0
                 return report(ListeningState.LOCKED, lockedHz, spread)
             }
 
@@ -319,15 +324,19 @@ class AmbientDetector(hopMillis: Double) {
             // longer for a competing tone (speech over the note) than for plain silence.
             val scale = holdScale()
             val disturbance = loud && holdTonal   // a wrong-pitch tone sitting over the note
+            // However the absence is made up, it never outlasts the longer of the two
+            // ride-outs: a pure gap or a pure disturbance expires exactly as before.
+            absentRun++
+            val withinTotal = absentRun <= (holdDisturbFrames * scale).toInt()
             if (disturbance) {
                 gapRun = 0
                 disturbRun++
-                if (disturbRun <= (holdDisturbFrames * scale).toInt())
+                if (withinTotal && disturbRun <= (holdDisturbFrames * scale).toInt())
                     return report(ListeningState.LOCKED, lockedHz, spread)
             } else {
                 disturbRun = 0
                 gapRun++
-                if (gapRun <= (holdGapFrames * scale).toInt())
+                if (withinTotal && gapRun <= (holdGapFrames * scale).toInt())
                     return report(ListeningState.LOCKED, lockedHz, spread)
             }
             // Lock has expired — store where it was for fast re-acquisition.
@@ -337,6 +346,7 @@ class AmbientDetector(hopMillis: Double) {
             steadyRun = 0
             gapRun = 0
             disturbRun = 0
+            absentRun = 0
         }
 
         // ── Not engaged: classify, and try to acquire ───────────────────────────
@@ -359,6 +369,7 @@ class AmbientDetector(hopMillis: Double) {
             steadyRun = 0
             gapRun = 0
             disturbRun = 0
+            absentRun = 0
             recentlyLockedHz = 0f
             return report(ListeningState.LOCKED, hz, spread)
         }
@@ -369,12 +380,19 @@ class AmbientDetector(hopMillis: Double) {
         val steadyEnough = recent.size >= MIN_RECENT &&
                 !acquireSpread.isNaN() && acquireSpread <= ACQUIRE_CENTS
         if (steadyEnough) {
+            // The trimmed spread forgives one stray frame; it must not then lock ON that
+            // frame. A current pitch away from the ring's median waits (neither advancing
+            // nor resetting the run) for the next frame that agrees with the evidence.
+            val median = recent.sorted()[recent.size / 2]
+            if (abs(cents(hz!!, median)) > ACQUIRE_CENTS)
+                return report(ListeningState.ACQUIRING, median, spread)
             steadyRun++
             if (steadyRun >= acquireFrames) {
                 engaged = true
-                lockedHz = hz!!
+                lockedHz = hz
                 gapRun = 0
                 disturbRun = 0
+                absentRun = 0
                 return report(ListeningState.LOCKED, hz, spread)
             }
             return report(ListeningState.ACQUIRING, hz, spread)

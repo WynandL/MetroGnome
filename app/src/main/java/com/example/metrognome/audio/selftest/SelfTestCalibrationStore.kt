@@ -24,6 +24,15 @@ class SelfTestCalibrationStore(context: Context) {
     val isCalibrated: Boolean
         get() = prefs.contains(KEY_LATENCY_MS)
 
+    /**
+     * The output route the passing check was measured on. A record from before the route was
+     * stored reads as the built-in speaker, the only route the check has run on since v5.23.
+     */
+    val route: AudioRoute
+        get() = prefs.getString(KEY_ROUTE, null)
+            ?.let { runCatching { AudioRoute.valueOf(it) }.getOrNull() }
+            ?: AudioRoute.BUILTIN_SPEAKER
+
     /** The measured acoustic round-trip latency in ms, or null if never calibrated. */
     val latencyMs: Float?
         get() = if (isCalibrated) prefs.getFloat(KEY_LATENCY_MS, 0f) else null

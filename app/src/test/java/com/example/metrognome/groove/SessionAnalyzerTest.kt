@@ -106,4 +106,14 @@ class SessionAnalyzerTest {
         assertEquals(0, a.validInputs)
         assertEquals(0, a.grooveScore)
     }
+    @Test
+    fun aFractionalMillisecondPulseIsNotGivenFakeDrift() {
+        // 150.5 ms between claps, timestamps whole ms. The phase fit used to take the remainder
+        // modulo 150 (period.toLong()) and divide by 150.5, inventing ~10 ms of spread from
+        // input whose only irregularity is half-millisecond quantisation.
+        val claps = (0 until 53).map { 10_000L + (it * 150.5).toLong() }
+        val a = SessionAnalyzer.analyze(claps)
+        assertTrue("spread was ${a.selfConsistencyMs} ms", a.selfConsistencyMs < 1f)
+        assertTrue("resultant was ${a.rhythmStrength}", a.rhythmStrength > 0.99f)
+    }
 }

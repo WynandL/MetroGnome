@@ -17,7 +17,11 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.example.metrognome.audio.selftest.AudioRoute
+import com.example.metrognome.audio.selftest.AudioRouteMonitor
 import com.example.metrognome.audio.selftest.MicCalibration
 import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.example.metrognome.ui.theme.AppColors
@@ -50,6 +56,9 @@ import com.example.metrognome.ui.theme.AppColors
  *    full Groove Check: the device already proved itself once, so re-running the whole
  *    onboarding flow here would be a needless, confusing detour. No [onFixPermission] means
  *    a non-interactive note pointing at Settings instead.
+ *  - **Wrong output** (active and permitted, but the phone is on Bluetooth/headphones while
+ *    the check was measured on the speaker): sessions run without mic scoring
+ *    ([MicCalibration.isUsable]) and this says how to get it back. Follows the route live.
  *  - **Never checked** (not active AND zero completed checks) AND an [onStartCheck] is
  *    supplied: a tappable onboarding CTA inviting the user to run the Groove Check
  *    right here. This is how we surface an otherwise Settings-buried feature at the
@@ -89,8 +98,21 @@ fun MicTimingNudge(
             PackageManager.PERMISSION_GRANTED
     }
     val checksDone = remember(refreshKey) { MetroItemTracker(context).micChecksCompleted() }
+    // The live output route, so plugging in earbuds while this screen is open updates the
+    // strip at once. Sessions read the route themselves when they start (MicCalibration.isUsable).
+    var route by remember { mutableStateOf(cal.currentRoute) }
+    DisposableEffect(Unit) {
+        val monitor = AudioRouteMonitor(context)
+        fun watch(from: AudioRoute) {
+            route = from
+            monitor.start(from) { now -> watch(now) }
+        }
+        watch(monitor.currentRoute())
+        onDispose { monitor.stop() }
+    }
 
     when {
+        cal.isActive && micGranted && route != cal.calibratedRoute -> WrongRouteReminder(modifier, route)
         cal.isActive && micGranted -> ActiveReminder(modifier)
         cal.isActive && !micGranted -> PermissionNeededReminder(modifier, onFixPermission)
         onStartCheck != null && checksDone == 0 -> StartCheckCta(modifier, onStartCheck)
@@ -128,6 +150,51 @@ private fun ActiveReminder(modifier: Modifier) {
             color = AppColors.textMuted,
             fontSize = 10.sp,
         )
+    }
+}
+
+/**
+ * Mic mode is on, but the phone is not on the output the Groove Check was measured on, so
+ * this session scores without the mic. Not tappable: the fix is the user's (unplug, disconnect).
+ */
+@Composable
+private fun WrongRouteReminder(modifier: Modifier, route: AudioRoute) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(AppColors.goldTint)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Mic,
+            contentDescription = null,
+            tint = AppColors.gold,
+            modifier = Modifier.size(16.dp),
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "Groove Check needs the phone speaker",
+                color = AppColors.textSecondary,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                when (route) {
+                    AudioRoute.BLUETOOTH -> "Disconnect Bluetooth audio to score your timing"
+                    AudioRoute.WIRED -> "Unplug headphones to score your timing"
+                    else -> "Switch to the phone speaker to score your timing"
+                },
+                color = AppColors.textMuted,
+                fontSize = 10.sp,
+                lineHeight = 14.sp,
+                modifier = Modifier.padding(top = 1.dp),
+            )
+        }
     }
 }
 
