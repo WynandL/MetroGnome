@@ -1,5 +1,6 @@
 package com.example.metrognome.ui.overlays
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -162,9 +163,11 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
             label = "shimmer",
         )
 
+    BackHandler(onBack = onDismiss)
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .modalScrim()
             .background(Color.Black.copy(alpha = overlayAlpha.value)),
         contentAlignment = Alignment.Center,
     ) {
@@ -349,9 +352,11 @@ private fun V6FeatureIntroOverlay(onDismiss: () -> Unit) {
     val notesShown = (reveal / 0.15f).toInt().coerceIn(0, CMAJ7_OPEN.size)
     val named = notesShown == CMAJ7_OPEN.size
 
+    BackHandler(onBack = onDismiss)
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .modalScrim()
             .background(Color.Black.copy(alpha = overlayAlpha.value)),
         contentAlignment = Alignment.Center,
     ) {
@@ -486,9 +491,11 @@ private fun V3FeatureIntroOverlay(onDismiss: () -> Unit) {
             label = "introConfettiTime",
         )
 
+    BackHandler(onBack = onDismiss)
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .modalScrim()
             .background(Color.Black.copy(alpha = overlayAlpha.value)),
         contentAlignment = Alignment.Center,
     ) {
@@ -607,9 +614,11 @@ private fun V4FeatureIntroOverlay(onDismiss: () -> Unit) {
             label = "v4ConfettiTime",
         )
 
+    BackHandler(onBack = onDismiss)
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .modalScrim()
             .background(Color.Black.copy(alpha = overlayAlpha.value)),
         contentAlignment = Alignment.Center,
     ) {

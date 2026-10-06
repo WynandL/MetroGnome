@@ -1,5 +1,6 @@
 package com.example.metrognome.ui.overlays
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -67,9 +68,11 @@ fun SpeedTrainerResultOverlay(
         )
     }
 
+    BackHandler(onBack = onDismiss)
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .modalScrim()
             .background(Color.Black.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center,
     ) {

@@ -67,6 +67,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -806,10 +807,17 @@ private fun AmbientPanel(
     // noisy room. Hold the last *stable* reading for the header and detail panel so
     // it can actually be read — LOCKED commits instantly, other states after a short
     // dwell. The live needle and frequency rail still read the raw [report].
+    // While the state holds, the snapshot is refreshed from the latest report at the same
+    // calm pace; keyed on the state alone it froze, so a room that got louder while QUIET
+    // kept showing the noise floor and hum from when QUIET began (UI audit U08).
     var shown by remember { mutableStateOf(report) }
+    val latestReport by rememberUpdatedState(report)
     LaunchedEffect(report.state) {
-        if (report.state == ListeningState.LOCKED) shown = report
-        else { delay(900.milliseconds); shown = report }
+        if (report.state != ListeningState.LOCKED) delay(900.milliseconds)
+        while (true) {
+            shown = latestReport
+            delay(900.milliseconds)
+        }
     }
 
     AppCard(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp)) {

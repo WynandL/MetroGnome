@@ -1,5 +1,6 @@
 package com.example.metrognome.ui.overlays
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -155,9 +156,11 @@ fun UnlockCelebrationOverlay(
             label = "confettiTime",
         )
 
+    BackHandler(onBack = onDismiss)
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .modalScrim()
             .background(Color.Black.copy(alpha = overlayAlpha.value)),
         contentAlignment = Alignment.Center,
     ) {

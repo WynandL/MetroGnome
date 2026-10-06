@@ -38,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -188,11 +189,12 @@ fun SpeedTrainerHud(
             }
         }
 
-        // Overlay row: icon + step label + retreat/skip + cancel
+        // Overlay row: icon + step label + retreat/skip + cancel. The end inset is small
+        // because each action's touch slot carries its own space around the icon.
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp),
+                .padding(start = 12.dp, end = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -229,43 +231,25 @@ fun SpeedTrainerHud(
                     lineHeight = 9.sp,
                 )
             }
-            Icon(
+            HudIconAction(
                 Icons.Filled.SkipPrevious,
                 contentDescription = "Go back a step",
                 tint = if (state.currentStepIndex > 0) AppColors.textSecondary else AppColors.textSubtle,
-                modifier = Modifier
-                    .size(16.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onRetreat,
-                    ),
+                onClick = onRetreat,
             )
-            Spacer(Modifier.width(6.dp))
-            Icon(
+            HudIconAction(
                 Icons.Filled.SkipNext,
                 contentDescription = "Skip to next step",
                 tint = AppColors.textSecondary,
-                modifier = Modifier
-                    .size(16.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onSkip,
-                    ),
+                onClick = onSkip,
             )
+            // Cancel ends the session, so it stands apart from the two step controls.
             Spacer(Modifier.width(8.dp))
-            Icon(
+            HudIconAction(
                 Icons.Filled.Close,
                 contentDescription = "Cancel session",
                 tint = AppColors.textMuted,
-                modifier = Modifier
-                    .size(16.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onCancel,
-                    ),
+                onClick = onCancel,
             )
         }
     }
@@ -333,24 +317,32 @@ fun SpeedTrainerCountdownHud(
 
         // Cancel
         Spacer(Modifier.weight(1f))
+        // The 20 dp disc is the look; the 40 dp box around it is the touch slot.
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(20.dp)
-                .clip(CircleShape)
-                .background(AppColors.surfaceVariant)
+                .size(HUD_ACTION_WIDTH)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
+                    role = Role.Button,
                     onClick = onCancel,
                 ),
         ) {
-            Icon(
-                Icons.Filled.Close,
-                contentDescription = "Cancel",
-                tint = AppColors.textMuted,
-                modifier = Modifier.size(12.dp),
-            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.surfaceVariant),
+            ) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "Cancel countdown",
+                    tint = AppColors.textMuted,
+                    modifier = Modifier.size(12.dp),
+                )
+            }
         }
     }
 }

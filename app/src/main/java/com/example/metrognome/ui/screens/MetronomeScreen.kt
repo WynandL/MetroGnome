@@ -73,6 +73,7 @@ import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.cloud.PollReporter
 import com.example.metrognome.poll.PollManager
 import com.example.metrognome.ui.components.PollBanner
+import com.example.metrognome.ui.components.HudIconAction
 import com.example.metrognome.ui.overlays.PracticeCompleteOverlay
 import com.example.metrognome.ui.dialogs.PresetDeleteDialog
 import com.example.metrognome.ui.dialogs.SavePresetDialog
@@ -947,7 +948,7 @@ private fun PracticeProgressRow(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp),
+                .padding(start = 12.dp, end = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Pulsing heart — calm at the start, racing at the end
@@ -978,13 +979,11 @@ private fun PracticeProgressRow(
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier.weight(1f)
             )
-            Icon(
-                imageVector = Icons.Filled.Close,
+            HudIconAction(
+                Icons.Filled.Close,
                 contentDescription = "Cancel practice",
                 tint = AppColors.textMuted,
-                modifier = Modifier
-                    .size(16.dp)
-                    .clickable(onClick = onCancelPractice)
+                onClick = onCancelPractice,
             )
         }
     }
