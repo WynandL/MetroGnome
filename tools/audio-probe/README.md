@@ -1,6 +1,6 @@
 # Audio probe
 
-Drives known test sounds through the phone's own speaker while the app listens, then reads back what the engines decided. It was built for the October 2026 audio review (branch `fix/audio-review`). Phone results from that work are summarised in the commit messages and in CLAUDE.md.
+Drives known test sounds through the phone's own speaker while the app listens, then reads back what the engines decided. It was built for the October 2026 audio review (merged into `v6.0` on 2026-10-06). Phone results from that work are summarised in the commit messages and in CLAUDE.md.
 
 **Pieces:**
 
@@ -24,7 +24,9 @@ Drives known test sounds through the phone's own speaker while the app listens, 
 3. `adb shell pm grant com.wynandl.metrognome android.permission.RECORD_AUDIO`.
 4. Dev mode on (Settings, About card, Build line). Without it the mic diagnostics log stays empty.
 
-## Next session: tests that settle open review items
+## Repeatable tests
+
+T1 and T2 settled the review's open items on the dev's S926B (2026-10-05/06); results are under each. Rerun them after any change to Groove Check, the metronome's write loop or mic scoring.
 
 ### T1. Groove Check repeatability (15 ms between two runs, 81.9 vs 66.7)
 
@@ -35,6 +37,7 @@ groovecheck 6
 - Runs six checks back to back from a cleared calibration. Saves `work/res/gc_<i>.xml` and the mic start/stop log `gc_rec.txt`, and prints each latency.
 - **Reading it:** a spread of a few ms means the 15 ms was a one-off, so leave it. A spread of 10 ms or more is systematic, and the fix is to average several latency passes in `MicSelfTest.runLatencyPhase`.
 - **Also confirm** that every "rec stop" in `gc_rec.txt` lands at its verdict (the A14 cleanup).
+- **Result (2026-10-05, S926B, 8 runs):** 66.7 to 86.7 ms, a ~20 ms spread, so it is systematic; averaging several latency passes was not done (the dev has not been asked). Every rec stop landed at its verdict.
 
 ### T2. Timing origin (A05): does the latency match the beat-to-click delay?
 
@@ -48,6 +51,8 @@ Scoring computes `onset - beat callback - Groove Check latency`. That is centred
 6. `python tools/audio-probe/timing.py "$S" practice120 <latency>` for each, using `latency_ms` from `shared_prefs/mic_selftest_calibration.xml` (the value scoring actually subtracts).
 
 **Result before the fix (2026-10-05, S926B):** the click was heard 250-275 ms after the beat callback at 60, 120 and 200 BPM, against a Groove Check latency of ~70 ms, so on-time claps read ~190 ms late. Beats are now logged at their presented time (`onBeatTimed`), so **after the fix** `timing.py` should report the click at about one Groove Check latency after the beat, i.e. "an on-time clap scores about" within ±15 ms of 0, at every tempo and in both Practice and Speed Trainer. It is loud: run it when noise is fine. Each beat should also appear once in the log (they used to be logged twice).
+
+**Result after the fix (2026-10-06, S926B, latency 77.2 ms):** an on-time clap scores +8 ms at 120 BPM and +4 ms at 200 BPM in Practice, and +3 ms in Speed Trainer (its default ramp, so 60 to 65 BPM). No duplicate beat rows. Speed Trainer over adb: "Speed Trainer", "START TRAINING", then "Cancel session" and "Stop". The +5/-5 buttons do nothing while a session runs, so set the tempo first. In the field, `practice_completed` / `speed_trainer_completed` carry `clap_offset_ms` per session for the same check on other phones.
 
 ### T3. A06 route pill, only if earbuds or headphones are to hand
 
