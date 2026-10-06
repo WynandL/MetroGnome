@@ -76,10 +76,17 @@ fun RaisedControl(
     shape: Shape,
     tint: Color,
     modifier: Modifier = Modifier,
+    /**
+     * False makes the key inert and tells accessibility services it is disabled. The look is
+     * the caller's (each wrapper dims it its own way); before this, a dimmed key still
+     * announced itself as an available button that did nothing (UI audit U04).
+     */
+    enabled: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Surface(
         onClick = onClick,
+        enabled = enabled,
         shape = shape,
         color = Color.Transparent,
         modifier = modifier.raisedFace(shape, tint),

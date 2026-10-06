@@ -45,7 +45,8 @@ fun DevButton(
     compact: Boolean = false,
 ) {
     RaisedControl(
-        onClick = { if (enabled) onClick() },
+        onClick = onClick,
+        enabled = enabled,
         shape = RoundedCornerShape(12.dp),
         tint = kind.tint,
         modifier = modifier.heightIn(min = if (compact) 36.dp else 40.dp).alpha(if (enabled) 1f else 0.4f),

@@ -169,7 +169,7 @@ fun DronePanel(
             // ── Octave stepper + note readout + play key ──────────────────────────
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.alpha(if (state.canOctaveDown) 1f else 0.3f)) {
-                    CircleButton("−", onClick = { onShiftOctave(-1) })
+                    CircleButton("−", onClick = { onShiftOctave(-1) }, contentDescription = "Octave down", enabled = state.canOctaveDown)
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(70.dp)) {
@@ -187,7 +187,7 @@ fun DronePanel(
                 }
                 Spacer(Modifier.width(10.dp))
                 Box(modifier = Modifier.alpha(if (state.canOctaveUp) 1f else 0.3f)) {
-                    CircleButton("+", onClick = { onShiftOctave(1) })
+                    CircleButton("+", onClick = { onShiftOctave(1) }, contentDescription = "Octave up", enabled = state.canOctaveUp)
                 }
 
                 Spacer(Modifier.weight(1f))

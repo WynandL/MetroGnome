@@ -439,6 +439,7 @@ private fun ConfigTile(
             CircleButton(
                 label = "−",
                 onClick = onDecrement,
+                contentDescription = "Decrease ${label.lowercase()}",
                 size = 32.dp,
                 fontSize = 16.sp,
                 modifier = Modifier
@@ -450,6 +451,7 @@ private fun ConfigTile(
             CircleButton(
                 label = "+",
                 onClick = onIncrement,
+                contentDescription = "Increase ${label.lowercase()}",
                 size = 32.dp,
                 fontSize = 16.sp,
                 modifier = Modifier

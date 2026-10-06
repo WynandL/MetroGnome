@@ -1386,7 +1386,7 @@ private fun ReferencePitchControls(
 
             // Slider row
             Row(verticalAlignment = Alignment.CenterVertically) {
-                StepButton("−") { onNudge(-1f) }
+                StepButton("−", "Reference pitch down 1 hertz") { onNudge(-1f) }
                 Spacer(Modifier.width(10.dp))
                 GoldSlider(
                     value = referenceHz,
@@ -1398,7 +1398,7 @@ private fun ReferencePitchControls(
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.width(10.dp))
-                StepButton("+") { onNudge(1f) }
+                StepButton("+", "Reference pitch up 1 hertz") { onNudge(1f) }
             }
 
             // Range labels below the slider
@@ -1428,7 +1428,8 @@ private fun ReferencePitchControls(
 }
 
 @Composable
-private fun StepButton(label: String, onClick: () -> Unit) = CircleButton(label, onClick)
+private fun StepButton(label: String, description: String, onClick: () -> Unit) =
+    CircleButton(label, onClick, contentDescription = description)
 
 // ── Instrument calibration chip ─────────────────────────────────────────────────
 

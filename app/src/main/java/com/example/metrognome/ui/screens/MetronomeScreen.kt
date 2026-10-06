@@ -81,6 +81,13 @@ import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.ui.overlays.WhatsNewOverlayDispatcher
 import com.example.metrognome.ui.components.metro_items.MetroItem
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.offset
@@ -664,11 +671,11 @@ private fun BpmStepperRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        BpmButton("-5", Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm - 5) }
-        BpmButton("−",  Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm - 1) }
+        BpmButton("-5", "Tempo down 5", Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm - 5) }
+        BpmButton("−",  "Tempo down 1", Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm - 1) }
         PlayPauseButton(isPlaying = isPlaying, onClick = onTogglePlay)
-        BpmButton("+",  Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm + 1) }
-        BpmButton("+5", Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm + 5) }
+        BpmButton("+",  "Tempo up 1", Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm + 1) }
+        BpmButton("+5", "Tempo up 5", Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm + 5) }
         RaisedControl(
             onClick = onTapTempo,
             shape = RoundedCornerShape(12.dp),
@@ -755,7 +762,7 @@ private fun CompactIconChip(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
         tint = if (active) AppColors.primaryPurple else AppColors.surfaceVariant,
-        modifier = modifier,
+        modifier = modifier.semantics { stateDescription = if (active) "On" else "Off" },
     ) {
         Icon(
             imageVector = icon,
@@ -1251,12 +1258,17 @@ private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
 
 
 @Composable
-private fun BpmButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun BpmButton(label: String, description: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     RaisedControl(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
         tint = MaterialTheme.colorScheme.surfaceVariant,
-        modifier = modifier
+        // "-5" alone reads aloud as "minus five"; say what it does.
+        modifier = modifier.clearAndSetSemantics {
+            contentDescription = description
+            role = Role.Button
+            onClick { onClick(); true }
+        }
     ) {
         Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
     }

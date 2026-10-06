@@ -24,6 +24,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -176,6 +181,7 @@ private fun PresetCarousel(
 private fun FractionStepper(top: Int, bottom: Int, onMeterChange: (Int, Int) -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         StepperLine(
+            name = "beats per bar",
             value = top,
             onMinus = { onMeterChange((top - 1).coerceAtLeast(MeterTheory.TOP_RANGE.first), bottom) },
             onPlus = { onMeterChange((top + 1).coerceAtMost(MeterTheory.TOP_RANGE.last), bottom) },
@@ -188,6 +194,7 @@ private fun FractionStepper(top: Int, bottom: Int, onMeterChange: (Int, Int) -> 
                 .background(AppColors.textMuted)
         )
         StepperLine(
+            name = "beat value",
             value = bottom,
             onMinus = { onMeterChange(top, stepDenominator(bottom, -1)) },
             onPlus = { onMeterChange(top, stepDenominator(bottom, +1)) },
@@ -196,9 +203,9 @@ private fun FractionStepper(top: Int, bottom: Int, onMeterChange: (Int, Int) -> 
 }
 
 @Composable
-private fun StepperLine(value: Int, onMinus: () -> Unit, onPlus: () -> Unit) {
+private fun StepperLine(name: String, value: Int, onMinus: () -> Unit, onPlus: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        StepButton("-", onMinus)
+        StepButton("-", "Fewer $name", onMinus)
         Text(
             "$value",
             color = AppColors.gold,
@@ -207,21 +214,25 @@ private fun StepperLine(value: Int, onMinus: () -> Unit, onPlus: () -> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.width(44.dp),
         )
-        StepButton("+", onPlus)
+        StepButton("+", "More $name", onPlus)
     }
 }
 
 @Composable
-private fun StepButton(symbol: String, onClick: () -> Unit) {
+private fun StepButton(symbol: String, description: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(30.dp)
             .clip(CircleShape)
             .background(AppColors.surface)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick, role = Role.Button)
+            .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
-        Text(symbol, color = AppColors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text(
+            symbol, color = AppColors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp,
+            modifier = Modifier.clearAndSetSemantics {},
+        )
     }
 }
 
@@ -236,7 +247,10 @@ private fun AccentCell(number: Int, accented: Boolean, onClick: () -> Unit) {
             .widthIn(min = 36.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(if (accented) AppColors.gold else AppColors.surface)
-            .clickable(onClick = onClick)
+            // Each beat is an on/off accent, so it is a checkbox, not a button: the gold fill
+            // was the only sign of which beats were accented (UI audit U05).
+            .toggleable(value = accented, role = Role.Checkbox, onValueChange = { onClick() })
+            .semantics { contentDescription = "Accent beat $number" }
             .padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -245,6 +259,7 @@ private fun AccentCell(number: Int, accented: Boolean, onClick: () -> Unit) {
             color = if (accented) Color.Black else AppColors.textSecondary,
             fontWeight = if (accented) FontWeight.Bold else FontWeight.Normal,
             fontSize = 14.sp,
+            modifier = Modifier.clearAndSetSemantics {},
         )
     }
 }

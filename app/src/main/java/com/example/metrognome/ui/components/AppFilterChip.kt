@@ -2,7 +2,7 @@ package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.LocalContentColor
@@ -35,7 +35,8 @@ import com.example.metrognome.ui.theme.AppColors
  * `0.dp` when positioning chips yourself (e.g. flush-aligned in a Box) so the padding does
  * not offset the alignment.
  *
- * All screens that render selection chips use this instead of Material's `FilterChip`.
+ * All screens that render selection chips use this instead of Material's `FilterChip`. Wrap a
+ * row of them in `Modifier.selectableGroup()` so a screen reader reads it as one choice.
  */
 @Composable
 fun AppFilterChip(
@@ -44,7 +45,8 @@ fun AppFilterChip(
     label: String,
     modifier: Modifier = Modifier,
     endPadding: Dp = 6.dp,
-) = AppFilterChip(selected = selected, onClick = onClick, modifier = modifier, endPadding = endPadding, label = { Text(label) })
+    enabled: Boolean = true,
+) = AppFilterChip(selected = selected, onClick = onClick, modifier = modifier, endPadding = endPadding, enabled = enabled, label = { Text(label) })
 
 @Composable
 fun AppFilterChip(
@@ -52,6 +54,8 @@ fun AppFilterChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     endPadding: Dp = 6.dp,
+    /** False makes the chip inert and announced as disabled; the caller owns any dimming. */
+    enabled: Boolean = true,
     label: @Composable () -> Unit,
 ) {
     val shape = RoundedCornerShape(10.dp)
@@ -68,7 +72,9 @@ fun AppFilterChip(
             .height(CHIP_HEIGHT)
             .clip(shape)
             .then(face)
-            .clickable(onClick = onClick, role = Role.Button)
+            // Every chip row in the app is a pick-one choice, so each chip is a radio button
+            // that publishes whether it is the selected one (UI audit U05).
+            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .padding(horizontal = 14.dp),
     ) {
         CompositionLocalProvider(

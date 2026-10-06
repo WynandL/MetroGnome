@@ -43,7 +43,8 @@ fun PlayStopKey(
         label = "playStopTint",
     )
     RaisedControl(
-        onClick = { if (enabled) onClick() },
+        onClick = onClick,
+        enabled = enabled,
         shape = CircleShape,
         tint = tint,
         modifier = modifier

@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.metrognome.ui.theme.AppColors
 
@@ -30,12 +32,17 @@ import com.example.metrognome.ui.theme.AppColors
  * every other quiet surface; on, the track becomes the same raised purple key as the play
  * button ([raisedFace]) and the thumb catches the light in a gold-tinted ivory. Replaces
  * Material's `Switch` everywhere so toggles look like part of the app.
+ *
+ * [label] is what the switch turns on, read out with its state ("Flash on Beat, switch, on").
+ * The visible label sits in a sibling Text, so without it a screen reader heard only
+ * "switch, off" (UI audit U06). Pass the row's title.
  */
 @Composable
 fun AppSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    label: String? = null,
 ) {
     val trackShape = RoundedCornerShape(50)
     val thumbX by animateDpAsState(if (checked) 22.dp else 0.dp, tween(180), label = "switchThumb")
@@ -58,6 +65,7 @@ fun AppSwitch(
                 indication = null,
                 onValueChange = onCheckedChange,
             )
+            .then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier)
             .clip(trackShape)
             .then(
                 if (checked) Modifier.raisedFace(trackShape, AppColors.primaryPurple)

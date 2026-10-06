@@ -1035,7 +1035,8 @@ private fun HearStrip(
                     ChordPlaybackPace.entries.forEach { option ->
                         AppFilterChip(
                             selected = option == pace,
-                            onClick = { if (hasNotes) onSetPace(option) },
+                            onClick = { onSetPace(option) },
+                            enabled = hasNotes,
                             endPadding = if (option == ChordPlaybackPace.entries.last()) 0.dp else 8.dp,
                             modifier = Modifier.weight(1f),
                             label = {

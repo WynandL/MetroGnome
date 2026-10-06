@@ -766,7 +766,8 @@ private fun SettingsSwitchRow(
         Spacer(Modifier.width(12.dp))
         AppSwitch(
             checked = checked,
-            onCheckedChange = onChecked
+            onCheckedChange = onChecked,
+            label = "Flash on Beat",
         )
     }
 }
@@ -804,6 +805,7 @@ private fun NotificationsRow(state: NotificationPermissionState) {
         }
         Spacer(Modifier.width(12.dp))
         AppSwitch(
+            label = "Notifications",
             checked = state.granted,
             onCheckedChange = {
                 if (state.granted) {

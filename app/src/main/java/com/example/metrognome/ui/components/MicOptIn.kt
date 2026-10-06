@@ -92,6 +92,7 @@ fun MicOptIn(
             }
             Spacer(Modifier.width(12.dp))
             AppSwitch(
+                label = "Groove Check",
                 checked = enabled,
                 onCheckedChange = {
                     if (!hasMicPermission && !enabled) onRequestPermission() else onToggle()
