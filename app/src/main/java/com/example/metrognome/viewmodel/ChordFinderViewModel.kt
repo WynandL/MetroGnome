@@ -325,6 +325,18 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
         AnalyticsTracker.logChordsInstrumentChanged(instrument.name)
     }
 
+    /**
+     * Where the player last left [instrument] scrolled, in dp from its left edge, or null if
+     * never (the screen then opens on its default). Kept per instrument, so a switch back
+     * finds each where it was, and in dp so a display-size change cannot misplace it.
+     */
+    fun instrumentScrollDp(instrument: ChordInstrument): Float? =
+        prefs.getFloat(KEY_SCROLL_PREFIX + instrument.name, -1f).takeIf { it >= 0f }
+
+    fun saveInstrumentScrollDp(instrument: ChordInstrument, dp: Float) {
+        prefs.edit { putFloat(KEY_SCROLL_PREFIX + instrument.name, dp.coerceAtLeast(0f)) }
+    }
+
     // ── Hearing it back ─────────────────────────────────────────────────────────
 
     private var playJob: Job? = null
@@ -524,6 +536,7 @@ class ChordFinderViewModel(app: Application) : AndroidViewModel(app) {
         private const val KEY_MIC_ENABLED = "mic_enabled"
         private const val KEY_PACE = "playback_pace"
         private const val KEY_ENGINE = "engine"
+        private const val KEY_SCROLL_PREFIX = "scroll_dp_"
 
         /** How long after "hear it" ends the mic keeps ignoring readings, for the tuner's lock to let go of the last chord. */
         private const val PLAYBACK_MUTE_TAIL_MS = 600L

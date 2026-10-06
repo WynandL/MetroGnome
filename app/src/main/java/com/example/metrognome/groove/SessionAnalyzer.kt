@@ -147,6 +147,20 @@ object SessionAnalyzer {
         )
     }
 
+    /**
+     * Median signed ms from each onset to its nearest beat (+ late), or null without onsets or
+     * beats. Field telemetry only: across many players and phones it should centre on 0 if the
+     * beat timing and the Groove Check latency are right on every device; a phone model sitting
+     * well off 0 points at its audio path. A median, unlike [Analysis.gridBiasMs], ignores the
+     * odd stray onset.
+     */
+    fun medianGridOffsetMs(onsetTimesMs: List<Long>, beatTimesMs: List<Long>): Float? {
+        if (beatTimesMs.size < 2) return null
+        val sortedBeats = beatTimesMs.sorted()
+        val devs = onsetTimesMs.mapNotNull { nearestBeatDeviationMs(it, sortedBeats)?.toFloat() }
+        return if (devs.isEmpty()) null else medianF(devs)
+    }
+
     // ── internals ───────────────────────────────────────────────────────────────
 
     private class Fit(val resultant: Double, val inlierResiduals: List<Float>)

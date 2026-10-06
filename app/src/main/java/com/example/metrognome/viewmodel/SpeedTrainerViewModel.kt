@@ -430,8 +430,14 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
         // GrooveScorer.Result shape so the bonus + result UI are unchanged. grooveScore (0..100) is
         // shown to the player; the Gnotes bonus is a separate, length-bounded reward.
         val totalHits = sessionOnsetTimes.size
+        val correctedOnsets = sessionOnsetTimes.map { it - latencyBiasMs.toLong() }
         val analysis = com.example.metrognome.groove.SessionAnalyzer
-            .analyze(sessionOnsetTimes.map { it - latencyBiasMs.toLong() }, sessionBeatTimes.toList())
+            .analyze(correctedOnsets, sessionBeatTimes.toList())
+        // Field check of beat timing per phone model, as in Practice.
+        val clapOffsetMs = if (analysis.confident) {
+            com.example.metrognome.groove.SessionAnalyzer
+                .medianGridOffsetMs(correctedOnsets, sessionBeatTimes.toList())?.roundToInt()
+        } else null
         val realGroove = com.example.metrognome.groove.GrooveScorer.Result(
             grooveScore = analysis.grooveScore,
             fraction = analysis.fraction,
@@ -495,6 +501,8 @@ class SpeedTrainerViewModel(app: Application) : AndroidViewModel(app) {
             reachedBpm    = reachedBpm,
             totalSessions = itemTracker.speedTrainingSessionsCompleted(),
             micEnabled    = sessionMicUsed,
+            clapOffsetMs  = clapOffsetMs,
+            clapCount     = analysis.validInputs,
         )
         _sessionState.value = TrainerSessionState.Complete(
             config = cfg,

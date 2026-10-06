@@ -12,6 +12,9 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -86,6 +89,22 @@ class MetronomeEngine {
 
     @Volatile
     private var previewTrack: AudioTrack? = null
+    private var previewJob: Job? = null
+
+    // A preview while the metronome plays borrows the live beat (see [playPreview]): the loop
+    // sounds [auditionVoice] in place of [soundType] while more than one beat is left. The last
+    // count is a beat of the normal voice, written before [previewing] drops, because a write
+    // returns about a beat before that beat is heard.
+    @Volatile
+    private var auditionVoice = 0
+    @Volatile
+    private var auditionBeatsLeft = 0
+    @Volatile
+    private var auditionInBeat = false
+
+    private val _previewing = MutableStateFlow(false)
+    /** True while a preview sounds, whichever way it plays; the paywall's button follows it. */
+    val previewing: StateFlow<Boolean> = _previewing.asStateFlow()
 
     fun start() {
         if (job?.isActive == true) return
@@ -128,7 +147,15 @@ class MetronomeEngine {
                 val currentBpm = bpm.coerceIn(20, 300)
                 val samplesPerBeat = clock.next(currentBpm)
                 val isAccent = beat in accentBeats
-                val buffer = buildBeatBuffer(samplesPerBeat, isAccent)
+                val auditionLeft = auditionBeatsLeft
+                val voice = if (auditionLeft > 1) auditionVoice else soundType
+                if (auditionLeft > 0) {
+                    auditionBeatsLeft = auditionLeft - 1
+                } else if (auditionInBeat) {
+                    auditionInBeat = false
+                    _previewing.value = false
+                }
+                val buffer = buildBeatBuffer(samplesPerBeat, isAccent, voice)
 
                 // Notify the UI BEFORE writing audio data.
                 //
@@ -179,20 +206,42 @@ class MetronomeEngine {
         audioTrack?.stop()
         audioTrack?.release()
         audioTrack = null
+        stopPreview()
+    }
+
+    /** Ends a preview at once, either kind; the live beat goes back to [soundType]. */
+    fun stopPreview() {
+        auditionBeatsLeft = 0
+        auditionInBeat = false
+        previewJob?.cancel()
+        previewJob = null
         previewTrack?.stop()
         previewTrack?.release()
         previewTrack = null
+        _previewing.value = false
     }
 
     /**
-     * Plays a short preview of [soundTypeIndex] (4 beats at 100 BPM) on a separate
-     * one-shot AudioTrack. Safe to call while the metronome is running.
+     * Plays a short preview of [soundTypeIndex].
+     *
+     * While the metronome is sounding, the preview **replaces** the live click for
+     * [auditionBeats] beats at the current tempo and accents, then the loop goes back to
+     * [soundType] by itself. It never opens a second track over a running metronome: two
+     * voices on one beat cannot be told apart, so the listener could not judge the new one
+     * (the drone's audition works the same way). Stopped or muted, it plays 4 beats at
+     * 100 BPM on a one-shot track, since there is nothing to layer over.
      */
     fun playPreview(soundTypeIndex: Int) {
-        scope.launch {
-            previewTrack?.stop()
-            previewTrack?.release()
-            previewTrack = null
+        stopPreview()
+        if (job?.isActive == true && !muted) {
+            auditionVoice = soundTypeIndex
+            auditionInBeat = true
+            auditionBeatsLeft = auditionBeats(bpm.coerceIn(20, 300)) + 1
+            _previewing.value = true
+            return
+        }
+        _previewing.value = true
+        previewJob = scope.launch {
 
             val buffer = buildPreviewBuffer(soundTypeIndex)
             val minBuf = AudioTrack.getMinBufferSize(
@@ -220,6 +269,7 @@ class MetronomeEngine {
 
             if (track.state != AudioTrack.STATE_INITIALIZED) {
                 track.release()
+                _previewing.value = false
                 return@launch
             }
             previewTrack = track
@@ -241,15 +291,22 @@ class MetronomeEngine {
             previewTrack?.stop()
             previewTrack?.release()
             previewTrack = null
+            _previewing.value = false
         }
+    }
+
+    /** Four beats, or as many as fill 2.4 s (the one-shot's length) at a fast tempo. */
+    private fun auditionBeats(bpm: Int): Int {
+        val beatMs = 60_000.0 / bpm
+        return maxOf(4, kotlin.math.ceil(2_400.0 / beatMs).toInt())
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────
 
     /** Fill buffer: click samples at index 0, silence for the rest */
-    private fun buildBeatBuffer(samplesPerBeat: Int, isAccent: Boolean): ShortArray {
+    private fun buildBeatBuffer(samplesPerBeat: Int, isAccent: Boolean, voice: Int): ShortArray {
         if (muted) return ShortArray(samplesPerBeat)
-        val click = when (soundType) {
+        val click = when (voice) {
             1 -> if (isAccent) hihatAccent else hihatClick
             2 -> if (isAccent) woodAccent else woodClick
             3 -> if (isAccent) deepAccent else deepClick

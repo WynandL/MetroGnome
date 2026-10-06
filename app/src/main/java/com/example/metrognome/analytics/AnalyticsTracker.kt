@@ -245,11 +245,26 @@ object AnalyticsTracker {
         }
     }
 
-    fun logPracticeCompleted(durationMinutes: Int, streak: Int, totalSessions: Int) {
+    /**
+     * [clapOffsetMs]: the session's median clap offset from the nearest beat (+ late), sent only
+     * when Groove Check scored a confident rhythm, with [clapCount] the claps behind it. It checks
+     * in the field that beat timing is centred on every phone model, not just the dev's.
+     */
+    fun logPracticeCompleted(
+        durationMinutes: Int,
+        streak: Int,
+        totalSessions: Int,
+        clapOffsetMs: Int? = null,
+        clapCount: Int = 0,
+    ) {
         Firebase.analytics.logEvent("practice_completed") {
             param("duration_minutes", durationMinutes.toLong())
             param("streak",           streak.toLong())
             param("total_sessions",   totalSessions.toLong())
+            if (clapOffsetMs != null) {
+                param("clap_offset_ms", clapOffsetMs.toLong())
+                param("clap_count",     clapCount.toLong())
+            }
         }
     }
 
@@ -291,6 +306,8 @@ object AnalyticsTracker {
         reachedBpm: Int,
         totalSessions: Int,
         micEnabled: Boolean,
+        clapOffsetMs: Int? = null,
+        clapCount: Int = 0,
     ) {
         Firebase.analytics.logEvent("speed_trainer_completed") {
             param("start_bpm",      startBpm.toLong())
@@ -298,6 +315,11 @@ object AnalyticsTracker {
             param("reached_bpm",    reachedBpm.toLong())
             param("total_sessions", totalSessions.toLong())
             param("mic_enabled",    if (micEnabled) "true" else "false")
+            // Same pair as practice_completed; see logPracticeCompleted.
+            if (clapOffsetMs != null) {
+                param("clap_offset_ms", clapOffsetMs.toLong())
+                param("clap_count",     clapCount.toLong())
+            }
         }
     }
 

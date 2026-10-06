@@ -138,6 +138,8 @@ fun SettingsScreen(
     val removeAdsPriceText by vm.removeAdsPriceText.collectAsStateWithLifecycle()
     val isBillingAvailable by vm.isBillingAvailable.collectAsStateWithLifecycle()
     val isPurchasing by vm.isPurchasing.collectAsStateWithLifecycle()
+    val soundPreviewing by vm.soundPreviewing.collectAsStateWithLifecycle()
+    val soundPreviewBlocked by vm.soundPreviewBlocked.collectAsStateWithLifecycle()
     val isBillingConnecting by vm.isBillingConnecting.collectAsStateWithLifecycle()
     // The failed-purchase toast is raised app-wide in MetroGnomeApp, not here: the Tuner
     // sells drone voices too, and a failure started from there must still be seen.
@@ -452,10 +454,12 @@ fun SettingsScreen(
             isPurchasing = isPurchasing,
             isBillingConnecting = isBillingConnecting,
             isAvailable = def.productId in availableSoundProductIds,
+            previewing = soundPreviewing,
+            previewBlocked = soundPreviewBlocked,
             onPreview = { vm.previewSound(def.soundTypeIndex) },
             onPurchase = { activity?.let { vm.purchaseSound(it, def.productId) } },
             onRestore = { vm.restorePurchases() },
-            onDismiss = { dialogSoundDef = null }
+            onDismiss = { vm.stopSoundPreview(); dialogSoundDef = null }
         )
     }
 
@@ -571,6 +575,8 @@ private fun PremiumSoundDialog(
     isPurchasing: Boolean,
     isBillingConnecting: Boolean,
     isAvailable: Boolean,
+    previewing: Boolean,
+    previewBlocked: Boolean,
     onPreview: () -> Unit,
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
@@ -591,7 +597,16 @@ private fun PremiumSoundDialog(
         belowDescription   = { InstrumentAffinityBadges(soundType = def.soundTypeIndex) },
         secondaryButton    = {
             com.example.metrognome.ui.dialogs.PreviewActionButton(
-                label   = "▶  Preview (4 beats)",
+                // Names the sound while it plays, as the drone's does: over a running metronome
+                // the preview takes the beat's place rather than layering on it, and the
+                // listener has no other way to know that.
+                label   = when {
+                    previewing     -> "Sounding ${def.displayName} on its own"
+                    previewBlocked -> "Preview after your session"
+                    else           -> "▶  Preview (4 beats)"
+                },
+                active  = previewing,
+                enabled = !previewBlocked,
                 onClick = onPreview,
             )
         },

@@ -169,6 +169,13 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     // the click profile it is tuned for. The saved sound (_soundType) is never mutated and is
     // restored when the session stops. See setMicSoundOverride / effectiveSoundType.
     private var forceClassicForMic = false
+        set(value) { field = value; _soundPreviewBlocked.value = value }
+
+    // A preview borrows the live beat while the metronome plays (MetronomeEngine.playPreview),
+    // so during a mic-scored session it would hand the clap detector a voice it is not tuned
+    // for, scored on the beat. The paywall's Preview button waits until the session ends.
+    private val _soundPreviewBlocked = MutableStateFlow(false)
+    val soundPreviewBlocked: StateFlow<Boolean> = _soundPreviewBlocked.asStateFlow()
 
     private val _presets = MutableStateFlow(presetsManager.loadPresets())
     val presets: StateFlow<List<BpmPreset>> = _presets.asStateFlow()
@@ -216,7 +223,16 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
     }
 
-    fun previewSound(soundTypeIndex: Int) = engine.playPreview(soundTypeIndex)
+    /** True while a sound preview is audible; the paywall's Preview button follows it. */
+    val soundPreviewing: StateFlow<Boolean> get() = engine.previewing
+
+    fun previewSound(soundTypeIndex: Int) {
+        if (forceClassicForMic) return
+        engine.playPreview(soundTypeIndex)
+    }
+
+    /** Ends a preview early (the paywall closed), handing the beat back to the chosen sound. */
+    fun stopSoundPreview() = engine.stopPreview()
 
     fun savePreset(name: String, bpm: Int): Boolean {
         val saved = presetsManager.savePreset(name, bpm)
@@ -448,8 +464,15 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         // rhythm statistics: estimates the player's own pulse, rejects ambient outliers, grades
         // self-consistency - so steady-but-off-the-click still scores). Adapted into the shared
         // GrooveScorer.Result so the bonus + result UI are unchanged.
+        val correctedOnsets = practiceOnsetTimes.map { it - practiceLatencyMs.toLong() }
         val analysis = com.example.metrognome.groove.SessionAnalyzer
-            .analyze(practiceOnsetTimes.map { it - practiceLatencyMs.toLong() }, practiceBeatTimes.toList())
+            .analyze(correctedOnsets, practiceBeatTimes.toList())
+        // Field check of beat timing per phone model (practice_completed.clap_offset_ms); only a
+        // confident rhythm, so stray room noise never reads as an offset.
+        val clapOffsetMs = if (analysis.confident) {
+            com.example.metrognome.groove.SessionAnalyzer
+                .medianGridOffsetMs(correctedOnsets, practiceBeatTimes.toList())?.roundToInt()
+        } else null
         val realGroove = com.example.metrognome.groove.GrooveScorer.Result(
             grooveScore = analysis.grooveScore,
             fraction = analysis.fraction,
@@ -512,7 +535,10 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         _practiceStreak.value = newStreak
         _bestStreak.value = practiceManager.getBestStreak()
         _practicedEpochDays.value = practiceManager.getPracticedEpochDays()
-        AnalyticsTracker.logPracticeCompleted(goalMinutes, newStreak, totalSessions)
+        AnalyticsTracker.logPracticeCompleted(
+            goalMinutes, newStreak, totalSessions,
+            clapOffsetMs = clapOffsetMs, clapCount = analysis.validInputs,
+        )
         _pendingPracticeResult.value = PracticeResult(
             durationMinutes = goalMinutes,
             streak = newStreak,

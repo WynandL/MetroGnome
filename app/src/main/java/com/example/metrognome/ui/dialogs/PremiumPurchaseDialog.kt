@@ -506,11 +506,15 @@ private fun RestoreLink(enabled: Boolean, onClick: () -> Unit) {
  * they are hearing the new voice or the new voice on top of the old one.
  */
 @Composable
-fun PreviewActionButton(label: String, onClick: () -> Unit, active: Boolean = false) {
-    val tint = if (active) AppColors.gold else AppColors.textAccent
+fun PreviewActionButton(label: String, onClick: () -> Unit, active: Boolean = false, enabled: Boolean = true) {
+    val tint = when {
+        active   -> AppColors.gold
+        !enabled -> AppColors.textMuted
+        else     -> AppColors.textAccent
+    }
     Surface(
         onClick  = onClick,
-        enabled  = !active,
+        enabled  = enabled && !active,
         shape    = RoundedCornerShape(14.dp),
         color    = Color.Transparent,
         border   = BorderStroke(1.dp, tint.copy(alpha = 0.55f)),

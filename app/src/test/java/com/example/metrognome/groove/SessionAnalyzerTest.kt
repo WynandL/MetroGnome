@@ -116,4 +116,21 @@ class SessionAnalyzerTest {
         assertTrue("spread was ${a.selfConsistencyMs} ms", a.selfConsistencyMs < 1f)
         assertTrue("resultant was ${a.rhythmStrength}", a.rhythmStrength > 0.99f)
     }
+
+    @Test
+    fun medianGridOffsetReadsAConstantLatenessAndIgnoresStrays() {
+        val beats = (0 until 40).map { 10_000L + it * 500L }
+        // Every clap 20 ms late, plus three stray onsets mid-gap that a mean would be dragged by.
+        val claps = beats.map { it + 20 } + listOf(10_240L, 14_260L, 19_230L)
+        assertEquals(20f, SessionAnalyzer.medianGridOffsetMs(claps, beats)!!, 0.01f)
+        // Early claps read negative.
+        assertEquals(-15f, SessionAnalyzer.medianGridOffsetMs(beats.map { it - 15 }, beats)!!, 0.01f)
+    }
+
+    @Test
+    fun medianGridOffsetIsNullWithoutBeatsOrOnsets() {
+        val beats = (0 until 10).map { 10_000L + it * 500L }
+        assertEquals(null, SessionAnalyzer.medianGridOffsetMs(beats, emptyList()))
+        assertEquals(null, SessionAnalyzer.medianGridOffsetMs(emptyList(), beats))
+    }
 }

@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -51,6 +52,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -104,6 +106,8 @@ import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.ChordFinderViewModel
 import com.example.metrognome.viewmodel.ChordInstrument
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -221,6 +225,8 @@ fun ChordFinderScreen(
             engine = engine,
             onSetEngine = vm::setEngine,
             onSetInstrument = vm::setInstrument,
+            savedScrollDp = vm::instrumentScrollDp,
+            onScrollSettled = vm::saveInstrumentScrollDp,
             onToggleMic = vm::toggleMic,
             onRequestMic = {
                 if (micPermanentlyDenied) {
@@ -300,6 +306,8 @@ internal fun ChordFinderContent(
     engine: ChordEngine = ChordEngine.DEFAULT,
     onSetEngine: (ChordEngine) -> Unit = {},
     onSetInstrument: (ChordInstrument) -> Unit = {},
+    savedScrollDp: (ChordInstrument) -> Float? = { null },
+    onScrollSettled: (ChordInstrument, Float) -> Unit = { _, _ -> },
     onToggleMic: () -> Unit = {},
     onRequestMic: () -> Unit = {},
 ) {
@@ -352,6 +360,8 @@ internal fun ChordFinderContent(
                 listening = listening,
                 onSetInstrument = onSetInstrument,
                 onToggleNote = onToggleNote,
+                savedScrollDp = savedScrollDp,
+                onScrollSettled = onScrollSettled,
             )
 
             Spacer(Modifier.height(SECTION_GAP))
@@ -429,6 +439,8 @@ private fun InstrumentCard(
     listening: Boolean,
     onSetInstrument: (ChordInstrument) -> Unit,
     onToggleNote: (Int) -> Unit,
+    savedScrollDp: (ChordInstrument) -> Float?,
+    onScrollSettled: (ChordInstrument, Float) -> Unit,
 ) {
     // Gold while the mic is live, matching the tuner's "this is live" language, so a note
     // played in and a note tapped in light the instrument the same way.
@@ -469,13 +481,27 @@ private fun InstrumentCard(
             }
             Spacer(Modifier.height(8.dp))
 
-            val scroll = rememberScrollState()
             val density = LocalDensity.current
-            // The piano opens on C3, the octave a guitar or a voice actually lives in.
+            // Each instrument reopens where the player left it, across tab switches and
+            // launches; the first time, the piano opens on C3, the octave a guitar or a voice
+            // actually lives in. Each has its own ScrollState, *created* at that position, so
+            // its first frame is drawn there: restoring with scrollTo after composition showed
+            // a frame at the old position and then a visible jump, on entry and on a switch.
+            val scrollStates = remember { mutableMapOf<ChordInstrument, ScrollState>() }
+            fun scrollFor(which: ChordInstrument): ScrollState = scrollStates.getOrPut(which) {
+                val px = with(density) {
+                    savedScrollDp(which)?.dp?.roundToPx()
+                        ?: if (which == ChordInstrument.PIANO) (PIANO_NATURAL_WIDTH * 7).roundToPx() else 0
+                }
+                ScrollState(px)
+            }
+            val scroll = scrollFor(instrument)
+            // Saved whenever a scroll comes to rest, which includes the ease to a captured note.
             LaunchedEffect(instrument) {
-                scroll.scrollTo(
-                    if (instrument == ChordInstrument.PIANO) with(density) { (PIANO_NATURAL_WIDTH * 7).roundToPx() } else 0,
-                )
+                snapshotFlow { scroll.isScrollInProgress }
+                    .drop(1)
+                    .filter { !it }
+                    .collect { onScrollSettled(instrument, with(density) { scroll.value.toDp().value }) }
             }
             // A note played in may land off screen (low E far left, a high note far right on
             // the piano), where its glow goes unseen. Ease the instrument so the note sits
@@ -502,8 +528,10 @@ private fun InstrumentCard(
                     animationSpec = tween(SCROLL_TO_NOTE_MS, easing = FastOutSlowInEasing),
                 )
             }
-            Box(modifier = Modifier.fillMaxWidth().horizontalScroll(scroll)) {
-                Crossfade(targetState = instrument, animationSpec = tween(200), label = "instrument") { which ->
+            Crossfade(targetState = instrument, animationSpec = tween(200), label = "instrument") { which ->
+                // Inside the crossfade, so the outgoing instrument fades at its own position
+                // while the incoming one fades in at its.
+                Box(modifier = Modifier.fillMaxWidth().horizontalScroll(scrollFor(which))) {
                     when (which) {
                         ChordInstrument.GUITAR -> GuitarFretboard(
                             litMidi = litMidi,
