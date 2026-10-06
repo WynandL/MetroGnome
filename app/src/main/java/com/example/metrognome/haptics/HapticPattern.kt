@@ -26,10 +26,13 @@ enum class HapticPattern(
         amplitudes = intArrayOf(0, 120),
     ),
 
-    /** Double thud — confirms a long-press was recognized (preset delete, etc.). */
+    /**
+     * One firm thud: confirms a long-press was recognized (preset delete, etc.). It was a
+     * double thud, and on the dev's phone a long-press felt like it had buzzed twice (2026-10-06).
+     */
     LONG_PRESS(
-        timings    = longArrayOf(0, 40, 50, 65),
-        amplitudes = intArrayOf(0, 140, 0, 200),
+        timings    = longArrayOf(0, 60),
+        amplitudes = intArrayOf(0, 200),
     ),
 
     /** Ascending triple pulse — achievement, positive reward, unlock. */
