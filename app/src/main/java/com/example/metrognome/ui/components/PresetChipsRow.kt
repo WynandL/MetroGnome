@@ -49,7 +49,6 @@ fun PresetChipsRow(
     modifier: Modifier = Modifier,
 ) {
     val haptics = LocalHaptics.current
-    val shape = RoundedCornerShape(20.dp)
     val scrollState = rememberScrollState()
     Column(modifier = modifier) {
         Row(
@@ -61,16 +60,10 @@ fun PresetChipsRow(
         ) {
             presets.forEachIndexed { index, preset ->
                 val isActive = preset.bpm == currentBpm
-                Surface(
-                    color = if (isActive) AppColors.goldTint else AppColors.surface,
-                    shape = shape,
-                    border = BorderStroke(1.dp, if (isActive) AppColors.goldBorder else AppColors.surfaceVariant),
-                    modifier = Modifier.height(30.dp),
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .clip(shape)
+                PresetPill(
+                    label = preset.name,
+                    active = isActive,
+                    interaction = Modifier
                             // combinedClickable rather than raw tap detection, so a screen
                             // reader gets the tap, a named delete action and which preset is
                             // active; raw gestures exposed none of them (UI audit U03).
@@ -86,17 +79,8 @@ fun PresetChipsRow(
                                 },
                                 onClick = { onPresetTap(preset) },
                             )
-                            .semantics { selected = isActive }
-                            .padding(horizontal = 12.dp),
-                    ) {
-                        Text(
-                            text = preset.name,
-                            color = if (isActive) AppColors.gold else Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                        )
-                    }
-                }
+                            .semantics { selected = isActive },
+                )
             }
         }
         Spacer(Modifier.height(3.dp))
@@ -110,6 +94,43 @@ fun PresetChipsRow(
                 color = AppColors.textDim.copy(alpha = 0.85f),
                 fontSize = 10.sp,
                 modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+            )
+        }
+    }
+}
+
+/**
+ * One preset pill's face. The Home row draws its presets with it and Save Preset's "how it'll
+ * look" preview draws the active one with it, so the preview cannot drift from the real thing
+ * (it had: 13 sp text, its own padding and no fixed height; UI audit U19). [interaction] goes
+ * on the clipped inner box, where the row puts its tap, long press and semantics.
+ */
+@Composable
+fun PresetPill(
+    label: String,
+    active: Boolean,
+    modifier: Modifier = Modifier,
+    interaction: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(20.dp)
+    Surface(
+        color = if (active) AppColors.goldTint else AppColors.surface,
+        shape = shape,
+        border = BorderStroke(1.dp, if (active) AppColors.goldBorder else AppColors.surfaceVariant),
+        modifier = modifier.height(30.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .clip(shape)
+                .then(interaction)
+                .padding(horizontal = 12.dp),
+        ) {
+            Text(
+                text = label,
+                color = if (active) AppColors.gold else Color.White,
+                fontSize = 12.sp,
+                fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
             )
         }
     }

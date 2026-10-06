@@ -1,19 +1,13 @@
 package com.example.metrognome.ui.dialogs
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -21,10 +15,8 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,13 +24,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import com.example.metrognome.ui.components.AppCardDefaults
+import com.example.metrognome.ui.components.PresetPill
 import com.example.metrognome.ui.components.PrimaryButton
 import com.example.metrognome.ui.theme.AppColors
 
@@ -67,137 +57,87 @@ fun SavePresetDialog(
     // Mirrors BpmPresetsManager.savePreset's fallback when the name is blank.
     val previewLabel = trimmed.ifEmpty { "♩ $bpm" }
 
-    val cardScale = remember { Animatable(0.2f) }
-    LaunchedEffect(Unit) {
-        cardScale.animateTo(
-            targetValue = 1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMediumLow,
-            ),
+    // Scrollable: with the keyboard up, the dialog's window shrinks to what is left above it,
+    // and the fixed column used to push the Save button off the bottom (UI audit U13).
+    AppDialog(onDismiss = onDismiss, maxWidth = 380.dp, scrollable = true) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Spacer(Modifier.weight(1f))
+            DialogCloseButton(onClick = onDismiss)
+        }
+
+        Spacer(Modifier.height(2.dp))
+
+        DialogTitle("Save Preset")
+
+        Spacer(Modifier.height(14.dp))
+
+        Text(
+            text = "$bpm BPM",
+            color = Color.White,
+            fontSize = 44.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = (-1).sp,
         )
-    }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Surface(
-            shape = AppCardDefaults.DialogShape,
-            color = AppColors.surfaceDeep,
-            border = AppCardDefaults.Border,
-            shadowElevation = 24.dp,
-            modifier = Modifier
-                .padding(horizontal = 20.dp)
-                .widthIn(min = 280.dp, max = 380.dp)
-                .graphicsLayer {
-                    scaleX = cardScale.value
-                    scaleY = cardScale.value
-                    alpha = ((cardScale.value - 0.2f) / 0.8f).coerceIn(0f, 1f)
-                },
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 22.dp, vertical = 18.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    Spacer(Modifier.weight(1f))
-                    DialogCloseButton(onClick = onDismiss)
-                }
+        Spacer(Modifier.height(18.dp))
 
-                Spacer(Modifier.height(2.dp))
-
-                DialogTitle("Save Preset")
-
-                Spacer(Modifier.height(14.dp))
-
-                Text(
-                    text = "$bpm BPM",
-                    color = Color.White,
-                    fontSize = 44.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-1).sp,
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            singleLine = true,
+            isError = isDuplicate,
+            // Done saves: whether the platform resizes or pans this dialog for the keyboard
+            // varies, and a pan can leave the Save button under it.
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onSave(name) }),
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            label = { Text("Preset name") },
+            placeholder = { Text("Optional, e.g. Verse or Warm-up", fontSize = 13.sp) },
+            trailingIcon = {
+                Icon(
+                    Icons.Filled.Edit,
+                    contentDescription = null,
+                    tint = if (name.isEmpty()) AppColors.textMuted else AppColors.gold,
+                    modifier = Modifier.size(18.dp),
                 )
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = AppColors.background,
+                unfocusedContainerColor = AppColors.background,
+                errorContainerColor = AppColors.background,
+                focusedBorderColor = if (isDuplicate) AppColors.warning else AppColors.gold,
+                unfocusedBorderColor = if (isDuplicate) AppColors.warning.copy(alpha = 0.7f) else AppColors.textDim,
+                focusedLabelColor = AppColors.gold,
+                unfocusedLabelColor = AppColors.textMuted,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedPlaceholderColor = AppColors.textMuted,
+                unfocusedPlaceholderColor = AppColors.textMuted,
+                cursorColor = AppColors.gold,
+                errorBorderColor = AppColors.warning,
+                errorCursorColor = AppColors.gold,
+            ),
+            supportingText = if (isDuplicate) {
+                { Text("A preset with this name already exists", color = AppColors.warning, fontSize = 11.sp) }
+            } else null,
+        )
 
-                Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    singleLine = true,
-                    isError = isDuplicate,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    label = { Text("Preset name") },
-                    placeholder = { Text("Optional, e.g. Verse or Warm-up", fontSize = 13.sp) },
-                    trailingIcon = {
-                        Icon(
-                            Icons.Filled.Edit,
-                            contentDescription = null,
-                            tint = if (name.isEmpty()) AppColors.textMuted else AppColors.gold,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = AppColors.background,
-                        unfocusedContainerColor = AppColors.background,
-                        errorContainerColor = AppColors.background,
-                        focusedBorderColor = if (isDuplicate) AppColors.warning else AppColors.gold,
-                        unfocusedBorderColor = if (isDuplicate) AppColors.warning.copy(alpha = 0.7f) else AppColors.textDim,
-                        focusedLabelColor = AppColors.gold,
-                        unfocusedLabelColor = AppColors.textMuted,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedPlaceholderColor = AppColors.textMuted,
-                        unfocusedPlaceholderColor = AppColors.textMuted,
-                        cursorColor = AppColors.gold,
-                        errorBorderColor = AppColors.warning,
-                        errorCursorColor = AppColors.gold,
-                    ),
-                    supportingText = if (isDuplicate) {
-                        { Text("A preset with this name already exists", color = AppColors.warning, fontSize = 11.sp) }
-                    } else null,
-                )
+        // ── Live chip preview ───────────────────────────────────────
+        Text(
+            text = "HOW IT'LL LOOK",
+            color = AppColors.gold.copy(alpha = 0.6f),
+            fontSize = 9.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 1.5.sp,
+        )
+        Spacer(Modifier.height(8.dp))
+        PresetPill(label = previewLabel, active = true)
 
-                Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(18.dp))
 
-                // ── Live chip preview ───────────────────────────────────────
-                Text(
-                    text = "HOW IT'LL LOOK",
-                    color = AppColors.gold.copy(alpha = 0.6f),
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.5.sp,
-                )
-                Spacer(Modifier.height(8.dp))
-                PresetChipPreview(label = previewLabel)
-
-                Spacer(Modifier.height(18.dp))
-
-                PrimaryButton("SAVE PRESET", { onSave(name) }, Modifier.fillMaxWidth(), icon = Icons.Filled.Favorite)
-            }
-        }
-    }
-}
-
-/** A non-interactive copy of the saved-preset chip, styled as it looks when active. */
-@Composable
-private fun PresetChipPreview(label: String) {
-    Surface(
-        color = AppColors.goldTint,
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, AppColors.goldBorder),
-    ) {
-        Box(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = label,
-                color = AppColors.gold,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        PrimaryButton("SAVE PRESET", { onSave(name) }, Modifier.fillMaxWidth(), icon = Icons.Filled.Favorite)
     }
 }

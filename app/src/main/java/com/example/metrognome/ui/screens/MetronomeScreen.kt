@@ -1077,35 +1077,14 @@ private fun PracticeDurationDialog(
 
                 Spacer(Modifier.height(20.dp))
 
-                Surface(
-                    onClick = { onStart(selected) },
-                    shape = RoundedCornerShape(14.dp),
-                    color = AppColors.primaryPurple,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Icon(
-                                Icons.Filled.Timer,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Text(
-                                "START PRACTICE",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 1.5.sp,
-                            )
-                        }
-                    }
-                }
+                // The shared raised purple key, like every other dialog's one action; this was a
+                // flat 52 dp copy with its own type (UI audit U12).
+                PrimaryButton(
+                    "START PRACTICE",
+                    { onStart(selected) },
+                    Modifier.fillMaxWidth(),
+                    icon = Icons.Filled.Timer,
+                )
     }
 }
 

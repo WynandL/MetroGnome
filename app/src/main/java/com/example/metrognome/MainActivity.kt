@@ -40,10 +40,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.example.metrognome.ui.components.AdBreakBanner
 import com.example.metrognome.ui.components.ChordGridIcon
-import com.example.metrognome.ui.components.LoyaltyMilestoneBanner
-import com.example.metrognome.ui.components.PointsEarnedBanner
+import com.example.metrognome.ui.components.TransientBanners
 import com.example.metrognome.ui.components.RhythmPulseIcon
 import com.example.metrognome.ui.components.TunerNeedleIcon
 import com.example.metrognome.ui.dialogs.NotificationOptInDialog
@@ -367,9 +365,7 @@ fun MetroGnomeApp(
             )
         }
     }
-    PointsEarnedBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
-    LoyaltyMilestoneBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
-    AdBreakBanner(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
+    TransientBanners(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
 
     if (showNotificationAsk) {
         NotificationOptInDialog(

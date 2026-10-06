@@ -5,19 +5,22 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+// Every value that AppColors already names comes from there, so the Material scheme cannot
+// drift from the app's own palette (UI audit U18). The on-colours stay literal: AppColors has
+// no equivalents and they only tint Material defaults the app barely uses.
 private val GnomeDarkColorScheme = darkColorScheme(
     primary          = Purple80,
     onPrimary        = Color(0xFF1A0040),
-    primaryContainer = Color(0xFF5B2D8A),
-    secondary        = Color(0xFFFFD700),
+    primaryContainer = AppColors.primaryPurple,
+    secondary        = AppColors.gold,
     onSecondary      = Color(0xFF1A1400),
-    tertiary         = Color(0xFFCC2233),
-    background       = Color(0xFF0D0B1E),
-    surface          = Color(0xFF1E1B3A),
-    surfaceVariant   = Color(0xFF2A2550),
-    onBackground     = Color(0xFFEEEEFF),
-    onSurface        = Color(0xFFEEEEFF),
-    outline          = Color(0xFF7B4DB0),
+    tertiary         = AppColors.danger,
+    background       = AppColors.background,
+    surface          = AppColors.surface,
+    surfaceVariant   = AppColors.surfaceVariant,
+    onBackground     = AppColors.textPrimary,
+    onSurface        = AppColors.textPrimary,
+    outline          = AppColors.mediumPurple,
 )
 
 @Composable
