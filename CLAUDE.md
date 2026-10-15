@@ -268,7 +268,7 @@ metrognome.co.za is a static site under `landing/` that exists **only on `master
 
 ### Dependencies
 
-Versions managed via `gradle/libs.versions.toml`. Key: Compose BOM 2026.09.00, AGP 9.3.1, Kotlin 2.4.20, coroutines 1.11.0, Google Play Ads 25.4.0. Note: `implementation(platform(bom))` and `androidTestImplementation(platform(bom))` are both required (BOMs pin per configuration) — the IDE's duplicate-dependency warning on this is a false positive.
+Versions managed via `gradle/libs.versions.toml`. Key: Compose BOM 2026.09.00, AGP 9.4.1, Kotlin 2.4.21, coroutines 1.11.0, Google Play Ads 25.5.0, Firebase BOM 35.0.1, Gradle 9.8.1. Note: `implementation(platform(bom))` and `androidTestImplementation(platform(bom))` are both required (BOMs pin per configuration) — the IDE's duplicate-dependency warning on this is a false positive.
 
 ### Release Signing
 
