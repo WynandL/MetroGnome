@@ -1225,7 +1225,12 @@ details[open] summary::after { transform: rotate(45deg); }
 .answer-row .answer-pad { margin: 0; flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; }
 .answer-pad svg { width: 18px; height: 18px; }
 .answer-pad:disabled { opacity: 0.5; cursor: default; }
-.pitch-progress { display: flex; justify-content: center; gap: 6px; margin-top: 1rem; }
+.pitch-progress { display: flex; gap: 3px; max-width: 340px; margin: 1.1rem auto 0; }
+.pp-seg { flex: 1 1 0; height: 6px; border-radius: 3px; background: var(--surface-up); transition: background 0.2s; }
+.pp-seg.right   { background: var(--gold); }
+.pp-seg.miss    { background: var(--purple); }
+.pp-seg.current { background: var(--purple-light); opacity: 0.6; }
+.pp-count { min-height: 1.3em; margin-top: 0.45rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; color: var(--text-muted); }
 .metro-wrap img.glow { box-shadow: 0 0 0 2px var(--gold), 0 0 22px rgba(255, 215, 0, 0.45); }
 .ts-result { stroke: var(--gold); opacity: 0.9; }
 

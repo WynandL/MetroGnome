@@ -138,6 +138,7 @@
       <div class="best-line" id="bestLine" aria-live="polite"></div>
 
       <div class="pitch-progress" id="progress" aria-hidden="true"></div>
+      <div class="pp-count" id="roundLabel" aria-live="polite"></div>
 
       <button class="tap-pad" id="startPad" type="button">START TEST</button>
 
@@ -163,7 +164,7 @@
         </div>
         <div class="stat">
           <span class="stat-value" id="roundsValue">--</span>
-          <span class="stat-label">Rounds played</span>
+          <span class="stat-label">Finest you got right</span>
         </div>
       </div>
 
@@ -194,7 +195,7 @@
 
     <article class="prose">
       <h2>What this pitch test measures</h2>
-      <p>Every round plays two short notes, one after the other. One of them is a little higher than the other, and your only job is to say which way the second note went. Get two rounds in a row right and the next pair is closer together. Miss one and the gap opens up again. Over a few dozen rounds the gap settles around the smallest difference you can reliably hear, and that is your result.</p>
+      <p>Every round plays two short notes, one after the other. One of them is a little higher than the other, and your only job is to say which way the second note went. Get two rounds in a row right and the next pair is closer together. Miss one and the gap opens up again. Over thirty rounds the gap settles around the smallest difference you can reliably hear, and that is your result.</p>
       <p>This is called pitch discrimination, and it is the finest-grained part of relative pitch. It is what lets a guitarist hear that a string is slightly flat before looking at a tuner, a singer find the centre of a note, and a string player put a finger exactly where the note lives.</p>
 
       <h2>What a cent is</h2>
@@ -261,7 +262,7 @@
         <details>
           <summary>Why did I get a different result the second time?</summary>
           <div class="faq-answer">
-            Some variation is normal. The test ends after a fixed number of turning points, so a lucky or unlucky guess near the end can move the result a little. Run it three times and take the best: that is closer to what your ear can do than any single run.
+            Some variation is normal. A lucky or unlucky guess on a close pair can move the result a little. Run it three times and take the best: that is closer to what your ear can do than any single run.
           </div>
         </details>
         <details>
@@ -334,6 +335,7 @@
     var statusLabel = document.getElementById('statusLabel');
     var bestLine    = document.getElementById('bestLine');
     var progress    = document.getElementById('progress');
+    var roundLabel  = document.getElementById('roundLabel');
     var statRow     = document.getElementById('statRow');
     var semiValue   = document.getElementById('semiValue');
     var rightValue  = document.getElementById('rightValue');
@@ -353,9 +355,8 @@
     var MAX_CENTS     = 200;
     var BIG_STEP      = 2;                  /* until the first reversal */
     var SMALL_STEP    = Math.SQRT2;
-    var REVERSALS     = 10;                 /* the run ends after this many turning points */
-    var AVERAGE_LAST  = 6;                  /* the result is the geometric mean of these */
-    var MAX_ROUNDS    = 60;
+    var ROUNDS        = 30;                 /* fixed length, so progress is honest */
+    var SKIP_REVERSALS = 2;                 /* the first turning points are still on the way down */
 
     var NOTE_S        = 0.45;
     var GAP_S         = 0.35;
@@ -368,18 +369,21 @@
     var trial = null;                       /* { centre, up } for the round in play */
     var answerTimer = null;
 
-    /* ── progress: one pip per turning point ──────────────────────────── */
+    /* ── progress: one segment per round, gold when right ─────────────── */
     function buildProgress() {
       progress.innerHTML = '';
-      for (var i = 0; i < REVERSALS; i++) {
+      for (var i = 0; i < ROUNDS; i++) {
         var d = document.createElement('span');
-        d.className = 'beat-dot';
+        d.className = 'pp-seg';
         progress.appendChild(d);
       }
     }
     function markProgress() {
       for (var i = 0; i < progress.children.length; i++) {
-        progress.children[i].className = 'beat-dot' + (i < reversals ? ' hit-great' : '');
+        var c = 'pp-seg';
+        if (i < history.length) c += history[i].right ? ' right' : ' miss';
+        else if (i === history.length && state !== 'done') c += ' current';
+        progress.children[i].className = c;
       }
     }
     buildProgress();
@@ -464,6 +468,8 @@
       setAnswering(false);
       mainReadout.textContent = fmtCents(cents);
       statusLabel.textContent = 'Listen...';
+      roundLabel.textContent = 'Round ' + (history.length + 1) + ' of ' + ROUNDS;
+      markProgress();
       var ms = playPair();
       clearTimeout(answerTimer);
       answerTimer = setTimeout(function () {
@@ -498,7 +504,6 @@
       bandRows.forEach(function (r) { r.classList.remove('current-row'); });
       mainUnit.textContent = 'cents apart';
       showBest(false);
-      markProgress();
       nextRound();
     }
 
@@ -524,7 +529,6 @@
         if (lastDir !== 0 && dir !== lastDir) {
           reversals++;
           reversalCents.push(cents);
-          markProgress();
         }
         lastDir = dir;
         var step = reversals === 0 ? BIG_STEP : SMALL_STEP;
@@ -532,7 +536,8 @@
         cents = Math.min(MAX_CENTS, Math.max(MIN_CENTS, cents));
       }
 
-      if (reversals >= REVERSALS || history.length >= MAX_ROUNDS) {
+      markProgress();
+      if (history.length >= ROUNDS) {
         finish();
         return;
       }
@@ -552,11 +557,10 @@
       startPad.textContent = 'START TEST';
       retryBtn.hidden = true;
 
-      var pool = reversalCents.slice(-AVERAGE_LAST);
-      if (pool.length < 2) {
-        /* ran out of rounds before settling: use the recent gaps instead */
-        pool = history.slice(-8).map(function (h) { return h.cents; });
-      }
+      /* the geometric mean of the turning points once the gap has come down
+         to the listener's level; too few of them, and the recent gaps stand in */
+      var pool = reversalCents.slice(SKIP_REVERSALS);
+      if (pool.length < 4) pool = history.slice(-10).map(function (h) { return h.cents; });
       var logSum = pool.reduce(function (a, c) { return a + Math.log(c); }, 0);
       var result = Math.exp(logSum / pool.length);
       result = Math.round(result * 10) / 10;
@@ -567,7 +571,11 @@
       statRow.hidden = false;
       semiValue.textContent = fractionOfSemitone(result);
       rightValue.textContent = rightCount + '/' + history.length;
-      roundsValue.textContent = String(history.length);
+      var finest = Infinity;
+      history.forEach(function (h) { if (h.right && h.cents < finest) finest = h.cents; });
+      roundsValue.textContent = isFinite(finest) ? fmtCents(finest) + '¢' : '--';
+      roundLabel.textContent = '';
+      markProgress();
 
       bandRows.forEach(function (r) {
         var lo = Number(r.getAttribute('data-min'));
