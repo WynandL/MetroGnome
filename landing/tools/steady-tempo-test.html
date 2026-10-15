@@ -321,7 +321,8 @@
       'Listen for 4 beats, tap along for 8, then keep going when the click stops.',
       'Get ready: next, tap along with the click.',
       'Soon the click stops. Keep tapping at the same speed.',
-      'Keep the same beat for 16 taps. The dots fill as you go.'
+      'Keep the same beat for 16 taps. The dots fill as you go.',
+      'Done! Here is how steady you were.'
     ];
     function setPhase(n) {
       phaseSteps.forEach(function (el, i) {
@@ -568,10 +569,7 @@
       clearTimeout(idleTimer);
       if (window.MetroAds) window.MetroAds.busy(false);
       lockTempo(false);
-      tapPad.classList.remove('is-live');
-      tapPad.textContent = 'START TEST';
-      retryBtn.hidden = false;
-      setPhase(0);
+      restKey(tapPad);
 
       /* Gaps that end on a silent tap. The first one bridges from the last
          tap along with the click into the silence, which is exactly the
@@ -588,6 +586,7 @@
         mainReadout.textContent = '--';
         mainUnit.textContent = 'not enough taps';
         statusLabel.textContent = 'Give it another go';
+        setPhase(0);
         statRow.hidden = true;
         verdict.hidden = false;
         verdict.textContent = 'The test needs at least ' + MIN_GAPS + ' taps after the click stops. Start again, and when the click goes quiet, keep tapping as if it were still there.';
@@ -633,6 +632,8 @@
       drawTempo(gaps);
       verdict.hidden = false;
       verdict.textContent = readOut(score, held, drift, wobble);
+      setPhase(4);
+      reveal(score, 0, Math.round);
     }
 
     function bandName(s) {
@@ -696,13 +697,54 @@
       tempoStrip.hidden = false;
     }
 
+
+    /* ── finish moment, the same in every test: the start key rests as
+       DONE for a moment so a last tap cannot start a run on top of the
+       result, then the score counts into place, Metro cheers, and the
+       page brings the score into view if it has scrolled away. ──────── */
+    var REST_MS = 1600;
+    var restUntil = 0;
+    function restKey(pad) {
+      restUntil = performance.now() + REST_MS;
+      pad.classList.remove('is-live');
+      pad.classList.add('is-done');
+      pad.disabled = true;
+      pad.textContent = 'DONE';
+      setTimeout(function () {
+        pad.classList.remove('is-done');
+        pad.disabled = false;
+        pad.textContent = 'START AGAIN';
+      }, REST_MS);
+    }
+    function reveal(to, from, fmt) {
+      var raf = window.requestAnimationFrame ? window.requestAnimationFrame.bind(window)
+                                             : function (f) { setTimeout(f, 16); };
+      mainReadout.classList.remove('reveal');
+      metroImg.classList.remove('cheer');
+      void mainReadout.offsetWidth;
+      mainReadout.classList.add('reveal');
+      metroImg.classList.add('cheer');
+      var t0 = performance.now(), DUR = 750;
+      (function step() {
+        var k = Math.min(1, (performance.now() - t0) / DUR);
+        var e = 1 - Math.pow(1 - k, 3);
+        mainReadout.textContent = fmt(from + (to - from) * e);
+        if (k < 1) raf(step);
+      })();
+      if (mainReadout.getBoundingClientRect && window.scrollBy) {
+        var top = mainReadout.getBoundingClientRect().top;
+        if (top < 60 || top > window.innerHeight * 0.45) {
+          window.scrollBy({ top: top - 140, behavior: 'smooth' });
+        }
+      }
+    }
     /* ── input: taps on press, start on click (as in the rhythm test) ─── */
     tapPad.addEventListener('pointerdown', function (e) {
       if (state !== 'running') return;
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       registerTap(pressTime(e));
     });
-    function mayStart() { return state !== 'running' && performance.now() - lastTapAt >= 800; }
+    function mayStart() { return state !== 'running' && performance.now() - lastTapAt >= 800 && performance.now() >= restUntil; }
     tapPad.addEventListener('click', function () { if (mayStart()) start(); });
     retryBtn.addEventListener('click', start);
 

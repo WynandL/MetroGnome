@@ -334,9 +334,7 @@
       state = 'done';
       if (window.MetroAds) window.MetroAds.busy(false);
       lockTempo(false);
-      tapPad.classList.remove('is-live');
-      tapPad.textContent = 'START TEST';
-      retryBtn.hidden = false;
+      restKey(tapPad);
 
       /* Fold every tap onto its nearest beat; anything further than half a
          beat away cannot be attributed to a beat and is dropped. */
@@ -396,6 +394,7 @@
 
       verdict.hidden = false;
       verdict.textContent = readOut(score, spread, bias, devs.length);
+      reveal(score, 0, Math.round);
     }
 
     /* ── tap strip: every tap, early or late against the player's own
@@ -489,6 +488,47 @@
       return s;
     }
 
+
+    /* ── finish moment, the same in every test: the start key rests as
+       DONE for a moment so a last tap cannot start a run on top of the
+       result, then the score counts into place, Metro cheers, and the
+       page brings the score into view if it has scrolled away. ──────── */
+    var REST_MS = 1600;
+    var restUntil = 0;
+    function restKey(pad) {
+      restUntil = performance.now() + REST_MS;
+      pad.classList.remove('is-live');
+      pad.classList.add('is-done');
+      pad.disabled = true;
+      pad.textContent = 'DONE';
+      setTimeout(function () {
+        pad.classList.remove('is-done');
+        pad.disabled = false;
+        pad.textContent = 'START AGAIN';
+      }, REST_MS);
+    }
+    function reveal(to, from, fmt) {
+      var raf = window.requestAnimationFrame ? window.requestAnimationFrame.bind(window)
+                                             : function (f) { setTimeout(f, 16); };
+      mainReadout.classList.remove('reveal');
+      metroImg.classList.remove('cheer');
+      void mainReadout.offsetWidth;
+      mainReadout.classList.add('reveal');
+      metroImg.classList.add('cheer');
+      var t0 = performance.now(), DUR = 750;
+      (function step() {
+        var k = Math.min(1, (performance.now() - t0) / DUR);
+        var e = 1 - Math.pow(1 - k, 3);
+        mainReadout.textContent = fmt(from + (to - from) * e);
+        if (k < 1) raf(step);
+      })();
+      if (mainReadout.getBoundingClientRect && window.scrollBy) {
+        var top = mainReadout.getBoundingClientRect().top;
+        if (top < 60 || top > window.innerHeight * 0.45) {
+          window.scrollBy({ top: top - 140, behavior: 'smooth' });
+        }
+      }
+    }
     /* ── input ────────────────────────────────────────────────────────── */
     /* Taps count on the press, never the release. A click fires when the
        finger or button comes back up, and how long it rests varies from tap
@@ -501,7 +541,7 @@
     });
     /* The release of the final tap, or a focused button's own click on
        Space, must not start a new test the moment the last one is scored. */
-    function mayStart() { return state !== 'running' && performance.now() - lastTapAt >= 800; }
+    function mayStart() { return state !== 'running' && performance.now() - lastTapAt >= 800 && performance.now() >= restUntil; }
     tapPad.addEventListener('click', function () { if (mayStart()) start(); });
     retryBtn.addEventListener('click', start);
 
