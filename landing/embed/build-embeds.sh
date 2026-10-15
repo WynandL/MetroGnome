@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerates the five embeddable widget pages from their full tool pages.
+# Regenerates the embeddable widget pages from their full tool pages.
 #
 # Why a generator instead of five hand-maintained copies: the widget IS the
 # tool, minus page chrome. Hand-copying guarantees the two drift apart the
@@ -117,3 +117,13 @@ emit "$TOOLS/chord-finder.html" "$OUT/chord-finder.html" \
   "Chord Finder - Metro Gnome" \
   "https://metrognome.co.za/tools/chord-finder.html" \
   "Online chord finder" ""
+
+emit "$TOOLS/pitch-ear-test.html" "$OUT/pitch-test.html" \
+  "Pitch Test - Metro Gnome" \
+  "https://metrognome.co.za/tools/pitch-ear-test.html" \
+  "Pitch test" ""
+
+emit "$TOOLS/steady-tempo-test.html" "$OUT/steady-tempo-test.html" \
+  "Steady Tempo Test - Metro Gnome" \
+  "https://metrognome.co.za/tools/steady-tempo-test.html" \
+  "Steady tempo test" ""
