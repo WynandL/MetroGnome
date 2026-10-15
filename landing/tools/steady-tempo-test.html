@@ -129,6 +129,13 @@
       <div class="marking" id="statusLabel">Ready when you are</div>
       <div class="best-line" id="bestLine" aria-live="polite"></div>
 
+      <div class="phase-steps" id="phaseSteps" aria-hidden="true">
+        <span class="phase-step">Listen</span><span class="phase-sep">&rsaquo;</span>
+        <span class="phase-step">Tap along</span><span class="phase-sep">&rsaquo;</span>
+        <span class="phase-step">On your own</span>
+      </div>
+      <p class="phase-tip" id="phaseTip" aria-live="polite"></p>
+
       <div class="beat-dots" id="beatDots" aria-hidden="true"></div>
 
       <div class="preset-row tempo-row" id="tempoRow" role="group" aria-label="Test tempo">
@@ -165,7 +172,7 @@
         <button class="btn-ghost" id="retryBtn" type="button" hidden>Try again</button>
       </div>
 
-      <p class="tool-hint">Use <kbd>Space</kbd> or tap the button. Four beats to listen, eight to tap along, then the click stops and you carry on for sixteen beats. Your device's audio delay does not affect the score.</p>
+      <p class="tool-hint">Use <kbd>Space</kbd> or tap the button. Your device's audio delay does not affect the score.</p>
     </section>
 
     <nav class="tool-next" aria-label="More free tests and tools">
@@ -305,6 +312,23 @@
     var metroImg    = document.getElementById('metroImg');
     var bandRows    = Array.prototype.slice.call(document.querySelectorAll('#bandTableBody tr'));
     var tempoBtns   = Array.prototype.slice.call(document.querySelectorAll('#tempoRow .preset-chip'));
+    var phaseSteps  = Array.prototype.slice.call(document.querySelectorAll('#phaseSteps .phase-step'));
+    var phaseTip    = document.getElementById('phaseTip');
+
+    /* What is happening and what comes next, short enough to read at a
+       glance during the count. Phase 0 is idle, before and after a run. */
+    var TIPS = [
+      'Listen for 4 beats, tap along for 8, then keep going when the click stops.',
+      'Get ready: next, tap along with the click.',
+      'Soon the click stops. Keep tapping at the same speed.',
+      'Keep the same beat for 16 taps. The dots fill as you go.'
+    ];
+    function setPhase(n) {
+      phaseSteps.forEach(function (el, i) {
+        el.className = 'phase-step' + (i + 1 === n ? ' now' : (i + 1 < n ? ' past' : ''));
+      });
+      phaseTip.textContent = TIPS[n];
+    }
 
     /* Score: half for holding the given tempo, half for even taps.
        A straight line is fitted through the tempo of every silent beat.
@@ -430,14 +454,17 @@
           /* the first silent beat is where the next click would have been;
              a tap counts as silent from half a beat before it */
           silenceAt = ctxTimeToPerf(nextBeatTime) - interval * 500;
-          later(nextBeatTime - interval * 0.5, function () { statusLabel.textContent = 'Keep going on your own'; });
+          later(nextBeatTime - interval * 0.5, function () { statusLabel.textContent = 'Keep going on your own'; setPhase(3); });
           return;
         }
         playClick(nextBeatTime, beatIndex % 4 === 0);
         if (beatIndex < LISTEN) {
           (function (n) { later(nextBeatTime, function () { statusLabel.textContent = 'Listen... ' + n; }); })(LISTEN - beatIndex);
         } else if (beatIndex === LISTEN) {
-          later(nextBeatTime, function () { statusLabel.textContent = 'Tap along'; });
+          later(nextBeatTime, function () { statusLabel.textContent = 'Tap along'; setPhase(2); });
+        } else if (beatIndex >= LISTEN + ALONG - 2) {
+          /* the last two clicks count down to the silence */
+          (function (n) { later(nextBeatTime, function () { statusLabel.textContent = 'Click stops in ' + n; }); })(LISTEN + ALONG - beatIndex);
         }
         beatIndex++;
         nextBeatTime += interval;
@@ -468,6 +495,7 @@
       tapPad.textContent = 'TAP';
       tapPad.classList.add('is-live');
       statusLabel.textContent = 'Listen...';
+      setPhase(1);
 
       syncClocks();
       nextBeatTime = audioCtx.currentTime + 0.35;
@@ -543,6 +571,7 @@
       tapPad.classList.remove('is-live');
       tapPad.textContent = 'START TEST';
       retryBtn.hidden = false;
+      setPhase(0);
 
       /* Gaps that end on a silent tap. The first one bridges from the last
          tap along with the click into the silence, which is exactly the
@@ -688,6 +717,7 @@
       if (e.code === 'Space') tapPad.classList.remove('pressed');
     });
 
+    setPhase(0);
     var bpmParam = /[?&]bpm=(\d+)/.exec(window.location.search);
     setTempo(bpmParam ? Number(bpmParam[1]) : BPM);
   })();

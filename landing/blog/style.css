@@ -1335,3 +1335,29 @@ details[open] summary::after { transform: rotate(45deg); }
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
 }
+
+/* ── Steady tempo test: phase guide and what-comes-next tip ───────── */
+.phase-steps { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.9rem; }
+.phase-step {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.55;
+  padding: 0.2rem 0.6rem;
+  border-radius: 50px;
+  border: 1px solid transparent;
+  transition: color 0.2s, opacity 0.2s, border-color 0.2s, background 0.2s;
+}
+.phase-step.past { opacity: 0.9; color: var(--purple-light); }
+.phase-step.now  { opacity: 1; color: var(--gold); border-color: var(--gold); background: rgba(255, 215, 0, 0.08); }
+.phase-sep { color: var(--text-muted); opacity: 0.4; font-size: 0.8rem; }
+.phase-tip {
+  min-height: 2.8em;                        /* two lines, so the dots below never move */
+  max-width: 38ch;
+  margin: 0.5rem auto 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
