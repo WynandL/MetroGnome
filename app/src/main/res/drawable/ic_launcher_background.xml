@@ -1,11 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Solid backing for the adaptive icon: the 3D Metro render's own edge
-     colour, so the foreground's border is invisible when a launcher's
-     parallax or a large mask shows past it. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#0A0F26" android:pathData="M0,0 h108 v108 h-108z"/>
+
+    <!-- Dark purple/navy background matching the app's colour scheme -->
+    <path android:pathData="M0,0 h108 v108 h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="54"
+                android:startY="0"
+                android:endX="54"
+                android:endY="108"
+                android:type="linear">
+                <item android:offset="0" android:color="#0A0818"/>
+                <item android:offset="1" android:color="#16133A"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
 </vector>
