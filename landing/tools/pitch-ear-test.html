@@ -118,7 +118,7 @@
     <header class="article-header">
       <div class="post-meta">
         <span class="post-category">Free tool</span>
-        <span>Takes about 2 minutes</span>
+        <span>Takes about a minute</span>
         <span>Nothing leaves your device</span>
       </div>
       <h1>Pitch Test: How Good Is Your Ear?</h1>
@@ -195,7 +195,7 @@
 
     <article class="prose">
       <h2>What this pitch test measures</h2>
-      <p>Every round plays two short notes, one after the other. One of them is a little higher than the other, and your only job is to say which way the second note went. Get two rounds in a row right and the next pair is closer together. Miss one and the gap opens up again. Over thirty rounds the gap settles around the smallest difference you can reliably hear, and that is your result.</p>
+      <p>Every round plays two short notes, one after the other. One of them is a little higher than the other, and your only job is to say which way the second note went. Get two rounds in a row right and the next pair is closer together. Miss one and the gap opens up again. Over 24 rounds the gap settles around the smallest difference you can reliably hear, and that is your result.</p>
       <p>This is called pitch discrimination, and it is the finest-grained part of relative pitch. It is what lets a guitarist hear that a string is slightly flat before looking at a tuner, a singer find the centre of a note, and a string player put a finger exactly where the note lives.</p>
 
       <h2>What a cent is</h2>
@@ -355,11 +355,11 @@
     var MAX_CENTS     = 200;
     var BIG_STEP      = 2;                  /* until the first reversal */
     var SMALL_STEP    = Math.SQRT2;
-    var ROUNDS        = 30;                 /* fixed length, so progress is honest */
+    var ROUNDS        = 24;                 /* fixed length, so progress is honest; under ~20 a lucky streak skews too many results */
     var SKIP_REVERSALS = 2;                 /* the first turning points are still on the way down */
 
-    var NOTE_S        = 0.45;
-    var GAP_S         = 0.35;
+    var NOTE_S        = 0.32;
+    var GAP_S         = 0.25;
     var ROVE_LOW_HZ   = 330;                /* the pair's centre moves every round (E4 ...) */
     var ROVE_HIGH_HZ  = 523;                /* (... C5) so the first note cannot be ignored */
 
@@ -544,7 +544,7 @@
       state = 'listening';
       setAnswering(false);
       statusLabel.textContent = right ? 'Nice' : 'Close one';
-      setTimeout(nextRound, 450);
+      setTimeout(nextRound, 300);
     }
 
     function finish() {
