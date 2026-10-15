@@ -28,6 +28,7 @@
     }
   }
   </script>
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -91,6 +92,8 @@
 
       <p>Crucially, the useful feedback is specific and directional. "Your timing is a bit off" changes nothing. "You consistently land early on the and-of-two" is something you can work on this afternoon. Are you rushing or dragging? By how much? On which part of the bar? Those are the questions worth answering.</p>
 
+      <div class="ad-slot" data-ad="blog-mid"></div>
+
       <h2>How a Phone Can Measure Your Timing</h2>
 
       <p>Here is the part that has quietly become possible. A modern phone already has a microphone good enough to hear you, and enough processing power to compare what it hears against a beat it is generating. In principle, the loop is simple: the app plays a steady click, you clap or play along, and for every hit you produce, the app measures how many milliseconds it landed before or after the beat.</p>
@@ -141,6 +144,8 @@
         </a>
       </div>
 
+      <div class="ad-slot" data-ad="blog-end"></div>
+
       <div class="related">
         <h3>Also on the blog</h3>
         <div class="related-grid">
@@ -179,5 +184,6 @@
     </div>
   </footer>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

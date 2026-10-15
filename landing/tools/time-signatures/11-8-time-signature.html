@@ -112,6 +112,7 @@
 }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="/blog/style.css">
 </head>
 <body>
@@ -161,6 +162,16 @@
     </div>
     <p class="tool-hint">Already set to 11/8 with the 2+2+2+2+3 grouping accented. Change the tempo, note value or beats any time, even while it plays. <a href="/tools/odd-meter-practice-tool.html?ts=11-8&amp;bpm=116">Open the full odd meter tool</a> for the reference table and the theory behind the grouping.</p>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/tap-tempo-bpm-finder.html">Tap tempo</a>
+      <a class="preset-chip" href="/tools/time-signatures/">Time signature guides</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>What 11/8 time means</h2>
       <p>Eleven eighth notes fill the bar and eleven cannot be split into equal twos or threes, so 11/8 is an <strong>odd meter</strong>. What makes it feel long is not the count but the number of groups: a 7/8 bar has three groups, an 11/8 bar has four or five. The most straightforward grouping is <strong>2+2+2+2+3</strong>, which is what this site and the Metro Gnome app default to for any irregular meter: twos, with a single three absorbing the leftover pulse. Music in 11/8 uses many others: <strong>3+3+3+2</strong> (the Allman Brothers' <em>Whipping Post</em>), <strong>2+2+3+2+2</strong> (the Bulgarian kopanitsa) and <strong>4+4+3</strong> (felt as two bars of 4/4 with a short bar of 3 tacked on).</p>
@@ -188,6 +199,8 @@
       <p><strong>Learn it as two familiar bars plus a short one.</strong> For 4+4+3, practise a bar of 4/4, a bar of 4/4 and a bar of 3/4 in a loop with the click. Once the turnaround feels natural, it is 11/8.</p>
       <p><strong>Keep the eighth-note pulse slow to start.</strong> The tool's BPM is the eighth note. Around 100 you can hear every pulse and place every accent; the Balkan dance tempo of 200-plus is where you are heading, not where you begin.</p>
       <p>For the theory behind why the bottom number never changes a meter's class, and how simple, compound and odd meters relate, see <a href="/blog/time-signatures-explained.html">Time Signatures Explained</a>. For any meter not covered here, the <a href="/tools/odd-meter-practice-tool.html">odd meter metronome</a> plays anything from 1 to 16 beats with its natural grouping.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about 11/8</h3>
       <div class="faq-list">
@@ -274,5 +287,6 @@
   })();
   </script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

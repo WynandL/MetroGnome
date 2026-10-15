@@ -112,6 +112,7 @@
 }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="/blog/style.css">
 </head>
 <body>
@@ -161,6 +162,16 @@
     </div>
     <p class="tool-hint">Already set to 6/8 with the 3+3 grouping accented. Change the tempo, note value or beats any time, even while it plays. <a href="/tools/odd-meter-practice-tool.html?ts=6-8&amp;bpm=132">Open the full odd meter tool</a> for the reference table and the theory behind the grouping.</p>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/tap-tempo-bpm-finder.html">Tap tempo</a>
+      <a class="preset-chip" href="/tools/time-signatures/">Time signature guides</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>What 6/8 time means</h2>
       <p>The bottom number says the eighth note is the written pulse and the top number says there are six of them. Six divides evenly into two threes, so the real beat is the <strong>dotted quarter note</strong> (three eighths long) and there are two of them per bar. That is what <strong>compound duple</strong> means: two beats (duple), each dividing in three (compound). 6/8 is to 2/4 what 9/8 is to 3/4 and 12/8 is to 4/4: the same number of beats, each one rolling in three instead of two.</p>
@@ -188,6 +199,8 @@
       <p><strong>Use a word for the subdivision.</strong> <em>Straw-ber-ry straw-ber-ry</em> gives you two three-syllable beats per bar with the weight in the right place. Say it with the click before you play.</p>
       <p><strong>Test it against 3/4.</strong> Set the tool to 3/4 and then to 6/8 at the same eighth-note speed and listen to where the accents land. Being able to hear the difference is what stops you playing a jig like a waltz.</p>
       <p>For the theory behind why the bottom number never changes a meter's class, and how simple, compound and odd meters relate, see <a href="/blog/time-signatures-explained.html">Time Signatures Explained</a>. For any meter not covered here, the <a href="/tools/odd-meter-practice-tool.html">odd meter metronome</a> plays anything from 1 to 16 beats with its natural grouping.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about 6/8</h3>
       <div class="faq-list">
@@ -274,5 +287,6 @@
   })();
   </script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

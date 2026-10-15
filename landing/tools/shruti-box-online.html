@@ -93,6 +93,7 @@
   }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="../blog/style.css">
 </head>
 <body>
@@ -140,6 +141,16 @@
     </div>
     <p class="tool-hint">Warm is the reed-organ voice, closest to a real shruti box; Octave adds the upper Sa. Turn your sound on. <a href="/tools/tuning-drone.html?note=Cs&amp;octave=3&amp;timbre=warm&amp;blend=octave">Open the full tuning drone</a> for the reference-pitch control and the instrument table.</p>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/tuning-drone.html">Tuning drone</a>
+      <a class="preset-chip" href="/tools/pitch-ear-test.html">Pitch test</a>
+      <a class="preset-chip" href="/tools/chord-finder.html">Chord finder</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>Shruti box, tanpura, tuning drone: one job, three instruments</h2>
       <p>A <strong>tanpura</strong> is the traditional source of the drone in Hindustani and Carnatic music: four long strings, tuned to Pa, Sa, Sa and the lower Sa (or Ma or Ni in place of Pa for ragas that avoid the fifth), plucked one after another in an unbroken cycle. The curved bridge with its threads, the jivari, is what makes the sound bloom with overtones, so the drone is never just a note but a whole shimmering field of harmonics around Sa.</p>
@@ -180,6 +191,8 @@
 
       <h2>Reference pitch, if you play with a harmonium</h2>
       <p>Because Sa is chosen freely, the drone's A4 reference only matters when you have to match an instrument that cannot retune. Most harmoniums are built to A4 = 440 Hz, some slightly higher. The full <a href="/tools/tuning-drone.html">tuning drone</a> has an A4 control from 415 to 466 Hz; set it to whatever your harmonium is at and every Sa on the keyboard moves with it. For voice, sitar, sarod or bansuri alone, leave it at 440 and choose Sa by ear.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about shruti boxes and Sa</h3>
       <div class="faq-list">
@@ -286,5 +299,6 @@
   })();
   </script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

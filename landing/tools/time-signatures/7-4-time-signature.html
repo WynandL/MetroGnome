@@ -112,6 +112,7 @@
 }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="/blog/style.css">
 </head>
 <body>
@@ -161,6 +162,16 @@
     </div>
     <p class="tool-hint">Already set to 7/4 with the 2+2+3 grouping accented. Change the tempo, note value or beats any time, even while it plays. <a href="/tools/odd-meter-practice-tool.html?ts=7-4&amp;bpm=84">Open the full odd meter tool</a> for the reference table and the theory behind the grouping.</p>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/tap-tempo-bpm-finder.html">Tap tempo</a>
+      <a class="preset-chip" href="/tools/time-signatures/">Time signature guides</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>What 7/4 time means</h2>
       <p>Seven beats per bar, with the quarter note carrying the beat. Seven does not split into equal twos or threes, so 7/4 is an <strong>odd meter</strong>, and like 7/8 it is built from twos and threes. The difference from 7/8 is the beat value: in 7/4 each of the seven beats is slow enough to feel individually, so the bar is long, and most 7/4 music is felt as a bar of four plus a bar of three (<strong>4+3</strong>) or three plus four (<strong>3+4</strong>) rather than as three quick groups. The tool above defaults to <strong>2+2+3</strong>, the same shape as 4+3 with the four subdivided; in the Metro Gnome app you can set the accents to beats 1 and 5 only for a pure 4+3 feel.</p>
@@ -188,6 +199,8 @@
       <p><strong>Anchor beat 5.</strong> In 4+3 the accent on beat 5 is where players lose the bar. Clap beats 1 and 5 with the click until beat 5 feels like a second downbeat, then add the instrument.</p>
       <p><strong>Learn the songs.</strong> Playing along to Money or Solsbury Hill with the tool at the same tempo is the fastest way to internalise 7/4, because the groove does the counting for you.</p>
       <p>For the theory behind why the bottom number never changes a meter's class, and how simple, compound and odd meters relate, see <a href="/blog/time-signatures-explained.html">Time Signatures Explained</a>. For any meter not covered here, the <a href="/tools/odd-meter-practice-tool.html">odd meter metronome</a> plays anything from 1 to 16 beats with its natural grouping.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about 7/4</h3>
       <div class="faq-list">
@@ -274,5 +287,6 @@
   })();
   </script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

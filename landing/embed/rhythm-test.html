@@ -254,6 +254,7 @@
     function start() {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
+      if (window.MetroAds) window.MetroAds.busy(true);   /* no ad work during a run */
 
       state = 'running';
       lockTempo(true);
@@ -331,6 +332,7 @@
 
     function finish() {
       state = 'done';
+      if (window.MetroAds) window.MetroAds.busy(false);
       lockTempo(false);
       tapPad.classList.remove('is-live');
       tapPad.textContent = 'START TEST';

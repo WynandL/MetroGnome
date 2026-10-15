@@ -112,6 +112,7 @@
 }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="/blog/style.css">
 </head>
 <body>
@@ -161,6 +162,16 @@
     </div>
     <p class="tool-hint">Already set to 9/8 with the 3+3+3 grouping accented. Change the tempo, note value or beats any time, even while it plays. <a href="/tools/odd-meter-practice-tool.html?ts=9-8&amp;bpm=132">Open the full odd meter tool</a> for the reference table and the theory behind the grouping.</p>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/tap-tempo-bpm-finder.html">Tap tempo</a>
+      <a class="preset-chip" href="/tools/time-signatures/">Time signature guides</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>What 9/8 time means</h2>
       <p>The bottom number says the eighth note is the written pulse and the top number says there are nine of them. But 9/8 is not counted in nine. Because nine divides into three threes, the real beat is the <strong>dotted quarter note</strong>, three eighths long, and there are three of them in the bar. That is what <strong>compound triple</strong> means: three beats (triple), each splitting into three (compound). It stands to 3/4 exactly as 6/8 stands to 2/4: same number of beats, but each beat rolls in three instead of two.</p>
@@ -187,6 +198,8 @@
       <p><strong>Say the subdivision as a word.</strong> Try <em>straw-ber-ry straw-ber-ry straw-ber-ry</em>: three syllables per beat, three beats per bar. It puts the weight in the right place without any arithmetic.</p>
       <p><strong>Check the grouping before you assume.</strong> Not every 9/8 is 3+3+3. Look at the beaming in the score or listen for the lurch; if the piece is 2+2+2+3, set the accents to 1, 3, 5 and 7 in the app rather than practising it as a jig.</p>
       <p>For the theory behind why the bottom number never changes a meter's class, and how simple, compound and odd meters relate, see <a href="/blog/time-signatures-explained.html">Time Signatures Explained</a>. For any meter not covered here, the <a href="/tools/odd-meter-practice-tool.html">odd meter metronome</a> plays anything from 1 to 16 beats with its natural grouping.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about 9/8</h3>
       <div class="faq-list">
@@ -273,5 +286,6 @@
   })();
   </script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

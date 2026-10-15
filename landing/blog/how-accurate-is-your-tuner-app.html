@@ -32,6 +32,7 @@
     }
   }
   </script>
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -97,6 +98,8 @@
 
       <p>After the integer lag is found, parabolic interpolation refines it to a fractional sample. Without this step, frequency resolution at the low end would be roughly 3 cents per sample, which is audible. With interpolation, the detector resolves to a small fraction of a cent. At 44,100Hz and 186ms window size, the frequency resolution is already better than 6Hz, but parabolic interpolation pushes it well below 1 cent across the instrument range.</p>
 
+      <div class="ad-slot" data-ad="blog-mid"></div>
+
       <h2>Stabilising the Display</h2>
 
       <p>Raw pitch detections at 11 readings per second (the 4096-sample hop gives 50% overlap) are still noisy frame to frame. Metro Gnome runs each new reading through two smoothing layers before the needle moves.</p>
@@ -158,6 +161,8 @@
         </a>
       </div>
 
+      <div class="ad-slot" data-ad="blog-end"></div>
+
       <div class="related">
         <h3>Also on the blog</h3>
         <div class="related-grid">
@@ -192,5 +197,6 @@
     </div>
   </footer>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

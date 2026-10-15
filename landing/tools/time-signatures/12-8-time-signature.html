@@ -112,6 +112,7 @@
 }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="/blog/style.css">
 </head>
 <body>
@@ -161,6 +162,16 @@
     </div>
     <p class="tool-hint">Already set to 12/8 with the 3+3+3+3 grouping accented. Change the tempo, note value or beats any time, even while it plays. <a href="/tools/odd-meter-practice-tool.html?ts=12-8&amp;bpm=132">Open the full odd meter tool</a> for the reference table and the theory behind the grouping.</p>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/tap-tempo-bpm-finder.html">Tap tempo</a>
+      <a class="preset-chip" href="/tools/time-signatures/">Time signature guides</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>What 12/8 time means</h2>
       <p>Twelve eighth notes fill the bar and twelve divides into four threes, so the real beat is the <strong>dotted quarter note</strong> and there are four of them. That makes 12/8 <strong>compound quadruple</strong>: four beats (quadruple), each dividing in three (compound). It is 4/4 with a triplet built into every beat, which is why so much 12/8 music is written as 4/4 with a <em>shuffle</em> or <em>triplet feel</em> marking instead; the two notations describe the same thing, and 12/8 is simply the one that writes the subdivision into the time signature.</p>
@@ -187,6 +198,8 @@
       <p><strong>Practise the shuffle honestly.</strong> In 12/8 a shuffle is the first and third pulse of each beat. Play only those against the tool's click and make sure the third pulse lands late, on the last triplet, not halfway between beats; that is the difference between a shuffle and straight eighths.</p>
       <p><strong>Slow it down to hear the triplets.</strong> The tool's BPM is the eighth-note pulse, so a slow blues at 50 big beats a minute is 150 on the tool. Start nearer 100, where every pulse is audible and the triplet cannot hide, and work up from there.</p>
       <p>For the theory behind why the bottom number never changes a meter's class, and how simple, compound and odd meters relate, see <a href="/blog/time-signatures-explained.html">Time Signatures Explained</a>. For any meter not covered here, the <a href="/tools/odd-meter-practice-tool.html">odd meter metronome</a> plays anything from 1 to 16 beats with its natural grouping.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about 12/8</h3>
       <div class="faq-list">
@@ -273,5 +286,6 @@
   })();
   </script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

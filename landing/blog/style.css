@@ -1218,3 +1218,115 @@ details[open] summary::after { transform: rotate(45deg); }
   .tool-card { transition: none; }
   .tool-card:hover { transform: none; }
 }
+
+/* ── Pitch test: two answer keys side by side, turning-point pips ──── */
+.answer-row { display: flex; gap: 0.75rem; justify-content: center; max-width: 340px; margin: 1.5rem auto 0.6rem; }
+.answer-row[hidden] { display: none; }
+.answer-row .answer-pad { margin: 0; flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; }
+.answer-pad svg { width: 18px; height: 18px; }
+.answer-pad:disabled { opacity: 0.5; cursor: default; }
+.pitch-progress { display: flex; justify-content: center; gap: 6px; margin-top: 1rem; }
+.metro-wrap img.glow { box-shadow: 0 0 0 2px var(--gold), 0 0 22px rgba(255, 215, 0, 0.45); }
+.ts-result { stroke: var(--gold); opacity: 0.9; }
+
+/* ── "Try next": the same row of links under every tool ───────────── */
+.tool-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: -1.25rem 0 2.25rem;
+}
+.tool-next .tn-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-right: 0.25rem;
+}
+.tool-next .preset-chip { text-decoration: none; }
+
+/* ── Ad slots ─────────────────────────────────────────────────────────
+   Hidden unless the #ads-gate script in <head> marked this visitor as
+   not-Android (html.ads-on), which happens before the body paints, so a
+   slot either has its full height from the first frame or never exists.
+   The height is fixed per breakpoint and matches the ad unit exactly
+   (300x250 on narrow phones, 336x280 elsewhere): nothing below it moves
+   when an ad arrives, fails, or is replaced by the house card. */
+.ad-slot { display: none; }
+.ads-on .ad-slot {
+  display: block;
+  position: relative;
+  width: 336px;
+  max-width: 100%;
+  height: 300px;                            /* 18px label + 280px unit + 2px air */
+  margin: 2.25rem auto;
+  overflow: hidden;
+}
+.ad-label {
+  display: block;
+  height: 18px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.7;
+  text-align: center;
+}
+.ad-slot .metro-ad,
+.ad-slot .ad-house {
+  position: absolute;
+  top: 18px;
+  left: 0;
+  width: 336px;
+  max-width: 100%;
+  height: 280px;
+}
+.ad-slot .metro-ad { display: block; z-index: 1; }
+.ad-slot .metro-ad[data-ad-status="unfilled"] { display: none !important; }
+/* The label names what is actually showing: "Advertisement" only once
+   Google has filled the unit, "More free tools" for the house card. */
+.ad-label .al-ad { display: none; }
+.ad-slot:has(.metro-ad[data-ad-status="filled"]) .al-ad { display: inline; }
+.ad-slot:has(.metro-ad[data-ad-status="filled"]) .al-house { display: none; }
+.ad-house {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px dashed var(--surface-up);
+  border-radius: var(--radius);
+  background: var(--surface-deep);
+  color: var(--text);
+  text-decoration: none;
+}
+.ad-house:hover { border-color: var(--purple); }
+.ad-house-kicker { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.ad-house-title { font-size: 1.25rem; font-weight: 800; }
+.ad-house-line { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; max-width: 26ch; }
+@media (max-width: 359px) {
+  .ads-on .ad-slot { width: 300px; height: 270px; }
+  .ad-slot .metro-ad, .ad-slot .ad-house { width: 300px; height: 250px; }
+}
+
+/* Local review only (ads.js adds this on localhost): shows the slot's
+   name so placement can be checked without loading a real ad. */
+.ad-preview .ad-house { border-color: var(--gold); border-style: dashed; }
+.ad-preview-tag {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 2;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: #0D0B1E;
+  background: var(--gold);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}

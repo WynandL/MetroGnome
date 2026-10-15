@@ -77,6 +77,7 @@
   }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="../blog/style.css">
 </head>
 <body>
@@ -136,6 +137,16 @@
       <p class="tool-hint">Tap the button, or press <kbd>Space</kbd>, at least twice in time with the beat. Pause for 2.5s to start over.</p>
     </section>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/odd-meter-practice-tool.html">Odd meter metronome</a>
+      <a class="preset-chip" href="/tools/pitch-ear-test.html">Pitch test</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>How to find the BPM of a song by tapping</h2>
       <p>Every tap is timestamped the moment you make it. Once you have tapped at least twice within 2.5 seconds of each other, the tool averages the gaps between your last few taps and converts that into beats per minute, the same tap tempo rule Metro Gnome's own metronome app uses for its BPM counter.</p>
@@ -174,6 +185,8 @@
 
       <h2>Turn a BPM into a practice routine</h2>
       <p>Finding a number is the easy part. Once you know the tempo, the useful next step is a metronome for guitar practice, a metronome app for drummers, or a tempo trainer app that ramps you up to it in structured steps. Metro Gnome saves any tempo you find here as a named BPM preset, so you can jump straight back to it, and its Speed Trainer builds up to a target tempo automatically instead of leaving you to guess the next step.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about tap tempo and BPM</h3>
       <div class="faq-list">
@@ -393,5 +406,6 @@
   })();
   </script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

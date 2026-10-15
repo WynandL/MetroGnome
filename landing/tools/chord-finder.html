@@ -93,6 +93,7 @@
   }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="../blog/style.css">
 </head>
 <body>
@@ -184,6 +185,16 @@
       <p class="tool-hint">Tap a note again, or its chip, to remove it. The lowest note you enter is the bass, and the bass decides the name. Turn your sound on to hear the chord as an arpeggio and then together.</p>
     </section>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/pitch-ear-test.html">Pitch test</a>
+      <a class="preset-chip" href="/tools/tuning-drone.html">Tuning drone</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/tap-tempo-bpm-finder.html">Tap tempo</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>What this chord finder does</h2>
       <p>Most chord tools go from a name to a shape: you ask for G7 and they show you where to put your fingers. This one goes the other way, from the notes to the name, which is the question that actually comes up in practice. You worked out a song by ear and want to write the chords down. You moved one finger in a shape you know and it sounds wonderful and you would like to find it again. You are reading a piano part and want to know what the left hand is doing. Enter the notes and the finder tells you, in the same words a musician would use, and the <a href="/blog/what-is-a-chord-how-chords-work.html">guide to how chords work</a> explains why those words mean what they mean.</p>
@@ -227,6 +238,8 @@
 
       <h2>The engine behind it</h2>
       <p>The dictionary and the naming rules on this page are a direct port of <code>ChordTheory</code> from the Metro Gnome app, the same pure music-theory core that names chords on the phone. Chord types are defined by degrees ("1 &#9837;3 5 &#9837;7"), not by semitone offsets, which is what makes the spelling come out right; every candidate root is tried against every type; and the ranking is a plain score (complexity, plus a penalty for a slash reading, plus a larger one for an assumed missing fifth). The app's test suite proves the dictionary has no two types sharing a set of notes and that every type survives a round trip through the namer. Porting it rather than rewriting it means the browser and the phone can never disagree about a chord.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about chord finders</h3>
       <div class="faq-list">
@@ -846,5 +859,6 @@
     render();
   })();
   </script>
+  <script src="/ads.js" defer></script>
 </body>
 </html>

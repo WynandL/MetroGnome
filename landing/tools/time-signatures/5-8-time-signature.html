@@ -112,6 +112,7 @@
 }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="/blog/style.css">
 </head>
 <body>
@@ -161,6 +162,16 @@
     </div>
     <p class="tool-hint">Already set to 5/8 with the 2+3 grouping accented. Change the tempo, note value or beats any time, even while it plays. <a href="/tools/odd-meter-practice-tool.html?ts=5-8&amp;bpm=132">Open the full odd meter tool</a> for the reference table and the theory behind the grouping.</p>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/tap-tempo-bpm-finder.html">Tap tempo</a>
+      <a class="preset-chip" href="/tools/time-signatures/">Time signature guides</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>What 5/8 time means</h2>
       <p>The top number says five pulses per bar and the bottom number says the eighth note is the pulse. Five cannot be split into equal twos or threes, so 5/8 is an <strong>odd meter</strong> grouped <strong>2+3</strong> or <strong>3+2</strong>. So far it is identical to 5/4. The difference is entirely about speed and notation: choosing 5/8 over 5/4 tells the player the pulse is quick, quick enough that the bar is felt as two uneven beats (a two-pulse beat and a three-pulse beat) rather than as five countable beats. Nobody counts to five in a fast 5/8; they feel <em>short-LONG</em> or <em>LONG-short</em>.</p>
@@ -186,6 +197,8 @@
       <p><strong>Learn it from 5/4 if that helps.</strong> Set the tool to 5/4 at 66 BPM, count all five, then switch to 5/8 at 132 BPM. It is the same bar, twice as fast; hearing that relationship is what makes 5/8 stop feeling like a separate skill.</p>
       <p><strong>Push the tempo deliberately.</strong> Unlike most odd meters, 5/8 gets easier faster, because at speed the five pulses vanish and only the two beats remain. Start around 100 on the eighth note to hear the pulses, then climb.</p>
       <p>For the theory behind why the bottom number never changes a meter's class, and how simple, compound and odd meters relate, see <a href="/blog/time-signatures-explained.html">Time Signatures Explained</a>. For any meter not covered here, the <a href="/tools/odd-meter-practice-tool.html">odd meter metronome</a> plays anything from 1 to 16 beats with its natural grouping.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about 5/8</h3>
       <div class="faq-list">
@@ -272,5 +285,6 @@
   })();
   </script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

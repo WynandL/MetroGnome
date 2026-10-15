@@ -29,6 +29,7 @@
     }
   }
   </script>
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -100,6 +101,8 @@
         <strong>A note on terminology:</strong> The second approach, audio hardware-anchored timing, is often called sample-accurate timing. Each beat is placed at an exact sample position in the audio output stream. Since audio hardware processes samples at a fixed, guaranteed rate, the timing is as stable as the hardware clock, which is very stable indeed.
       </div>
 
+      <div class="ad-slot" data-ad="blog-mid"></div>
+
       <h2>What Musicians Actually Notice</h2>
 
       <p>Very few musicians consciously notice that their metronome drifts. Instead, they notice the symptoms: a faint unease that makes it hard to lock in, a sense that the click "moves around" slightly even when it shouldn't, or a feeling that their playing sounds more solid when they practise with a physical metronome or a click from a DAW than when they use a phone app.</p>
@@ -162,6 +165,8 @@
         </a>
       </div>
 
+      <div class="ad-slot" data-ad="blog-end"></div>
+
       <div class="related">
         <h3>Also on the blog</h3>
         <div class="related-grid">
@@ -195,5 +200,6 @@
   <script defer src="/_vercel/insights/script.js"></script>
   <script defer src="/_vercel/speed-insights/script.js"></script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

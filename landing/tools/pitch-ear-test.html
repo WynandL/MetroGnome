@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pitch Test: How Good Is Your Ear? - Metro Gnome</title>
+  <meta name="description" content="Free online pitch test. Hear two notes, say whether the second is higher or lower, and the test zooms in until it finds the smallest pitch difference you can hear, in cents. No download, no sign up.">
+  <link rel="icon" type="image/webp" href="/favicon.webp">
+  <link rel="apple-touch-icon" href="/favicon.webp">
+  <link rel="canonical" href="https://metrognome.co.za/tools/pitch-ear-test.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Pitch Test: How Good Is Your Ear? - Metro Gnome">
+  <meta property="og:description" content="Hear two notes, pick higher or lower, and find the smallest pitch difference your ear can hear, measured in cents. Free, in your browser.">
+  <meta property="og:url" content="https://metrognome.co.za/tools/pitch-ear-test.html">
+  <meta property="og:image" content="https://metrognome.co.za/metro.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Pitch Test: How Good Is Your Ear? - Metro Gnome">
+  <meta name="twitter:description" content="Hear two notes, pick higher or lower, and find the smallest pitch difference your ear can hear, in cents.">
+  <meta name="twitter:image" content="https://metrognome.co.za/metro.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Pitch Test: How Good Is Your Ear?",
+    "url": "https://metrognome.co.za/tools/pitch-ear-test.html",
+    "applicationCategory": "MusicApplication",
+    "operatingSystem": "Any (runs in browser)",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "description": "Free browser pitch discrimination test. It plays pairs of notes, asks whether the second is higher or lower, and adapts the gap until it finds the smallest pitch difference you can reliably hear, reported in cents.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Metro Gnome",
+      "url": "https://metrognome.co.za/"
+    }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is a cent?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "A cent is one hundredth of a semitone. The gap between two neighbouring keys on a piano is 100 cents, so a result of 10 cents means you can hear a difference one tenth the size of the smallest step on a keyboard."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is a good pitch test score?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Lower is finer. Under 5 cents is a finely tuned ear, 5 to 12 cents is sharp, and 12 to 25 cents is a good, musical ear. Results above that are common on a first try, especially on laptop speakers, and they come down quickly with practice."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can you train your ear to hear smaller pitch differences?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, and faster than most people expect. In a 2006 study by Micheyl and colleagues, listeners without musical training started with pitch thresholds about six times larger than classical musicians, and reached the musicians' level after roughly four to eight hours of practice."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is this the same as a perfect pitch test?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Perfect pitch is naming a note with no reference. This test measures relative pitch at its finest: how small a difference between two notes you can hear. That is the skill that lets you tune by ear and play in tune with others, and everyone can improve it."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is this pitch test free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. It runs entirely in your browser, needs no download, account or payment, and nothing you answer is uploaded anywhere."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
+  <link rel="stylesheet" href="../blog/style.css">
+</head>
+<body>
+
+  <nav class="site-nav" aria-label="Primary">
+    <div class="inner">
+      <a href="/" class="brand" aria-label="Metro Gnome home">
+        <img src="/metro.png" alt="Metro Gnome logo">
+        <span>Metro Gnome</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/#features">Features</a>
+        <a href="/blog/" class="blog-nav">Blog</a>
+        <a href="/tools/" class="tools-nav">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="sep">&rsaquo;</span>
+      <a href="/tools/">Tools</a>
+      <span class="sep">&rsaquo;</span>
+      <span>Pitch Test</span>
+    </nav>
+
+    <header class="article-header">
+      <div class="post-meta">
+        <span class="post-category">Free tool</span>
+        <span>Takes about 2 minutes</span>
+        <span>Nothing leaves your device</span>
+      </div>
+      <h1>Pitch Test: How Good Is Your Ear?</h1>
+      <p class="article-intro">
+        Hear two notes and say whether the second one was higher or lower. Right answers bring the notes closer together and a miss moves them apart again, until the test finds the smallest pitch difference your ear can pick out. Your result is measured in cents, the same unit a tuner uses.
+      </p>
+    </header>
+
+    <section class="tool-panel" aria-label="Interactive pitch discrimination test">
+      <div class="metro-wrap">
+        <img id="metroImg" src="/metro.png" alt="Metro the gnome, bobs on every note">
+      </div>
+
+      <div class="bpm-readout" id="mainReadout">--</div>
+      <div class="bpm-unit" id="mainUnit">cents apart</div>
+      <div class="marking" id="statusLabel">Ready when you are</div>
+      <div class="best-line" id="bestLine" aria-live="polite"></div>
+
+      <div class="pitch-progress" id="progress" aria-hidden="true"></div>
+
+      <button class="tap-pad" id="startPad" type="button">START TEST</button>
+
+      <div class="answer-row" id="answerRow" hidden>
+        <button class="tap-pad answer-pad" id="lowerBtn" type="button" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>
+          LOWER
+        </button>
+        <button class="tap-pad answer-pad" id="higherBtn" type="button" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+          HIGHER
+        </button>
+      </div>
+
+      <div class="stat-row" id="statRow" hidden>
+        <div class="stat">
+          <span class="stat-value" id="semiValue">--</span>
+          <span class="stat-label">Of a semitone</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" id="rightValue">--</span>
+          <span class="stat-label">Answers right</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" id="roundsValue">--</span>
+          <span class="stat-label">Rounds played</span>
+        </div>
+      </div>
+
+      <figure class="tap-strip" id="stairStrip" hidden>
+        <svg id="stairSvg" viewBox="0 0 320 140" role="img" aria-label="The gap between the two notes on every round, and where your result settled"></svg>
+        <figcaption>Each dot is one round: gold when you got it right, hollow when you did not. The gap shrinks after right answers and widens after a miss, and settles around the smallest difference you can hear. The dashed line is your result.</figcaption>
+      </figure>
+
+      <p class="verdict" id="verdict" hidden></p>
+
+      <div class="tool-controls">
+        <button class="btn-ghost" id="replayBtn" type="button" hidden>Hear them again</button>
+        <button class="btn-ghost" id="retryBtn" type="button" hidden>Try again</button>
+      </div>
+
+      <p class="tool-hint">Headphones in a quiet room work best. Use the buttons, or <kbd>&uarr;</kbd> for higher and <kbd>&darr;</kbd> for lower. Not sure? Make your best guess: the test is built to expect some misses.</p>
+    </section>
+
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/tuning-drone.html">Tuning drone</a>
+      <a class="preset-chip" href="/tools/chord-finder.html">Chord finder</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
+    <article class="prose">
+      <h2>What this pitch test measures</h2>
+      <p>Every round plays two short notes, one after the other. One of them is a little higher than the other, and your only job is to say which way the second note went. Get two rounds in a row right and the next pair is closer together. Miss one and the gap opens up again. Over a few dozen rounds the gap settles around the smallest difference you can reliably hear, and that is your result.</p>
+      <p>This is called pitch discrimination, and it is the finest-grained part of relative pitch. It is what lets a guitarist hear that a string is slightly flat before looking at a tuner, a singer find the centre of a note, and a string player put a finger exactly where the note lives.</p>
+
+      <h2>What a cent is</h2>
+      <p>Pitch differences this small are measured in <strong>cents</strong>. A cent is one hundredth of a semitone, and a semitone is the step between two neighbouring keys on a piano. So a result of 25 cents means you can hear a difference a quarter the size of the smallest step on a keyboard, and a result of 5 cents means one twentieth of it. It is the same unit your tuner's needle shows, which is why <a href="/blog/how-accurate-is-your-tuner-app.html">tuner accuracy is quoted in cents</a> too.</p>
+
+      <div class="callout">
+        <strong>The starting note changes every round.</strong> If every pair started on the same note, you could ignore the first one and just remember where the second one usually sits. Moving the pair around makes every round a fresh comparison, so the result measures your ear rather than your memory of the test.
+      </div>
+
+      <h2>What your result means</h2>
+      <p>Lower is finer. The bands below are a guide to where your ear is today, not a ceiling. One round played on laptop speakers in a noisy room can easily read twice as wide as the same ear on headphones.</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Result</th><th>Cents</th><th>What it means</th></tr>
+          </thead>
+          <tbody id="bandTableBody">
+            <tr data-min="0" data-max="5"><td>Finely tuned</td><td class="range">Under 5</td><td>A twentieth of a semitone or finer. This is the level highly trained listeners reach.</td></tr>
+            <tr data-min="5" data-max="12"><td>Sharp</td><td class="range">5-12</td><td>You hear the kind of drift that makes a chord sound slightly sour before anyone else in the room does.</td></tr>
+            <tr data-min="12" data-max="25"><td>Musical</td><td class="range">12-25</td><td>A good working ear. Plenty to tune by ear and to hear when a note is off centre.</td></tr>
+            <tr data-min="25" data-max="1000"><td>Warming up</td><td class="range">Over 25</td><td>Very common on a first go, and the band that improves fastest. A few short sessions usually move it a long way.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Yes, your ear can get sharper</h2>
+      <p>Fine pitch hearing is a trained skill rather than a fixed gift. In a 2006 study, Christophe Micheyl and colleagues measured listeners with no musical training and found their thresholds started about six times wider than those of classical musicians. After roughly four to eight hours of practice spread over sessions, the untrained group had caught up with the musicians.</p>
+      <p>Three habits help most:</p>
+      <ul>
+        <li><strong>Practise little and often.</strong> Two or three runs of this test a day will do more than one long session a week.</li>
+        <li><strong>Tune by ear first, then check.</strong> Tune a string against a reference by ear, then look at the tuner to see how close you got. The check after the guess is the part that trains you.</li>
+        <li><strong>Hold notes against a drone.</strong> Playing a long note over a steady reference tone makes small pitch errors audible as a slow wobble called beating. The <a href="/tools/tuning-drone.html">free tuning drone</a> does this in your browser, and the <a href="/blog/tuning-drone-intonation-practice.html">intonation practice guide</a> explains the routine.</li>
+      </ul>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
+
+      <h3>Questions about pitch tests</h3>
+      <div class="faq-list">
+        <details>
+          <summary>What is a cent?</summary>
+          <div class="faq-answer">
+            A cent is one hundredth of a semitone. The gap between two neighbouring keys on a piano is 100 cents, so a result of 10 cents means you can hear a difference one tenth the size of the smallest step on a keyboard.
+          </div>
+        </details>
+        <details>
+          <summary>What is a good pitch test score?</summary>
+          <div class="faq-answer">
+            Lower is finer. Under 5 cents is a finely tuned ear, 5 to 12 cents is sharp, and 12 to 25 cents is a good, musical ear. Results above that are common on a first try, especially on laptop speakers, and they come down quickly with practice.
+          </div>
+        </details>
+        <details>
+          <summary>Can you train your ear to hear smaller pitch differences?</summary>
+          <div class="faq-answer">
+            Yes, and faster than most people expect. In a 2006 study by Micheyl and colleagues, listeners without musical training started with pitch thresholds about six times larger than classical musicians, and reached the musicians' level after roughly four to eight hours of practice.
+          </div>
+        </details>
+        <details>
+          <summary>Is this the same as a perfect pitch test?</summary>
+          <div class="faq-answer">
+            No. Perfect pitch is naming a note with no reference. This test measures relative pitch at its finest: how small a difference between two notes you can hear. That is the skill that lets you tune by ear and play in tune with others, and everyone can improve it.
+          </div>
+        </details>
+        <details>
+          <summary>Why did I get a different result the second time?</summary>
+          <div class="faq-answer">
+            Some variation is normal. The test ends after a fixed number of turning points, so a lucky or unlucky guess near the end can move the result a little. Run it three times and take the best: that is closer to what your ear can do than any single run.
+          </div>
+        </details>
+        <details>
+          <summary>Is this pitch test free?</summary>
+          <div class="faq-answer">
+            Yes. It runs entirely in your browser, needs no download, account or payment, and nothing you answer is uploaded anywhere.
+          </div>
+        </details>
+      </div>
+
+      <div class="cta-box">
+        <h3>Put that ear to work.</h3>
+        <p>Metro Gnome has a chromatic tuner that holds steady in a noisy room and a tuning drone for practising intonation by ear, with your reference pitch shared between them. Free, no account, no subscription.</p>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome" class="btn-play">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M3 20.5v-17c0-.83 1-.83 1.5-.5l14 8.5c.5.3.5 1 0 1.3L4.5 21c-.5.33-1.5.33-1.5-.5z"/>
+          </svg>
+          Get it Free on Google Play
+        </a>
+      </div>
+
+      <div class="related">
+        <h3>Also useful</h3>
+        <div class="related-grid">
+          <div class="related-card">
+            <p class="rc-label">Intonation</p>
+            <a href="/blog/tuning-drone-intonation-practice.html">How to Practise Intonation With a Tuning Drone</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Tool</p>
+            <a href="/tools/tuning-drone.html">Online Tuning Drone</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Tuning</p>
+            <a href="/blog/how-accurate-is-your-tuner-app.html">How Accurate Is Your Tuner App?</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Timing</p>
+            <a href="/tools/rhythm-timing-test.html">Rhythm Test: How Good Is Your Timing?</a>
+          </div>
+        </div>
+      </div>
+
+    </article>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Metro Gnome</a>
+        <a href="/blog/">Blog</a>
+        <a href="/tools/">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Play Store</a>
+        <a href="mailto:accesscommsa@gmail.com">Contact</a>
+      </div>
+      <p>&copy; 2026 Metro Gnome &middot; Crafted for musicians</p>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    var startPad    = document.getElementById('startPad');
+    var answerRow   = document.getElementById('answerRow');
+    var lowerBtn    = document.getElementById('lowerBtn');
+    var higherBtn   = document.getElementById('higherBtn');
+    var replayBtn   = document.getElementById('replayBtn');
+    var retryBtn    = document.getElementById('retryBtn');
+    var mainReadout = document.getElementById('mainReadout');
+    var mainUnit    = document.getElementById('mainUnit');
+    var statusLabel = document.getElementById('statusLabel');
+    var bestLine    = document.getElementById('bestLine');
+    var progress    = document.getElementById('progress');
+    var statRow     = document.getElementById('statRow');
+    var semiValue   = document.getElementById('semiValue');
+    var rightValue  = document.getElementById('rightValue');
+    var roundsValue = document.getElementById('roundsValue');
+    var stairStrip  = document.getElementById('stairStrip');
+    var stairSvg    = document.getElementById('stairSvg');
+    var verdict     = document.getElementById('verdict');
+    var metroImg    = document.getElementById('metroImg');
+    var bandRows    = Array.prototype.slice.call(document.querySelectorAll('#bandTableBody tr'));
+
+    /* Adaptive staircase, 2-down 1-up: two right answers in a row narrow
+       the gap, one miss widens it, so the gap settles where the listener
+       is right about 71% of the time. Steps are multiplicative because
+       pitch hearing works in ratios, not hertz. */
+    var START_CENTS   = 100;                /* a full semitone: an easy, confident start */
+    var MIN_CENTS     = 0.5;
+    var MAX_CENTS     = 200;
+    var BIG_STEP      = 2;                  /* until the first reversal */
+    var SMALL_STEP    = Math.SQRT2;
+    var REVERSALS     = 10;                 /* the run ends after this many turning points */
+    var AVERAGE_LAST  = 6;                  /* the result is the geometric mean of these */
+    var MAX_ROUNDS    = 60;
+
+    var NOTE_S        = 0.45;
+    var GAP_S         = 0.35;
+    var ROVE_LOW_HZ   = 330;                /* the pair's centre moves every round (E4 ...) */
+    var ROVE_HIGH_HZ  = 523;                /* (... C5) so the first note cannot be ignored */
+
+    var audioCtx = null;
+    var state = 'idle';                     /* idle | listening | answering | done */
+    var cents, consecutive, lastDir, reversals, reversalCents, history, rightCount;
+    var trial = null;                       /* { centre, up } for the round in play */
+    var answerTimer = null;
+
+    /* ── progress: one pip per turning point ──────────────────────────── */
+    function buildProgress() {
+      progress.innerHTML = '';
+      for (var i = 0; i < REVERSALS; i++) {
+        var d = document.createElement('span');
+        d.className = 'beat-dot';
+        progress.appendChild(d);
+      }
+    }
+    function markProgress() {
+      for (var i = 0; i < progress.children.length; i++) {
+        progress.children[i].className = 'beat-dot' + (i < reversals ? ' hit-great' : '');
+      }
+    }
+    buildProgress();
+
+    /* ── best result, in this browser only (lower is better) ─────────── */
+    var BEST_KEY = 'metrognome.pitchTest.best';
+    function readBest() {
+      try {
+        var v = Number(window.localStorage.getItem(BEST_KEY));
+        return v > 0 ? v : null;
+      } catch (e) { return null; }
+    }
+    function saveBest(v) {
+      try { window.localStorage.setItem(BEST_KEY, String(v)); } catch (e) {}
+    }
+    function showBest(isNew) {
+      var best = readBest();
+      bestLine.classList.toggle('is-new', isNew);
+      if (isNew) bestLine.textContent = 'New best';
+      else if (best !== null) bestLine.textContent = 'Your best: ' + fmtCents(best) + ' cents';
+      else bestLine.textContent = '';
+    }
+
+    function fmtCents(c) { return c < 10 ? c.toFixed(1) : String(Math.round(c)); }
+
+    /* ── tone: a soft harmonic note, close to a plucked or bowed string
+       rather than a bare sine, so it sounds like music and every partial
+       carries the pitch. ────────────────────────────────────────────── */
+    var PARTIALS = [1, 0.5, 0.33, 0.22, 0.14, 0.09];
+    function playNote(freq, when) {
+      var out = audioCtx.createGain();
+      out.gain.setValueAtTime(0, when);
+      out.gain.linearRampToValueAtTime(0.22, when + 0.02);
+      out.gain.setValueAtTime(0.22, when + NOTE_S - 0.08);
+      out.gain.linearRampToValueAtTime(0, when + NOTE_S);
+      out.connect(audioCtx.destination);
+      for (var i = 0; i < PARTIALS.length; i++) {
+        var osc = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq * (i + 1);
+        g.gain.value = PARTIALS[i];
+        osc.connect(g).connect(out);
+        osc.start(when);
+        osc.stop(when + NOTE_S + 0.02);
+      }
+      setTimeout(bump, Math.max(0, (when - audioCtx.currentTime) * 1000));
+    }
+
+    function bump() {
+      metroImg.classList.remove('bump');
+      void metroImg.offsetWidth;
+      metroImg.classList.add('bump');
+      setTimeout(function () { metroImg.classList.remove('bump'); }, 90);
+    }
+
+    /* The pair sits symmetrically around a roving centre, so neither note
+       is ever the same "home" pitch two rounds running. */
+    function playPair() {
+      var t0 = audioCtx.currentTime + 0.12;
+      var half = Math.pow(2, cents / 2400);
+      var first  = trial.up ? trial.centre / half : trial.centre * half;
+      var second = trial.up ? trial.centre * half : trial.centre / half;
+      playNote(first, t0);
+      playNote(second, t0 + NOTE_S + GAP_S);
+      return (0.12 + NOTE_S * 2 + GAP_S) * 1000;
+    }
+
+    function setAnswering(on) {
+      lowerBtn.disabled = !on;
+      higherBtn.disabled = !on;
+      replayBtn.disabled = !on;
+    }
+
+    function nextRound() {
+      if (state === 'done') return;
+      trial = {
+        centre: ROVE_LOW_HZ * Math.pow(ROVE_HIGH_HZ / ROVE_LOW_HZ, Math.random()),
+        up: Math.random() < 0.5
+      };
+      state = 'listening';
+      setAnswering(false);
+      mainReadout.textContent = fmtCents(cents);
+      statusLabel.textContent = 'Listen...';
+      var ms = playPair();
+      clearTimeout(answerTimer);
+      answerTimer = setTimeout(function () {
+        if (state !== 'listening') return;
+        state = 'answering';
+        setAnswering(true);
+        statusLabel.textContent = 'Was the second note higher or lower?';
+      }, ms);
+    }
+
+    /* ── run control ──────────────────────────────────────────────────── */
+    function start() {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      if (window.MetroAds) window.MetroAds.busy(true);
+
+      cents = START_CENTS;
+      consecutive = 0;
+      lastDir = 0;
+      reversals = 0;
+      reversalCents = [];
+      history = [];
+      rightCount = 0;
+
+      startPad.hidden = true;
+      answerRow.hidden = false;
+      replayBtn.hidden = false;
+      retryBtn.hidden = true;
+      statRow.hidden = true;
+      stairStrip.hidden = true;
+      verdict.hidden = true;
+      bandRows.forEach(function (r) { r.classList.remove('current-row'); });
+      mainUnit.textContent = 'cents apart';
+      showBest(false);
+      markProgress();
+      nextRound();
+    }
+
+    function answer(saidUp) {
+      if (state !== 'answering') return;
+      var right = saidUp === trial.up;
+      history.push({ cents: cents, right: right });
+      if (right) rightCount++;
+
+      metroImg.classList.toggle('glow', right);
+      setTimeout(function () { metroImg.classList.remove('glow'); }, 300);
+
+      /* 2-down 1-up with reversal tracking */
+      var dir = 0;
+      if (right) {
+        consecutive++;
+        if (consecutive >= 2) { dir = -1; consecutive = 0; }
+      } else {
+        consecutive = 0;
+        dir = 1;
+      }
+      if (dir !== 0) {
+        if (lastDir !== 0 && dir !== lastDir) {
+          reversals++;
+          reversalCents.push(cents);
+          markProgress();
+        }
+        lastDir = dir;
+        var step = reversals === 0 ? BIG_STEP : SMALL_STEP;
+        cents = dir < 0 ? cents / step : cents * step;
+        cents = Math.min(MAX_CENTS, Math.max(MIN_CENTS, cents));
+      }
+
+      if (reversals >= REVERSALS || history.length >= MAX_ROUNDS) {
+        finish();
+        return;
+      }
+      state = 'listening';
+      setAnswering(false);
+      statusLabel.textContent = right ? 'Nice' : 'Close one';
+      setTimeout(nextRound, 450);
+    }
+
+    function finish() {
+      state = 'done';
+      clearTimeout(answerTimer);
+      if (window.MetroAds) window.MetroAds.busy(false);
+      answerRow.hidden = true;
+      replayBtn.hidden = true;
+      startPad.hidden = false;
+      startPad.textContent = 'START TEST';
+      retryBtn.hidden = true;
+
+      var pool = reversalCents.slice(-AVERAGE_LAST);
+      if (pool.length < 2) {
+        /* ran out of rounds before settling: use the recent gaps instead */
+        pool = history.slice(-8).map(function (h) { return h.cents; });
+      }
+      var logSum = pool.reduce(function (a, c) { return a + Math.log(c); }, 0);
+      var result = Math.exp(logSum / pool.length);
+      result = Math.round(result * 10) / 10;
+
+      mainReadout.textContent = fmtCents(result);
+      mainUnit.textContent = 'cents, your finest gap';
+      statusLabel.textContent = bandName(result);
+      statRow.hidden = false;
+      semiValue.textContent = fractionOfSemitone(result);
+      rightValue.textContent = rightCount + '/' + history.length;
+      roundsValue.textContent = String(history.length);
+
+      bandRows.forEach(function (r) {
+        var lo = Number(r.getAttribute('data-min'));
+        var hi = Number(r.getAttribute('data-max'));
+        r.classList.toggle('current-row', result >= lo && result < hi);
+      });
+
+      var prevBest = readBest();
+      if (prevBest === null || result < prevBest) saveBest(result);
+      showBest(prevBest !== null && result < prevBest);
+
+      drawStairs(result);
+      verdict.hidden = false;
+      verdict.textContent = readOut(result);
+    }
+
+    function fractionOfSemitone(c) {
+      if (c >= 100) return 'Over 1';
+      var n = Math.round(100 / c);
+      return '1/' + n;
+    }
+
+    function bandName(c) {
+      if (c < 5) return 'Finely tuned';
+      if (c < 12) return 'Sharp';
+      if (c < 25) return 'Musical';
+      return 'Warming up';
+    }
+
+    function readOut(c) {
+      var f = fmtCents(c);
+      if (c < 5) return 'Finely tuned. You heard differences of about ' + f + ' cents, roughly ' + fractionOfSemitone(c) + ' of a semitone. That is the territory of highly trained listeners.';
+      if (c < 12) return 'Sharp. About ' + f + ' cents is a fine ear: small enough to hear a string drifting out before a tuner tells you.';
+      if (c < 25) return 'Musical. About ' + f + ' cents is a solid working ear for tuning and playing with others. Short daily runs will narrow it further.';
+      return 'Warming up. About ' + f + ' cents is a very common first result, and this is the range that improves fastest. Try headphones in a quiet room, then run it again.';
+    }
+
+    /* ── staircase chart: the gap on every round, log scale ──────────── */
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+    function el(name, attrs, text) {
+      var n = document.createElementNS(SVG_NS, name);
+      for (var k in attrs) n.setAttribute(k, attrs[k]);
+      if (text) n.textContent = text;
+      return n;
+    }
+    function drawStairs(result) {
+      var W = 320, LEFT = 40, RIGHT = 12, TOP = 10, BOTTOM = 124;
+      var LOG_HI = Math.log(MAX_CENTS), LOG_LO = Math.log(1);
+      function y(c) {
+        var l = Math.log(Math.max(1, Math.min(MAX_CENTS, c)));
+        return TOP + (LOG_HI - l) / (LOG_HI - LOG_LO) * (BOTTOM - TOP);
+      }
+      var n = Math.max(history.length, 2);
+      function x(i) { return LEFT + (W - LEFT - RIGHT) * (i + 0.5) / n; }
+
+      while (stairSvg.firstChild) stairSvg.removeChild(stairSvg.firstChild);
+      [100, 10, 1].forEach(function (c) {
+        stairSvg.appendChild(el('line', { 'class': 'ts-grid', x1: LEFT - 4, x2: W - RIGHT, y1: y(c), y2: y(c) }));
+        stairSvg.appendChild(el('text', { 'class': 'ts-label', x: 2, y: y(c) + 4 }, c + '¢'));
+      });
+      stairSvg.appendChild(el('line', { 'class': 'ts-centre ts-result', x1: LEFT - 4, x2: W - RIGHT, y1: y(result), y2: y(result) }));
+
+      var pts = history.map(function (h, i) { return x(i).toFixed(1) + ',' + y(h.cents).toFixed(1); });
+      if (pts.length > 1) stairSvg.appendChild(el('polyline', { 'class': 'ts-path', points: pts.join(' ') }));
+      history.forEach(function (h, i) {
+        var dot = el('circle', { 'class': h.right ? 'ts-tap tight' : 'ts-miss', cx: x(i), cy: y(h.cents), r: h.right ? 3.6 : 3.2 });
+        if (h.right) dot.style.animationDelay = (i * 20) + 'ms';
+        dot.appendChild(el('title', {}, 'Round ' + (i + 1) + ': ' + fmtCents(h.cents) + ' cents, ' + (h.right ? 'right' : 'missed')));
+        stairSvg.appendChild(dot);
+      });
+      stairStrip.hidden = false;
+    }
+
+    /* ── input ────────────────────────────────────────────────────────── */
+    startPad.addEventListener('click', start);
+    retryBtn.addEventListener('click', start);
+    lowerBtn.addEventListener('click', function () { answer(false); });
+    higherBtn.addEventListener('click', function () { answer(true); });
+    replayBtn.addEventListener('click', function () {
+      if (state !== 'answering') return;
+      state = 'listening';
+      setAnswering(false);
+      var ms = playPair();
+      clearTimeout(answerTimer);
+      answerTimer = setTimeout(function () {
+        if (state !== 'listening') return;
+        state = 'answering';
+        setAnswering(true);
+      }, ms);
+    });
+
+    window.addEventListener('keydown', function (e) {
+      if (e.repeat) return;
+      if (e.key === 'ArrowUp')   { e.preventDefault(); answer(true); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); answer(false); }
+    });
+
+    showBest(false);
+  })();
+  </script>
+
+  <script src="/ads.js" defer></script>
+</body>
+</html>

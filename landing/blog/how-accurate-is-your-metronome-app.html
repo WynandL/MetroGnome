@@ -32,6 +32,7 @@
     }
   }
   </script>
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -95,6 +96,8 @@
         <strong>The root problem:</strong> software timer callbacks are scheduled by the operating system, which shares its attention across everything running on the phone. A beat that was supposed to land at exactly 500ms may land at 507ms, or 493ms, with no warning and no recourse from the app's side.
       </div>
 
+      <div class="ad-slot" data-ad="blog-mid"></div>
+
       <h2>AudioTrack STREAM Mode: Letting the Hardware Drive</h2>
 
       <p>Metro Gnome's metronome engine takes a different approach. Instead of scheduling timer callbacks, it uses Android's AudioTrack API in STREAM mode and runs a blocking write loop.</p>
@@ -142,6 +145,8 @@
         </a>
       </div>
 
+      <div class="ad-slot" data-ad="blog-end"></div>
+
       <div class="related">
         <h3>Also on the blog</h3>
         <div class="related-grid">
@@ -172,5 +177,6 @@
     </div>
   </footer>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

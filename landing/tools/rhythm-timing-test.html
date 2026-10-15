@@ -85,6 +85,7 @@
   }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="../blog/style.css">
 </head>
 <body>
@@ -175,6 +176,16 @@
       <p class="tool-hint">Use <kbd>Space</kbd> or tap the button. Headphones give a cleaner result than speakers. Four count-in beats come first, then sixteen scored beats at the tempo you picked.</p>
     </section>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/pitch-ear-test.html">Pitch test</a>
+      <a class="preset-chip" href="/tools/tap-tempo-bpm-finder.html">Tap tempo</a>
+      <a class="preset-chip" href="/tools/odd-meter-practice-tool.html">Odd meter metronome</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>What this rhythm test actually measures</h2>
       <p>The test plays a steady click at 100 BPM, or at 60 or 140 BPM if you pick one of those instead. The first four beats are a count-in and are not scored. From the fifth beat on, every tap you make is timestamped and matched to the nearest beat, and the test records how far off it was and in which direction.</p>
@@ -215,6 +226,8 @@
 
       <h2>Take the same test with your instrument</h2>
       <p>Tapping a key measures your timing through a browser. Playing measures your timing. Metro Gnome's Groove Check does the same analysis on your phone but listens through the microphone instead, so you can clap, play a drum, or pick a string and be scored on what actually came out of your instrument. It separates your playing from the click by frequency rather than volume, corrects for your specific device's audio delay with a one-time calibration, then grades the whole session on the same consistency principle described above. It runs entirely on your device and there is no account.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about rhythm and timing tests</h3>
       <div class="faq-list">
@@ -501,6 +514,7 @@
     function start() {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
+      if (window.MetroAds) window.MetroAds.busy(true);   /* no ad work during a run */
 
       state = 'running';
       lockTempo(true);
@@ -578,6 +592,7 @@
 
     function finish() {
       state = 'done';
+      if (window.MetroAds) window.MetroAds.busy(false);
       lockTempo(false);
       tapPad.classList.remove('is-live');
       tapPad.textContent = 'START TEST';
@@ -767,5 +782,6 @@
   })();
   </script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

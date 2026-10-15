@@ -93,6 +93,7 @@
   }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="../blog/style.css">
 </head>
 <body>
@@ -187,6 +188,16 @@
       <p class="tool-hint">Change the time signature or tempo any time, even while it is playing. Turn your sound on. Each numbered pulse is the count within its group; the gold ones are the accents.</p>
     </section>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/tap-tempo-bpm-finder.html">Tap tempo</a>
+      <a class="preset-chip" href="/tools/time-signatures/">Time signature guides</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>What is an odd meter?</h2>
       <p>In music, meter is the pattern of strong and weak beats a bar repeats, and the time signature names it: the top number is how many beats fill a bar, the bottom number is which note value counts as one beat. Most music sits in a regular meter, where the beats split evenly into twos (simple meter, like 4/4 and 3/4) or threes (compound meter, like 6/8 and 9/8). An <strong>odd meter</strong> is a time signature whose top number is odd and does not divide into equal twos or threes, most commonly 5, 7, 11 or 13, so the bar has to be felt as a mix of two-beat and three-beat groups. 5/4 is usually 2+3 or 3+2, 7/8 is usually 2+2+3, and 11/8 is a chain of twos with one three at the end.</p>
@@ -233,6 +244,8 @@
       <p><strong>Start well under tempo.</strong> An odd meter falls apart fastest at speed, precisely where there is no time left to think about the grouping. Get it solid slow first.</p>
       <p><strong>Add the instrument last,</strong> keeping the same accents you clapped, so the shape you learned carries straight over instead of needing to be relearned with an instrument in your hands.</p>
       <p>For the full theory behind why the bottom number never changes a meter's class, and how simple and compound meters work the same way, see <a href="/blog/time-signatures-explained.html">Time Signatures Explained</a>.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about odd meters</h3>
       <div class="faq-list">
@@ -591,5 +604,6 @@
   })();
   </script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>

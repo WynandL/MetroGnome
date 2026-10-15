@@ -112,6 +112,7 @@
 }
   </script>
 
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
   <link rel="stylesheet" href="/blog/style.css">
 </head>
 <body>
@@ -161,6 +162,16 @@
     </div>
     <p class="tool-hint">Already set to 7/8 with the 2+2+3 grouping accented. Change the tempo, note value or beats any time, even while it plays. <a href="/tools/odd-meter-practice-tool.html?ts=7-8&amp;bpm=108">Open the full odd meter tool</a> for the reference table and the theory behind the grouping.</p>
 
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/tap-tempo-bpm-finder.html">Tap tempo</a>
+      <a class="preset-chip" href="/tools/time-signatures/">Time signature guides</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
     <article class="prose">
       <h2>What 7/8 time means</h2>
       <p>Seven eighth notes fill the bar, and seven cannot be split into equal twos or threes, so 7/8 is an <strong>odd meter</strong> (an irregular or asymmetric meter). Every bar contains two two-pulse groups and one three-pulse group, and where the three sits is what gives a particular piece its character. The three most common groupings are <strong>2+2+3</strong> (the three at the end, the default this site and the Metro Gnome app use), <strong>3+2+2</strong> (the three first) and <strong>2+3+2</strong> (the three in the middle).</p>
@@ -189,6 +200,8 @@
       <p><strong>Find the three.</strong> The three-pulse group is the anchor of any 7/8 bar. Locate it in the piece you are learning, put the accent on its first pulse, and make sure the tool is grouping the same way, because a click that accents the wrong pulse trains the wrong bar.</p>
       <p><strong>Start under 100 BPM on the eighth note.</strong> The tool's BPM is the eighth-note pulse. Around 90 to 100 you can still hear every pulse; above 140 you can only feel the groups, which is where you want to end up, but not where you should start.</p>
       <p>For the theory behind why the bottom number never changes a meter's class, and how simple, compound and odd meters relate, see <a href="/blog/time-signatures-explained.html">Time Signatures Explained</a>. For any meter not covered here, the <a href="/tools/odd-meter-practice-tool.html">odd meter metronome</a> plays anything from 1 to 16 beats with its natural grouping.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
 
       <h3>Questions about 7/8</h3>
       <div class="faq-list">
@@ -275,5 +288,6 @@
   })();
   </script>
 
+  <script src="/ads.js" defer></script>
 </body>
 </html>
