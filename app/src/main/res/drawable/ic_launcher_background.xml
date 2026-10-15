@@ -7,5 +7,5 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#0C112A" android:pathData="M0,0 h108 v108 h-108z"/>
+    <path android:fillColor="#0A0F26" android:pathData="M0,0 h108 v108 h-108z"/>
 </vector>
