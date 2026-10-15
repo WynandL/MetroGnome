@@ -1292,6 +1292,9 @@ details[open] summary::after { transform: rotate(45deg); }
 }
 .ad-slot .metro-ad { display: block; z-index: 1; }
 .ad-slot .metro-ad[data-ad-status="unfilled"] { display: none !important; }
+/* Until Google has actually filled it, the unit is an empty layer over the
+   house card: let taps through to the card underneath. */
+.ad-slot .metro-ad:not([data-ad-status="filled"]) { pointer-events: none; }
 /* The label names what is actually showing: "Advertisement" only once
    Google has filled the unit, "More free tools" for the house card. */
 .ad-label .al-ad { display: none; }

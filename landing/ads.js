@@ -28,10 +28,10 @@
   /* ── configuration: the only lines that change when going live ────── */
   var CLIENT = 'ca-pub-8485854692249613';   /* AdSense publisher id (confirm) */
   var SLOTS = {                             /* data-ad name -> AdSense ad unit id */
-    'tool-below': '0000000000',
-    'tool-mid':   '0000000000',
-    'blog-mid':   '0000000000',
-    'blog-end':   '0000000000'
+    'tool-below': '8884138789',
+    'tool-mid':   '2631564933',
+    'blog-mid':   '2474643100',
+    'blog-end':   '5066156588'
   };
   var IDLE_DELAY_MS = 1500;                 /* after load, before anything is fetched */
   var NEAR_PX = 600;                        /* fill a slot this far before it is visible */
