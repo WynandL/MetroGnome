@@ -62,26 +62,44 @@
   var slots = Array.prototype.slice.call(document.querySelectorAll('.ad-slot[data-ad]'));
   if (!slots.length) return;
 
-  /* ── house fallback: if Google has nothing to show, the reserved space
-     holds a link to another free tool instead of an empty box ───────── */
+  /* ── house card: until (or unless) Google fills the slot, the reserved
+     space shows another free tool, with a real screenshot of it in use.
+     It fills the whole slot and is designed as a feature in its own
+     right, not as an empty box waiting for an ad. `pos` is the vertical
+     crop of the 640px square capture (tools/img), chosen per tool so the
+     band shows the interesting part: the chart, the fretboard, the keys. */
   var HOUSE = [
-    { href: '/tools/rhythm-timing-test.html', label: 'Rhythm Test', line: 'How good is your timing? Find out in 20 seconds.' },
-    { href: '/tools/pitch-ear-test.html', label: 'Pitch Test', line: 'How fine is your ear? Find the smallest gap you can hear.' },
-    { href: '/tools/steady-tempo-test.html', label: 'Steady Tempo Test', line: 'Can you hold a tempo when the click stops?' },
-    { href: '/tools/tuning-drone.html', label: 'Tuning Drone', line: 'A steady reference note for playing in tune by ear.' },
-    { href: '/tools/chord-finder.html', label: 'Chord Finder', line: 'Tap in notes on a guitar or piano and get the chord name.' }
+    { href: '/tools/rhythm-timing-test.html', img: 'rhythm-test', pos: '94%', tag: 'Timing', label: 'Rhythm Test', line: 'How good is your timing? Find out in 20 seconds.', cta: 'Take the test' },
+    { href: '/tools/pitch-ear-test.html', img: 'pitch-test', pos: '88%', tag: 'Ear', label: 'Pitch Test', line: 'How fine is your ear? Find the smallest gap you can hear.', cta: 'Take the test' },
+    { href: '/tools/steady-tempo-test.html', img: 'steady-tempo', pos: '94%', tag: 'Timing', label: 'Steady Tempo Test', line: 'Can you hold the tempo when the click stops?', cta: 'Take the test' },
+    { href: '/tools/chord-finder.html', img: 'chord-finder', pos: '100%', tag: 'Chords', label: 'Chord Finder', line: 'Tap notes on a guitar or piano and get the chord name.', cta: 'Find a chord' },
+    { href: '/tools/tuning-drone.html', img: 'tuning-drone', pos: '42%', tag: 'Intonation', label: 'Tuning Drone', line: 'A steady reference note for playing in tune by ear.', cta: 'Start a drone' },
+    { href: '/tools/tap-tempo-bpm-finder.html', img: 'tap-tempo', pos: '26%', tag: 'Tempo', label: 'Tap Tempo', line: 'Tap along to any song and see its BPM.', cta: 'Find the tempo' },
+    { href: '/tools/odd-meter-practice-tool.html', img: 'odd-meter', pos: '4%', tag: 'Time signatures', label: 'Odd Meter Metronome', line: 'Hear 7/8, 5/4 and friends accented the way they are felt.', cta: 'Play a meter' }
   ];
-  var here = window.location.pathname;
-  var houseChoices = HOUSE.filter(function (h) { return h.href !== here; });
+  var here = window.location.pathname.replace(/\/$/, '');
+  var houseChoices = HOUSE.filter(function (h) { return h.href !== here && h.href.replace(/\.html$/, '') !== here; });
+  /* a different pair on every visit, never the same tool twice on a page */
+  for (var k = houseChoices.length - 1; k > 0; k--) {
+    var j = Math.floor(Math.random() * (k + 1));
+    var t = houseChoices[k]; houseChoices[k] = houseChoices[j]; houseChoices[j] = t;
+  }
+
+  var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 5 20 12 13 19"/></svg>';
 
   slots.forEach(function (slot, i) {
     var house = houseChoices[i % houseChoices.length];
     slot.innerHTML =
-      '<span class="ad-label"><span class="al-ad">Advertisement</span><span class="al-house">More free tools</span></span>' +
+      '<span class="ad-label">Advertisement</span>' +
       '<a class="ad-house" href="' + house.href + '">' +
-        '<span class="ad-house-kicker">Free tool</span>' +
-        '<span class="ad-house-title">' + house.label + '</span>' +
-        '<span class="ad-house-line">' + house.line + '</span>' +
+        '<span class="ad-house-shot" style="background-image:url(/tools/img/' + house.img + '.webp);background-position:50% ' + house.pos + '"></span>' +
+        '<span class="ad-house-badge">Free tool</span>' +
+        '<span class="ad-house-body">' +
+          '<span class="ad-house-kicker">' + house.tag + '</span>' +
+          '<span class="ad-house-title">' + house.label + '</span>' +
+          '<span class="ad-house-line">' + house.line + '</span>' +
+          '<span class="ad-house-cta">' + house.cta + ARROW + '</span>' +
+        '</span>' +
       '</a>';
   });
 

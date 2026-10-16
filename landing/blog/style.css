@@ -1271,7 +1271,7 @@ details[open] summary::after { transform: rotate(45deg); }
   overflow: hidden;
 }
 .ad-label {
-  display: block;
+  display: none;                            /* only once Google has filled the unit */
   height: 18px;
   font-size: 0.66rem;
   font-weight: 700;
@@ -1281,51 +1281,118 @@ details[open] summary::after { transform: rotate(45deg); }
   opacity: 0.7;
   text-align: center;
 }
-.ad-slot .metro-ad,
-.ad-slot .ad-house {
+.ad-slot .metro-ad {
   position: absolute;
   top: 18px;
   left: 0;
   width: 336px;
   max-width: 100%;
   height: 280px;
+  display: block;
+  z-index: 1;
 }
-.ad-slot .metro-ad { display: block; z-index: 1; }
 .ad-slot .metro-ad[data-ad-status="unfilled"] { display: none !important; }
 /* Until Google has actually filled it, the unit is an empty layer over the
    house card: let taps through to the card underneath. */
 .ad-slot .metro-ad:not([data-ad-status="filled"]) { pointer-events: none; }
-/* The label names what is actually showing: "Advertisement" only once
-   Google has filled the unit, "More free tools" for the house card. */
-.ad-label .al-ad { display: none; }
-.ad-slot:has(.metro-ad[data-ad-status="filled"]) .al-ad { display: inline; }
-.ad-slot:has(.metro-ad[data-ad-status="filled"]) .al-house { display: none; }
+.ad-slot:has(.metro-ad[data-ad-status="filled"]) .ad-label { display: block; }
+.ad-slot:has(.metro-ad[data-ad-status="filled"]) .ad-house { visibility: hidden; }
+
+/* The house card: another free tool, shown with a real capture of it in
+   use. It takes the whole slot (label space included), so it reads as a
+   card that belongs on the page rather than a box waiting for an ad. */
 .ad-house {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  padding: 1.5rem;
-  text-align: center;
-  border: 1px dashed var(--surface-up);
+  overflow: hidden;
+  border: 1px solid rgba(255, 215, 0, 0.16);
   border-radius: var(--radius);
   background: var(--surface-deep);
   color: var(--text);
   text-decoration: none;
+  transition: border-color 0.25s;
 }
-.ad-house:hover { border-color: var(--purple); }
-.ad-house-kicker { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
-.ad-house-title { font-size: 1.25rem; font-weight: 800; }
-.ad-house-line { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; max-width: 26ch; }
+.ad-house:hover,
+.ad-house:focus-visible {
+  border-color: rgba(255, 215, 0, 0.45);
+}
+.ad-house-shot {
+  position: relative;
+  flex: none;
+  height: 142px;
+  background-color: var(--surface-deep);
+  background-repeat: no-repeat;
+  background-size: cover;
+  transition: transform 0.6s ease;
+}
+/* fade the capture into the card so it reads as one surface */
+.ad-house-shot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(19, 16, 42, 0) 55%, var(--surface-deep) 100%);
+}
+.ad-house:hover .ad-house-shot { transform: scale(1.04); }
+.ad-house-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(13, 11, 30, 0.82);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 50px;
+  padding: 0.22rem 0.6rem;
+}
+.ad-house-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+  gap: 0.2rem;
+  padding: 0.35rem 1.2rem 1.1rem;
+  text-align: left;
+}
+.ad-house-kicker { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--purple-light); }
+.ad-house-title { font-size: 1.2rem; font-weight: 800; line-height: 1.2; }
+.ad-house-line { font-size: 0.86rem; color: var(--text-muted); line-height: 1.45; }
+.ad-house-cta {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--gold);
+  padding: 0.38rem 0.9rem;
+  border: 1.5px solid var(--gold);
+  border-radius: 50px;
+  transition: background 0.2s, color 0.2s;
+}
+.ad-house-cta svg { width: 15px; height: 15px; transition: transform 0.2s; }
+.ad-house:hover .ad-house-cta { background: var(--gold); color: var(--bg); }
+.ad-house:hover .ad-house-cta svg { transform: translateX(3px); }
+@media (prefers-reduced-motion: reduce) {
+  .ad-house, .ad-house-shot, .ad-house-cta svg { transition: none; }
+  .ad-house:hover .ad-house-shot, .ad-house:hover .ad-house-cta svg { transform: none; }
+}
 @media (max-width: 359px) {
   .ads-on .ad-slot { width: 300px; height: 270px; }
-  .ad-slot .metro-ad, .ad-slot .ad-house { width: 300px; height: 250px; }
+  .ad-slot .metro-ad { width: 300px; height: 250px; }
+  .ad-house-shot { height: 112px; }
+  .ad-house-body { padding: 0.3rem 1rem 0.9rem; }
+  .ad-house-title { font-size: 1.1rem; }
+  .ad-house-line { font-size: 0.82rem; }
 }
 
 /* Local review only (ads.js adds this on localhost): shows the slot's
    name so placement can be checked without loading a real ad. */
-.ad-preview .ad-house { border-color: var(--gold); border-style: dashed; }
+.ad-preview .ad-house { border-style: dashed; }
 .ad-preview-tag {
   position: absolute;
   right: 6px;
