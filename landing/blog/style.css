@@ -142,6 +142,12 @@ img { display: block; max-width: 100%; }
   flex-wrap: wrap;
 }
 
+.post-meta a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .post-category {
   background: var(--surface-up);
   color: var(--gold);

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Metro Gnome - Who Builds It and How</title>
+  <meta name="description" content="Metro Gnome is a free metronome, tuner and chord finder for Android, plus free browser tools for musicians. Who builds it, how the tools are tested, and how to get in touch.">
+  <link rel="icon" type="image/webp" href="/favicon.webp">
+  <link rel="apple-touch-icon" href="/favicon.webp">
+  <link rel="canonical" href="https://metrognome.co.za/about.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="About Metro Gnome">
+  <meta property="og:description" content="Who builds Metro Gnome, how its free browser tools are tested, and how to get in touch.">
+  <meta property="og:url" content="https://metrognome.co.za/about.html">
+  <link rel="stylesheet" href="/blog/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "About Metro Gnome",
+    "url": "https://metrognome.co.za/about.html",
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "Access Comms",
+      "url": "https://metrognome.co.za/",
+      "logo": "https://metrognome.co.za/metro.png",
+      "email": "accesscommsa@gmail.com",
+      "publishingPrinciples": "https://metrognome.co.za/about.html"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <nav class="site-nav" aria-label="Primary">
+    <div class="inner">
+      <a href="/" class="brand" aria-label="Metro Gnome home">
+        <img src="/metro.png" alt="Metro Gnome logo">
+        <span>Metro Gnome</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/#features">Features</a>
+        <a href="/blog/" class="blog-nav">Blog</a>
+        <a href="/tools/" class="tools-nav">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="sep">&rsaquo;</span>
+      <span>About</span>
+    </nav>
+
+    <header class="article-header">
+      <div class="post-meta">
+        <span class="post-category">About</span>
+        <span>Updated 24 October 2026</span>
+      </div>
+      <h1>About Metro Gnome</h1>
+      <p class="article-intro">
+        Metro Gnome is a practice companion for musicians: an Android app with a metronome, a tuner, a chord finder and a rhythm game, and this website, which offers free practice tools that run in any browser and articles on timing, tuning and harmony. This page explains who makes it, how the tools are built and checked, and how to reach us.
+      </p>
+    </header>
+
+    <article class="prose">
+
+      <h2>Who makes it</h2>
+
+      <p>Metro Gnome is designed, written and maintained by Access Comms, an independent developer with a background in electronics engineering, signal processing and audio hardware. The blog posts are written by Access Comms too. That background shapes everything on this site. A metronome is a timing problem and a tuner is a pitch detection problem, and both are measurable: a click either lands on the sample it should or it does not, and a tuner either reads a known note correctly or it does not.</p>
+
+      <p>The app is in active development, with new versions published on Google Play regularly, and the website grows alongside it: each browser tool is a port of the same code the app runs, so the two give the same answers.</p>
+
+      <h2>What you will find here</h2>
+
+      <p>Every tool is free, needs no account and runs entirely in your browser.</p>
+
+      <ul>
+        <li><a href="/tools/rhythm-timing-test.html">Rhythm timing test</a>: tap along to a click and see how close to the beat you play, in milliseconds.</li>
+        <li><a href="/tools/steady-tempo-test.html">Steady tempo test</a>: keep the beat going after the click stops and see how well you hold it.</li>
+        <li><a href="/tools/pitch-ear-test.html">Pitch ear test</a>: find the smallest pitch difference you can hear, measured in cents.</li>
+        <li><a href="/tools/chord-finder.html">Chord finder</a>: tap notes on a guitar or piano and get the chord name, correctly spelled.</li>
+        <li><a href="/tools/tuning-drone.html">Tuning drone</a> and <a href="/tools/shruti-box-online.html">shruti box</a>: a steady reference tone for tuning and intonation by ear.</li>
+        <li><a href="/tools/odd-meter-practice-tool.html">Odd meter practice tool</a> and the <a href="/tools/time-signatures/">time signature guides</a>: hear and count 5/4, 7/8, 11/8 and more.</li>
+        <li><a href="/tools/tap-tempo-bpm-finder.html">Tap tempo BPM finder</a>: tap along to a song to find its tempo and tempo marking.</li>
+      </ul>
+
+      <p>The <a href="/blog/">blog</a> covers the questions behind the tools: why players rush, how to build speed safely, how chords are named, why a tuner can show the wrong note, and how accurate phone metronomes and tuners really are.</p>
+
+      <h2>How the tools are checked</h2>
+
+      <p>A practice tool that measures you has to be right before it is encouraging, so nothing goes live on a hunch.</p>
+
+      <ul>
+        <li><strong>Scored tests are validated before release.</strong> The steady tempo and pitch tests were run against simulated players of known ability before release, and a scoring change is checked the same way before it goes live.</li>
+        <li><strong>Timing is measured, not assumed.</strong> Taps are timed from the moment your finger lands, not when it lifts, and the app's metronome is checked against its own audio clock so it does not drift over a long session.</li>
+        <li><strong>Music theory is checked against references.</strong> Chord names, note spellings and time signature explanations are verified before they are published, and the chord finder's naming rules are covered by more than two hundred test cases.</li>
+        <li><strong>Pages are kept current.</strong> When a tool or the app changes, the matching articles and guides are updated.</li>
+      </ul>
+
+      <h2>How the site is funded</h2>
+
+      <p>The tools and articles are free. Some pages carry a small number of ads, placed by hand in fixed spots below the tools and between article sections, never inside a tool and never on embedded widgets. Visitors on Android do not see ads, since they can install the app instead. The app itself is free to download with optional one-time purchases and no subscription. Details of what is and is not collected are in the <a href="/privacy.html">privacy policy</a>.</p>
+
+      <h2>Contact</h2>
+
+      <p>Questions, a bug in a tool, a correction to an article, or a feature you would like to see: email <a href="mailto:accesscommsa@gmail.com">accesscommsa@gmail.com</a>. Every message is read, and corrections to published content are made as soon as they are confirmed.</p>
+
+      <p>Teachers and site owners are welcome to <a href="/embed/">embed the tools</a> on their own pages for free.</p>
+
+    </article>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Metro Gnome</a>
+        <a href="/blog/">Blog</a>
+        <a href="/tools/">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Play Store</a>
+        <a href="/about.html">About</a>
+        <a href="mailto:accesscommsa@gmail.com">Contact</a>
+        <a href="/privacy.html">Privacy</a>
+      </div>
+      <p>&copy; 2026 Metro Gnome &middot; Crafted for musicians</p>
+    </div>
+  </footer>
+
+</body>
+</html>
