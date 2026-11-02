@@ -127,3 +127,13 @@ emit "$TOOLS/steady-tempo-test.html" "$OUT/steady-tempo-test.html" \
   "Steady Tempo Test - Metro Gnome" \
   "https://metrognome.co.za/tools/steady-tempo-test.html" \
   "Steady tempo test" ""
+
+emit "$TOOLS/polyrhythm-test.html" "$OUT/polyrhythm-test.html" \
+  "Polyrhythm Test - Metro Gnome" \
+  "https://metrognome.co.za/tools/polyrhythm-test.html" \
+  "Polyrhythm test" ""
+
+emit "$TOOLS/speed-trainer.html" "$OUT/speed-trainer.html" \
+  "Speed Trainer - Metro Gnome" \
+  "https://metrognome.co.za/tools/speed-trainer.html" \
+  "Speed trainer" ""

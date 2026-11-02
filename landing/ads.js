@@ -72,6 +72,8 @@
     { href: '/tools/rhythm-timing-test.html', img: 'rhythm-test', pos: '94%', tag: 'Timing', label: 'Rhythm Test', line: 'How good is your timing? Find out in 20 seconds.', cta: 'Take the test' },
     { href: '/tools/pitch-ear-test.html', img: 'pitch-test', pos: '88%', tag: 'Ear', label: 'Pitch Test', line: 'How fine is your ear? Find the smallest gap you can hear.', cta: 'Take the test' },
     { href: '/tools/steady-tempo-test.html', img: 'steady-tempo', pos: '94%', tag: 'Timing', label: 'Steady Tempo Test', line: 'Can you hold the tempo when the click stops?', cta: 'Take the test' },
+    { href: '/tools/polyrhythm-test.html', img: 'polyrhythm-test', pos: '58%', tag: 'Two hands', label: 'Polyrhythm Test', line: 'Can you play 3 against 2? Find out with both hands.', cta: 'Take the test' },
+    { href: '/tools/speed-trainer.html', img: 'speed-trainer', pos: '40%', tag: 'Practice', label: 'Speed Trainer', line: 'A metronome that speeds up by itself, step by step.', cta: 'Start climbing' },
     { href: '/tools/chord-finder.html', img: 'chord-finder', pos: '100%', tag: 'Chords', label: 'Chord Finder', line: 'Tap notes on a guitar or piano and get the chord name.', cta: 'Find a chord' },
     { href: '/tools/tuning-drone.html', img: 'tuning-drone', pos: '42%', tag: 'Intonation', label: 'Tuning Drone', line: 'A steady reference note for playing in tune by ear.', cta: 'Start a drone' },
     { href: '/tools/tap-tempo-bpm-finder.html', img: 'tap-tempo', pos: '26%', tag: 'Tempo', label: 'Tap Tempo', line: 'Tap along to any song and see its BPM.', cta: 'Find the tempo' },

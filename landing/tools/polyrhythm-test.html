@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polyrhythm Test: Can You Play 3 Against 2? - Metro Gnome</title>
+  <meta name="description" content="Free online polyrhythm test. Tap 3 against 2, 4 against 3 or 5 against 4 with two hands and get a score out of 100, with how close your hands landed together on the one and which hand drifted.">
+  <link rel="icon" type="image/webp" href="/favicon.webp">
+  <link rel="apple-touch-icon" href="/favicon.webp">
+  <link rel="canonical" href="https://metrognome.co.za/tools/polyrhythm-test.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Polyrhythm Test: Can You Play 3 Against 2? - Metro Gnome">
+  <meta property="og:description" content="Tap a polyrhythm with two hands and find out how well they lock together. Free, in your browser.">
+  <meta property="og:url" content="https://metrognome.co.za/tools/polyrhythm-test.html">
+  <meta property="og:image" content="https://metrognome.co.za/metro.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Polyrhythm Test: Can You Play 3 Against 2? - Metro Gnome">
+  <meta name="twitter:description" content="Tap a polyrhythm with two hands and find out how well they lock together.">
+  <meta name="twitter:image" content="https://metrognome.co.za/metro.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Polyrhythm Test: Can You Play 3 Against 2?",
+    "url": "https://metrognome.co.za/tools/polyrhythm-test.html",
+    "applicationCategory": "MusicApplication",
+    "operatingSystem": "Any (runs in browser)",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "description": "Free browser polyrhythm test. You hear 3 against 2, 4 against 3 or 5 against 4, tap along with two hands, then keep it going over a single click on the one. It reports how many notes landed in place, how close your hands were on the one, how far your taps sat from the grid, and a score out of 100.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Metro Gnome",
+      "url": "https://metrognome.co.za/"
+    }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is a polyrhythm?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Two even pulses played at the same time that divide the same span of time differently. In 3 against 2, one hand plays three evenly spaced notes while the other plays two, and both start together on the first note."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I play 3 against 2?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Count six even pulses. One hand plays on 1, 3 and 5, the other on 1 and 4. Together they make the pattern both, right, left, right, which many players learn with the phrase 'nice cup of tea'."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does my device's audio delay affect the score?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. The test fits its own grid to your taps and scores how your two hands line up with each other and with that grid. A speaker or Bluetooth delay moves every tap by the same amount, which changes nothing about how the hands relate."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is this polyrhythm test free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. It runs entirely in your browser, needs no download, account or payment, and nothing you tap is uploaded anywhere."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
+  <link rel="stylesheet" href="../blog/style.css">
+</head>
+<body>
+
+  <nav class="site-nav" aria-label="Primary">
+    <div class="inner">
+      <a href="/" class="brand" aria-label="Metro Gnome home">
+        <img src="/metro.png" alt="Metro Gnome logo">
+        <span>Metro Gnome</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/#features">Features</a>
+        <a href="/blog/" class="blog-nav">Blog</a>
+        <a href="/tools/" class="tools-nav">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="sep">&rsaquo;</span>
+      <a href="/tools/">Tools</a>
+      <span class="sep">&rsaquo;</span>
+      <span>Polyrhythm Test</span>
+    </nav>
+
+    <header class="article-header">
+      <div class="post-meta">
+        <span class="post-category">Free tool</span>
+        <span>Takes 30 seconds</span>
+        <span>Nothing leaves your device</span>
+      </div>
+      <h1>Polyrhythm Test: Can You Play 3 Against 2?</h1>
+      <p class="article-intro">
+        Listen to two rhythms at once, tap along with both hands, then keep the polyrhythm going with only a click on the one. This free polyrhythm test scores how well your hands lock together out of 100, shows how close they landed on the one, and which hand drifted.
+      </p>
+    </header>
+
+    <section class="tool-panel" aria-label="Interactive polyrhythm test">
+      <div class="metro-wrap">
+        <img id="metroImg" src="/metro.png" alt="Metro the gnome, bobs on every note">
+      </div>
+
+      <div class="bpm-readout" id="mainReadout">3:2</div>
+      <div class="bpm-unit" id="mainUnit">three against two</div>
+      <div class="marking" id="statusLabel">Ready when you are</div>
+      <div class="best-line" id="bestLine" aria-live="polite"></div>
+
+      <div class="phase-steps" id="phaseSteps" aria-hidden="true">
+        <span class="phase-step">Listen</span><span class="phase-sep">&rsaquo;</span>
+        <span class="phase-step">Tap along</span><span class="phase-sep">&rsaquo;</span>
+        <span class="phase-step">On your own</span>
+      </div>
+      <p class="phase-tip" id="phaseTip" aria-live="polite"></p>
+
+      <div class="beat-dots" id="beatDots" aria-hidden="true"></div>
+
+      <div class="preset-row tempo-row" id="ratioRow" role="group" aria-label="Polyrhythm">
+        <button class="preset-chip active" type="button" data-ratio="3-2" aria-pressed="true">3 against 2</button>
+        <button class="preset-chip" type="button" data-ratio="4-3">4 against 3</button>
+        <button class="preset-chip" type="button" data-ratio="5-4">5 against 4</button>
+      </div>
+
+      <button class="tap-pad" id="startBtn" type="button">START TEST</button>
+
+      <div class="hand-pads" id="handPads">
+        <button class="tap-pad hand-pad" id="padSlow" type="button" aria-label="Left hand, the slower part">
+          <span class="hp-count" id="slowCount">2</span>
+          <span class="hp-name">Left hand</span>
+          <span class="hp-key">F</span>
+        </button>
+        <button class="tap-pad hand-pad" id="padFast" type="button" aria-label="Right hand, the faster part">
+          <span class="hp-count" id="fastCount">3</span>
+          <span class="hp-name">Right hand</span>
+          <span class="hp-key">J</span>
+        </button>
+      </div>
+
+      <div class="stat-row" id="statRow" hidden>
+        <div class="stat">
+          <span class="stat-value" id="notesValue">--</span>
+          <span class="stat-label">Notes in place</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" id="oneValue">--</span>
+          <span class="stat-label">Hands on the one</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" id="gridValue">--</span>
+          <span class="stat-label">Off the grid</span>
+        </div>
+      </div>
+
+      <figure class="tap-strip" id="cycleStrip" hidden>
+        <svg id="cycleSvg" viewBox="0 0 320 132" role="img" aria-label="Every note you played, folded onto one cycle of the polyrhythm"></svg>
+        <figcaption>Every note you played on your own, folded onto one cycle. The lines are where each note belongs; gold dots landed within 20 ms of the line, hollow ones were extra taps.</figcaption>
+      </figure>
+
+      <p class="verdict" id="verdict" hidden></p>
+
+      <p class="tool-hint">Tap the two pads, or use <kbd>F</kbd> and <kbd>J</kbd>. <kbd>Space</kbd> starts. Tap a pad any time to hear its part. Your device's audio delay does not affect the score.</p>
+    </section>
+
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/odd-meter-practice-tool.html">Odd meter metronome</a>
+      <a class="preset-chip" href="/tools/speed-trainer.html">Speed trainer</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
+    <article class="prose">
+      <h2>What a polyrhythm is</h2>
+      <p>A polyrhythm is two even pulses sounding at once, each dividing the same span of time a different way. In <strong>3 against 2</strong>, one hand plays three evenly spaced notes in the time the other plays two, and both hands start together on the first note, the one. Neither part is a rhythm you would call difficult on its own. The skill is keeping each hand even while the other hand pulls it somewhere else.</p>
+      <p>The trick is that the two parts share a hidden grid. Three and two both divide evenly into six, so if you count six even pulses, the three falls on 1, 3 and 5 and the two falls on 1 and 4. Played together that makes four sounds per cycle: both hands, then the three, then the two, then the three again. Players have long learned it with a phrase that has the same shape, <em>nice cup of tea</em>: both hands on "nice", the three on "cup", the two on "of", the three on "tea".</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Polyrhythm</th><th>Count</th><th>Faster hand</th><th>Slower hand</th><th>Phrase</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>3 against 2</td><td class="range">1 to 6</td><td>1, 3, 5</td><td>1, 4</td><td>nice cup of tea</td></tr>
+            <tr><td>4 against 3</td><td class="range">1 to 12</td><td>1, 4, 7, 10</td><td>1, 5, 9</td><td>pass the golden butter</td></tr>
+            <tr><td>5 against 4</td><td class="range">1 to 20</td><td>1, 5, 9, 13, 17</td><td>1, 6, 11, 16</td><td>(count it)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>What this polyrhythm test measures</h2>
+      <p>You hear the polyrhythm for two cycles, tap along with it for two more, and then the parts drop out, leaving only a click on the one, while you keep both hands going for four cycles. Only those four cycles are scored. The test lays its own grid over your taps, at the tempo and position that fit them best, and asks three questions.</p>
+      <p><strong>Notes in place</strong> counts the notes that landed near where they belong, out of all the notes four cycles hold. A missed note or an extra tap costs points here. <strong>Hands on the one</strong> is the typical gap between your two hands on the note they share. <strong>Off the grid</strong> is how far, on average, each tap sat from its place on the grid. Your score multiplies how complete your polyrhythm was by how close it sat to the grid.</p>
+
+      <div class="callout">
+        <strong>Device delay cannot touch this score.</strong> The grid is fitted to your own taps, so a speaker, headphone or Bluetooth delay, which moves every tap by the same amount, moves the grid with them. What is scored is how your two hands line up with each other, which no delay can change.
+      </div>
+
+      <h2>What your score means</h2>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Score</th><th>Range</th><th>What it means</th></tr>
+          </thead>
+          <tbody id="bandTableBody">
+            <tr data-min="85" data-max="100"><td>Locked in</td><td class="range">85-100</td><td>Both hands even, together on the one and complete. Try the next polyrhythm up.</td></tr>
+            <tr data-min="65" data-max="84"><td>Together</td><td class="range">65-84</td><td>The polyrhythm is there and it holds. A little looseness between the hands is all that is left.</td></tr>
+            <tr data-min="40" data-max="64"><td>Finding it</td><td class="range">40-64</td><td>The shape is coming. Usually one hand is pulling the other, or a note goes missing in the middle of the cycle.</td></tr>
+            <tr data-min="0" data-max="39"><td>Warming up</td><td class="range">0-39</td><td>A very common first score. Counting the grid out loud, below, is the fastest way up.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>How to get better at polyrhythms</h2>
+      <p><strong>Count the shared grid out loud.</strong> Say "1 2 3 4 5 6" slowly and evenly, and tap only the numbers each hand owns. It feels mechanical at first, which is the point: once the combined pattern is in your body you can stop counting and hear it as one rhythm.</p>
+      <p><strong>Learn each hand alone, then add the other.</strong> Tap the slower part until it is automatic, then layer the faster part over it. Swap which hand plays which part once it settles, because the other way round is a different skill.</p>
+      <p><strong>Slow down until it is clean.</strong> A polyrhythm played slowly and evenly is worth more than one played fast and lopsided. The <a href="/tools/speed-trainer.html">speed trainer</a> can then raise the tempo in small steps, and the <a href="/tools/steady-tempo-test.html">steady tempo test</a> checks that your pulse holds without the click.</p>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
+
+      <h3>Questions about polyrhythms</h3>
+      <div class="faq-list">
+        <details>
+          <summary>What is a polyrhythm?</summary>
+          <div class="faq-answer">
+            Two even pulses played at the same time that divide the same span of time differently. In 3 against 2, one hand plays three evenly spaced notes while the other plays two, and both start together on the first note.
+          </div>
+        </details>
+        <details>
+          <summary>How do I play 3 against 2?</summary>
+          <div class="faq-answer">
+            Count six even pulses. One hand plays on 1, 3 and 5, the other on 1 and 4. Together they make the pattern both, right, left, right, which many players learn with the phrase "nice cup of tea".
+          </div>
+        </details>
+        <details>
+          <summary>Does my device's audio delay affect the score?</summary>
+          <div class="faq-answer">
+            No. The test fits its own grid to your taps and scores how your two hands line up with each other and with that grid. A speaker or Bluetooth delay moves every tap by the same amount, which changes nothing about how the hands relate.
+          </div>
+        </details>
+        <details>
+          <summary>Is this polyrhythm test free?</summary>
+          <div class="faq-answer">
+            Yes. It runs entirely in your browser, needs no download, account or payment, and nothing you tap is uploaded anywhere.
+          </div>
+        </details>
+      </div>
+
+      <div class="cta-box">
+        <h3>Take the grid with you.</h3>
+        <p>Metro Gnome is a free metronome app with odd time signatures, a Speed Trainer, a tuner and a rhythm game, and Groove Check scores your playing through the microphone. No account, no subscription.</p>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome" class="btn-play">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M3 20.5v-17c0-.83 1-.83 1.5-.5l14 8.5c.5.3.5 1 0 1.3L4.5 21c-.5.33-1.5.33-1.5-.5z"/>
+          </svg>
+          Get it Free on Google Play
+        </a>
+      </div>
+
+      <h2>Use this on your own site</h2>
+      <p>This test embeds on any website with one line of HTML, free, with no sign up and no API key. Drum and piano teachers are welcome to put the polyrhythm test straight onto a lesson page. <a href="/embed/">Get the embed code</a>.</p>
+
+      <div class="related">
+        <h3>Also useful</h3>
+        <div class="related-grid">
+          <div class="related-card">
+            <p class="rc-label">Timing</p>
+            <a href="/tools/rhythm-timing-test.html">Rhythm Test: How Good Is Your Timing?</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Time signatures</p>
+            <a href="/tools/odd-meter-practice-tool.html">Odd Meter Explained: What It Is, How to Count 5/4, 7/8 and More</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Practice</p>
+            <a href="/tools/speed-trainer.html">Speed Trainer: A Metronome That Speeds Up</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Drummers</p>
+            <a href="/blog/metronome-app-for-drummers.html">The Best Metronome App for Drummers</a>
+          </div>
+        </div>
+      </div>
+
+    </article>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Metro Gnome</a>
+        <a href="/blog/">Blog</a>
+        <a href="/tools/">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Play Store</a>
+        <a href="/about.html">About</a>
+        <a href="mailto:accesscommsa@gmail.com">Contact</a>
+        <a href="/privacy.html">Privacy</a>
+      </div>
+      <p>&copy; 2026 Metro Gnome &middot; Crafted for musicians</p>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    /* ── scoring (pure; the Node harness extracts this block) ─────────── */
+    /* SCORING START */
+    var GRID_GOOD_MS = 5, GRID_LOOSE_MS = 52;    /* mean tap distance from the grid */
+    var MATCH_FRAC = 0.3;                        /* a tap belongs to a slot within 0.3 of its hand's spacing */
+    var TEMPO_FREEDOM = 0.15;                    /* the fitted cycle may differ from the given one by 15% */
+
+    function clamp01(v) { return Math.min(1, Math.max(0, v)); }
+    function median(xs) {
+      if (!xs.length) return NaN;
+      var s = xs.slice().sort(function (a, b) { return a - b; });
+      var m = Math.floor(s.length / 2);
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+    }
+
+    /* Assign each tap to the nearest note of its own hand on a grid
+       t = t0 + P * x (x in cycles), keeping the closest tap per note. */
+    function assign(taps, counts, cycles, t0, P) {
+      var best = {};
+      taps.forEach(function (tap) {
+        var n = counts[tap.hand];
+        var idx = Math.round((tap.t - t0) / P * n);
+        if (idx < 0 || idx >= cycles * n) return;
+        var x = idx / n;
+        var r = tap.t - (t0 + P * x);
+        if (Math.abs(r) > MATCH_FRAC * P / n) return;
+        var key = tap.hand + idx;
+        if (!best[key] || Math.abs(r) < Math.abs(best[key].r)) best[key] = { t: tap.t, hand: tap.hand, idx: idx, x: x, r: r };
+      });
+      return Object.keys(best).map(function (k) { return best[k]; });
+    }
+
+    /* Before fitting, search a coarse range of tempos and positions for
+       the grid that places the most notes, so a player who settled a few
+       percent off the click, or a device delay the browser did not
+       report (any size: positions span half a cycle either way), still
+       lands every note in the right slot. */
+    function coarse(taps, counts, cycles, P0, t00) {
+      var best = { n: -1, e: Infinity, t0: t00, P: P0 };
+      for (var dp = -0.1; dp <= 0.1001; dp += 0.01) {
+        var P = P0 * (1 + dp);
+        for (var dt = -P0 / 2; dt <= P0 / 2; dt += 10) {
+          var m = assign(taps, counts, cycles, t00 + dt, P);
+          var e = m.reduce(function (s, a) { return s + Math.abs(a.r); }, 0);
+          if (m.length > best.n || (m.length === best.n && e < best.e)) best = { n: m.length, e: e, t0: t00 + dt, P: P };
+        }
+      }
+      return best;
+    }
+
+    function fitGrid(taps, counts, cycles, P0, t00) {
+      var c0 = coarse(taps, counts, cycles, P0, t00);
+      var t0 = c0.t0, P = c0.P, m = [];
+      for (var it = 0; it < 4; it++) {
+        m = assign(taps, counts, cycles, t0, P);
+        if (m.length < 3) break;
+        var n = m.length, sx = 0, sy = 0, sxx = 0, sxy = 0;
+        m.forEach(function (a) { sx += a.x; sy += a.t; sxx += a.x * a.x; sxy += a.x * a.t; });
+        var den = n * sxx - sx * sx;
+        var nP = den > 1e-9 ? (n * sxy - sx * sy) / den : P0;
+        if (!(Math.abs(nP / P0 - 1) <= TEMPO_FREEDOM)) nP = P0;
+        P = nP;
+        t0 = (sy - P * sx) / n;
+      }
+      m = assign(taps, counts, cycles, t0, P);
+      return { t0: t0, P: P, matched: m };
+    }
+
+    /* taps: [{t (ms), hand: 'slow' | 'fast'}] around the scored cycles.
+       slow/fast: notes per cycle. P0: given cycle (ms). t00: where the
+       first scored cycle was heard to start (ms, same clock as taps). */
+    function scoreRun(taps, slow, fast, cycles, P0, t00) {
+      var counts = { slow: slow, fast: fast };
+      var fit = fitGrid(taps, counts, cycles, P0, t00);
+      var m = fit.matched;
+      /* Only taps inside the fitted grid's cycles count, so a late last tap
+         of the tap-along, or a tap on the closing one, is never an extra,
+         wherever the device's delay put them. */
+      var edge = 0.5 / fast;
+      taps = taps.filter(function (q) {
+        var u = (q.t - fit.t0) / fit.P;
+        return u >= -edge && u < cycles - edge;
+      });
+      function per(hand) {
+        var mh = m.filter(function (a) { return a.hand === hand; });
+        var all = taps.filter(function (t) { return t.hand === hand; }).length;
+        var expected = cycles * counts[hand];
+        var extras = all - mh.length;
+        var err = mh.length ? mh.reduce(function (s, a) { return s + Math.abs(a.r); }, 0) / mh.length : Infinity;
+        return { matched: mh.length, expected: expected, extras: extras, err: err,
+                 complete: clamp01((mh.length - 0.5 * extras) / expected) };
+      }
+      var S = per('slow'), F = per('fast');
+      var complete = Math.sqrt(S.complete * F.complete);
+      var gridErr = m.length ? m.reduce(function (s, a) { return s + Math.abs(a.r); }, 0) / m.length : Infinity;
+      var fGrid = isFinite(gridErr) ? clamp01((GRID_LOOSE_MS - gridErr) / (GRID_LOOSE_MS - GRID_GOOD_MS)) : 0;
+      /* the shared note: both hands at x = whole cycle */
+      var ones = [];
+      for (var c = 0; c < cycles; c++) {
+        var a = m.filter(function (q) { return q.hand === 'slow' && q.idx === c * slow; })[0];
+        var b = m.filter(function (q) { return q.hand === 'fast' && q.idx === c * fast; })[0];
+        if (a && b) ones.push(Math.abs(a.t - b.t));
+      }
+      return {
+        score: Math.round(100 * complete * fGrid),
+        matched: m.length, expected: cycles * (slow + fast), extras: S.extras + F.extras,
+        gridErr: gridErr, oneGap: median(ones), slow: S, fast: F, fit: fit, matchedList: m, scored: taps
+      };
+    }
+    /* SCORING END */
+
+    var startBtn    = document.getElementById('startBtn');
+    var padSlow     = document.getElementById('padSlow');
+    var padFast     = document.getElementById('padFast');
+    var slowCount   = document.getElementById('slowCount');
+    var fastCount   = document.getElementById('fastCount');
+    var mainReadout = document.getElementById('mainReadout');
+    var mainUnit    = document.getElementById('mainUnit');
+    var statusLabel = document.getElementById('statusLabel');
+    var bestLine    = document.getElementById('bestLine');
+    var beatDots    = document.getElementById('beatDots');
+    var statRow     = document.getElementById('statRow');
+    var notesValue  = document.getElementById('notesValue');
+    var oneValue    = document.getElementById('oneValue');
+    var gridValue   = document.getElementById('gridValue');
+    var cycleStrip  = document.getElementById('cycleStrip');
+    var cycleSvg    = document.getElementById('cycleSvg');
+    var verdict     = document.getElementById('verdict');
+    var metroImg    = document.getElementById('metroImg');
+    var bandRows    = Array.prototype.slice.call(document.querySelectorAll('#bandTableBody tr'));
+    var ratioBtns   = Array.prototype.slice.call(document.querySelectorAll('#ratioRow .preset-chip'));
+    var phaseSteps  = Array.prototype.slice.call(document.querySelectorAll('#phaseSteps .phase-step'));
+    var phaseTip    = document.getElementById('phaseTip');
+
+    /* One cycle per polyrhythm, chosen so the faster part sits at a
+       comfortable 110 to 125 notes a minute. */
+    var RATIOS = {
+      '3-2': { fast: 3, slow: 2, cycle: 1.6, name: 'three against two' },
+      '4-3': { fast: 4, slow: 3, cycle: 2.0, name: 'four against three' },
+      '5-4': { fast: 5, slow: 4, cycle: 2.4, name: 'five against four' }
+    };
+    var NEXT = { '3-2': '4 against 3', '4-3': '5 against 4' };
+    var ratioKey = '3-2';
+    var R = RATIOS[ratioKey];
+
+    var LISTEN = 2, ALONG = 2, OWN = 4;
+
+    var TIPS = [
+      'Listen for 2 cycles, tap along for 2, then keep it going over a click on the one.',
+      'Get ready: next, tap along with both hands.',
+      'Soon the parts drop out. Keep both hands going.',
+      'Keep both hands going for 4 cycles. Only the one still clicks.',
+      'Done! Here is how well your hands locked together.'
+    ];
+    function setPhase(n) {
+      phaseSteps.forEach(function (el, i) {
+        el.className = 'phase-step' + (i + 1 === n ? ' now' : (i + 1 < n ? ' past' : ''));
+      });
+      phaseTip.textContent = TIPS[n];
+    }
+
+    var audioCtx = null;
+    var state = 'idle';                      /* idle | running | done */
+    var taps = [];                           /* {t, hand} performance.now() ms */
+    var cycle0 = 0;                          /* audio-clock time of the first cycle */
+    var schedulerTimer = null, events = [], nextEvent = 0;
+    var ctxToPerf = 0, lastTapAt = -Infinity;
+    var LOOKAHEAD_MS = 25, SCHEDULE_AHEAD_S = 0.12;
+
+    function buildDots() {
+      beatDots.innerHTML = '';
+      for (var i = 0; i < OWN; i++) {
+        var d = document.createElement('span');
+        d.className = 'beat-dot';
+        beatDots.appendChild(d);
+      }
+    }
+    buildDots();
+
+    /* ── polyrhythm choice ───────────────────────────────────────────── */
+    function setRatio(key) {
+      if (state === 'running' || !RATIOS[key]) return;
+      ratioKey = key;
+      R = RATIOS[key];
+      slowCount.textContent = R.slow;
+      fastCount.textContent = R.fast;
+      ratioBtns.forEach(function (b) {
+        var on = b.getAttribute('data-ratio') === key;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      if (state === 'idle') { mainReadout.textContent = R.fast + ':' + R.slow; mainUnit.textContent = R.name; }
+      showBest(false);
+    }
+    function lockRatio(locked) { ratioBtns.forEach(function (b) { b.disabled = locked; }); }
+    ratioBtns.forEach(function (b) {
+      b.addEventListener('click', function () { setRatio(b.getAttribute('data-ratio')); });
+    });
+
+    /* ── best score, per polyrhythm, in this browser only ─────────────── */
+    function bestKey() { return 'metrognome.polyTest.best.' + ratioKey; }
+    function readBest() {
+      try { var v = Number(window.localStorage.getItem(bestKey())); return v > 0 ? v : null; }
+      catch (e) { return null; }
+    }
+    function saveBest(s) { try { window.localStorage.setItem(bestKey(), String(s)); } catch (e) {} }
+    function showBest(isNew) {
+      var best = readBest();
+      var label = R.fast + ' against ' + R.slow;
+      bestLine.classList.toggle('is-new', isNew);
+      if (isNew) bestLine.textContent = 'New best at ' + label;
+      else if (best !== null) bestLine.textContent = 'Your best at ' + label + ': ' + best;
+      else bestLine.textContent = '';
+    }
+
+    /* ── audio clock <-> performance clock (as in the rhythm test) ────── */
+    function ensureAudio() {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function syncClocks() {
+      var perfNow = performance.now();
+      var ctxNow  = audioCtx.currentTime;
+      if (typeof audioCtx.getOutputTimestamp === 'function') {
+        var ts = audioCtx.getOutputTimestamp();
+        if (ts && ts.contextTime > 0 && ts.performanceTime > 0) {
+          ctxToPerf = ts.performanceTime - ts.contextTime * 1000;
+          return;
+        }
+      }
+      var lat = (typeof audioCtx.outputLatency === 'number' && isFinite(audioCtx.outputLatency))
+        ? audioCtx.outputLatency : 0;
+      ctxToPerf = perfNow - ctxNow * 1000 + lat * 1000;
+    }
+    function ctxTimeToPerf(t) { return t * 1000 + ctxToPerf; }
+
+    /* Two woody voices an octave and a fifth apart, so the parts stay
+       distinct when they sound together; the one is a soft, high tick. */
+    var VOICE = { slow: { f: 520, g: 0.5 }, fast: { f: 1560, g: 0.32 }, one: { f: 2400, g: 0.16 } };
+    function playVoice(kind, time, soft) {
+      var v = VOICE[kind];
+      var osc  = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = v.f;
+      var peak = v.g * (soft ? 0.55 : 1);
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.exponentialRampToValueAtTime(peak, time + 0.003);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.09);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(time);
+      osc.stop(time + 0.1);
+    }
+
+    function bump() {
+      metroImg.classList.remove('bump');
+      void metroImg.offsetWidth;
+      metroImg.classList.add('bump');
+      setTimeout(function () { metroImg.classList.remove('bump'); }, 90);
+    }
+    function later(t, fn) {
+      setTimeout(function () { if (state === 'running') fn(); }, Math.max(0, (t - audioCtx.currentTime) * 1000));
+    }
+
+    /* ── the run as a list of timed events, played by a lookahead loop ── */
+    function buildEvents() {
+      var ev = [], P = R.cycle, c, j;
+      for (c = 0; c < LISTEN + ALONG; c++) {
+        for (j = 0; j < R.slow; j++) ev.push({ t: c * P + j * P / R.slow, kind: 'slow' });
+        for (j = 0; j < R.fast; j++) ev.push({ t: c * P + j * P / R.fast, kind: 'fast' });
+        ev.push({ t: c * P, kind: 'cycle', c: c });
+      }
+      for (c = LISTEN + ALONG; c <= LISTEN + ALONG + OWN; c++) {
+        ev.push({ t: c * P, kind: 'one' });
+        ev.push({ t: c * P, kind: 'cycle', c: c });
+      }
+      ev.sort(function (a, b) { return a.t - b.t; });
+      return ev;
+    }
+
+    function onCycle(c) {
+      if (c < LISTEN) statusLabel.textContent = 'Listen... ' + (LISTEN - c);
+      else if (c < LISTEN + ALONG) {
+        statusLabel.textContent = c === LISTEN + ALONG - 1 ? 'Last cycle with the parts' : 'Tap along with both hands';
+        setPhase(2);
+      } else if (c < LISTEN + ALONG + OWN) {
+        var k = c - (LISTEN + ALONG);
+        statusLabel.textContent = 'On your own: cycle ' + (k + 1) + ' of ' + OWN;
+        setPhase(3);
+        var d = beatDots.children[k];
+        if (d) d.className = 'beat-dot hit-ok';
+      }
+    }
+
+    function scheduler() {
+      while (nextEvent < events.length && cycle0 + events[nextEvent].t < audioCtx.currentTime + SCHEDULE_AHEAD_S) {
+        var e = events[nextEvent++], at = cycle0 + e.t;
+        if (e.kind === 'cycle') { (function (c) { later(at, function () { onCycle(c); }); })(e.c); continue; }
+        playVoice(e.kind, at, false);
+        if (e.kind !== 'one') later(at, bump);
+      }
+      if (nextEvent >= events.length) {
+        clearInterval(schedulerTimer);
+        schedulerTimer = null;
+        /* the closing one has sounded; give a late hand a moment, then score */
+        later(cycle0 + (LISTEN + ALONG + OWN) * R.cycle + 0.35, finish);
+      }
+    }
+
+    /* ── run control ──────────────────────────────────────────────────── */
+    function start() {
+      ensureAudio();
+      if (window.MetroAds) window.MetroAds.busy(true);
+      state = 'running';
+      lockRatio(true);
+      showBest(false);
+      taps = [];
+      buildDots();
+      statRow.hidden = true;
+      cycleStrip.hidden = true;
+      verdict.hidden = true;
+      bandRows.forEach(function (r) { r.classList.remove('current-row'); });
+      mainReadout.textContent = R.fast + ':' + R.slow;
+      mainUnit.textContent = R.name;
+      startBtn.hidden = true;
+      padSlow.classList.add('is-live');
+      padFast.classList.add('is-live');
+      statusLabel.textContent = 'Listen...';
+      setPhase(1);
+
+      syncClocks();
+      cycle0 = audioCtx.currentTime + 0.35;
+      events = buildEvents();
+      nextEvent = 0;
+      schedulerTimer = setInterval(scheduler, LOOKAHEAD_MS);
+      scheduler();
+      setTimeout(function () { if (state === 'running') syncClocks(); }, 400);
+    }
+
+    function pressTime(e) {
+      var now = performance.now();
+      var t = e && typeof e.timeStamp === 'number' ? e.timeStamp : NaN;
+      return (t > 0 && t <= now && now - t < 1000) ? t : now;
+    }
+
+    function hit(hand, t) {
+      lastTapAt = t;
+      var pad = hand === 'slow' ? padSlow : padFast;
+      pad.classList.add('pressed');
+      setTimeout(function () { pad.classList.remove('pressed'); }, 90);
+      ensureAudio();
+      playVoice(hand, audioCtx.currentTime, true);
+      if (state !== 'running') return;
+      /* a bounce far inside one note of this hand is not a note */
+      var spacing = R.cycle * 1000 / (hand === 'slow' ? R.slow : R.fast);
+      for (var i = taps.length - 1; i >= 0; i--) {
+        if (taps[i].hand === hand) { if (t - taps[i].t < spacing * 0.35) return; break; }
+      }
+      taps.push({ t: t, hand: hand });
+      bump();
+    }
+
+    /* ── scoring and the result ───────────────────────────────────────── */
+    function finish() {
+      if (state !== 'running') return;
+      state = 'done';
+      clearInterval(schedulerTimer);
+      if (window.MetroAds) window.MetroAds.busy(false);
+      lockRatio(false);
+      padSlow.classList.remove('is-live');
+      padFast.classList.remove('is-live');
+      startBtn.hidden = false;
+      restKey(startBtn);
+
+      var P = R.cycle * 1000;
+      var ownStart = ctxTimeToPerf(cycle0 + (LISTEN + ALONG) * R.cycle);
+      var win = taps.filter(function (q) { return q.t >= ownStart - 0.6 * P && q.t < ownStart + (OWN + 0.4) * P; });
+      var res = scoreRun(win, R.slow, R.fast, OWN, P, ownStart);
+
+      if (res.matched < 4) {
+        mainReadout.textContent = '--';
+        mainUnit.textContent = 'not enough notes';
+        statusLabel.textContent = 'Give it another go';
+        setPhase(0);
+        verdict.hidden = false;
+        verdict.textContent = 'When the parts drop out, keep both hands going until the last click on the one. Tap a pad any time before you start to hear its part.';
+        return;
+      }
+
+      var score = res.score;
+      mainUnit.textContent = 'polyrhythm score';
+      statusLabel.textContent = bandName(score);
+      statRow.hidden = false;
+      notesValue.textContent = res.matched + ' / ' + res.expected;
+      oneValue.textContent = isFinite(res.oneGap) ? Math.round(res.oneGap) + ' ms' : '--';
+      gridValue.textContent = '±' + Math.round(res.gridErr) + ' ms';
+
+      bandRows.forEach(function (r) {
+        var lo = Number(r.getAttribute('data-min'));
+        var hi = Number(r.getAttribute('data-max'));
+        r.classList.toggle('current-row', score >= lo && score <= hi);
+      });
+
+      var prevBest = readBest();
+      if (prevBest === null || score > prevBest) saveBest(score);
+      showBest(prevBest !== null && score > prevBest);
+
+      drawCycle(res, res.scored);
+      verdict.hidden = false;
+      verdict.textContent = readOut(res);
+      setPhase(4);
+      reveal(score, 0, Math.round);
+    }
+
+    function bandName(s) {
+      if (s >= 85) return 'Locked in';
+      if (s >= 65) return 'Together';
+      if (s >= 40) return 'Finding it';
+      return 'Warming up';
+    }
+
+    function readOut(res) {
+      var s, name = R.fast + ' against ' + R.slow;
+      if (res.score >= 85) s = 'Locked in. Your ' + name + ' was complete and even, with your hands ' + Math.round(res.oneGap) + ' ms apart on the one.';
+      else if (res.score >= 65) s = 'Together. The ' + name + ' held for all four cycles on your own.';
+      else if (res.score >= 40) s = 'Finding it. The shape of the ' + name + ' is there.';
+      else s = 'Warming up. Keeping two hands going on your own is the hard part, and you did it. Counting the shared grid out loud, below, lifts this score quickly.';
+      var missing = res.expected - res.matched;
+      if (res.score < 85) {
+        if (res.slow.complete < res.fast.complete - 0.15) s += ' Your left hand lost some notes; try saying its numbers out loud.';
+        else if (res.fast.complete < res.slow.complete - 0.15) s += ' Your right hand lost some notes; the middle of the cycle is where the faster part usually slips.';
+        else if (res.slow.err > 1.5 * res.fast.err && res.slow.err > 25) s += ' Your left hand drifted more than your right; let it lock to the one.';
+        else if (res.fast.err > 1.5 * res.slow.err && res.fast.err > 25) s += ' Your right hand drifted more than your left; count the grid and place each of its notes.';
+        else if (missing > 0) s += ' ' + missing + (missing === 1 ? ' note' : ' notes') + ' went missing.';
+      }
+      if (res.score >= 65 && NEXT[ratioKey]) s += ' Now try ' + NEXT[ratioKey] + '.';
+      return s;
+    }
+
+    /* ── chart: every scored note folded onto one cycle ───────────────── */
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+    function el(name, attrs, text) {
+      var n = document.createElementNS(SVG_NS, name);
+      for (var k in attrs) n.setAttribute(k, attrs[k]);
+      if (text) n.textContent = text;
+      return n;
+    }
+    function drawCycle(res, win) {
+      var W = 320, LEFT = 46, RIGHT = 18, Y = { fast: 38, slow: 98 };
+      var P = res.fit.P, t0 = res.fit.t0;
+      function x(phase) { return LEFT + (W - LEFT - RIGHT) * phase; }
+      while (cycleSvg.firstChild) cycleSvg.removeChild(cycleSvg.firstChild);
+
+      cycleSvg.appendChild(el('line', { 'class': 'ts-centre', x1: x(0), x2: x(0), y1: 14, y2: 122 }));
+      cycleSvg.appendChild(el('line', { 'class': 'ts-centre', x1: x(1), x2: x(1), y1: 14, y2: 122 }));
+      cycleSvg.appendChild(el('text', { 'class': 'ts-label ts-strong', x: x(0) - 4, y: 10 }, '1'));
+      ['fast', 'slow'].forEach(function (hand) {
+        var n = hand === 'fast' ? R.fast : R.slow;
+        cycleSvg.appendChild(el('line', { 'class': 'ts-grid', x1: x(0) - 4, x2: x(1) + 4, y1: Y[hand], y2: Y[hand] }));
+        cycleSvg.appendChild(el('text', { 'class': 'ts-label', x: 2, y: Y[hand] - 6 }, hand === 'fast' ? 'Right' : 'Left'));
+        cycleSvg.appendChild(el('text', { 'class': 'ts-label ts-strong', x: 2, y: Y[hand] + 10 }, String(n)));
+        for (var j = 0; j <= n; j++) {
+          cycleSvg.appendChild(el('line', { 'class': 'ts-result', x1: x(j / n), x2: x(j / n), y1: Y[hand] - 13, y2: Y[hand] + 13 }));
+        }
+      });
+      var i = 0, matchedT = {};
+      res.matchedList.forEach(function (a) {
+        matchedT[a.hand + a.t] = true;
+        var phase = (a.idx % (a.hand === 'fast' ? R.fast : R.slow)) / (a.hand === 'fast' ? R.fast : R.slow) + a.r / P;
+        var jitter = ((a.idx * 7) % 5 - 2) * 2.2;            /* separate dots of different cycles a little */
+        var dot = el('circle', { 'class': 'ts-tap' + (Math.abs(a.r) <= 20 ? ' tight' : ''), cx: x(phase).toFixed(1), cy: (Y[a.hand] + jitter).toFixed(1), r: 4.2 });
+        dot.style.animationDelay = (i++ * 30) + 'ms';
+        dot.appendChild(el('title', {}, (a.hand === 'fast' ? 'Right' : 'Left') + ' hand: ' + (a.r >= 0 ? '+' : '') + Math.round(a.r) + ' ms'));
+        cycleSvg.appendChild(dot);
+      });
+      win.forEach(function (q) {
+        if (matchedT[q.hand + q.t]) return;
+        var phase = ((q.t - t0) / P) % 1;
+        if (phase < 0) phase += 1;
+        cycleSvg.appendChild(el('circle', { 'class': 'ts-miss', cx: x(phase).toFixed(1), cy: Y[q.hand], r: 4.2 }));
+      });
+      cycleStrip.hidden = false;
+    }
+
+    /* ── finish moment, the same in every test ────────────────────────── */
+    var REST_MS = 1600;
+    var restUntil = 0;
+    function restKey(pad) {
+      restUntil = performance.now() + REST_MS;
+      pad.classList.remove('is-live');
+      pad.classList.add('is-done');
+      pad.disabled = true;
+      pad.textContent = 'DONE';
+      setTimeout(function () {
+        pad.classList.remove('is-done');
+        pad.disabled = false;
+        pad.textContent = 'START AGAIN';
+      }, REST_MS);
+    }
+    function reveal(to, from, fmt) {
+      var raf = window.requestAnimationFrame ? window.requestAnimationFrame.bind(window)
+                                             : function (f) { setTimeout(f, 16); };
+      mainReadout.classList.remove('reveal');
+      metroImg.classList.remove('cheer');
+      void mainReadout.offsetWidth;
+      mainReadout.classList.add('reveal');
+      metroImg.classList.add('cheer');
+      var t0 = performance.now(), DUR = 750;
+      (function step() {
+        var k = Math.min(1, (performance.now() - t0) / DUR);
+        var e = 1 - Math.pow(1 - k, 3);
+        mainReadout.textContent = fmt(from + (to - from) * e);
+        if (k < 1) raf(step);
+      })();
+      if (mainReadout.getBoundingClientRect && window.scrollBy) {
+        var top = mainReadout.getBoundingClientRect().top;
+        if (top < 60 || top > window.innerHeight * 0.45) {
+          window.scrollBy({ top: top - 140, behavior: 'smooth' });
+        }
+      }
+    }
+
+    /* ── input: notes on press, start on click (as in the rhythm test) ── */
+    [[padSlow, 'slow'], [padFast, 'fast']].forEach(function (p) {
+      p[0].addEventListener('pointerdown', function (e) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.preventDefault();
+        hit(p[1], pressTime(e));
+      });
+    });
+    function mayStart() { return state !== 'running' && performance.now() - lastTapAt >= 400 && performance.now() >= restUntil; }
+    startBtn.addEventListener('click', function () { if (mayStart()) start(); });
+
+    var KEYS = { KeyF: 'slow', KeyD: 'slow', KeyJ: 'fast', KeyK: 'fast' };
+    window.addEventListener('keydown', function (e) {
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (KEYS[e.code]) { e.preventDefault(); hit(KEYS[e.code], pressTime(e)); return; }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (state !== 'running' && mayStart()) start();
+      }
+    });
+
+    setPhase(0);
+    var rp = /[?&]ratio=(\d-\d)/.exec(window.location.search);
+    setRatio(rp && RATIOS[rp[1]] ? rp[1] : ratioKey);
+  })();
+  </script>
+
+  <script src="/ads.js" defer></script>
+</body>
+</html>

@@ -1464,3 +1464,42 @@ details[open] summary::after { transform: rotate(45deg); }
 @media (prefers-reduced-motion: reduce) {
   .bpm-readout.reveal, .metro-wrap img.cheer { animation: none; }
 }
+
+/* ── Polyrhythm test: two hand pads side by side ──────────────────── */
+.hand-pads { display: flex; gap: 0.75rem; justify-content: center; max-width: 420px; margin: 0.4rem auto 0; }
+.tap-pad.hand-pad {
+  margin: 0;
+  flex: 1 1 0;
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.9rem 0.5rem;
+}
+.hand-pad .hp-count { font-family: var(--mono); font-size: 2.2rem; line-height: 1; color: var(--gold); }
+.hand-pad .hp-name  { font-size: 0.85rem; }
+.hand-pad .hp-key   { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); border: 1px solid var(--surface-up); border-radius: 4px; padding: 0 0.35rem; }
+.tap-pad.hand-pad.pressed .hp-count,
+.tap-pad.hand-pad:active .hp-count { color: #1a0a2e; }
+.tap-pad[hidden] { display: none; }
+
+/* ── Speed trainer: settings grid and tempo ladder ────────────────── */
+.st-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem 0.75rem; max-width: 420px; margin: 1.1rem auto 0; }
+.st-settings .stepper-group { min-width: 0; }
+.st-ladder { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem; max-width: 440px; margin: 1rem auto 0; }
+.st-rung {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 0.15rem 0.45rem;
+  border-radius: 50px;
+  border: 1px solid var(--surface-up);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.st-rung.past { color: var(--purple-light); border-color: var(--purple); }
+.st-rung.now  { color: var(--gold); border-color: var(--gold); background: rgba(255, 215, 0, 0.08); }
+.st-progress { height: 6px; max-width: 340px; margin: 0.9rem auto 0; border-radius: 3px; background: var(--surface-up); overflow: hidden; }
+.st-progress span { display: block; height: 100%; width: 0; background: var(--gold); transition: width 0.25s linear; }

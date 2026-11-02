@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speed Trainer: A Metronome That Speeds Up - Metro Gnome</title>
+  <meta name="description" content="Free online speed trainer metronome. Set a start and target tempo, a step size and bars per step, and the click speeds up on its own, then can bring you back down. No download, no sign up.">
+  <link rel="icon" type="image/webp" href="/favicon.webp">
+  <link rel="apple-touch-icon" href="/favicon.webp">
+  <link rel="canonical" href="https://metrognome.co.za/tools/speed-trainer.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Speed Trainer: A Metronome That Speeds Up - Metro Gnome">
+  <meta property="og:description" content="A metronome that raises the tempo step by step while you play, then brings you back down. Free, in your browser.">
+  <meta property="og:url" content="https://metrognome.co.za/tools/speed-trainer.html">
+  <meta property="og:image" content="https://metrognome.co.za/metro.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Speed Trainer: A Metronome That Speeds Up - Metro Gnome">
+  <meta name="twitter:description" content="A metronome that raises the tempo step by step while you play, then brings you back down.">
+  <meta name="twitter:image" content="https://metrognome.co.za/metro.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Speed Trainer: A Metronome That Speeds Up",
+    "url": "https://metrognome.co.za/tools/speed-trainer.html",
+    "applicationCategory": "MusicApplication",
+    "operatingSystem": "Any (runs in browser)",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "description": "Free browser speed trainer metronome. Choose a start tempo, a target tempo, a step size in BPM, the bars to play at each step and the beats in a bar. The metronome raises the tempo by itself after each step, shows every step on a tempo ladder, and can come back down to the start.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Metro Gnome",
+      "url": "https://metrognome.co.za/"
+    }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is a speed trainer metronome?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "A metronome that changes its own tempo while you play. You set where to start, where to finish, how big each step is and how many bars to play at each tempo, and it moves up a step every time those bars are done, so your hands stay on the instrument."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How much should I increase the BPM each step?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "5 BPM suits most material, with 4 bars at each tempo. Use smaller steps for fast or technical passages and 8 bars when you want more repetitions before each jump. Steps of 20 BPM or more skip the tempos where problems first appear."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why come back down after reaching the target?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Slower tempos expose unevenness that speed hides, and stepping down through the same tempos checks that control held all the way up. It also ends the session at a tempo you can play cleanly."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is this speed trainer free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. It runs entirely in your browser, needs no download, account or payment, and remembers your settings on this device only."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <script id="ads-gate">document.documentElement.className+=/Android/i.test(navigator.userAgent)?' is-android':' ads-on'</script>
+  <link rel="stylesheet" href="../blog/style.css">
+</head>
+<body>
+
+  <nav class="site-nav" aria-label="Primary">
+    <div class="inner">
+      <a href="/" class="brand" aria-label="Metro Gnome home">
+        <img src="/metro.png" alt="Metro Gnome logo">
+        <span>Metro Gnome</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/#features">Features</a>
+        <a href="/blog/" class="blog-nav">Blog</a>
+        <a href="/tools/" class="tools-nav">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="sep">&rsaquo;</span>
+      <a href="/tools/">Tools</a>
+      <span class="sep">&rsaquo;</span>
+      <span>Speed Trainer</span>
+    </nav>
+
+    <header class="article-header">
+      <div class="post-meta">
+        <span class="post-category">Free tool</span>
+        <span>No sign up</span>
+        <span>Runs in your browser</span>
+      </div>
+      <h1>Speed Trainer: A Metronome That Speeds Up</h1>
+      <p class="article-intro">
+        Set a start tempo, a target and a step size, and this free speed trainer metronome raises the BPM on its own after every few bars while you keep playing. Climb to your goal, then step back down through the same tempos to finish clean.
+      </p>
+    </header>
+
+    <section class="tool-panel" aria-label="Interactive speed trainer metronome">
+      <div class="metro-wrap">
+        <img id="metroImg" src="/metro.png" alt="Metro the gnome, bobs on every beat">
+      </div>
+
+      <div class="bpm-readout" id="bpmReadout">60</div>
+      <div class="bpm-unit">BPM</div>
+      <div class="marking" id="statusLabel">Ready when you are</div>
+
+      <div class="beat-dots" id="beatDots" aria-hidden="true"></div>
+      <div class="st-progress" aria-hidden="true"><span id="progressBar"></span></div>
+      <div class="st-ladder" id="ladder" aria-label="Every tempo in this session"></div>
+
+      <div class="st-settings" id="settings">
+        <div class="stepper-group">
+          <span class="stepper-label">Start BPM</span>
+          <div class="stepper">
+            <button class="stepper-btn" type="button" data-set="start" data-d="-1" aria-label="Lower start tempo">&minus;</button>
+            <span class="stepper-value" id="startValue">60</span>
+            <button class="stepper-btn" type="button" data-set="start" data-d="1" aria-label="Raise start tempo">+</button>
+          </div>
+        </div>
+        <div class="stepper-group">
+          <span class="stepper-label">Target BPM</span>
+          <div class="stepper">
+            <button class="stepper-btn" type="button" data-set="target" data-d="-1" aria-label="Lower target tempo">&minus;</button>
+            <span class="stepper-value" id="targetValue">120</span>
+            <button class="stepper-btn" type="button" data-set="target" data-d="1" aria-label="Raise target tempo">+</button>
+          </div>
+        </div>
+        <div class="stepper-group">
+          <span class="stepper-label">Step (BPM)</span>
+          <div class="stepper">
+            <button class="stepper-btn" type="button" data-set="step" data-d="-1" aria-label="Smaller steps">&minus;</button>
+            <span class="stepper-value" id="stepValue">5</span>
+            <button class="stepper-btn" type="button" data-set="step" data-d="1" aria-label="Bigger steps">+</button>
+          </div>
+        </div>
+        <div class="stepper-group">
+          <span class="stepper-label">Bars per step</span>
+          <div class="stepper">
+            <button class="stepper-btn" type="button" data-set="bars" data-d="-1" aria-label="Fewer bars per step">&minus;</button>
+            <span class="stepper-value" id="barsValue">4</span>
+            <button class="stepper-btn" type="button" data-set="bars" data-d="1" aria-label="More bars per step">+</button>
+          </div>
+        </div>
+        <div class="stepper-group">
+          <span class="stepper-label">Beats per bar</span>
+          <div class="stepper">
+            <button class="stepper-btn" type="button" data-set="beats" data-d="-1" aria-label="Fewer beats per bar">&minus;</button>
+            <span class="stepper-value" id="beatsValue">4</span>
+            <button class="stepper-btn" type="button" data-set="beats" data-d="1" aria-label="More beats per bar">+</button>
+          </div>
+        </div>
+        <div class="stepper-group">
+          <span class="stepper-label">Session</span>
+          <span class="stepper-value" id="lengthValue">--</span>
+        </div>
+      </div>
+
+      <div class="preset-row tempo-row" id="modeRow" role="group" aria-label="Route">
+        <button class="preset-chip active" type="button" data-mode="up" aria-pressed="true">Up to target</button>
+        <button class="preset-chip" type="button" data-mode="updown">Up and back down</button>
+      </div>
+
+      <button class="tap-pad" id="playBtn" type="button">&#9654; START</button>
+
+      <p class="tool-hint">Press <kbd>Space</kbd> to start or stop. A one-bar count-in plays first. The gold rung on the ladder is the tempo you are on now.</p>
+    </section>
+
+    <nav class="tool-next" aria-label="More free tests and tools">
+      <span class="tn-label">Try next</span>
+      <a class="preset-chip" href="/tools/steady-tempo-test.html">Steady tempo test</a>
+      <a class="preset-chip" href="/tools/polyrhythm-test.html">Polyrhythm test</a>
+      <a class="preset-chip" href="/tools/rhythm-timing-test.html">Rhythm test</a>
+      <a class="preset-chip" href="/tools/tap-tempo-bpm-finder.html">Tap tempo</a>
+    </nav>
+
+    <div class="ad-slot" data-ad="tool-below"></div>
+
+    <article class="prose">
+      <h2>How a speed trainer works</h2>
+      <p>Building speed on a passage is a ladder. You play a few bars at one tempo, move the metronome up a little, and play them again, until the tempo you want feels normal. The trouble with an ordinary metronome is that every rung means stopping, reaching over and changing the number. A speed trainer climbs the ladder for you: you choose where it starts, where it ends, how big each rung is and how many bars to spend on each one, and your hands never leave the instrument.</p>
+      <p>The ladder above the settings shows every tempo the session will visit, and it updates as you change them. The gold bar fills across each step, so you always know how long you have before the next jump.</p>
+
+      <h2>Good settings to start with</h2>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Setting</th><th>Start with</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Start BPM</td><td class="range">10-15 below your ceiling</td><td>The first steps should feel easy, so you warm up into the hard part.</td></tr>
+            <tr><td>Target BPM</td><td class="range">5-10 above your goal</td><td>Reaching past the goal makes the goal tempo itself feel controlled.</td></tr>
+            <tr><td>Step</td><td class="range">5 BPM</td><td>Small enough to find the exact tempo where a passage starts to slip.</td></tr>
+            <tr><td>Bars per step</td><td class="range">4 bars</td><td>Long enough to settle at each tempo; use 8 for more repetitions, 2 to survey a wide range.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>For the reasoning behind these numbers, and a full practice session built around them, read <a href="/blog/how-to-practice-increasing-bpm.html">how to practice increasing BPM</a>.</p>
+
+      <h2>Why come back down</h2>
+      <p>Choose <strong>Up and back down</strong> and the trainer walks down through the same tempos once it reaches the target. Speed hides unevenness that slower tempos reveal, so the trip down checks that your control held at every rung, and the session ends at a tempo you can play cleanly rather than on the edge of what you can manage. Note the step where things first went wrong on the way up: that tempo, not the target, is where the next session's work is.</p>
+
+      <div class="callout">
+        <strong>Speed is only useful if it stays even.</strong> Once you can play at the target, check that the tempo holds when the click goes quiet with the <a href="/tools/steady-tempo-test.html">steady tempo test</a>, and that each note lands where it should with the <a href="/tools/rhythm-timing-test.html">rhythm test</a>.
+      </div>
+
+      <div class="ad-slot" data-ad="tool-mid"></div>
+
+      <h3>Questions about speed trainers</h3>
+      <div class="faq-list">
+        <details>
+          <summary>What is a speed trainer metronome?</summary>
+          <div class="faq-answer">
+            A metronome that changes its own tempo while you play. You set where to start, where to finish, how big each step is and how many bars to play at each tempo, and it moves up a step every time those bars are done, so your hands stay on the instrument.
+          </div>
+        </details>
+        <details>
+          <summary>How much should I increase the BPM each step?</summary>
+          <div class="faq-answer">
+            5 BPM suits most material, with 4 bars at each tempo. Use smaller steps for fast or technical passages and 8 bars when you want more repetitions before each jump. Steps of 20 BPM or more skip the tempos where problems first appear.
+          </div>
+        </details>
+        <details>
+          <summary>Why come back down after reaching the target?</summary>
+          <div class="faq-answer">
+            Slower tempos expose unevenness that speed hides, and stepping down through the same tempos checks that control held all the way up. It also ends the session at a tempo you can play cleanly.
+          </div>
+        </details>
+        <details>
+          <summary>Is this speed trainer free?</summary>
+          <div class="faq-answer">
+            Yes. It runs entirely in your browser, needs no download, account or payment, and remembers your settings on this device only.
+          </div>
+        </details>
+      </div>
+
+      <div class="cta-box">
+        <h3>The same ladder, in your pocket.</h3>
+        <p>Metro Gnome's Speed Trainer climbs in BPM or percentage steps, repeats each step as often as you like, and Groove Check can score your timing through the microphone as you go. Free, no account, no subscription.</p>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome" class="btn-play">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M3 20.5v-17c0-.83 1-.83 1.5-.5l14 8.5c.5.3.5 1 0 1.3L4.5 21c-.5.33-1.5.33-1.5-.5z"/>
+          </svg>
+          Get it Free on Google Play
+        </a>
+      </div>
+
+      <h2>Use this on your own site</h2>
+      <p>This speed trainer embeds on any website with one line of HTML, free, with no sign up and no API key. Teachers are welcome to put it straight onto a lesson page with their own settings. <a href="/embed/">Get the embed code</a>.</p>
+
+      <div class="related">
+        <h3>Also useful</h3>
+        <div class="related-grid">
+          <div class="related-card">
+            <p class="rc-label">Practice</p>
+            <a href="/blog/how-to-practice-increasing-bpm.html">How to Practice Increasing BPM (And Why One Tempo Is Never Enough)</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Tempo</p>
+            <a href="/tools/steady-tempo-test.html">Steady Tempo Test: How Steady Is Your Inner Clock?</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Two hands</p>
+            <a href="/tools/polyrhythm-test.html">Polyrhythm Test: Can You Play 3 Against 2?</a>
+          </div>
+          <div class="related-card">
+            <p class="rc-label">Rush or drag</p>
+            <a href="/blog/why-you-rush-when-you-play.html">Why You Rush When You Play (And Why It Gets Worse at Slow Tempos)</a>
+          </div>
+        </div>
+      </div>
+
+    </article>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Metro Gnome</a>
+        <a href="/blog/">Blog</a>
+        <a href="/tools/">Tools</a>
+        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Play Store</a>
+        <a href="/about.html">About</a>
+        <a href="mailto:accesscommsa@gmail.com">Contact</a>
+        <a href="/privacy.html">Privacy</a>
+      </div>
+      <p>&copy; 2026 Metro Gnome &middot; Crafted for musicians</p>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    /* ── the tempo ladder (port of SpeedTrainerConfig.stepsSequence, BPM
+       steps; the trip down repeats the rungs in reverse) ──────────── */
+    /* LADDER START */
+    var MIN_BPM = 20, MAX_BPM = 300;
+    function ladderFor(start, target, step, mode) {
+      var steps = [], asc = start < target, cur = start;
+      step = Math.max(1, step);
+      while (true) {
+        var b = Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(cur)));
+        if (steps.length && (asc ? b <= steps[steps.length - 1] : b >= steps[steps.length - 1])) break;
+        if (asc ? b >= target : b <= target) { steps.push(target); break; }
+        steps.push(b);
+        cur += asc ? step : -step;
+      }
+      if (!steps.length) steps.push(target);
+      if (mode === 'updown' && steps.length > 1) {
+        for (var i = steps.length - 2; i >= 0; i--) steps.push(steps[i]);
+      }
+      return steps;
+    }
+    function sessionSeconds(steps, bars, beats) {
+      var s = 0;
+      steps.forEach(function (b) { s += bars * beats * 60 / b; });
+      return s + beats * 60 / steps[0];       /* the one-bar count-in */
+    }
+    /* LADDER END */
+
+    var playBtn     = document.getElementById('playBtn');
+    var bpmReadout  = document.getElementById('bpmReadout');
+    var statusLabel = document.getElementById('statusLabel');
+    var beatDots    = document.getElementById('beatDots');
+    var progressBar = document.getElementById('progressBar');
+    var ladderEl    = document.getElementById('ladder');
+    var lengthValue = document.getElementById('lengthValue');
+    var metroImg    = document.getElementById('metroImg');
+    var setBtns     = Array.prototype.slice.call(document.querySelectorAll('#settings .stepper-btn'));
+    var modeBtns    = Array.prototype.slice.call(document.querySelectorAll('#modeRow .preset-chip'));
+
+    var LIMITS = { start: [20, 280], target: [20, 300], step: [1, 20], bars: [1, 16], beats: [1, 12] };
+    var cfg = { start: 60, target: 120, step: 5, bars: 4, beats: 4, mode: 'up' };
+    var VALUE_EL = {
+      start: document.getElementById('startValue'), target: document.getElementById('targetValue'),
+      step: document.getElementById('stepValue'), bars: document.getElementById('barsValue'),
+      beats: document.getElementById('beatsValue')
+    };
+
+    var PREFS = 'metrognome.speedTrainer.v1';
+    function loadPrefs() {
+      try {
+        var p = JSON.parse(window.localStorage.getItem(PREFS) || 'null');
+        if (p) Object.keys(cfg).forEach(function (k) { if (p[k] !== undefined) cfg[k] = p[k]; });
+      } catch (e) {}
+    }
+    function savePrefs() { try { window.localStorage.setItem(PREFS, JSON.stringify(cfg)); } catch (e) {} }
+
+    /* deep links: ?start=60&target=120&step=5&bars=4&beats=4&mode=updown */
+    function readQuery() {
+      var q = window.location.search, found = false;
+      ['start', 'target', 'step', 'bars', 'beats'].forEach(function (k) {
+        var m = new RegExp('[?&]' + k + '=(\\d+)').exec(q);
+        if (m) { cfg[k] = Number(m[1]); found = true; }
+      });
+      var md = /[?&]mode=(up|updown)\b/.exec(q);
+      if (md) { cfg.mode = md[1]; found = true; }
+      return found;
+    }
+    function clampCfg() {
+      Object.keys(LIMITS).forEach(function (k) {
+        cfg[k] = Math.min(LIMITS[k][1], Math.max(LIMITS[k][0], Math.round(Number(cfg[k]) || LIMITS[k][0])));
+      });
+      if (cfg.mode !== 'updown') cfg.mode = 'up';
+    }
+
+    var steps = [];
+    function fmtLength(s) {
+      var m = Math.floor(s / 60), r = Math.round(s - m * 60);
+      if (r === 60) { m++; r = 0; }
+      return m ? m + 'm ' + (r < 10 ? '0' : '') + r + 's' : r + 's';
+    }
+    function render() {
+      Object.keys(VALUE_EL).forEach(function (k) { VALUE_EL[k].textContent = cfg[k]; });
+      modeBtns.forEach(function (b) {
+        var on = b.getAttribute('data-mode') === cfg.mode;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      steps = ladderFor(cfg.start, cfg.target, cfg.step, cfg.mode);
+      lengthValue.textContent = fmtLength(sessionSeconds(steps, cfg.bars, cfg.beats));
+      ladderEl.innerHTML = '';
+      steps.forEach(function (b) {
+        var r = document.createElement('span');
+        r.className = 'st-rung';
+        r.textContent = b;
+        ladderEl.appendChild(r);
+      });
+      if (!playing) bpmReadout.textContent = steps[0];
+      buildDots();
+    }
+    function buildDots() {
+      beatDots.innerHTML = '';
+      for (var i = 0; i < cfg.beats; i++) {
+        var d = document.createElement('span');
+        d.className = 'beat-dot';
+        beatDots.appendChild(d);
+      }
+    }
+    function lockSettings(locked) {
+      setBtns.forEach(function (b) { b.disabled = locked; });
+      modeBtns.forEach(function (b) { b.disabled = locked; });
+    }
+
+    setBtns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (playing) return;
+        var k = b.getAttribute('data-set');
+        cfg[k] += Number(b.getAttribute('data-d'));
+        clampCfg();
+        savePrefs();
+        render();
+      });
+    });
+    modeBtns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (playing) return;
+        cfg.mode = b.getAttribute('data-mode');
+        savePrefs();
+        render();
+      });
+    });
+
+    /* ── audio ───────────────────────────────────────────────────────── */
+    var audioCtx = null, playing = false, schedulerTimer = null;
+    var nextBeatTime = 0, stepIdx = 0, barInStep = 0, beatInBar = 0, countIn = true, startedAt = 0;
+    var LOOKAHEAD_MS = 25, SCHEDULE_AHEAD_S = 0.12;
+
+    function playClick(time, accent, soft) {
+      var osc  = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = accent ? 1800 : 1100;
+      var peak = (accent ? 0.4 : 0.32) * (soft ? 0.6 : 1);
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.exponentialRampToValueAtTime(peak, time + 0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.045);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(time);
+      osc.stop(time + 0.05);
+    }
+    function bump() {
+      metroImg.classList.remove('bump');
+      void metroImg.offsetWidth;
+      metroImg.classList.add('bump');
+      setTimeout(function () { metroImg.classList.remove('bump'); }, 90);
+    }
+    function at(t, fn) {
+      var token = runToken;
+      setTimeout(function () { if (playing && token === runToken) fn(); }, Math.max(0, (t - audioCtx.currentTime) * 1000));
+    }
+    var runToken = 0;
+
+    function showBeat(stepI, bar, beat, isCount) {
+      Array.prototype.forEach.call(beatDots.children, function (d, i) {
+        d.className = 'beat-dot' + (i === beat ? (beat === 0 ? ' hit-great' : ' hit-ok') : '');
+      });
+      bump();
+      if (isCount) {
+        statusLabel.textContent = 'Count-in ' + (beat + 1) + ' of ' + cfg.beats;
+        progressBar.style.width = '0%';
+        return;
+      }
+      bpmReadout.textContent = steps[stepI];
+      var down = cfg.mode === 'updown' && stepI >= Math.ceil(steps.length / 2) && steps.length > 1;
+      statusLabel.textContent = 'Step ' + (stepI + 1) + ' of ' + steps.length + (down ? ', coming down' : '') + ' · bar ' + (bar + 1) + ' of ' + cfg.bars;
+      progressBar.style.width = (100 * (bar * cfg.beats + beat + 1) / (cfg.bars * cfg.beats)).toFixed(1) + '%';
+      Array.prototype.forEach.call(ladderEl.children, function (r, i) {
+        r.className = 'st-rung' + (i === stepI ? ' now' : (i < stepI ? ' past' : ''));
+      });
+    }
+
+    function scheduler() {
+      while (nextBeatTime < audioCtx.currentTime + SCHEDULE_AHEAD_S) {
+        var bpm = steps[stepIdx];
+        var accent = beatInBar === 0;
+        playClick(nextBeatTime, accent, countIn);
+        (function (s, b, k, c) { at(nextBeatTime, function () { showBeat(s, b, k, c); }); })(stepIdx, barInStep, beatInBar, countIn);
+        nextBeatTime += 60 / bpm;
+        beatInBar++;
+        if (beatInBar >= cfg.beats) {
+          beatInBar = 0;
+          if (countIn) countIn = false;
+          else if (++barInStep >= cfg.bars) {
+            barInStep = 0;
+            if (++stepIdx >= steps.length) {
+              clearInterval(schedulerTimer);
+              schedulerTimer = null;
+              at(nextBeatTime, function () { stop(true); });
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    function start() {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      if (window.MetroAds) window.MetroAds.busy(true);
+      render();
+      playing = true;
+      runToken++;
+      lockSettings(true);
+      stepIdx = 0; barInStep = 0; beatInBar = 0; countIn = true;
+      startedAt = performance.now();
+      playBtn.innerHTML = '&#9632; STOP';
+      playBtn.classList.add('is-live');
+      statusLabel.textContent = 'Count-in';
+      nextBeatTime = audioCtx.currentTime + 0.2;
+      schedulerTimer = setInterval(scheduler, LOOKAHEAD_MS);
+      scheduler();
+    }
+
+    function stop(completed) {
+      if (!playing) return;
+      playing = false;
+      runToken++;
+      clearInterval(schedulerTimer);
+      schedulerTimer = null;
+      if (window.MetroAds) window.MetroAds.busy(false);
+      lockSettings(false);
+      playBtn.innerHTML = '&#9654; START';
+      playBtn.classList.remove('is-live');
+      progressBar.style.width = '0%';
+      Array.prototype.forEach.call(beatDots.children, function (d) { d.className = 'beat-dot'; });
+      if (completed) {
+        statusLabel.textContent = 'Done: ' + cfg.start + ' to ' + cfg.target + ' BPM' + (cfg.mode === 'updown' ? ' and back' : '') + ' in ' + fmtLength((performance.now() - startedAt) / 1000);
+        Array.prototype.forEach.call(ladderEl.children, function (r) { r.className = 'st-rung past'; });
+        metroImg.classList.remove('cheer');
+        void metroImg.offsetWidth;
+        metroImg.classList.add('cheer');
+      } else {
+        statusLabel.textContent = 'Stopped at ' + bpmReadout.textContent + ' BPM';
+        bpmReadout.textContent = steps[0];
+        Array.prototype.forEach.call(ladderEl.children, function (r) { r.className = 'st-rung'; });
+      }
+    }
+
+    playBtn.addEventListener('click', function () { if (playing) stop(false); else start(); });
+    window.addEventListener('keydown', function (e) {
+      if (e.code !== 'Space' || e.repeat) return;
+      var tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      e.preventDefault();
+      if (playing) stop(false); else start();
+    });
+
+    loadPrefs();
+    readQuery();
+    clampCfg();
+    render();
+  })();
+  </script>
+
+  <script src="/ads.js" defer></script>
+</body>
+</html>
