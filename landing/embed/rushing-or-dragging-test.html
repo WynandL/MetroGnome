@@ -570,6 +570,7 @@
     function demo(rushing) {
       if (state === 'listening' || state === 'answering' || state === 'feedback' || demoBusy) return;
       demoBusy = true;
+      var before = statusLabel.textContent;
       demoRush.disabled = true;
       demoDrag.disabled = true;
       var t = makeTrial(rushing, DEMO_PCT, DEMO_BPM);
@@ -579,7 +580,7 @@
         demoBusy = false;
         demoRush.disabled = false;
         demoDrag.disabled = false;
-        if (state === 'idle' || state === 'done') statusLabel.textContent = 'Ready when you are';
+        if (state === 'idle' || state === 'done') statusLabel.textContent = before;
       }, timing.endMs + 150);
     }
 

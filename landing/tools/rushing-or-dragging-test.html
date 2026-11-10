@@ -62,7 +62,7 @@
         "name": "What does rushing or dragging mean?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Rushing means the tempo creeps up: the beats arrive a little sooner each time, so the music pushes ahead of where it started. Dragging is the opposite: the beats arrive a little later each time and the music slows down. Both are drifts away from a steady tempo, and most players lean one way more than the other."
+          "text": "Rushing means the tempo creeps up: the beats arrive a little sooner each time, so the music pushes ahead of where it started. Dragging is the opposite: the beats arrive a little later each time and the music slows down. Players also use the words for placement against a click, where rushing means landing ahead of the beat and dragging means landing behind it. This test checks whether you can hear the first kind, a drifting tempo."
         }
       },
       {
@@ -78,7 +78,7 @@
         "name": "What is a rusher or a dragger?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Players tend to lean one way. A rusher drifts ahead of the tempo, often on exciting passages, fills and fast notes. A dragger settles behind it, often on slow, hard or unfamiliar music. Most people are a bit of both depending on the tempo, which is why this test moves the starting tempo every round."
+          "text": "Players tend to lean one way. A rusher drifts ahead of the tempo, often when excited, when playing loudly or fast, or when reaching for a fill. A dragger settles behind it, often when reading or when working through something technically hard. Most people are a bit of both depending on the tempo, which is why this test moves the starting tempo every round."
         }
       },
       {
@@ -258,6 +258,7 @@
 
       <h2>Rushing and dragging: what the words mean</h2>
       <p>Rushing is the tempo creeping up, so each beat arrives a little sooner than the last. Dragging is the opposite: each beat arrives a little later and the music sags. Neither is a wrong note, which is exactly why they go unnoticed. A passage can have every pitch right and still lurch ahead in the exciting bars and settle back in the hard ones.</p>
+      <p>Players use the same two words for placement against a click, too: rushing is landing ahead of the beat and dragging is landing behind it. This test is about the first meaning, a tempo that drifts, which is what a listener hears when a band pushes or sags. For placement against a click, use the <a href="/tools/rhythm-timing-test.html">rhythm test</a>.</p>
 
       <div class="callout">
         <strong>The starting tempo changes every round.</strong> Between 80 and 150 BPM, picked at random. If every round started at the same tempo you could memorise it and listen for any departure from that one pulse. Moving it around makes every round a fresh judgement against the count-in you just heard, so the result measures your ear rather than your memory of the test.
@@ -283,8 +284,8 @@
         </table>
       </div>
 
-      <h2>Can you train your ear for tempo?</h2>
-      <p>Yes. Research on tempo perception, such as Drake and Botte's 1993 study, finds that musically trained listeners pick out smaller tempo changes than untrained ones, though the exact thresholds depend on how they are measured. Three habits help:</p>
+      <h2>What research says about hearing tempo changes</h2>
+      <p>In Drake and Botte's 1993 experiments, as summarised in McAuley's 2010 chapter on tempo and rhythm, listeners judging a single time interval needed a change of about 6% to notice it. Given several steady beats to judge by, the threshold fell to about 3% on average, and to just under 2% at best, around 150 BPM. More beats to listen to means a finer threshold, which is why every round here gives you a full count-in and two bars of groove. This test asks a different question from theirs, so treat its bands as a guide rather than a match for those figures. Three habits are worth trying:</p>
       <ul>
         <li><strong>Run it little and often.</strong> Two or three runs a day beat one long session a week, and the after-answer view shows you exactly what the drift looked like.</li>
         <li><strong>Listen for the feel, not the numbers.</strong> A rushing groove feels like it is leaning forward and a dragging one feels like it is settling back. Use the <em>Hear rushing</em> and <em>Hear dragging</em> buttons to learn both.</li>
@@ -306,7 +307,7 @@
         <details>
           <summary>What does rushing or dragging mean?</summary>
           <div class="faq-answer">
-            Rushing means the tempo creeps up: the beats arrive a little sooner each time, so the music pushes ahead of where it started. Dragging is the opposite: the beats arrive a little later each time and the music slows down. Both are drifts away from a steady tempo, and most players lean one way more than the other.
+            Rushing means the tempo creeps up: the beats arrive a little sooner each time, so the music pushes ahead of where it started. Dragging is the opposite: the beats arrive a little later each time and the music slows down. Players also use the words for placement against a click, where rushing means landing ahead of the beat and dragging means landing behind it. This test checks whether you can hear the first kind, a drifting tempo.
           </div>
         </details>
         <details>
@@ -318,7 +319,7 @@
         <details>
           <summary>What is a rusher or a dragger?</summary>
           <div class="faq-answer">
-            Players tend to lean one way. A rusher drifts ahead of the tempo, often on exciting passages, fills and fast notes. A dragger settles behind it, often on slow, hard or unfamiliar music. Most people are a bit of both depending on the tempo, which is why this test moves the starting tempo every round.
+            Players tend to lean one way. A rusher drifts ahead of the tempo, often when excited, when playing loudly or fast, or when reaching for a fill. A dragger settles behind it, often when reading or when working through something technically hard. Most people are a bit of both depending on the tempo, which is why this test moves the starting tempo every round.
           </div>
         </details>
         <details>
@@ -901,6 +902,7 @@
     function demo(rushing) {
       if (state === 'listening' || state === 'answering' || state === 'feedback' || demoBusy) return;
       demoBusy = true;
+      var before = statusLabel.textContent;
       demoRush.disabled = true;
       demoDrag.disabled = true;
       var t = makeTrial(rushing, DEMO_PCT, DEMO_BPM);
@@ -910,7 +912,7 @@
         demoBusy = false;
         demoRush.disabled = false;
         demoDrag.disabled = false;
-        if (state === 'idle' || state === 'done') statusLabel.textContent = 'Ready when you are';
+        if (state === 'idle' || state === 'done') statusLabel.textContent = before;
       }, timing.endMs + 150);
     }
 
