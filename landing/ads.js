@@ -71,6 +71,7 @@
   var HOUSE = [
     { href: '/tools/rhythm-timing-test.html', img: 'rhythm-test', pos: '94%', tag: 'Timing', label: 'Rhythm Test', line: 'How good is your timing? Find out in 20 seconds.', cta: 'Take the test' },
     { href: '/tools/pitch-ear-test.html', img: 'pitch-test', pos: '88%', tag: 'Ear', label: 'Pitch Test', line: 'How fine is your ear? Find the smallest gap you can hear.', cta: 'Take the test' },
+    { href: '/tools/rushing-or-dragging-test.html', img: 'rushing-dragging', pos: '72%', tag: 'Ear', label: 'Rushing or Dragging Test', line: 'Can you hear a tempo slip? Find the smallest change you can catch.', cta: 'Take the test' },
     { href: '/tools/steady-tempo-test.html', img: 'steady-tempo', pos: '94%', tag: 'Timing', label: 'Steady Tempo Test', line: 'Can you hold the tempo when the click stops?', cta: 'Take the test' },
     { href: '/tools/polyrhythm-test.html', img: 'polyrhythm-test', pos: '58%', tag: 'Two hands', label: 'Polyrhythm Test', line: 'Can you play 3 against 2? Find out with both hands.', cta: 'Take the test' },
     { href: '/tools/speed-trainer.html', img: 'speed-trainer', pos: '40%', tag: 'Practice', label: 'Speed Trainer', line: 'A metronome that speeds up by itself, step by step.', cta: 'Start climbing' },

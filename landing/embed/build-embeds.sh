@@ -123,6 +123,11 @@ emit "$TOOLS/pitch-ear-test.html" "$OUT/pitch-test.html" \
   "https://metrognome.co.za/tools/pitch-ear-test.html" \
   "Pitch test" ""
 
+emit "$TOOLS/rushing-or-dragging-test.html" "$OUT/rushing-or-dragging-test.html" \
+  "Rushing or Dragging Test - Metro Gnome" \
+  "https://metrognome.co.za/tools/rushing-or-dragging-test.html" \
+  "Rushing or dragging test" ""
+
 emit "$TOOLS/steady-tempo-test.html" "$OUT/steady-tempo-test.html" \
   "Steady Tempo Test - Metro Gnome" \
   "https://metrognome.co.za/tools/steady-tempo-test.html" \

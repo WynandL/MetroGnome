@@ -1503,3 +1503,12 @@ details[open] summary::after { transform: rotate(45deg); }
 .st-rung.now  { color: var(--gold); border-color: var(--gold); background: rgba(255, 215, 0, 0.08); }
 .st-progress { height: 6px; max-width: 340px; margin: 0.9rem auto 0; border-radius: 3px; background: var(--surface-up); overflow: hidden; }
 .st-progress span { display: block; height: 100%; width: 0; background: var(--gold); transition: width 0.25s linear; }
+
+/* ── Rushing or dragging test: the after-answer ribbon, the example row ── */
+.rb-steady { fill: none; stroke: var(--text-muted); stroke-width: 1.2; opacity: 0.8; }
+.rb-actual { stroke-width: 3; stroke-linecap: round; }
+.rb-actual.right { stroke: var(--gold); }
+.rb-actual.miss  { stroke: var(--purple-light); }
+.demo-label { flex-basis: 100%; text-align: center; font-size: 0.78rem; color: var(--text-muted); }
+#demoRow { flex-wrap: wrap; justify-content: center; align-items: center; }
+#demoRow[hidden] { display: none; }
