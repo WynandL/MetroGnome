@@ -42,7 +42,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.theme.AppColors
 
 /**
@@ -174,7 +173,7 @@ fun FeedbackQuestion(
                     )
                 }
             }
-            DialogCloseButton(onClick = onDismiss)
+            QuietCloseButton(onClick = onDismiss)
         }
         Spacer(Modifier.height(12.dp))
         Row(modifier = Modifier.fillMaxWidth().padding(end = 10.dp)) {
@@ -194,6 +193,24 @@ fun FeedbackQuestion(
                 modifier = Modifier.weight(1f),
             )
         }
+    }
+}
+
+/**
+ * The card's way out: present and labelled, but quieter than the two answers. A 14 dp
+ * glyph in the faint text colour, inside a normal 40 dp touch target (the target is not
+ * shrunk, only the mark), so declining stays easy and honest while "yes" and "no" remain
+ * the obvious things to press.
+ */
+@Composable
+private fun QuietCloseButton(onClick: () -> Unit) {
+    IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
+        Icon(
+            imageVector = Icons.Filled.Close,
+            contentDescription = "Not now",
+            tint = AppColors.textDim,
+            modifier = Modifier.size(14.dp),
+        )
     }
 }
 

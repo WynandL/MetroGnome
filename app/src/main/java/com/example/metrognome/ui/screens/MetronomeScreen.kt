@@ -618,17 +618,28 @@ fun MetronomeScreen(
             trainerState is TrainerSessionState.Idle &&
             pendingPracticeResult == null && pendingWhatsNew == null &&
             unlockQueue.isEmpty() && !showMicCheck
+        // One appearance per session. Once the card has been on screen, anything that takes
+        // it away (starting the metronome, even mid "Thank you", an overlay, leaving the
+        // tab) spends it until the next launch. Before this it came back on every stop and
+        // every return to the tab, and a card hidden during the 1.8 s thank-you was rebuilt
+        // as a fresh question that could be answered a second time.
         LaunchedEffect(pollVisible) {
             if (pollVisible && !vm.pollShowLogged) {
                 vm.pollShowLogged = true
                 pollManager.recordShown(poll.id)
                 AnalyticsTracker.logPollShown(poll.id, pollManager.shownCount(poll.id))
+            } else if (!pollVisible && vm.pollShowLogged) {
+                vm.markPollDone()
             }
+        }
+        DisposableEffect(Unit) {
+            onDispose { if (vm.pollShowLogged) vm.markPollDone() }
         }
         PollBanner(
             visible = pollVisible,
             poll    = poll,
             onResponse = { response ->
+                if (!vm.claimPollResponse()) return@PollBanner
                 pollManager.recordAnswered(poll.id)
                 PollReporter.submit(poll.id, response, gnoteCount)
                 AnalyticsTracker.logPollAnswered(poll.id, response)

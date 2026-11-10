@@ -103,6 +103,17 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setActivePoll(poll: com.example.metrognome.poll.PollConfig?) { _activePoll.value = poll }
     fun markPollDone() { _pollDone.value = true }
+
+    private val pollResponded = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /**
+     * True for the first caller only. Every outcome ("up", "down", "dismissed") must claim
+     * this before it is recorded or reported, so one session can write at most one row
+     * however the card is tapped (a double tap inside the cross-fade, or the card coming
+     * back after an answer and being answered again; both happened in the field data).
+     */
+    fun claimPollResponse(): Boolean = pollResponded.compareAndSet(false, true)
+
     val rewardedAdLoaded: StateFlow<Boolean> = rewardedAdManager.adLoaded
 
     val removeAdsPriceText: StateFlow<String?>           = billingManager.priceText

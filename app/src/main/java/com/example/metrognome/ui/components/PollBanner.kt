@@ -59,9 +59,11 @@ fun PollBanner(
                     subtext       = poll.subtext,
                     negativeLabel = "No thanks",
                     positiveLabel = "Yes please",
-                    onNegative    = { onResponse("down"); step = PollStep.THANKING },
-                    onPositive    = { onResponse("up");   step = PollStep.THANKING },
-                    onDismiss     = { onResponse("dismissed"); onDismiss() },
+                    // The old content stays tappable through the cross-fade, so a second
+                    // tap must be ignored here as well as in the caller's claim.
+                    onNegative    = { if (step == PollStep.RATING) { step = PollStep.THANKING; onResponse("down") } },
+                    onPositive    = { if (step == PollStep.RATING) { step = PollStep.THANKING; onResponse("up") } },
+                    onDismiss     = { if (step == PollStep.RATING) { step = PollStep.THANKING; onResponse("dismissed"); onDismiss() } },
                 )
                 PollStep.THANKING -> FeedbackThanks("Thank you!")
             }
