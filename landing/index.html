@@ -533,6 +533,45 @@
     }
     .meet-metro-row .see-all svg { width: 14px; height: 14px; }
 
+    /* Colouring book: Metro's other home, an Etsy printable */
+    .colour-book {
+      margin-top: 2.75rem;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1.75rem; text-align: center;
+      background: var(--surface-deep);
+      border: 1px solid rgba(255, 215, 0, 0.22);
+      border-radius: 20px;
+      padding: 1.75rem 1.25rem;
+    }
+    @media (min-width: 700px) {
+      .colour-book { flex-direction: row; text-align: left; gap: 2.5rem; padding: 1.75rem 2.25rem; }
+      .colour-book .copy { flex: 1; }
+    }
+    .colour-book-art {
+      position: relative; flex-shrink: 0;
+      width: 230px; height: 200px;
+    }
+    .colour-book-art img {
+      position: absolute; top: 0;
+      width: 122px; height: auto;
+      border-radius: 6px;
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.55);
+    }
+    .colour-book-art .page  { left: 96px; top: 14px; transform: rotate(6deg); }
+    .colour-book-art .cover { left: 12px; transform: rotate(-5deg); }
+    .colour-book h3 { font-size: 1.25rem; margin: 0.35rem 0 0.5rem; }
+    .colour-book p.lead { font-size: 0.92rem; margin: 0 0 1.1rem; }
+    .colour-book .see-all {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-weight: 700; font-size: 0.9rem; color: var(--gold);
+      padding: 0.55rem 1rem;
+      border: 1.5px solid var(--gold);
+      border-radius: 50px;
+      transition: background 0.2s, color 0.2s, transform 0.15s;
+    }
+    .colour-book .see-all:hover { background: var(--gold); color: #0D0B1E; transform: translateY(-2px); }
+    .colour-book .see-all svg { width: 14px; height: 14px; }
+
     /* ── Blog teaser ───────────────────────────────────────────────── */
     #blog-teaser {
       background: linear-gradient(180deg, var(--bg) 0%, var(--surface-deep) 100%);
@@ -756,15 +795,30 @@
     }
     .footer-links a:hover { color: var(--text); }
 
+    .footer-badges {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 0.9rem; margin-top: 1.5rem;
+    }
     .footer-badge {
       display: block;
       width: 244px; height: 79px;
-      margin: 1.5rem auto 0;
       opacity: 0.85;
       transition: opacity 0.2s ease;
     }
     .footer-badge:hover { opacity: 1; }
     .footer-badge img { display: block; width: 244px; height: 79px; }
+    .footer-badge.etsy {
+      display: flex; align-items: center; gap: 0.8rem;
+      box-sizing: border-box;
+      padding: 0 1rem 0 0.7rem;
+      background: #fff; color: #222;
+      border-radius: 10px;
+      text-align: left;
+    }
+    .footer-badge.etsy img { width: 42px; height: 63px; border-radius: 3px; object-fit: cover; }
+    .footer-badge.etsy .kicker { display: block; font-size: 0.72rem; color: #595959; line-height: 1.2; }
+    .footer-badge.etsy .name { display: block; font-size: 0.98rem; font-weight: 700; line-height: 1.25; }
+    .footer-badge.etsy .name b { color: #F1641E; }
 
     .footer-legal {
       margin-top: 1.5rem;
@@ -1157,6 +1211,29 @@
           </a>
         </div>
       </div>
+
+      <div class="colour-book">
+        <div class="colour-book-art">
+          <img class="page" src="/colouring-book/page.webp" alt="A line-art colouring page of Metro the gnome resting his boot on a rock" width="360" height="540" loading="lazy">
+          <img class="cover" src="/colouring-book/cover.webp" alt="Cover of the Metro Gnome colouring book: Metro walking a lakeside forest path at dusk" width="360" height="540" loading="lazy">
+        </div>
+        <div class="copy">
+          <p class="section-label">Off the screen</p>
+          <h3>Colour Metro in.</h3>
+          <p class="lead">
+            The Metro Gnome Colouring Book follows Metro through 20 musical woodland scenes: a flute by the creek,
+            a guitar by the lake, a drum circle in the forest. A printable PDF in A4 and US Letter, made by
+            WildflowerAndRuneZA.
+          </p>
+          <a class="see-all" href="https://www.etsy.com/listing/4613356857/metro-gnome-coloring-book-pdf-20-musical" target="_blank" rel="noopener">
+            Get it on Etsy
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="13 5 20 12 13 19"/>
+            </svg>
+          </a>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1498,13 +1575,24 @@
         Get it Free on Google Play
       </a>
 
-      <a href="https://alternativeto.net/software/metro-gnome/about/?utm_source=badge&amp;utm_medium=referral"
-         class="footer-badge"
-         target="_blank" rel="noopener">
-        <img src="https://alternativeto.net/static/badges/badge-compact-color.svg"
-             alt="Metro Gnome on AlternativeTo"
-             width="244" height="79" loading="lazy">
-      </a>
+      <div class="footer-badges">
+        <a href="https://alternativeto.net/software/metro-gnome/about/?utm_source=badge&amp;utm_medium=referral"
+           class="footer-badge"
+           target="_blank" rel="noopener">
+          <img src="https://alternativeto.net/static/badges/badge-compact-color.svg"
+               alt="Metro Gnome on AlternativeTo"
+               width="244" height="79" loading="lazy">
+        </a>
+        <a href="https://www.etsy.com/listing/4613356857/metro-gnome-coloring-book-pdf-20-musical"
+           class="footer-badge etsy"
+           target="_blank" rel="noopener">
+          <img src="/colouring-book/cover-thumb.webp" alt="" width="42" height="63" loading="lazy">
+          <span>
+            <span class="kicker">Metro Gnome Colouring Book</span>
+            <span class="name">Get it on <b>Etsy</b></span>
+          </span>
+        </a>
+      </div>
 
       <div class="footer-links">
         <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Play Store</a>
