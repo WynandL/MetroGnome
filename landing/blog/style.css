@@ -1512,3 +1512,5 @@ details[open] summary::after { transform: rotate(45deg); }
 .demo-label { flex-basis: 100%; text-align: center; font-size: 0.78rem; color: var(--text-muted); }
 #demoRow { flex-wrap: wrap; justify-content: center; align-items: center; }
 #demoRow[hidden] { display: none; }
+
+.again-pad { margin-top: 1rem; }

@@ -69,6 +69,8 @@
 
       <p class="verdict" id="verdict" hidden></p>
 
+      <button class="tap-pad again-pad" id="againBtn" type="button" hidden>TRY AGAIN</button>
+
       <div class="tool-controls" id="demoRow">
         <span class="demo-label">Not sure what it sounds like?</span>
         <button class="preset-chip" id="demoRush" type="button">Hear rushing</button>
@@ -89,6 +91,7 @@
   <script>
   (function () {
     var startPad    = document.getElementById('startPad');
+    var againBtn    = document.getElementById('againBtn');
     var answerRow   = document.getElementById('answerRow');
     var dragBtn     = document.getElementById('dragBtn');
     var rushBtn     = document.getElementById('rushBtn');
@@ -119,13 +122,13 @@
        the tempo change, one miss grows it, so it settles where the listener
        is right about 71% of the time. Steps are multiplicative because
        tempo perception works in ratios, not beats per minute. */
-    var START_PCT     = 15;                 /* an obvious drift: an easy, confident start */
+    var START_PCT     = 10;                 /* an obvious drift: an easy, confident start */
     var MIN_PCT       = 0.4;
     var MAX_PCT       = 30;
     var BIG_STEP      = 2;                  /* until the first reversal */
     var SMALL_STEP    = Math.SQRT2;
-    var ROUNDS        = 20;                 /* fixed length, so progress is honest; under ~20 a lucky streak skews too many results */
-    var SKIP_REVERSALS = 2;                 /* the first turning points are still on the way down */
+    var ROUNDS        = 10;                 /* short on purpose, about a minute and a half; fixed so progress is honest */
+    var SKIP_REVERSALS = 1;                 /* the first turning points are still on the way down */
 
     var BPM_LOW       = 80;                 /* the starting tempo roves between these ... */
     var BPM_HIGH      = 150;                /* ... so the count-in cannot be memorised */
@@ -336,6 +339,7 @@
       rightCount = 0;
 
       startPad.hidden = true;
+      againBtn.hidden = true;
       answerRow.hidden = false;
       replayBtn.hidden = false;
       demoRow.hidden = true;
@@ -438,7 +442,7 @@
          down to the listener's level; too few of them, and the recent
          rounds stand in */
       var pool = reversalPct.slice(SKIP_REVERSALS);
-      if (pool.length < 4) pool = history.slice(-10).map(function (h) { return h.pct; });
+      if (pool.length < 3) pool = history.slice(-5).map(function (h) { return h.pct; });
       var logSum = pool.reduce(function (a, c) { return a + Math.log(c); }, 0);
       var result = Math.round(Math.exp(logSum / pool.length) * 10) / 10;
 
@@ -466,6 +470,7 @@
       drawStairs(result);
       verdict.hidden = false;
       verdict.textContent = readOut(result) + leanLine();
+      setTimeout(function () { againBtn.hidden = false; }, REST_MS);
       reveal(result, pct, function (v) { return fmtPct(v) + '%'; });
     }
 
@@ -586,6 +591,7 @@
 
     /* ── input ────────────────────────────────────────────────────────── */
     startPad.addEventListener('click', start);
+    againBtn.addEventListener('click', start);
     dragBtn.addEventListener('click', function () { answer(false); });
     rushBtn.addEventListener('click', function () { answer(true); });
     demoRush.addEventListener('click', function () { demo(true); });
