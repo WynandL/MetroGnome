@@ -1514,3 +1514,6 @@ details[open] summary::after { transform: rotate(45deg); }
 #demoRow[hidden] { display: none; }
 
 .again-pad { margin-top: 1rem; }
+
+/* no square tap highlight on phones; focus outlines follow each element's rounded corners */
+html{-webkit-tap-highlight-color:transparent}
