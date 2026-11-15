@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.getValue
@@ -44,7 +44,7 @@ fun AppSwitch(
     modifier: Modifier = Modifier,
     label: String? = null,
 ) {
-    val trackShape = RoundedCornerShape(50)
+    val trackShape = AppRadius.Pill
     val thumbX by animateDpAsState(if (checked) 22.dp else 0.dp, tween(180), label = "switchThumb")
     val thumbTop by animateColorAsState(
         if (checked) lerp(AppColors.gold, Color.White, 0.55f) else AppColors.textDim,

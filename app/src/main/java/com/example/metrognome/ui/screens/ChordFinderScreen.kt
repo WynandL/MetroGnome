@@ -1,6 +1,9 @@
 package com.example.metrognome.ui.screens
 
 import android.Manifest
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import com.example.metrognome.ui.components.CardHeaderLabel
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -33,16 +36,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MicOff
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.outlined.Lightbulb
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -702,8 +696,8 @@ private fun MicRow(
                     contentDescription = if (micEnabled) "Pause the microphone" else "Start the microphone"
                 },
         ) {
-            Icon(
-                imageVector = if (micEnabled) Icons.Filled.Mic else Icons.Filled.MicOff,
+            AppIcon(
+                glyph = if (micEnabled) AppIcons.Mic else AppIcons.MicOff,
                 contentDescription = null,
                 tint = micTint,
                 modifier = Modifier.size(17.dp),
@@ -739,8 +733,8 @@ private fun MicAskRow(permanentlyDenied: Boolean, onClick: () -> Unit) {
             .semantics { contentDescription = message },
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(MIC_ROW_HEIGHT)) {
-            Icon(
-                imageVector = Icons.Filled.MicOff,
+            AppIcon(
+                glyph = AppIcons.MicOff,
                 contentDescription = null,
                 tint = AppColors.warning,
                 modifier = Modifier.size(17.dp),
@@ -756,8 +750,8 @@ private fun MicAskRow(permanentlyDenied: Boolean, onClick: () -> Unit) {
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(8.dp))
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        AppIcon(
+            glyph = AppIcons.ChevronRight,
             contentDescription = null,
             tint = AppColors.textDim,
             modifier = Modifier.size(18.dp),
@@ -842,7 +836,7 @@ private fun NoteChip(
 ) {
     AppInset(
         onClick = onRemove,
-        shape = RoundedCornerShape(10.dp),
+        shape = AppRadius.Chip,
         modifier = Modifier
             .height(NOTES_STRIP_HEIGHT)
             .semantics { contentDescription = "$name$octave, $degree. Tap to remove" },
@@ -871,8 +865,8 @@ private fun NoteChip(
                 fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.width(4.dp))
-            Icon(
-                imageVector = Icons.Filled.Close,
+            AppIcon(
+                glyph = AppIcons.Close,
                 contentDescription = null,
                 tint = AppColors.textDim,
                 modifier = Modifier.size(14.dp),
@@ -1106,8 +1100,8 @@ private fun TipStrip(reading: ChordReading, engine: ChordEngine) {
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.size(26.dp),
                 ) {
-                    Icon(
-                        imageVector = if (alternatives.isNotEmpty()) Icons.Filled.SwapHoriz else Icons.Outlined.Lightbulb,
+                    AppIcon(
+                        glyph = if (alternatives.isNotEmpty()) AppIcons.Swap else AppIcons.Lightbulb,
                         contentDescription = null,
                         tint = AppColors.gold,
                         modifier = Modifier.size(17.dp),

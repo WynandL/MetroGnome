@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.game
 
 import android.os.SystemClock
+import com.example.metrognome.ui.theme.AppRadius
 import com.example.metrognome.ui.components.SectionLabel
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -29,7 +30,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -239,7 +239,7 @@ private fun StageHud(score: Int, combo: Int, remaining: Int, total: Int) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(3.dp)
-                .clip(RoundedCornerShape(50))
+                .clip(AppRadius.Pill)
                 .background(AppColors.surfaceVariant),
         ) {
             Box(

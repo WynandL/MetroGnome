@@ -1,6 +1,9 @@
 package com.example.metrognome.ui.dialogs
 
-import androidx.compose.foundation.BorderStroke
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.AppGlyph
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,31 +16,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.filled.Stars
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.Piano
-import androidx.compose.material.icons.filled.Waves
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -79,8 +65,8 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Icon(
-                            imageVector        = Icons.Filled.Bolt,
+                    AppIcon(
+                            glyph        = AppIcons.Bolt,
                             contentDescription = null,
                             tint               = AppColors.gold,
                             modifier           = Modifier.size(24.dp),
@@ -164,8 +150,8 @@ private fun EarnRuleCard(rule: EarnRule) {
 
             // Icon + label + description
             Row(verticalAlignment = Alignment.Top) {
-                Icon(
-                        imageVector        = iconFor(rule.iconKey),
+                AppIcon(
+                        glyph        = iconFor(rule.iconKey),
                         contentDescription = null,
                         tint               = AppColors.gold,
                         modifier           = Modifier.size(24.dp),
@@ -230,7 +216,7 @@ private fun StatChip(
             .background(
                 color = if (highlighted) AppColors.goldTint
                         else AppColors.surfaceDeep,
-                shape = RoundedCornerShape(8.dp),
+                shape = AppRadius.Small,
             )
             .padding(horizontal = 5.dp, vertical = 7.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -255,17 +241,17 @@ private fun StatChip(
     }
 }
 
-private fun iconFor(iconKey: String): ImageVector = when (iconKey) {
-    "metronome" -> Icons.Filled.MusicNote
-    "tuner"     -> Icons.Filled.GraphicEq
-    "drone"     -> Icons.Filled.Waves
-    "chords"    -> Icons.Filled.Piano
-    "game"      -> Icons.Filled.Stars
-    "practice"  -> Icons.Filled.Timer
-    "speed"     -> Icons.Filled.Bolt
-    "timing"    -> Icons.Filled.GraphicEq
-    "feedback"  -> Icons.Filled.ThumbUp
-    "loyalty"   -> Icons.Filled.EmojiEvents
-    "ad"        -> Icons.Filled.PlayCircle
-    else        -> Icons.Filled.MusicNote
+private fun iconFor(iconKey: String): AppGlyph = when (iconKey) {
+    "metronome" -> AppIcons.MusicNote
+    "tuner"     -> AppIcons.Equalizer
+    "drone"     -> AppIcons.Waves
+    "chords"    -> AppIcons.Piano
+    "game"      -> AppIcons.Pulse
+    "practice"  -> AppIcons.Timer
+    "speed"     -> AppIcons.Bolt
+    "timing"    -> AppIcons.Equalizer
+    "feedback"  -> AppIcons.ThumbUp
+    "loyalty"   -> AppIcons.Trophy
+    "ad"        -> AppIcons.PlayCircle
+    else        -> AppIcons.MusicNote
 }

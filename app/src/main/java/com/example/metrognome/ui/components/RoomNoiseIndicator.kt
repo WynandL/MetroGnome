@@ -9,9 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,7 +20,7 @@ import com.example.metrognome.ui.theme.AppColors
 /**
  * A small, quiet room-noise indicator for the mic surfaces. While a mic-scored session is running
  * and the room has become *sustainedly* loud (see
- * [com.example.metrognome.audio.rhythm.RoomNoiseMonitor]), a single amber [Icons.Filled.GraphicEq]
+ * [com.example.metrognome.audio.rhythm.RoomNoiseMonitor]), a single amber [AppIcons.Equalizer]
  * glyph fades in - the same glyph the Tuner already uses for room noise. Tapping it explains why it
  * is there; that is the indicator's only behaviour.
  *
@@ -54,8 +51,8 @@ fun RoomNoiseIndicator(visible: Boolean, modifier: Modifier = Modifier) {
                 },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = Icons.Filled.GraphicEq,
+            AppIcon(
+                glyph = AppIcons.Equalizer,
                 contentDescription = "Room is noisy - tap for details",
                 tint = AppColors.warning,
                 modifier = Modifier.size(17.dp),

@@ -1,13 +1,13 @@
 package com.example.metrognome.ui.overlays
 
 import androidx.compose.foundation.background
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -47,7 +47,7 @@ fun MetroAvatarDialog(onDismiss: () -> Unit) {
                 Column(
                     modifier = Modifier
                         .size(width = 220.dp, height = 260.dp)
-                        .clip(RoundedCornerShape(18.dp))
+                        .clip(AppRadius.Panel)
                         .background(
                             Brush.verticalGradient(listOf(AppColors.previewBgTop, AppColors.previewBgBottom))
                         ),

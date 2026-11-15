@@ -1,6 +1,9 @@
 package com.example.metrognome.ui.overlays
 
 import androidx.activity.compose.BackHandler
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import com.example.metrognome.ui.components.SparkleGlyph
 import com.example.metrognome.ui.theme.GameColors
 import androidx.compose.animation.core.Animatable
@@ -21,7 +24,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -41,9 +43,6 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.Canvas
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material3.Icon
 import kotlin.math.cos
 import kotlin.math.sin
 import androidx.compose.ui.text.font.FontStyle
@@ -198,7 +197,7 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .size(width = 220.dp, height = 150.dp)
-                        .clip(RoundedCornerShape(18.dp))
+                        .clip(AppRadius.Panel)
                         .background(
                             Brush.verticalGradient(
                                 listOf(AppColors.previewBgTop, AppColors.previewBgBottom)
@@ -210,8 +209,8 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.padding(horizontal = 20.dp),
                     ) {
-                        Icon(
-                            Icons.Filled.Bolt,
+                        AppIcon(
+                            AppIcons.Bolt,
                             contentDescription = null,
                             tint = AppColors.gold,
                             modifier = Modifier.size(40.dp),
@@ -224,7 +223,7 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(14.dp)
-                                .clip(RoundedCornerShape(7.dp))
+                                .clip(AppRadius.Small)
                                 .background(Color(0xFF1A1640)),
                         ) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -383,7 +382,7 @@ private fun V6FeatureIntroOverlay(onDismiss: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .size(width = 220.dp, height = 150.dp)
-                        .clip(RoundedCornerShape(18.dp))
+                        .clip(AppRadius.Panel)
                         .background(
                             Brush.verticalGradient(
                                 listOf(AppColors.previewBgTop, AppColors.previewBgBottom)
@@ -520,7 +519,7 @@ private fun V3FeatureIntroOverlay(onDismiss: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .size(width = 220.dp, height = 150.dp)
-                        .clip(RoundedCornerShape(18.dp))
+                        .clip(AppRadius.Panel)
                         .background(
                             Brush.verticalGradient(
                                 listOf(AppColors.previewBgTop, AppColors.previewBgBottom)
@@ -639,7 +638,7 @@ private fun V4FeatureIntroOverlay(onDismiss: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .size(width = 220.dp, height = 150.dp)
-                        .clip(RoundedCornerShape(18.dp))
+                        .clip(AppRadius.Panel)
                         .background(
                             Brush.verticalGradient(
                                 listOf(AppColors.previewBgTop, AppColors.previewBgBottom)

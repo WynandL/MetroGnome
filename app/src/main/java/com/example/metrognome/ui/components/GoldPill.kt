@@ -1,18 +1,16 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,7 +27,7 @@ import com.example.metrognome.ui.theme.AppColors
 fun GoldPill(
     text: String,
     modifier: Modifier = Modifier,
-    leadingIcon: ImageVector? = null,
+    leadingIcon: AppGlyph? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val hasIcon = leadingIcon != null
@@ -46,7 +44,7 @@ fun GoldPill(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (leadingIcon != null) {
-                Icon(
+                AppIcon(
                     leadingIcon, contentDescription = null,
                     tint = AppColors.gold, modifier = Modifier.size(13.dp),
                 )
@@ -58,7 +56,7 @@ fun GoldPill(
     if (onClick != null) {
         Surface(
             onClick = onClick,
-            shape = RoundedCornerShape(50.dp),
+            shape = AppRadius.Pill,
             color = AppColors.goldTint,
             border = border,
             modifier = modifier,
@@ -66,7 +64,7 @@ fun GoldPill(
         )
     } else {
         Surface(
-            shape = RoundedCornerShape(50.dp),
+            shape = AppRadius.Pill,
             color = AppColors.goldTint,
             border = border,
             modifier = modifier,

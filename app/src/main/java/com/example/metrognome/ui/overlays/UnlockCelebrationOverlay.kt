@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.overlays
 
 import androidx.activity.compose.BackHandler
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -234,7 +234,7 @@ internal fun ItemPreviewCanvas(
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
+            .clip(AppRadius.Panel)
             .background(
                 Brush.verticalGradient(listOf(AppColors.previewBgTop, AppColors.previewBgBottom))
             ),

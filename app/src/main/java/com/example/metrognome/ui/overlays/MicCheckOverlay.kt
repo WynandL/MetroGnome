@@ -1,6 +1,10 @@
 package com.example.metrognome.ui.overlays
 
 import android.Manifest
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.AppGlyph
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import com.example.metrognome.ui.components.ItemProgressBar
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
@@ -28,11 +32,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -346,7 +345,7 @@ private fun PassContent(onDone: () -> Unit) {
 
 @Composable
 private fun FixableContent(message: String, onRetry: () -> Unit, onCancel: () -> Unit) {
-    ResultIcon(AppColors.gold, AppColors.goldTint, Icons.Filled.Warning)
+    ResultIcon(AppColors.gold, AppColors.goldTint, AppIcons.Warning)
     Spacer(Modifier.height(12.dp))
     DialogTitle("Almost there")
     Spacer(Modifier.height(6.dp))
@@ -361,7 +360,7 @@ private fun FixableContent(message: String, onRetry: () -> Unit, onCancel: () ->
 
 @Composable
 private fun IncapableContent(onDismiss: () -> Unit, onRetry: () -> Unit) {
-    ResultIcon(AppColors.gold, AppColors.goldTint, Icons.Filled.MusicNote)
+    ResultIcon(AppColors.gold, AppColors.goldTint, AppIcons.MusicNote)
     Spacer(Modifier.height(12.dp))
     DialogTitle("You're good to go")
     Spacer(Modifier.height(6.dp))
@@ -387,7 +386,7 @@ private fun IncapableContent(onDismiss: () -> Unit, onRetry: () -> Unit) {
  */
 @Composable
 private fun UnmeasurableContent(onDismiss: () -> Unit) {
-    ResultIcon(AppColors.gold, AppColors.goldTint, Icons.Filled.MusicNote)
+    ResultIcon(AppColors.gold, AppColors.goldTint, AppIcons.MusicNote)
     Spacer(Modifier.height(12.dp))
     DialogTitle("Not available on this phone")
     Spacer(Modifier.height(6.dp))
@@ -430,19 +429,19 @@ private fun PulsingNote(tint: Color) {
             contentAlignment = Alignment.Center,
             modifier = Modifier.size(52.dp).background(tint.copy(alpha = 0.14f), CircleShape),
         ) {
-            Icon(Icons.Filled.MusicNote, contentDescription = null, tint = tint,
+            AppIcon(AppIcons.MusicNote, contentDescription = null, tint = tint,
                 modifier = Modifier.size(28.dp))
         }
     }
 }
 
 @Composable
-private fun ResultIcon(tint: Color, bg: Color, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun ResultIcon(tint: Color, bg: Color, icon: AppGlyph) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(52.dp).background(bg, CircleShape),
     ) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(26.dp))
+        AppIcon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(26.dp))
     }
 }
 
@@ -454,7 +453,7 @@ private fun ResultIcon(tint: Color, bg: Color, icon: androidx.compose.ui.graphic
 @Preview
 @Composable
 private fun PassContentPreview() {
-    Surface(shape = RoundedCornerShape(24.dp), color = AppColors.surfaceDeep) {
+    Surface(shape = AppRadius.Dialog, color = AppColors.surfaceDeep) {
         Column(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

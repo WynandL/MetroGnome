@@ -1,11 +1,11 @@
 package com.example.metrognome.debug.settings
 
 import android.Manifest
+import com.example.metrognome.ui.theme.AppRadius
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,13 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -576,7 +572,7 @@ private fun StreakSimulator(
     onReset: () -> Unit,
 ) {
     var days by remember(currentStreak) { mutableIntStateOf(currentStreak) }
-    val shape = RoundedCornerShape(10.dp)
+    val shape = AppRadius.Chip
     val btnPadding = PaddingValues(0.dp)
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -624,7 +620,7 @@ private fun AdPolicyDialog(onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape    = RoundedCornerShape(16.dp),
+            shape    = AppRadius.Button,
             color    = AppColors.surfaceDeep,
         ) {
             Column(
@@ -758,7 +754,7 @@ private fun AdPolicyGlobalCooldown() {
 private fun AdPolicyPlacementCard(p: AdPlacement) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape    = RoundedCornerShape(8.dp),
+        shape    = AppRadius.Small,
         color    = AppColors.surface,
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
@@ -812,7 +808,7 @@ private fun AdPolicyPlacementCard(p: AdPlacement) {
 @Composable
 private fun AdPolicyCooldownChip(label: String, value: String, color: Color) {
     Surface(
-        shape = RoundedCornerShape(4.dp),
+        shape = AppRadius.Bar,
         color = color.copy(alpha = 0.13f),
     ) {
         Row(
@@ -829,7 +825,7 @@ private fun AdPolicyCooldownChip(label: String, value: String, color: Color) {
 @Composable
 private fun AdPolicyGateBadge(text: String) {
     Surface(
-        shape = RoundedCornerShape(4.dp),
+        shape = AppRadius.Bar,
         color = AppColors.surfaceVariant,
     ) {
         Text(

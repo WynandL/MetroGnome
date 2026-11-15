@@ -1,6 +1,7 @@
 package com.example.metrognome.debug.mic
 
 import androidx.compose.foundation.background
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,9 +39,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -172,7 +169,7 @@ private fun SummaryCard(
 
     Surface(
         color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -220,7 +217,7 @@ private fun SummaryCard(
 private fun StatChip(label: String, value: String, color: Color, modifier: Modifier = Modifier) {
     Surface(
         color = color.copy(alpha = 0.12f),
-        shape = RoundedCornerShape(8.dp),
+        shape = AppRadius.Small,
         modifier = modifier.height(52.dp),
     ) {
         Column(
@@ -293,7 +290,7 @@ private fun SessionAudioCard(onPlayheadMs: (Long?) -> Unit) {
 
     Surface(
         color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -303,7 +300,7 @@ private fun SessionAudioCard(onPlayheadMs: (Long?) -> Unit) {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(AppRadius.Card)
                     .background(acceptColor.copy(alpha = 0.16f))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
@@ -392,7 +389,7 @@ private fun SectionedWaveform(
 
     Surface(
         color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -446,7 +443,7 @@ private fun LiveAmplitudeTrace(amp: List<Pair<Long, Float>>) {
     val tMax = amp.last().first
     Surface(
         color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -536,7 +533,7 @@ private fun signed(ms: Float): String = "%+d".format(ms.roundToInt())
 private fun EmptyState() {
     Surface(
         color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(

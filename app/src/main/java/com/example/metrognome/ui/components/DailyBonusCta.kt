@@ -17,11 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -84,8 +79,8 @@ fun DailyBonusCta(
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Icon(
-                imageVector        = Icons.Filled.PlayCircle,
+            AppIcon(
+                glyph        = AppIcons.PlayCircle,
                 contentDescription = null,
                 tint               = if (canTap) AppColors.gold else AppColors.textSubtle,
                 modifier           = Modifier.size(18.dp),
@@ -166,8 +161,8 @@ private fun DailyBonusBadge(canTap: Boolean, canWatchToday: Boolean, earn: Int) 
                 modifier         = Modifier.size(badgeSize).background(AppColors.surfaceVariant, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector        = Icons.Filled.Check,
+                AppIcon(
+                    glyph        = AppIcons.Check,
                     contentDescription = null,
                     tint               = AppColors.textSubtle,
                     modifier           = Modifier.size(18.dp),

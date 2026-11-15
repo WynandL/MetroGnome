@@ -28,9 +28,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -125,8 +122,8 @@ fun DronePanel(
                     fontWeight = FontWeight.Bold,
                 )
                 Spacer(Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Filled.ExpandMore,
+                AppIcon(
+                    glyph = AppIcons.ChevronDown,
                     contentDescription = null,
                     tint = AppColors.textDim,
                     modifier = Modifier.size(18.dp).rotate(chevronDeg),

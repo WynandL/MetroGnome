@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -23,11 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ThumbDown
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -179,7 +175,7 @@ fun FeedbackQuestion(
         Row(modifier = Modifier.fillMaxWidth().padding(end = 10.dp)) {
             FeedbackButton(
                 label = negativeLabel,
-                icon = Icons.Filled.ThumbDown,
+                icon = AppIcons.ThumbDown,
                 positive = false,
                 onClick = onNegative,
                 modifier = Modifier.weight(1f),
@@ -187,7 +183,7 @@ fun FeedbackQuestion(
             Spacer(Modifier.width(10.dp))
             FeedbackButton(
                 label = positiveLabel,
-                icon = Icons.Filled.ThumbUp,
+                icon = AppIcons.ThumbUp,
                 positive = true,
                 onClick = onPositive,
                 modifier = Modifier.weight(1f),
@@ -205,8 +201,8 @@ fun FeedbackQuestion(
 @Composable
 private fun QuietCloseButton(onClick: () -> Unit) {
     IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
-        Icon(
-            imageVector = Icons.Filled.Close,
+        AppIcon(
+            glyph = AppIcons.Close,
             contentDescription = "Not now",
             tint = AppColors.textDim,
             modifier = Modifier.size(14.dp),
@@ -217,7 +213,7 @@ private fun QuietCloseButton(onClick: () -> Unit) {
 @Composable
 private fun FeedbackButton(
     label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: AppGlyph,
     positive: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -225,7 +221,7 @@ private fun FeedbackButton(
     val tint = if (positive) AppColors.gold else AppColors.textSecondary
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
+        shape = AppRadius.Button,
         color = if (positive) AppColors.goldTint else Color.Transparent,
         border = BorderStroke(
             1.dp,
@@ -238,7 +234,7 @@ private fun FeedbackButton(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+            AppIcon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(8.dp))
             Text(
                 label,

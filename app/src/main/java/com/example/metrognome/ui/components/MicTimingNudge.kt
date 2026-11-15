@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import android.Manifest
+import com.example.metrognome.ui.theme.AppRadius
 import android.content.pm.PackageManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,11 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -126,14 +122,14 @@ private fun ActiveReminder(modifier: Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .padding(top = 12.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(AppRadius.Button)
             .background(AppColors.goldTint)
             .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
     ) {
-        Icon(
-            imageVector = Icons.Filled.Mic,
+        AppIcon(
+            glyph = AppIcons.Mic,
             contentDescription = null,
             tint = AppColors.gold,
             modifier = Modifier.size(14.dp),
@@ -164,14 +160,14 @@ private fun WrongRouteReminder(modifier: Modifier, route: AudioRoute) {
         modifier = modifier
             .fillMaxWidth()
             .padding(top = 12.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(AppRadius.Button)
             .background(AppColors.goldTint)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Icon(
-            imageVector = Icons.Filled.Mic,
+        AppIcon(
+            glyph = AppIcons.Mic,
             contentDescription = null,
             tint = AppColors.gold,
             modifier = Modifier.size(16.dp),
@@ -205,15 +201,15 @@ private fun PermissionNeededReminder(modifier: Modifier, onFix: (() -> Unit)?) {
         modifier = modifier
             .fillMaxWidth()
             .padding(top = 12.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(AppRadius.Button)
             .background(AppColors.goldTint)
             .let { if (onFix != null) it.clickable(onClick = onFix) else it }
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Icon(
-            imageVector = Icons.Filled.Mic,
+        AppIcon(
+            glyph = AppIcons.Mic,
             contentDescription = null,
             tint = AppColors.gold,
             modifier = Modifier.size(16.dp),
@@ -244,8 +240,8 @@ private fun PermissionNeededReminder(modifier: Modifier, onFix: (() -> Unit)?) {
             )
         }
         if (onFix != null) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            AppIcon(
+                glyph = AppIcons.ChevronRight,
                 contentDescription = null,
                 tint = AppColors.gold,
                 modifier = Modifier.size(16.dp),
@@ -260,15 +256,15 @@ private fun StartCheckCta(modifier: Modifier, onStartCheck: () -> Unit) {
         modifier = modifier
             .fillMaxWidth()
             .padding(top = 12.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(AppRadius.Button)
             .background(AppColors.goldTint)
             .clickable(onClick = onStartCheck)
             .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Icon(
-            imageVector = Icons.Filled.Mic,
+        AppIcon(
+            glyph = AppIcons.Mic,
             contentDescription = null,
             tint = AppColors.gold,
             modifier = Modifier.size(15.dp),
@@ -287,8 +283,8 @@ private fun StartCheckCta(modifier: Modifier, onStartCheck: () -> Unit) {
             lineHeight = 14.sp,
             modifier = Modifier.weight(1f),
         )
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        AppIcon(
+            glyph = AppIcons.ChevronRight,
             contentDescription = null,
             tint = AppColors.gold,
             modifier = Modifier.size(16.dp),

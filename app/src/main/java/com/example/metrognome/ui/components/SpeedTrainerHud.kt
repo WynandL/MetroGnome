@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.animation.core.Animatable
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -24,13 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,7 +65,7 @@ fun SpeedTrainerHud(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(10.dp)
+    val shape = AppRadius.Chip
     val totalSteps = state.steps.size.coerceAtLeast(1)
     val totalBars = state.config.totalBarsPerStep.coerceAtLeast(1)
     val currentBpm = state.steps.getOrElse(state.currentStepIndex) { state.config.targetBpm }
@@ -197,8 +191,8 @@ fun SpeedTrainerHud(
                 .padding(start = 12.dp, end = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                Icons.Filled.Bolt,
+            AppIcon(
+                AppIcons.Bolt,
                 contentDescription = null,
                 tint = AppColors.gold,
                 modifier = Modifier.size(13.dp),
@@ -232,13 +226,13 @@ fun SpeedTrainerHud(
                 )
             }
             HudIconAction(
-                Icons.Filled.SkipPrevious,
+                AppIcons.SkipBack,
                 contentDescription = "Go back a step",
                 tint = if (state.currentStepIndex > 0) AppColors.textSecondary else AppColors.textSubtle,
                 onClick = onRetreat,
             )
             HudIconAction(
-                Icons.Filled.SkipNext,
+                AppIcons.SkipForward,
                 contentDescription = "Skip to next step",
                 tint = AppColors.textSecondary,
                 onClick = onSkip,
@@ -246,7 +240,7 @@ fun SpeedTrainerHud(
             // Cancel ends the session, so it stands apart from the two step controls.
             Spacer(Modifier.width(8.dp))
             HudIconAction(
-                Icons.Filled.Close,
+                AppIcons.Close,
                 contentDescription = "Cancel session",
                 tint = AppColors.textMuted,
                 onClick = onCancel,
@@ -336,8 +330,8 @@ fun SpeedTrainerCountdownHud(
                     .clip(CircleShape)
                     .background(AppColors.surfaceVariant),
             ) {
-                Icon(
-                    Icons.Filled.Close,
+                AppIcon(
+                    AppIcons.Close,
                     contentDescription = "Cancel countdown",
                     tint = AppColors.textMuted,
                     modifier = Modifier.size(12.dp),

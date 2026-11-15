@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.background
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -246,7 +246,7 @@ private fun AccentCell(number: Int, accented: Boolean, onClick: () -> Unit) {
             .padding(end = 6.dp, bottom = 6.dp)
             .heightIn(min = 32.dp)
             .widthIn(min = 36.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(AppRadius.Small)
             .background(if (accented) AppColors.gold else AppColors.surface)
             // Each beat is an on/off accent, so it is a checkbox, not a button: the gold fill
             // was the only sign of which beats were accented (UI audit U05).
@@ -271,7 +271,7 @@ private fun ResetAccentsButton(onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxHeight()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(AppRadius.Small)
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp),
         contentAlignment = Alignment.Center,

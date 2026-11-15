@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,9 +28,9 @@ import com.example.metrognome.ui.theme.AppColors
  * for a card; use [AppCard].
  */
 object AppCardDefaults {
-    val Shape = RoundedCornerShape(20.dp)
+    val Shape = AppRadius.Card
     /** Every dialog, popup and overlay card. */
-    val DialogShape = RoundedCornerShape(24.dp)
+    val DialogShape = AppRadius.Dialog
     val ContentPadding = PaddingValues(horizontal = 18.dp, vertical = 16.dp)
     val Border = BorderStroke(1.dp, AppColors.goldBorder)
 }
@@ -153,7 +153,7 @@ fun AppInset(
     modifier: Modifier = Modifier,
     highlighted: Boolean = false,
     onClick: (() -> Unit)? = null,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(12.dp),
+    shape: androidx.compose.ui.graphics.Shape = AppRadius.Inset,
     content: @Composable () -> Unit,
 ) {
     val color = if (highlighted) AppColors.goldTint else AppColors.surface

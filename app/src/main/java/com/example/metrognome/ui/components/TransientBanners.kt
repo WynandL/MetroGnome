@@ -1,9 +1,5 @@
 package com.example.metrognome.ui.components
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -115,7 +111,7 @@ private fun PointsBannerData.toBannerModel(): BannerModel {
     return if (pointsEarned > 0) {
         BannerModel(
             accent   = AppColors.gold,
-            icon     = Icons.Filled.Bolt,
+            icon     = AppIcons.Bolt,
             lead     = "+$pointsEarned",
             leadUnit = PointsConfig.CURRENCY_NAME,
             segments = listOf(
@@ -139,7 +135,7 @@ private fun PointsBannerData.toBannerModel(): BannerModel {
 /** Loyalty milestone celebration: same asset as Gnotes, same celebratory gold. */
 private fun milestoneBannerModel(days: Int) = BannerModel(
     accent   = AppColors.gold,
-    icon     = Icons.Filled.EmojiEvents,
+    icon     = AppIcons.Trophy,
     lead     = "$days",
     leadUnit = if (days == 1) "day" else "days",
     segments = listOf(BannerSegment(milestoneLabel(days))),
@@ -157,7 +153,7 @@ private fun milestoneLabel(days: Int) = when (days) {
 /** The pre-ad heads-up: deliberately subtle, neutral and italic. It is not a celebration. */
 private fun adBreakBannerModel(message: String) = BannerModel(
     accent   = AppColors.mediumPurple,
-    icon     = Icons.Filled.MusicNote,
+    icon     = AppIcons.MusicNote,
     segments = listOf(BannerSegment(message)),
     italic   = true,
 )

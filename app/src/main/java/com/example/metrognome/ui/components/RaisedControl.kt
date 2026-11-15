@@ -1,11 +1,11 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.background
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -110,7 +110,7 @@ private fun RaisedControlPreview() {
     ) {
         RaisedControl(
             onClick = {},
-            shape = RoundedCornerShape(12.dp),
+            shape = AppRadius.Inset,
             tint = AppColors.surfaceVariant,
             modifier = Modifier.height(44.dp).size(width = 56.dp, height = 44.dp),
         ) {
@@ -126,7 +126,7 @@ private fun RaisedControlPreview() {
         }
         RaisedControl(
             onClick = {},
-            shape = RoundedCornerShape(12.dp),
+            shape = AppRadius.Inset,
             tint = AppColors.primaryPurple,
             modifier = Modifier.size(width = 56.dp, height = 44.dp),
         ) {

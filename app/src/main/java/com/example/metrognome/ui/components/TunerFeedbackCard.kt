@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.animation.AnimatedContent
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -17,12 +18,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -169,9 +164,9 @@ private fun ReasonStep(
 private fun ReasonChip(label: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(AppRadius.Button)
             .background(AppColors.surfaceVariant)
-            .border(1.dp, AppColors.mediumPurple, RoundedCornerShape(14.dp))
+            .border(1.dp, AppColors.mediumPurple, AppRadius.Button)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,

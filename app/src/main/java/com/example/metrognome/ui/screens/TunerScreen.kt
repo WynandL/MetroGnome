@@ -1,6 +1,9 @@
 package com.example.metrognome.ui.screens
 
 import android.Manifest
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import com.example.metrognome.ui.components.SectionLabel
 import com.example.metrognome.ui.components.CardHeaderLabel
 import android.content.Context
@@ -49,15 +52,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -565,7 +560,7 @@ internal fun TunerScreenContent(
 private fun CalibrationNudgeBanner(onDismiss: () -> Unit) {
     Surface(
         color = AppColors.goldTint,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         border = BorderStroke(1.dp, AppColors.goldBorder),
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -573,8 +568,8 @@ private fun CalibrationNudgeBanner(onDismiss: () -> Unit) {
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Filled.Info,
+            AppIcon(
+                glyph = AppIcons.Info,
                 contentDescription = null,
                 tint = AppColors.gold,
                 modifier = Modifier.size(16.dp),
@@ -848,8 +843,8 @@ private fun AmbientPanel(
                     )
                 }
                 Spacer(Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Filled.ExpandMore,
+                AppIcon(
+                    glyph = AppIcons.ChevronDown,
                     contentDescription = null,
                     tint = AppColors.textDim,
                     modifier = Modifier.size(18.dp).rotate(chevronDeg),
@@ -1183,7 +1178,7 @@ private fun DetailBarMeter(frac: Float, color: Color) {
         modifier = Modifier
             .width(DETAIL_METER_WIDTH)
             .height(DETAIL_METER_HEIGHT)
-            .clip(RoundedCornerShape(2.5.dp))
+            .clip(AppRadius.Bar)
             .background(AppColors.surfaceVariant),
     ) {
         Box(
@@ -1209,7 +1204,7 @@ private fun DetailSegmentMeter(filled: Int, segments: Int, color: Color) {
                 Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .clip(RoundedCornerShape(2.5.dp))
+                    .clip(AppRadius.Bar)
                     .background(if (i < filled) color else AppColors.surfaceVariant),
             )
         }
@@ -1250,7 +1245,7 @@ private fun SuppressionLevelToggle(
 ) {
     AppInset(
         onClick = onCycle,
-        shape = RoundedCornerShape(10.dp),
+        shape = AppRadius.Chip,
         modifier = modifier.semantics { contentDescription = "Ambient suppression, ${level.label}" },
     ) {
         val litCount = level.ordinal + 1
@@ -1270,7 +1265,7 @@ private fun SuppressionLevelToggle(
                     Modifier
                         .width(4.dp)
                         .height(barHeight)
-                        .clip(RoundedCornerShape(2.dp))
+                        .clip(AppRadius.Bar)
                         .background(barColor),
                 )
             }
@@ -1430,7 +1425,7 @@ private fun StepButton(label: String, description: String, onClick: () -> Unit) 
 private fun InstrumentCalibrationChip(reading: Tuner.Reading, onClick: () -> Unit) {
     GoldPill(
         text = "My ${reading.noteName}${reading.octave} is in tune",
-        leadingIcon = Icons.Filled.MusicNote,
+        leadingIcon = AppIcons.MusicNote,
         onClick = onClick,
     )
 }
@@ -1465,8 +1460,8 @@ private fun IdleCalibration(
     Spacer(Modifier.height(12.dp))
     CalibrationOptionButton(
         icon = {
-            Icon(
-                Icons.Filled.Mic, contentDescription = null,
+            AppIcon(
+                AppIcons.Mic, contentDescription = null,
                 tint = AppColors.gold, modifier = Modifier.size(24.dp),
             )
         },
@@ -1484,7 +1479,7 @@ private fun IdleCalibration(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 8.dp),
         ) {
-            Icon(Icons.Filled.Warning, null, tint = AppColors.warning,
+            AppIcon(AppIcons.Warning, null, tint = AppColors.warning,
                 modifier = Modifier.size(12.dp))
             Spacer(Modifier.width(5.dp))
             Text(warnText, color = AppColors.warning, fontSize = 11.sp, lineHeight = 15.sp)
@@ -1515,7 +1510,7 @@ private fun CalibrationOptionButton(
 ) {
     AppInset(
         onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
+        shape = AppRadius.Button,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -1603,9 +1598,9 @@ private fun CalibrationStatus(info: CalibrationInfo) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppRadius.Inset)
             .background(accent.copy(alpha = if (info.calibrated) 0.05f else 0f))
-            .border(1.dp, accent.copy(alpha = if (info.calibrated) 0.28f else 0.16f), RoundedCornerShape(12.dp))
+            .border(1.dp, accent.copy(alpha = if (info.calibrated) 0.28f else 0.16f), AppRadius.Inset)
             .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1617,13 +1612,13 @@ private fun CalibrationStatus(info: CalibrationInfo) {
             ) {
                 when {
                     info.calibrated && info.mode == CalibrationMode.LOOPBACK ->
-                        Icon(Icons.Filled.Mic, null, tint = accent, modifier = Modifier.size(16.dp))
+                        AppIcon(AppIcons.Mic, null, tint = accent, modifier = Modifier.size(16.dp))
                     info.calibrated && info.mode == CalibrationMode.REFERENCE ->
                         TuningForkIcon(Modifier.size(16.dp), tint = accent)
                     info.calibrated ->
-                        Icon(Icons.Filled.MusicNote, null, tint = accent, modifier = Modifier.size(16.dp))
+                        AppIcon(AppIcons.MusicNote, null, tint = accent, modifier = Modifier.size(16.dp))
                     else ->
-                        Icon(Icons.Filled.MusicNote, null, tint = AppColors.textDim.copy(alpha = 0.30f), modifier = Modifier.size(16.dp))
+                        AppIcon(AppIcons.MusicNote, null, tint = AppColors.textDim.copy(alpha = 0.30f), modifier = Modifier.size(16.dp))
                 }
             }
 
@@ -1663,8 +1658,8 @@ private fun CalibrationStatus(info: CalibrationInfo) {
                                 ) { showInfo = !showInfo }
                                 .padding(3.dp),
                         ) {
-                            Icon(
-                                imageVector = Icons.Filled.Info,
+                            AppIcon(
+                                glyph = AppIcons.Info,
                                 contentDescription = "About calibration",
                                 tint = if (showInfo) AppColors.textSecondary
                                        else AppColors.textDim.copy(alpha = 0.55f),

@@ -1,6 +1,9 @@
 package com.example.metrognome.ui.dialogs
 
 import androidx.compose.animation.animateColorAsState
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
@@ -15,11 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -148,8 +146,8 @@ fun SpeedTrainerDialog(
                 modifier = Modifier.size(32.dp),
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        Icons.Filled.SwapHoriz,
+                    AppIcon(
+                        AppIcons.Swap,
                         contentDescription = "Swap start and target",
                         tint = AppColors.textSecondary,
                         modifier = Modifier
@@ -274,7 +272,7 @@ fun SpeedTrainerDialog(
         Spacer(Modifier.height(16.dp))
 
         // ── Begin button ──────────────────────────────────────────────────────
-        PrimaryButton("START TRAINING", onBeginTraining, Modifier.fillMaxWidth(), icon = Icons.Filled.Bolt)
+        PrimaryButton("START TRAINING", onBeginTraining, Modifier.fillMaxWidth(), icon = AppIcons.Bolt)
     }
 }
 
@@ -406,7 +404,7 @@ private fun ConfigTile(
 ) {
     Surface(
         color = AppColors.card,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         modifier = modifier.height(80.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -483,7 +481,7 @@ private fun IncrementModeToggle(
     Surface(
         onClick = onToggle,
         color = AppColors.card,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         border = BorderStroke(1.dp, activeColor.copy(alpha = 0.5f)),
         modifier = modifier.height(80.dp),
     ) {

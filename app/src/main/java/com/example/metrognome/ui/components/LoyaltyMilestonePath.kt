@@ -16,13 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.WorkspacePremium
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,7 +26,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,7 +44,7 @@ import com.example.metrognome.ui.theme.AppColors
 data class LoyaltyMilestone(
     val days: Int,
     val name: String,
-    val icon: ImageVector,
+    val icon: AppGlyph,
 )
 
 /**
@@ -61,11 +53,11 @@ data class LoyaltyMilestone(
  * scattered across the app.
  */
 val LOYALTY_MILESTONES: List<LoyaltyMilestone> = listOf(
-    LoyaltyMilestone(days = 7,   name = "Student",  icon = Icons.Filled.MusicNote),
-    LoyaltyMilestone(days = 30,  name = "Player",   icon = Icons.Filled.Favorite),
-    LoyaltyMilestone(days = 60,  name = "Musician", icon = Icons.Filled.LocalFireDepartment),
-    LoyaltyMilestone(days = 100, name = "Maestro",  icon = Icons.Filled.EmojiEvents),
-    LoyaltyMilestone(days = 365, name = "Legend",   icon = Icons.Filled.WorkspacePremium),
+    LoyaltyMilestone(days = 7,   name = "Student",  icon = AppIcons.MusicNote),
+    LoyaltyMilestone(days = 30,  name = "Player",   icon = AppIcons.Heart),
+    LoyaltyMilestone(days = 60,  name = "Musician", icon = AppIcons.Flame),
+    LoyaltyMilestone(days = 100, name = "Maestro",  icon = AppIcons.Trophy),
+    LoyaltyMilestone(days = 365, name = "Legend",   icon = AppIcons.Award),
 )
 
 // ── Main composable ───────────────────────────────────────────────────────────
@@ -233,8 +225,8 @@ private fun MilestoneNode(
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector        = milestone.icon,
+                AppIcon(
+                    glyph        = milestone.icon,
                     contentDescription = milestone.name,
                     tint               = AppColors.amberDark,  // amber-dark, legible on gold
                     modifier           = Modifier.size(16.dp),
@@ -251,8 +243,8 @@ private fun MilestoneNode(
                     .border(1.5.dp, AppColors.amber.copy(alpha = pulse), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector        = milestone.icon,
+                AppIcon(
+                    glyph        = milestone.icon,
                     contentDescription = milestone.name,
                     tint               = AppColors.amber.copy(alpha = 0.55f),
                     modifier           = Modifier.size(16.dp),
@@ -269,8 +261,8 @@ private fun MilestoneNode(
                     .border(1.dp, Color(0x18FFFFFF), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector        = milestone.icon,
+                AppIcon(
+                    glyph        = milestone.icon,
                     contentDescription = milestone.name,
                     tint               = Color(0x30FFFFFF),
                     modifier           = Modifier.size(16.dp),

@@ -1,13 +1,12 @@
 package com.example.metrognome.debug.chords
 
 import android.content.Context
+import com.example.metrognome.ui.theme.AppRadius
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,13 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,7 +30,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -208,7 +200,7 @@ fun ChordLoopDiagnosticOverlay(onDismiss: () -> Unit) {
                     ChordLoopDiagnostic.Status.IDLE -> AppColors.textMuted
                     else -> runColor
                 }
-                Surface(color = tint.copy(alpha = 0.14f), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                Surface(color = tint.copy(alpha = 0.14f), shape = AppRadius.Inset, modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Mono(state.status.name.replace('_', ' '), tint, bold = true)
                         Spacer(Modifier.height(4.dp))
@@ -248,7 +240,7 @@ private fun RoundCard(round: ChordLoopDiagnostic.RoundReport) {
     val tint = if (round.pass) passColor else failColor
     Surface(
         color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         border = BorderStroke(1.dp, tint.copy(alpha = 0.5f)),
         modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
     ) {
@@ -278,7 +270,7 @@ private fun LegatoCard(report: ChordLoopDiagnostic.LegatoReport) {
     val tint = if (report.pass) passColor else failColor
     Surface(
         color = AppColors.surfaceDim,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         border = BorderStroke(1.dp, tint.copy(alpha = 0.5f)),
         modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
     ) {

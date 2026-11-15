@@ -1,21 +1,18 @@
 package com.example.metrognome
 
 import android.content.Intent
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -287,11 +284,11 @@ fun MetroGnomeApp(
                 item(
                     icon = {
                         when (tab) {
-                            AppTab.GNOME    -> Icon(Icons.Filled.MusicNote, contentDescription = null)
+                            AppTab.GNOME    -> AppIcon(AppIcons.MusicNote, contentDescription = null)
                             AppTab.TUNER    -> TunerNeedleIcon()
                             AppTab.CHORDS   -> ChordGridIcon()
                             AppTab.RHYTHM   -> RhythmPulseIcon()
-                            AppTab.SETTINGS -> Icon(Icons.Filled.Settings, contentDescription = null)
+                            AppTab.SETTINGS -> AppIcon(AppIcons.Settings, contentDescription = null)
                         }
                     },
                     label = { Text(tab.label) },

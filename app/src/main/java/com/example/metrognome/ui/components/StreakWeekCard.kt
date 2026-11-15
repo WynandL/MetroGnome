@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -25,10 +26,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -77,7 +74,7 @@ fun CollapsibleStreakCard(
         label         = "chevron",
     )
 
-    val shape = RoundedCornerShape(12.dp)
+    val shape = AppRadius.Inset
     Column(
         modifier = modifier
             .clip(shape)
@@ -95,8 +92,8 @@ fun CollapsibleStreakCard(
             StreakIcon(Modifier.size(15.dp))
             Spacer(Modifier.width(5.dp))
             StreakHeaderText(streak = streak, bestStreak = bestStreak, modifier = Modifier.weight(1f))
-            Icon(
-                imageVector        = Icons.Filled.ExpandMore,
+            AppIcon(
+                glyph        = AppIcons.ChevronDown,
                 contentDescription = if (expanded) "Collapse streak" else "Expand streak",
                 tint               = AppColors.textSubtle,
                 modifier           = Modifier

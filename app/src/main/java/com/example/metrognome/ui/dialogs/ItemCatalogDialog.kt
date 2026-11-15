@@ -1,6 +1,9 @@
 package com.example.metrognome.ui.dialogs
 
 import androidx.compose.foundation.BorderStroke
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,16 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Stars
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -132,7 +127,7 @@ fun ItemCatalogDialog(
                     // Unlocked count badge
                     Surface(
                         color  = AppColors.goldTintActive,
-                        shape  = RoundedCornerShape(50.dp),
+                        shape  = AppRadius.Pill,
                         border = BorderStroke(1.dp, AppColors.goldBorder),
                     ) {
                         Text(
@@ -190,7 +185,7 @@ private fun ItemCard(
     progress: Float = 1f,
     progressLabel: String = "",
 ) {
-    val shape = RoundedCornerShape(12.dp)
+    val shape = AppRadius.Inset
     AppInset(highlighted = isUnlocked, shape = shape, modifier = Modifier.fillMaxWidth()) {
         Column {
             // ── Preview area ──────────────────────────────────────────────────
@@ -209,8 +204,8 @@ private fun ItemCard(
                             .background(Color.Black.copy(alpha = 0.50f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            imageVector        = Icons.Filled.Lock,
+                        AppIcon(
+                            glyph        = AppIcons.Lock,
                             contentDescription = "Locked",
                             tint               = Color.White.copy(alpha = 0.75f),
                             modifier           = Modifier.size(22.dp),

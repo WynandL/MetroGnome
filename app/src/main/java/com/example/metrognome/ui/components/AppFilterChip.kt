@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.background
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.foundation.border
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Box
@@ -9,7 +10,6 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,7 +58,7 @@ fun AppFilterChip(
     enabled: Boolean = true,
     label: @Composable () -> Unit,
 ) {
-    val shape = RoundedCornerShape(10.dp)
+    val shape = AppRadius.Chip
     // One structure for both states: same height, same 1 dp rim, same text style. Only the
     // face differs (raised purple vs. inset), so a row of chips can never differ in size.
     val face = if (selected) Modifier.raisedFace(shape, AppColors.primaryPurple)

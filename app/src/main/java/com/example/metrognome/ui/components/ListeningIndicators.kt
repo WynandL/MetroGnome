@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.animation.Crossfade
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -14,22 +15,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.Hearing
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.RecordVoiceOver
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.metrognome.audio.tuner.ListeningState
 import com.example.metrognome.ui.theme.AppColors
@@ -42,13 +33,13 @@ import com.example.metrognome.ui.theme.GameColors
  */
 
 /** One icon per [ListeningState], in the order the engine passes through them. */
-private val listeningStateIcons: List<Pair<ListeningState, ImageVector>> = listOf(
-    ListeningState.PROFILING to Icons.Filled.Search,
-    ListeningState.QUIET     to Icons.Filled.Hearing,
-    ListeningState.NOISE     to Icons.Filled.GraphicEq,
-    ListeningState.UNSTABLE  to Icons.Filled.RecordVoiceOver,
-    ListeningState.ACQUIRING to Icons.Filled.MusicNote,
-    ListeningState.LOCKED    to Icons.Filled.Lock,
+private val listeningStateIcons: List<Pair<ListeningState, AppGlyph>> = listOf(
+    ListeningState.PROFILING to AppIcons.Search,
+    ListeningState.QUIET     to AppIcons.Ear,
+    ListeningState.NOISE     to AppIcons.Equalizer,
+    ListeningState.UNSTABLE  to AppIcons.Speech,
+    ListeningState.ACQUIRING to AppIcons.MusicNote,
+    ListeningState.LOCKED    to AppIcons.Lock,
 )
 
 /** The colour a listening state lights up in. */
@@ -92,7 +83,7 @@ fun ListeningStateBadge(state: ListeningState?, quiet: Boolean = false) {
     Crossfade(targetState = shown, animationSpec = tween(220), label = "listeningBadge") { s ->
         val entry = listeningStateIcons.firstOrNull { it.first == s }
         ListeningStateBadge(
-            icon = entry?.second ?: Icons.Filled.Hearing,
+            icon = entry?.second ?: AppIcons.Ear,
             color = s?.let(::listeningStateColor) ?: AppColors.textDim,
             active = s != null,
         )
@@ -100,7 +91,7 @@ fun ListeningStateBadge(state: ListeningState?, quiet: Boolean = false) {
 }
 
 @Composable
-private fun ListeningStateBadge(icon: ImageVector, color: Color, active: Boolean) {
+private fun ListeningStateBadge(icon: AppGlyph, color: Color, active: Boolean) {
     val tint by animateColorAsState(
         targetValue = if (active) color else AppColors.textDim.copy(alpha = 0.28f),
         animationSpec = tween(220),
@@ -117,8 +108,8 @@ private fun ListeningStateBadge(icon: ImageVector, color: Color, active: Boolean
             .size(26.dp)
             .background(color.copy(alpha = bgAlpha), CircleShape),
     ) {
-        Icon(
-            imageVector = icon,
+        AppIcon(
+            glyph = icon,
             contentDescription = null,
             tint = tint,
             modifier = Modifier.size(15.dp),
@@ -136,7 +127,7 @@ fun InputLevelMeter(amplitude: Float, modifier: Modifier = Modifier.width(120.dp
     Box(
         modifier = modifier
             .height(4.dp)
-            .clip(RoundedCornerShape(2.dp))
+            .clip(AppRadius.Bar)
             .background(AppColors.surfaceVariant),
     ) {
         Box(

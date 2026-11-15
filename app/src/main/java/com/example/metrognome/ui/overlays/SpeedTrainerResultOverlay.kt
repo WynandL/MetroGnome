@@ -1,6 +1,9 @@
 package com.example.metrognome.ui.overlays
 
 import androidx.activity.compose.BackHandler
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -18,10 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -104,8 +103,8 @@ fun SpeedTrainerResultOverlay(
                             .size(52.dp)
                             .background(AppColors.goldTintActive, CircleShape),
                     ) {
-                        Icon(
-                            Icons.Filled.Bolt,
+                        AppIcon(
+                            AppIcons.Bolt,
                             contentDescription = null,
                             tint = AppColors.gold,
                             modifier = Modifier.size(27.dp),
@@ -302,7 +301,7 @@ private fun CompletedRampArc(
 private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
     Surface(
         color = AppColors.card,
-        shape = RoundedCornerShape(10.dp),
+        shape = AppRadius.Chip,
         modifier = modifier.height(56.dp),
     ) {
         Column(

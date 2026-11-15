@@ -3,7 +3,7 @@
 ## Lucide Icons
 
 The instrument-affinity glyphs in `ui/components/instruments/` are rendered from
-[Lucide](https://lucide.dev) icon path data (`drum`, `piano`, `guitar`, `mic`).
+[Lucide](https://lucide.dev) icon path data: the instrument glyphs (`drum`, `piano`, `guitar`, `mic`) and every icon in `ui/components/AppIcons.kt`.
 
 License: ISC
 

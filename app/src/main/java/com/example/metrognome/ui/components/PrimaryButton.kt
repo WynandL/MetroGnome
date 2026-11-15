@@ -4,14 +4,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,7 +29,7 @@ fun PrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    icon: ImageVector? = null,
+    icon: AppGlyph? = null,
 ) {
     RaisedControl(
         onClick = onClick,
@@ -45,7 +43,7 @@ fun PrimaryButton(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (icon != null) {
-                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                AppIcon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
             }
             Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 18.sp, letterSpacing = 1.sp)
         }

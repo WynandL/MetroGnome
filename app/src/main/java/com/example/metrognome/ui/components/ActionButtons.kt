@@ -1,9 +1,9 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,7 +18,7 @@ import com.example.metrognome.ui.theme.AppColors
 
 /** Every dialog and overlay action button is this tall with these corners. */
 val ActionButtonHeight = 46.dp
-val ActionButtonShape = RoundedCornerShape(14.dp)
+val ActionButtonShape = AppRadius.Button
 
 /**
  * The three secondary action buttons of a dialog, so no dialog draws its own:

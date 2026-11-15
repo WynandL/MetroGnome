@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.horizontalScroll
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -113,7 +113,7 @@ fun PresetPill(
     modifier: Modifier = Modifier,
     interaction: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = AppRadius.Pill
     Surface(
         color = if (active) AppColors.goldTint else AppColors.surface,
         shape = shape,

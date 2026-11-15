@@ -1,6 +1,7 @@
 package com.example.metrognome.debug.chords
 
 import android.os.SystemClock
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -21,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -94,7 +94,7 @@ fun ChordLoopRunningPill(modifier: Modifier = Modifier) {
 
     Surface(
         modifier = modifier.clickable { ChordLoopDiagnostic.cancel() },
-        shape = RoundedCornerShape(16.dp),
+        shape = AppRadius.Button,
         color = AppColors.surfaceDeep,
         border = BorderStroke(1.dp, tint),
         tonalElevation = 6.dp,

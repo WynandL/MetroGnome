@@ -1,6 +1,9 @@
 package com.example.metrognome.ui.dialogs
 
 import androidx.compose.animation.core.Animatable
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import com.example.metrognome.ui.components.SectionLabel
 import com.example.metrognome.ui.overlays.OverlayEyebrow
 import androidx.compose.animation.core.LinearEasing
@@ -32,13 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -272,11 +269,11 @@ fun ShowcaseFrame(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(AppRadius.Panel)
             .background(
                 Brush.verticalGradient(listOf(AppColors.previewBgTop, AppColors.previewBgBottom))
             )
-            .border(1.dp, AppColors.goldBorder, RoundedCornerShape(18.dp))
+            .border(1.dp, AppColors.goldBorder, AppRadius.Panel)
             .padding(horizontal = 16.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -333,8 +330,8 @@ fun AudioShowcase(title: String, caption: String) {
                         .size(54.dp)
                         .background(AppColors.goldTint, CircleShape),
                 ) {
-                    Icon(
-                        imageVector        = Icons.Filled.MusicNote,
+                    AppIcon(
+                        glyph        = AppIcons.MusicNote,
                         contentDescription = null,
                         tint               = AppColors.gold,
                         modifier           = Modifier.size(30.dp),
@@ -365,8 +362,8 @@ private fun HighlightRow(text: String) {
                 .clip(CircleShape)
                 .background(AppColors.goldTintActive),
         ) {
-            Icon(
-                imageVector        = Icons.Filled.Check,
+            AppIcon(
+                glyph        = AppIcons.Check,
                 contentDescription = null,
                 tint               = AppColors.gold,
                 modifier           = Modifier.size(12.dp),
@@ -421,7 +418,7 @@ private fun PrimaryCta(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(AppRadius.Panel)
             .background(
                 if (isPurchasing) {
                     Brush.horizontalGradient(
@@ -457,8 +454,8 @@ private fun PrimaryCta(
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (!isPurchasing) {
-                Icon(
-                    imageVector        = Icons.Filled.Star,
+                AppIcon(
+                    glyph        = AppIcons.Star,
                     contentDescription = null,
                     tint               = AppColors.background,
                     modifier           = Modifier.size(17.dp),
@@ -509,7 +506,7 @@ fun PreviewActionButton(label: String, onClick: () -> Unit, active: Boolean = fa
     Surface(
         onClick  = onClick,
         enabled  = enabled && !active,
-        shape    = RoundedCornerShape(14.dp),
+        shape    = AppRadius.Button,
         color    = Color.Transparent,
         border   = BorderStroke(1.dp, tint.copy(alpha = 0.55f)),
         modifier = Modifier

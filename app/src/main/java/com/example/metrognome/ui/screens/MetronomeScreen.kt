@@ -1,6 +1,10 @@
 package com.example.metrognome.ui.screens
 
 import android.widget.Toast
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.AppGlyph
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -37,19 +41,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.ModeNight
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -87,7 +78,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -301,7 +291,7 @@ fun MetronomeScreen(
                 ) {
                     com.example.metrognome.ui.components.GoldPill(
                         text        = "$gnoteCount ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME}",
-                        leadingIcon = Icons.Filled.Bolt,
+                        leadingIcon = AppIcons.Bolt,
                         onClick     = { showGnotesInfo = true },
                     )
                 }
@@ -684,7 +674,7 @@ private fun BpmStepperRow(
         BpmButton("+5", "Tempo up 5", Modifier.weight(1f).height(44.dp)) { onBpmChange(bpm + 5) }
         RaisedControl(
             onClick = onTapTempo,
-            shape = RoundedCornerShape(12.dp),
+            shape = AppRadius.Inset,
             tint = AppColors.primaryPurple,
             modifier = Modifier.weight(1f).height(44.dp)
         ) {
@@ -713,21 +703,21 @@ private fun SecondaryControlsRow(
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         CompactIconChip(
-            icon = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+            icon = if (isMuted) AppIcons.VolumeOff else AppIcons.VolumeUp,
             contentDescription = if (isMuted) "Unmute" else "Mute",
             active = isMuted,
             onClick = onToggleMute,
             modifier = Modifier.weight(1f).height(44.dp)
         )
         CompactIconChip(
-            icon = if (keepScreenOn) Icons.Filled.LightMode else Icons.Filled.ModeNight,
+            icon = if (keepScreenOn) AppIcons.Sun else AppIcons.Moon,
             contentDescription = "Keep screen on",
             active = keepScreenOn,
             onClick = onToggleScreenOn,
             modifier = Modifier.weight(1f).height(44.dp)
         )
         CompactIconChip(
-            icon = Icons.Filled.Favorite,
+            icon = AppIcons.Heart,
             contentDescription = "Save BPM preset",
             active = isOnSavedPreset,
             accentColor = AppColors.gold,
@@ -735,7 +725,7 @@ private fun SecondaryControlsRow(
             modifier = Modifier.weight(1f).height(44.dp)
         )
         CompactIconChip(
-            icon = Icons.Filled.Timer,
+            icon = AppIcons.Timer,
             contentDescription = "Practice session",
             active = isPracticeActive,
             accentColor = AppColors.primaryPurple,
@@ -743,7 +733,7 @@ private fun SecondaryControlsRow(
             modifier = Modifier.weight(1f).height(44.dp)
         )
         CompactIconChip(
-            icon = Icons.Filled.Bolt,
+            icon = AppIcons.Bolt,
             contentDescription = "Speed Trainer",
             active = isTrainerActive,
             accentColor = AppColors.primaryPurple,
@@ -755,7 +745,7 @@ private fun SecondaryControlsRow(
 
 @Composable
 private fun CompactIconChip(
-    icon: ImageVector,
+    icon: AppGlyph,
     contentDescription: String,
     active: Boolean,
     onClick: () -> Unit,
@@ -766,12 +756,12 @@ private fun CompactIconChip(
     // on (its icon takes the accent, or white where the accent is itself purple).
     RaisedControl(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         tint = if (active) AppColors.primaryPurple else AppColors.surfaceVariant,
         modifier = modifier.semantics { stateDescription = if (active) "On" else "Off" },
     ) {
-        Icon(
-            imageVector = icon,
+        AppIcon(
+            glyph = icon,
             contentDescription = contentDescription,
             tint = when {
                 !active -> Color(0x99FFFFFF)
@@ -796,7 +786,7 @@ private fun PracticeProgressRow(
     onCancelPractice: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(10.dp)
+    val shape = AppRadius.Chip
     val total = practiceGoalSeconds.coerceAtLeast(1)
     val elapsed = total - practiceSecondsRemaining
     val progress = (elapsed.toFloat() / total).coerceIn(0f, 1f)
@@ -971,8 +961,8 @@ private fun PracticeProgressRow(
                 AppColors.practiceTimerCritical,
                 urgency
             )
-            Icon(
-                imageVector = Icons.Filled.Favorite,
+            AppIcon(
+                glyph = AppIcons.Heart,
                 contentDescription = null,
                 tint = heartColor,
                 modifier = Modifier
@@ -994,7 +984,7 @@ private fun PracticeProgressRow(
                 modifier = Modifier.weight(1f)
             )
             HudIconAction(
-                Icons.Filled.Close,
+                AppIcons.Close,
                 contentDescription = "Cancel practice",
                 tint = AppColors.textMuted,
                 onClick = onCancelPractice,
@@ -1091,7 +1081,7 @@ private fun PracticeDurationDialog(
                     "START PRACTICE",
                     { onStart(selected) },
                     Modifier.fillMaxWidth(),
-                    icon = Icons.Filled.Timer,
+                    icon = AppIcons.Timer,
                 )
     }
 }
@@ -1214,7 +1204,7 @@ private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.scale(scalePulse.value),
         color = Color(0x99000000),
-        shape = RoundedCornerShape(12.dp)
+        shape = AppRadius.Inset
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -1249,7 +1239,7 @@ private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
 private fun BpmButton(label: String, description: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     RaisedControl(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppRadius.Inset,
         tint = MaterialTheme.colorScheme.surfaceVariant,
         // "-5" alone reads aloud as "minus five"; say what it does.
         modifier = modifier.clearAndSetSemantics {
@@ -1274,8 +1264,8 @@ private fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
         tint = bgColor,
         modifier = Modifier.size(64.dp)
     ) {
-        Icon(
-            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+        AppIcon(
+            glyph = if (isPlaying) AppIcons.Pause else AppIcons.Play,
             contentDescription = if (isPlaying) "Pause" else "Play",
             tint = Color.White,
             modifier = Modifier.size(36.dp)

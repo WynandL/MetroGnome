@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import com.example.metrognome.ui.theme.AppRadius
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,14 +13,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -57,7 +55,7 @@ data class BannerSegment(
  */
 data class BannerModel(
     val accent: Color,
-    val icon: ImageVector? = null,
+    val icon: AppGlyph? = null,
     val lead: String? = null,
     val leadUnit: String? = null,
     val segments: List<BannerSegment> = emptyList(),
@@ -87,7 +85,7 @@ fun TransientBannerHost(
 /** The pill itself — the reusable asset. */
 @Composable
 fun BannerPill(model: BannerModel) {
-    val shape = RoundedCornerShape(50.dp)
+    val shape = AppRadius.Pill
     Row(
         modifier = Modifier
             .padding(horizontal = 20.dp, vertical = 10.dp)
@@ -98,8 +96,8 @@ fun BannerPill(model: BannerModel) {
         horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         model.icon?.let { icon ->
-            Icon(
-                imageVector        = icon,
+            AppIcon(
+                glyph        = icon,
                 contentDescription = null,
                 tint               = model.accent,
                 modifier           = Modifier.size(13.dp),

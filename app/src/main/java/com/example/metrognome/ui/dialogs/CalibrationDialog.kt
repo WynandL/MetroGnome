@@ -1,6 +1,9 @@
 package com.example.metrognome.ui.dialogs
 
 import androidx.compose.animation.core.Animatable
+import com.example.metrognome.ui.components.AppGlyph
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import com.example.metrognome.ui.components.ItemProgressBar
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -18,14 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.ui.graphics.vector.ImageVector
 import kotlin.math.roundToInt
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -279,8 +275,8 @@ private fun ResultIcon(tint: Color, bg: Color, confirmed: Boolean) {
             .size(52.dp)
             .background(bg, CircleShape),
     ) {
-        Icon(
-            imageVector = if (confirmed) Icons.Filled.Check else Icons.Filled.Warning,
+        AppIcon(
+            glyph = if (confirmed) AppIcons.Check else AppIcons.Warning,
             contentDescription = null,
             tint = tint,
             modifier = Modifier.size(26.dp),
@@ -313,17 +309,17 @@ fun CalibrationConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val iconVector: ImageVector
+    val iconVector: AppGlyph
     val title: String
     val body: String
     when (mode) {
         CalibrationMode.LOOPBACK -> {
-            iconVector = Icons.Filled.Mic
+            iconVector = AppIcons.Mic
             title = "Microphone Calibration"
             body = "Metro plays test tones through your speaker and listens back through the mic to measure and correct any pitch bias. The whole process takes about 10 seconds.\n\nTurn your phone volume up and find a quiet spot before you start, background noise will skew the result."
         }
         CalibrationMode.REFERENCE -> {
-            iconVector = Icons.Filled.MusicNote
+            iconVector = AppIcons.MusicNote
             title = "Tuning Fork"
             body = "Strike your ${referenceHz.roundToInt()} Hz fork and hold it close to the mic. Metro will lock on to the pitch and store a correction that sharpens accuracy across every note you tune.\n\nCalibration has a bigger impact than most people expect, even a small offset accumulates. A well-calibrated tuner is noticeably more accurate."
         }
@@ -375,8 +371,8 @@ fun CalibrationConfirmDialog(
                         .size(52.dp)
                         .background(AppColors.goldTint, CircleShape),
                 ) {
-                    Icon(
-                        imageVector = iconVector,
+                    AppIcon(
+                        glyph = iconVector,
                         contentDescription = null,
                         tint = AppColors.gold,
                         modifier = Modifier.size(26.dp),

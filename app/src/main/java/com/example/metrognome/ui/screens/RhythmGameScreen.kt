@@ -1,6 +1,9 @@
 package com.example.metrognome.ui.screens
 
 import androidx.compose.ui.platform.LocalContext
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.AppIcon
 import com.example.metrognome.ui.components.SectionLabel
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -30,14 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.TrackChanges
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -431,8 +427,8 @@ private fun DailyTargetMeter(earned: Int, cap: Int) {
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Filled.TrackChanges,
+            AppIcon(
+                glyph = AppIcons.Target,
                 contentDescription = null,
                 tint = AppColors.gold,
                 modifier = Modifier.size(18.dp),
@@ -464,14 +460,14 @@ private fun DailyTargetMeter(earned: Int, cap: Int) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp)
-                        .clip(RoundedCornerShape(50))
+                        .clip(AppRadius.Pill)
                         .background(AppColors.surfaceVariant),
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(fraction)
                             .height(6.dp)
-                            .clip(RoundedCornerShape(50))
+                            .clip(AppRadius.Pill)
                             .background(AppColors.gold),
                     )
                 }
@@ -566,8 +562,8 @@ private fun PointsCard(
                     )
                 }
             }
-            Icon(
-                imageVector        = Icons.Filled.ExpandMore,
+            AppIcon(
+                glyph        = AppIcons.ChevronDown,
                 contentDescription = if (expanded) "Collapse" else "Expand",
                 tint               = AppColors.textSubtle,
                 modifier           = Modifier
@@ -663,8 +659,8 @@ private fun LoyaltyCard(
 
     AppCard(modifier = modifier, contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector        = Icons.Filled.EmojiEvents,
+            AppIcon(
+                glyph        = AppIcons.Trophy,
                 contentDescription = null,
                 tint               = AppColors.gold,
                 modifier           = Modifier.size(15.dp),
@@ -742,8 +738,8 @@ private fun PracticeStreakCard(
                     ) { showInfo = !showInfo }
                     .padding(4.dp),
             ) {
-                Icon(
-                    imageVector        = Icons.Filled.Info,
+                AppIcon(
+                    glyph        = AppIcons.Info,
                     contentDescription = "How streaks work",
                     tint               = if (showInfo) AppColors.textSecondary
                                          else AppColors.textDim.copy(alpha = 0.55f),

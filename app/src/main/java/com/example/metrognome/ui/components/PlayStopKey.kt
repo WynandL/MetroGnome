@@ -4,10 +4,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -51,8 +47,8 @@ fun PlayStopKey(
             .size(size)
             .alpha(if (enabled) 1f else 0.35f),
     ) {
-        Icon(
-            imageVector = if (playing) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+        AppIcon(
+            glyph = if (playing) AppIcons.Stop else AppIcons.Play,
             contentDescription = if (playing) stopDescription else playDescription,
             tint = Color.White,
             modifier = Modifier.size(size / 2),
