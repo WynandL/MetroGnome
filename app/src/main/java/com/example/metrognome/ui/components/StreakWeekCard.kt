@@ -269,7 +269,7 @@ private fun StreakHeaderText(
 // ── Day dot Canvas ────────────────────────────────────────────────────────────
 
 /** The seal's halo form in the streak's amber, at the flat halo circle's old alpha (0x28). */
-private val STREAK_HALO_STYLE = SealStyle.halo(color = Color(0xFFF59E0B), alpha = 0.16f)
+private val STREAK_HALO_STYLE = SealStyle.halo(color = AppColors.amber, alpha = 0.16f)
 
 @Composable
 private fun StreakDayDot(
@@ -301,7 +301,7 @@ private fun StreakDayDot(
                 )
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(Color(0xFFFDE68A), Color(0xFFF59E0B)),
+                        colors = listOf(AppColors.amberLight, AppColors.amber),
                         center = center, radius = r,
                     ),
                     radius = r,
@@ -340,9 +340,9 @@ private fun StreakDayDot(
             }
 
             isToday -> {
-                drawCircle(color = Color(0x18F59E0B), radius = r, center = center)
+                drawCircle(color = AppColors.amber.copy(alpha = 0.09f), radius = r, center = center)
                 drawCircle(
-                    color  = Color(0xFFF59E0B).copy(alpha = todayPulse),
+                    color  = AppColors.amber.copy(alpha = todayPulse),
                     radius = r - 1.dp.toPx(),
                     center = center,
                     style  = Stroke(width = 1.5f.dp.toPx()),

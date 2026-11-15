@@ -23,10 +23,10 @@ fun OverlayEyebrow(
     Text(
         text = text,
         color = color,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 1.5.sp,
-        lineHeight = 14.sp,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.ExtraBold,
+        letterSpacing = 2.sp,
+        lineHeight = 16.sp,
         modifier = modifier,
     )
 }

@@ -291,8 +291,8 @@ private fun RampArc(config: SpeedTrainerConfig, modifier: Modifier = Modifier) {
     val stepCount = steps.size
     val ascending = config.ascending
 
-    val blue = Color(0xFF5B78C8)
-    val dotBlue = Color(0xFF8AA4EC)
+    val blue = AppColors.trainerBlue
+    val dotBlue = AppColors.trainerBlueDot
     Box(
         modifier = modifier
             .height(66.dp)

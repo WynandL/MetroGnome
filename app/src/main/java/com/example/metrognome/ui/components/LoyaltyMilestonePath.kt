@@ -225,7 +225,7 @@ private fun MilestoneNode(
                     .size(NODE_SIZE)
                     .background(
                         brush  = Brush.radialGradient(
-                            listOf(Color(0xFFFDE68A), Color(0xFFF59E0B)),
+                            listOf(AppColors.amberLight, AppColors.amber),
                         ),
                         shape  = CircleShape,
                     ),
@@ -234,7 +234,7 @@ private fun MilestoneNode(
                 Icon(
                     imageVector        = milestone.icon,
                     contentDescription = milestone.name,
-                    tint               = Color(0xFF92400E),  // amber-dark, legible on gold
+                    tint               = AppColors.amberDark,  // amber-dark, legible on gold
                     modifier           = Modifier.size(16.dp),
                 )
             }
@@ -245,14 +245,14 @@ private fun MilestoneNode(
             Box(
                 modifier = Modifier
                     .size(NODE_SIZE)
-                    .background(Color(0x10F59E0B), CircleShape)
-                    .border(1.5.dp, Color(0xFFF59E0B).copy(alpha = pulse), CircleShape),
+                    .background(AppColors.amber.copy(alpha = 0.06f), CircleShape)
+                    .border(1.5.dp, AppColors.amber.copy(alpha = pulse), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector        = milestone.icon,
                     contentDescription = milestone.name,
-                    tint               = Color(0xFFF59E0B).copy(alpha = 0.55f),
+                    tint               = AppColors.amber.copy(alpha = 0.55f),
                     modifier           = Modifier.size(16.dp),
                 )
             }

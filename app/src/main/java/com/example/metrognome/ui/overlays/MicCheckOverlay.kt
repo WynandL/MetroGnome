@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.overlays
 
 import android.Manifest
+import com.example.metrognome.ui.components.ItemProgressBar
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -14,7 +15,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -33,7 +33,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,11 +45,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -314,13 +311,7 @@ private fun RunningContent(phase: SelfTestPhase, status: String) {
         animationSpec = tween(durationMillis = 450),
         label = "mic_check_progress",
     )
-    LinearProgressIndicator(
-        progress = { animated },
-        modifier = Modifier.fillMaxWidth().height(6.dp),
-        color = AppColors.primaryPurple,
-        trackColor = AppColors.primaryPurple.copy(alpha = 0.2f),
-        strokeCap = StrokeCap.Round,
-    )
+    ItemProgressBar(progress = animated, modifier = Modifier.fillMaxWidth().height(6.dp))
     Spacer(Modifier.height(10.dp))
     Text(status, color = AppColors.textMuted, fontSize = 12.sp, textAlign = TextAlign.Center)
 }

@@ -1,10 +1,11 @@
 package com.example.metrognome.ui.screens
 
 import android.Manifest
+import com.example.metrognome.ui.components.SectionLabel
+import com.example.metrognome.ui.components.CardHeaderLabel
 import android.content.Context
 import androidx.core.content.edit
 import android.content.pm.PackageManager
-import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -56,9 +57,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -98,7 +97,6 @@ import com.example.metrognome.billing.PREMIUM_DRONE_BLENDS
 import com.example.metrognome.billing.PREMIUM_DRONE_TIMBRES
 import com.example.metrognome.billing.PremiumDroneDef
 import com.example.metrognome.billing.PurchaseStore
-import com.example.metrognome.billing.premiumProductFor
 import com.example.metrognome.ui.dialogs.AudioShowcase
 import com.example.metrognome.ui.dialogs.PremiumPurchaseDialog
 import com.example.metrognome.ui.dialogs.PreviewActionButton
@@ -880,12 +878,7 @@ private fun AmbientPanel(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "AMBIENT SUPPRESSION",
-                        color = AppColors.textDim,
-                        fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                    )
+                    SectionLabel("AMBIENT SUPPRESSION")
                     Spacer(Modifier.height(3.dp))
                     Crossfade(
                         targetState = ambientLevel,
@@ -917,12 +910,7 @@ private fun AmbientPanel(
                     // Whitespace + caps header separate this revealed detail, matching
                     // the divider-free treatment of the suppression section above.
                     Spacer(Modifier.height(18.dp))
-                    Text(
-                        "ENVIRONMENT",
-                        color = AppColors.textDim,
-                        fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                    )
+                    SectionLabel("ENVIRONMENT")
                     Spacer(Modifier.height(10.dp))
 
                     // Held status — what the tuner is seeing and what to do, in plain
@@ -1137,7 +1125,7 @@ private fun FrequencyRail(
             anchors.forEach { (hz, label) ->
                 Text(
                     label,
-                    color = if (hz == 440f) AppColors.gold.copy(alpha = 0.6f) else AppColors.textDim,
+                    color = if (hz == 440f) AppColors.goldSoft else AppColors.textDim,
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.offset(x = railWidth * frac(hz) - 6.dp),
@@ -1369,11 +1357,7 @@ private fun ReferencePitchControls(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    "REFERENCE PITCH", color = AppColors.textDim,
-                    fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                )
+                CardHeaderLabel("REFERENCE PITCH")
                 Spacer(Modifier.weight(1f))
                 Text(
                     "A4 = ${referenceHz.roundToInt()} Hz",
@@ -1415,7 +1399,7 @@ private fun ReferencePitchControls(
                 )
                 Text(
                     "440",
-                    color = if (isStandard) AppColors.gold.copy(alpha = 0.65f) else AppColors.textDim,
+                    color = if (isStandard) AppColors.goldSoft else AppColors.textDim,
                     fontSize = 9.sp,
                     fontWeight = if (isStandard) FontWeight.Bold else FontWeight.Normal,
                 )
@@ -1457,10 +1441,7 @@ private fun CalibrationCard(
     onClear: () -> Unit,
 ) {
     AppCard(contentPadding = PaddingValues(18.dp)) {
-            Text(
-                "CALIBRATION", color = AppColors.textDim, fontSize = 12.sp,
-                fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
-            )
+            CardHeaderLabel("CALIBRATION")
             Spacer(Modifier.height(14.dp))
             IdleCalibration(info, referenceHz, onLoopbackCalibrate, onReferenceCalibrate, onClear)
         }
@@ -1651,13 +1632,7 @@ private fun CalibrationStatus(info: CalibrationInfo) {
                         CalibrationMode.INSTRUMENT -> "INSTRUMENT"
                         null                       -> "CALIBRATED"
                     }
-                    Text(
-                        modeLabel,
-                        color = AppColors.textSubtle,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                    )
+                    SectionLabel(modeLabel)
                     Spacer(Modifier.height(2.dp))
                     Text(
                         "±${fmtCents(info.accuracyCents)}",

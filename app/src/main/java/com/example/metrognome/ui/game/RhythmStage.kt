@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.game
 
 import android.os.SystemClock
+import com.example.metrognome.ui.components.SectionLabel
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -254,10 +255,7 @@ private fun StageHud(score: Int, combo: Int, remaining: Int, total: Int) {
 @Composable
 private fun HudStat(label: String, value: String, color: Color, align: Alignment.Horizontal, modifier: Modifier) {
     Column(modifier = modifier, horizontalAlignment = align) {
-        Text(
-            label, color = AppColors.textDim, fontSize = 10.sp, lineHeight = 14.sp,
-            fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
-        )
+        SectionLabel(label)
         Text(value, color = color, fontSize = 26.sp, lineHeight = 30.sp, fontWeight = FontWeight.Black)
     }
 }
@@ -374,10 +372,7 @@ private fun TimingMeter(chart: RhythmChart?, ticks: List<MeterTick>, clock: Stag
 
 @Composable
 private fun MeterLabel(text: String) {
-    Text(
-        text, color = AppColors.textDim, fontSize = 10.sp, lineHeight = 14.sp,
-        fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
-    )
+    SectionLabel(text)
 }
 
 // ── TAP key ───────────────────────────────────────────────────────────────────
@@ -499,9 +494,6 @@ private fun MicStrip(
             }
         }
         Spacer(Modifier.width(8.dp))
-        Text(
-            "MIC", color = AppColors.textDim, fontSize = 10.sp, lineHeight = 14.sp,
-            fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
-        )
+        SectionLabel("MIC")
     }
 }

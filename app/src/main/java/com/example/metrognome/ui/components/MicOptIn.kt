@@ -121,7 +121,7 @@ fun MicOptIn(
                             "Permission blocked. Tap the switch above to open App Settings."
                         else
                             "Microphone permission required to use this feature.",
-                        color = if (isPermanentlyDenied) AppColors.gold.copy(alpha = 0.8f)
+                        color = if (isPermanentlyDenied) AppColors.goldSoft
                                 else AppColors.textSubtle,
                         fontSize = 12.sp,
                         lineHeight = 16.sp,

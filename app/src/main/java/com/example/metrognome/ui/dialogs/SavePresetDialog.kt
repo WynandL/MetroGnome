@@ -1,12 +1,12 @@
 package com.example.metrognome.ui.dialogs
 
 import androidx.compose.foundation.layout.Row
+import com.example.metrognome.ui.components.SectionLabel
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,7 +21,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -126,13 +125,7 @@ fun SavePresetDialog(
         Spacer(Modifier.height(16.dp))
 
         // ── Live chip preview ───────────────────────────────────────
-        Text(
-            text = "HOW IT'LL LOOK",
-            color = AppColors.gold.copy(alpha = 0.6f),
-            fontSize = 9.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 1.5.sp,
-        )
+        SectionLabel("HOW IT'LL LOOK", color = AppColors.goldSoft)
         Spacer(Modifier.height(8.dp))
         PresetPill(label = previewLabel, active = true)
 

@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.Canvas
+import com.example.metrognome.ui.theme.AppColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -40,10 +41,10 @@ fun StreakIcon(modifier: Modifier = Modifier) {
 
         data class Seg(val start: Float, val color: Color, val alpha: Float)
         listOf(
-            Seg(245f, Color(0xFF7B4DB0), 0.13f),
+            Seg(245f, AppColors.mediumPurple, 0.13f),
             Seg(255f, Color(0xFFAA66EE), 0.30f),
             Seg(265f, Color(0xFFFFAA22), 0.62f),
-            Seg(275f, Color(0xFFFFD700), 0.92f),
+            Seg(275f, AppColors.gold, 0.92f),
         ).forEach { seg ->
             drawArc(
                 color      = seg.color.copy(alpha = seg.alpha),
@@ -62,7 +63,7 @@ fun StreakIcon(modifier: Modifier = Modifier) {
         val bobY   = pivotY + sin(bobRad).toFloat() * arm
 
         drawLine(
-            color       = Color(0xFFFFD700),
+            color       = AppColors.gold,
             start       = Offset(cx, pivotY),
             end         = Offset(bobX, bobY),
             strokeWidth = 1.8f.dp.toPx(),
@@ -70,8 +71,8 @@ fun StreakIcon(modifier: Modifier = Modifier) {
         )
 
         // ── Bob: soft glow + solid gold + white glint ─────────────────────
-        drawCircle(Color(0x40FFD700), radius = 3.5f.dp.toPx(), center = Offset(bobX, bobY))
-        drawCircle(Color(0xFFFFD700), radius = 2.6f.dp.toPx(), center = Offset(bobX, bobY))
+        drawCircle(AppColors.gold.copy(alpha = 0.25f), radius = 3.5f.dp.toPx(), center = Offset(bobX, bobY))
+        drawCircle(AppColors.gold, radius = 2.6f.dp.toPx(), center = Offset(bobX, bobY))
         drawCircle(
             color  = Color(0xCCFFFFCC),
             radius = 1.0f.dp.toPx(),
@@ -93,6 +94,6 @@ fun StreakIcon(modifier: Modifier = Modifier) {
         }
 
         // ── Pivot dot ─────────────────────────────────────────────────────
-        drawCircle(Color(0xFFFFD700), radius = 1.8f.dp.toPx(), center = Offset(cx, pivotY))
+        drawCircle(AppColors.gold, radius = 1.8f.dp.toPx(), center = Offset(cx, pivotY))
     }
 }

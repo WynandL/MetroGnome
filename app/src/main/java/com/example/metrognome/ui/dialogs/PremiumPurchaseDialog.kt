@@ -1,6 +1,8 @@
 package com.example.metrognome.ui.dialogs
 
 import androidx.compose.animation.core.Animatable
+import com.example.metrognome.ui.components.SectionLabel
+import com.example.metrognome.ui.overlays.OverlayEyebrow
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -180,13 +182,7 @@ fun PremiumPurchaseDialog(
                     }
 
                     // ── Eyebrow ─────────────────────────────────────────────
-                    Text(
-                        text          = "✦   PREMIUM   ✦",
-                        color         = AppColors.gold,
-                        fontSize      = 11.sp,
-                        fontWeight    = FontWeight.ExtraBold,
-                        letterSpacing = 3.sp,
-                    )
+                    OverlayEyebrow("✦   PREMIUM   ✦", color = AppColors.gold)
 
                     Spacer(Modifier.height(8.dp))
 
@@ -293,13 +289,7 @@ fun ShowcaseFrame(
         )
         if (caption != null) {
             Spacer(Modifier.height(12.dp))
-            Text(
-                text          = caption,
-                color         = AppColors.gold.copy(alpha = 0.7f),
-                fontSize      = 9.sp,
-                fontWeight    = FontWeight.ExtraBold,
-                letterSpacing = 1.5.sp,
-            )
+            SectionLabel(caption, color = AppColors.goldSoft)
         }
     }
 }

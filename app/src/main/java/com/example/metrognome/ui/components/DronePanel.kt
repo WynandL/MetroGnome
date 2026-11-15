@@ -28,12 +28,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,9 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -121,13 +115,7 @@ fun DronePanel(
             ) {
                 DroneWaveIcon(sounding = state.playing, modifier = Modifier.size(width = 26.dp, height = 18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(
-                    "DRONE",
-                    color = AppColors.textDim,
-                    fontSize = 12.sp, lineHeight = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                )
+                CardHeaderLabel("DRONE")
                 Spacer(Modifier.weight(1f))
                 Text(
                     "${state.noteLabel} · ${state.timbre.displayName}" +
@@ -274,13 +262,7 @@ fun DronePanel(
 
                     Spacer(Modifier.height(14.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "VOLUME",
-                            color = AppColors.textDim,
-                            fontSize = 10.sp, lineHeight = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                        )
+                        SectionLabel("VOLUME")
                         Spacer(Modifier.width(12.dp))
                         GoldSlider(
                             value = state.volume,
@@ -312,13 +294,7 @@ private fun ChipSection(
     chips: @Composable () -> Unit,
 ) {
     Column {
-        Text(
-            heading,
-            color = AppColors.textDim,
-            fontSize = 10.sp, lineHeight = 14.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp,
-        )
+        SectionLabel(heading)
         Spacer(Modifier.height(6.dp))
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),

@@ -77,7 +77,7 @@ fun FadingHorizontalScrollbar(
     ) {
         Canvas(modifier = Modifier.fillMaxWidth().height(2.5.dp)) {
             val trackColor = AppColors.textDim.copy(alpha = 0.18f)
-            val thumbColor = AppColors.gold.copy(alpha = 0.65f)
+            val thumbColor = AppColors.goldSoft
 
             drawRect(color = trackColor)
 

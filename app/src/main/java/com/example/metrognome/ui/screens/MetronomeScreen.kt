@@ -20,12 +20,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,12 +49,10 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -1075,7 +1070,7 @@ private fun PracticeDurationDialog(
 
                 Text(
                     text = "Time spent practicing unlocks new gnome items",
-                    color = AppColors.gold.copy(alpha = 0.85f),
+                    color = AppColors.goldSoft,
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
                 )
@@ -1139,7 +1134,7 @@ private fun BeatIndicatorRow(
 
             val glowColor      = if (isAccent) AppColors.gold else AppColors.textAccent
             val gradientColors = if (isAccent)
-                listOf(Color(0xFFFDE68A), AppColors.gold)
+                listOf(AppColors.amberLight, AppColors.gold)
             else
                 listOf(Color(0xFFE0C8F8), AppColors.textAccent)
 

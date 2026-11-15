@@ -86,14 +86,7 @@ fun CardHeader(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text,
-            color = AppColors.textDim,
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp,
-        )
+        CardHeaderLabel(text)
         if (value != null) {
             Spacer(Modifier.weight(1f))
             Text(
@@ -105,6 +98,49 @@ fun CardHeader(
             )
         }
     }
+}
+
+/**
+ * The words of a card header on their own, for a header row that carries its own trailing
+ * content (chips, a glyph, a pinned value slot) and so cannot be a plain [CardHeader]. Tier one
+ * of the two caps tiers: 12 sp, bold, 1 sp tracking, `textDim`. Never write this recipe out.
+ */
+@Composable
+fun CardHeaderLabel(text: String, modifier: Modifier = Modifier, maxLines: Int = Int.MAX_VALUE) {
+    Text(
+        text,
+        modifier = modifier,
+        color = AppColors.textDim,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.sp,
+        maxLines = maxLines,
+    )
+}
+
+/**
+ * A caps label for a section *inside* a card, tier two: 10 sp, bold, 1 sp tracking, 14 sp line
+ * height, `textDim` (the tuner's ENVIRONMENT, the drone's VOLUME, the game's SCORE). [color]
+ * is for the rare label that is itself a state.
+ */
+@Composable
+fun SectionLabel(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = AppColors.textDim,
+    maxLines: Int = Int.MAX_VALUE,
+) {
+    Text(
+        text,
+        modifier = modifier,
+        color = color,
+        fontSize = 10.sp,
+        lineHeight = 14.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.sp,
+        maxLines = maxLines,
+    )
 }
 
 /**

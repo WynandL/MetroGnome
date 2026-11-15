@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.screens
 
 import androidx.compose.ui.platform.LocalContext
+import com.example.metrognome.ui.components.SectionLabel
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -384,23 +385,13 @@ private fun GameCard(
                         modifier = Modifier.padding(vertical = 9.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text(
-                            text = d.short,
-                            color = if (played) AppColors.gold else AppColors.textDim,
-                            fontSize = 10.sp, lineHeight = 14.sp,
-                            fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
-                        )
+                        SectionLabel(d.short, color = if (played) AppColors.gold else AppColors.textDim)
                         Text(
                             text = "${d.bpm}",
                             color = AppColors.textPrimary,
                             fontSize = 16.sp, lineHeight = 20.sp, fontWeight = FontWeight.Black,
                         )
-                        Text(
-                            text = "BPM",
-                            color = AppColors.textDim,
-                            fontSize = 10.sp, lineHeight = 14.sp,
-                            fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
-                        )
+                        SectionLabel("BPM")
                         Spacer(Modifier.height(6.dp))
                         StarRating(stars = rhythmStars(best, d.beats), starSize = 10.dp)
                         Spacer(Modifier.height(4.dp))
@@ -564,7 +555,7 @@ private fun PointsCard(
                     )
                     Text(
                         text          = PointsConfig.CURRENCY_NAME.uppercase(),
-                        color         = AppColors.gold.copy(alpha = 0.65f),
+                        color         = AppColors.goldSoft,
                         fontSize      = 10.sp,
                         fontWeight    = FontWeight.Bold,
                         letterSpacing = 2.5.sp,

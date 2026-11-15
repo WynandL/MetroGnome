@@ -1,11 +1,5 @@
 package com.example.metrognome.ui.screens
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,12 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ButtonDefaults
 import com.example.metrognome.ui.components.AppCard
 import com.example.metrognome.ui.components.AppFilterChip
 import com.example.metrognome.ui.components.AppSwitch
@@ -39,13 +28,8 @@ import com.example.metrognome.ui.components.PremiumChip
 import com.example.metrognome.ui.components.TimeSignaturePicker
 import com.example.metrognome.theory.Meter
 import com.example.metrognome.theory.MeterTheory
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -56,8 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
 import androidx.activity.compose.LocalActivity
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -799,7 +781,7 @@ private fun NotificationsRow(state: NotificationPermissionState) {
                     state.permanentlyDenied -> "Blocked. Tap to open App Settings."
                     else -> "Get notified about new sounds and features"
                 },
-                color = if (state.permanentlyDenied) AppColors.gold.copy(alpha = 0.8f) else AppColors.textMuted,
+                color = if (state.permanentlyDenied) AppColors.goldSoft else AppColors.textMuted,
                 fontSize = 12.sp,
             )
         }

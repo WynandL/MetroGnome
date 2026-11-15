@@ -79,7 +79,7 @@ fun MorphingPill(
     idleTimeoutMs: Long = 4_000L,
     releaseTimeoutMs: Long = 3_000L,
     pillColor: Color = AppColors.goldTint,
-    pillBorderColor: Color = AppColors.gold.copy(alpha = 0.40f),
+    pillBorderColor: Color = AppColors.goldBorder,
     panelColor: Color = AppColors.card,
     panelBorderColor: Color = AppColors.goldBorder,
     pill: @Composable () -> Unit,

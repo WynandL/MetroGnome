@@ -127,6 +127,20 @@ object AppColors {
     val goldTintActive   = gold.copy(alpha = 0.16f)
     val goldBorder       = gold.copy(alpha = 0.35f)
     val goldBorderStrong = gold.copy(alpha = 0.55f)
+    // Gold one step quieter, for text and small marks that are gold by meaning but must not
+    // shout: a caption, the 440 Hz tick, a secondary value. One alpha for all of them (they
+    // had drifted to six, from 0.6 to 0.85).
+    val goldSoft         = gold.copy(alpha = 0.70f)
+
+    // Amber: the streak and loyalty family (flame, today's ring, milestone medals). Warmer
+    // than gold on purpose, so "days kept" never reads as "Gnotes".
+    val amber           = Color(0xFFF59E0B)
+    val amberLight      = Color(0xFFFDE68A)
+    val amberDark       = Color(0xFF92400E)   // a glyph on an amber fill
+
+    // Speed Trainer tempo ramp (the dialog's preview graph)
+    val trainerBlue     = Color(0xFF5B78C8)
+    val trainerBlueDot  = Color(0xFF8AA4EC)
     val danger          = Color(0xFFCC2233)   // play-button stop, destructive
     val warning         = Color(0xFFFFAA33)   // soft warning (duplicate name, etc.)
 

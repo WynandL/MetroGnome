@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.overlays
 
 import androidx.activity.compose.BackHandler
+import com.example.metrognome.ui.theme.GameColors
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -21,8 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -79,7 +78,7 @@ fun WhatsNewOverlayDispatcher(versionKey: String, onDismiss: () -> Unit) {
 
 // ── Mini tuner gauge — shared between V4 overlay and future uses ──────────────
 
-private val tunerGreenInTune = Color(0xFF7BE87B)   // matches GameColors.good
+private val tunerGreenInTune = GameColors.good
 
 private fun DrawScope.drawMiniTunerGauge() {
     val sweepDeg = 62f
@@ -91,7 +90,7 @@ private fun DrawScope.drawMiniTunerGauge() {
     val arcSize = Size(radius * 2f, radius * 2f)
 
     drawArc(
-        color = Color(0xFF2A2550),
+        color = AppColors.surfaceVariant,
         startAngle = 270f - sweepDeg,
         sweepAngle = sweepDeg * 2f,
         useCenter = false,
@@ -134,7 +133,7 @@ private fun DrawScope.drawMiniTunerGauge() {
     drawCircle(tunerGreenInTune.copy(alpha = 0.18f), radius * 0.28f, tip)
     drawLine(tunerGreenInTune, pivot, tip, strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
     drawCircle(tunerGreenInTune, 8.dp.toPx(), pivot)
-    drawCircle(Color(0xFF13102A), 3.5.dp.toPx(), pivot)
+    drawCircle(AppColors.surfaceDeep, 3.5.dp.toPx(), pivot)
 }
 
 // ── V5 — "Speed Trainer" ─────────────────────────────────────────────────────
@@ -190,13 +189,7 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text = "✦  NEW IN VERSION 5  ✦",
-                    color = AppColors.gold,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 2.sp,
-                )
+                OverlayEyebrow("✦  NEW IN VERSION 5  ✦", color = AppColors.gold)
 
                 Spacer(Modifier.height(20.dp))
 
@@ -282,7 +275,7 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
                         Spacer(Modifier.height(6.dp))
                         Text(
                             "Bar 3 of 4  ·  95 BPM",
-                            color = AppColors.gold.copy(alpha = 0.85f),
+                            color = AppColors.goldSoft,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
                         )
@@ -379,13 +372,7 @@ private fun V6FeatureIntroOverlay(onDismiss: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text = "\u2726  NEW IN VERSION 6  \u2726",
-                    color = AppColors.gold,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 2.sp,
-                )
+                OverlayEyebrow("\u2726  NEW IN VERSION 6  \u2726", color = AppColors.gold)
 
                 Spacer(Modifier.height(20.dp))
 
@@ -415,7 +402,7 @@ private fun V6FeatureIntroOverlay(onDismiss: () -> Unit) {
                         Spacer(Modifier.height(8.dp))
                         Text(
                             text = if (named) "Cmaj7" else CMAJ7_NAMES.take(notesShown).distinct().joinToString("   "),
-                            color = if (named) AppColors.gold else AppColors.gold.copy(alpha = 0.85f),
+                            color = if (named) AppColors.gold else AppColors.goldSoft,
                             fontSize = if (named) 26.sp else 14.sp,
                             lineHeight = 30.sp,
                             fontWeight = FontWeight.Black,
@@ -522,13 +509,7 @@ private fun V3FeatureIntroOverlay(onDismiss: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text = "✦  NEW IN VERSION 3  ✦",
-                    color = AppColors.gold,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 2.sp,
-                )
+                OverlayEyebrow("✦  NEW IN VERSION 3  ✦", color = AppColors.gold)
 
                 Spacer(Modifier.height(20.dp))
 
@@ -645,13 +626,7 @@ private fun V4FeatureIntroOverlay(onDismiss: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text = "✦  NEW IN VERSION 4  ✦",
-                    color = AppColors.gold,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 2.sp,
-                )
+                OverlayEyebrow("✦  NEW IN VERSION 4  ✦", color = AppColors.gold)
 
                 Spacer(Modifier.height(20.dp))
 

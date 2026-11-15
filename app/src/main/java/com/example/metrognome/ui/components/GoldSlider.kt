@@ -130,7 +130,7 @@ fun GoldSlider(
                 if (markerFraction != null) {
                     val markerX = size.width * markerFraction.coerceIn(0f, 1f)
                     drawLine(
-                        color = if (markerHighlighted) AppColors.gold.copy(alpha = 0.6f)
+                        color = if (markerHighlighted) AppColors.goldSoft
                                 else AppColors.textDim.copy(alpha = 0.4f),
                         start = Offset(markerX, centreY - 5.dp.toPx()),
                         end = Offset(markerX, centreY + 5.dp.toPx()),

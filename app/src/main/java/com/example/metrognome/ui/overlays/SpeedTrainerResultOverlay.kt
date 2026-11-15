@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,7 +44,6 @@ import androidx.compose.ui.unit.sp
 import com.example.metrognome.speedtrainer.SpeedTrainerConfig
 import com.example.metrognome.ui.components.PerformanceBonusReward
 import com.example.metrognome.ui.components.AppCardDefaults
-import com.example.metrognome.ui.components.GhostButton
 import com.example.metrognome.ui.components.PrimaryButton
 import com.example.metrognome.ui.dialogs.DialogTitle
 import com.example.metrognome.ui.theme.AppColors
@@ -287,7 +285,7 @@ private fun CompletedRampArc(
                         )
                     }
                     drawCircle(
-                        color = if (isEndpoint) AppColors.gold else AppColors.gold.copy(alpha = 0.60f),
+                        color = if (isEndpoint) AppColors.gold else AppColors.goldSoft,
                         radius = radius,
                         center = Offset(x, y),
                     )

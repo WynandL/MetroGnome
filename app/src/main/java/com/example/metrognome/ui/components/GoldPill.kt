@@ -37,7 +37,7 @@ fun GoldPill(
     val vPad = if (hasIcon) 6.dp else 4.dp
     val fontSize = if (hasIcon) 12.sp else 10.sp
     val fontWeight = if (hasIcon) FontWeight.Medium else FontWeight.Bold
-    val borderAlpha = if (hasIcon) 0.55f else 0.40f
+    val border = BorderStroke(1.dp, if (hasIcon) AppColors.goldBorderStrong else AppColors.goldBorder)
 
     val rowContent: @Composable () -> Unit = {
         Row(
@@ -60,7 +60,7 @@ fun GoldPill(
             onClick = onClick,
             shape = RoundedCornerShape(50.dp),
             color = AppColors.goldTint,
-            border = BorderStroke(1.dp, AppColors.gold.copy(alpha = borderAlpha)),
+            border = border,
             modifier = modifier,
             content = rowContent,
         )
@@ -68,7 +68,7 @@ fun GoldPill(
         Surface(
             shape = RoundedCornerShape(50.dp),
             color = AppColors.goldTint,
-            border = BorderStroke(1.dp, AppColors.gold.copy(alpha = borderAlpha)),
+            border = border,
             modifier = modifier,
             content = rowContent,
         )

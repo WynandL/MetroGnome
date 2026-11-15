@@ -229,7 +229,7 @@ private fun FeedbackButton(
         color = if (positive) AppColors.goldTint else Color.Transparent,
         border = BorderStroke(
             1.dp,
-            if (positive) AppColors.gold.copy(alpha = 0.75f) else AppColors.textDim.copy(alpha = 0.5f),
+            if (positive) AppColors.goldBorderStrong else AppColors.textDim.copy(alpha = 0.5f),
         ),
         modifier = modifier.height(42.dp),
     ) {

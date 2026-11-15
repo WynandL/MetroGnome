@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.screens
 
 import android.Manifest
+import com.example.metrognome.ui.components.CardHeaderLabel
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -42,7 +43,6 @@ import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -458,17 +458,10 @@ private fun InstrumentCard(
                 // The drone header's idiom: the label states what is loaded, not what the
                 // card is. For the guitar that is the tuning, the one fact a drop-D player
                 // needs before tapping anything; for the piano, how far it scrolls.
-                Text(
-                    when (instrument) {
+                CardHeaderLabel(when (instrument) {
                         ChordInstrument.GUITAR -> "STANDARD TUNING"
                         ChordInstrument.PIANO -> "$PIANO_OCTAVES OCTAVES · ${NoteNames.labelOf(PIANO_LOWEST_MIDI)} TO ${NoteNames.labelOf(PIANO_LOWEST_MIDI + PIANO_OCTAVES * 12 - 1)}"
-                    },
-                    color = AppColors.textDim,
-                    fontSize = 12.sp, lineHeight = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    maxLines = 1,
-                )
+                    }, maxLines = 1)
                 Spacer(Modifier.weight(1f))
                 ChordInstrument.entries.forEach { option ->
                     AppFilterChip(
@@ -613,11 +606,7 @@ private fun ListeningCard(
             // Header: label left, mode (and the heard note) right.
             PinnedSlot(lineHeight = 18.sp) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        "LISTENING", color = AppColors.textDim,
-                        fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                    )
+                    CardHeaderLabel("LISTENING")
                     Spacer(Modifier.weight(1f))
                     // Only what the chips do not already say: the mode is the selected chip
                     // below, so the value is the note being heard, or "Paused".
@@ -904,19 +893,13 @@ private fun ChordHero(reading: ChordReading) {
                     // The eyebrow doubles as the page's only name: "CHORD FINDER" in the
                     // resting state, since no tab carries a heading and a beginner needs the
                     // words somewhere; the reading's own label once there is one.
-                    Text(
-                        when (r) {
+                    CardHeaderLabel(when (r) {
                             ChordReading.Empty -> "CHORD FINDER"
                             is ChordReading.Single -> "ONE NOTE"
                             is ChordReading.Dyad -> "INTERVAL"
                             is ChordReading.Identified -> "CHORD"
                             is ChordReading.Unnamed -> "NO COMMON NAME"
-                        },
-                        color = AppColors.textDim,
-                        fontSize = 12.sp, lineHeight = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                    )
+                        })
                     Spacer(Modifier.height(4.dp))
                     when (r) {
                         ChordReading.Empty -> {
@@ -1009,11 +992,7 @@ private fun HearStrip(
             // Header: label left, the pace (or "Sounding") right, as the Listening card does.
             PinnedSlot(lineHeight = 18.sp) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        "HEAR IT", color = AppColors.textDim,
-                        fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                    )
+                    CardHeaderLabel("HEAR IT")
                     Spacer(Modifier.weight(1f))
                     // Only what the chips do not already say: the selected pace is visible
                     // below, so the value is "Sounding" while it plays and nothing otherwise.
