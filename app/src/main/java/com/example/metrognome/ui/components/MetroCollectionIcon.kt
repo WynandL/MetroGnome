@@ -20,27 +20,24 @@ import com.example.metrognome.ui.theme.AppColors
 /**
  * Metro's Collection icon: a treasure chest, drawn like the app's other glyphs
  * ([ChordGridIcon], [TunerNeedleIcon]): one colour, 1.5 dp lines for the structure, faint ones
- * for detail. A domed lid over a box, a lock straddling the seam, two faint straps, and one
- * glint (the sparkle of whatever is inside).
+ * for detail. A domed lid over a box, a lock straddling the seam, and one glint (the sparkle of
+ * whatever is inside). Two faint straps were removed 2026-11-15: the dev found them noise.
  */
 @Composable
 fun MetroCollectionIcon(modifier: Modifier = Modifier, size: Dp = 24.dp, tint: Color = AppColors.gold) {
-    Canvas(modifier = modifier.size(size)) {
+    // One ink (OneInk.kt): drawn opaque, the tint's alpha applied once, so the lock on the
+    // seam is one shade where it meets the box and the lid.
+    val ink = tint.opaque()
+    Canvas(modifier = modifier.size(size)) { oneInk(tint.alpha) {
         val u = this.size.minDimension / 24f
         fun p(x: Float, y: Float) = Offset(x * u, y * u)
         // Absolute dp, not scaled with the icon: the other glyphs ([TunerNeedleIcon] 1.5-1.8 dp,
         // [RhythmPulseIcon] 2 dp) keep one line weight at every size, and so must this.
         val heavy = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-        val faint = tint.copy(alpha = 0.38f)
-
-        // Straps first, so the structure draws over them.
-        listOf(8f, 16f).forEach { x ->
-            drawLine(faint, p(x, 6.1f), p(x, 20f), strokeWidth = 1.dp.toPx(), cap = StrokeCap.Round)
-        }
 
         // Box.
         drawRoundRect(
-            tint, topLeft = p(4f, 12f), size = Size(16f * u, 8.5f * u),
+            ink, topLeft = p(4f, 12f), size = Size(16f * u, 8.5f * u),
             cornerRadius = CornerRadius(1.6f * u), style = heavy,
         )
 
@@ -52,17 +49,17 @@ fun MetroCollectionIcon(modifier: Modifier = Modifier, size: Dp = 24.dp, tint: C
             cubicTo(16.4f * u, 4.6f * u, 20f * u, 6.6f * u, 20f * u, 9.8f * u)
             lineTo(20f * u, 12f * u)
         }
-        drawPath(lid, tint, style = heavy)
+        drawPath(lid, ink, style = heavy)
 
         // Lock straddling the seam.
         drawRoundRect(
-            tint, topLeft = p(10.3f, 10.4f), size = Size(3.4f * u, 4.8f * u),
+            ink, topLeft = p(10.3f, 10.4f), size = Size(3.4f * u, 4.8f * u),
             cornerRadius = CornerRadius(0.9f * u),
         )
 
         // The sparkle of what is inside.
-        drawGlint(p(20.4f, 3.6f), 1.8f * u, tint)
-    }
+        drawGlint(p(20.4f, 3.6f), 1.8f * u, ink)
+    } }
 }
 
 private fun DrawScope.drawGlint(c: Offset, r: Float, color: Color) {

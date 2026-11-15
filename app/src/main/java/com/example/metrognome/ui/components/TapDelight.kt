@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -306,8 +307,13 @@ internal fun DrawScope.drawSpark(c: Offset, r: Float, color: Color) {
     drawPath(path, color)
 }
 
-/** A single eighth note: head, stem and flag. */
-internal fun DrawScope.drawNote(c: Offset, r: Float, color: Color) {
+/**
+ * A single eighth note: head, stem and flag, in one ink (OneInk.kt), so the stem does not knot
+ * where it meets the head and the flag as the particle fades.
+ */
+internal fun DrawScope.drawNote(c: Offset, r: Float, ink: Color) {
+    val color = ink.opaque()
+    oneInk(ink.alpha, Rect(c.x - r * 0.8f, c.y - r * 1.5f, c.x + r * 1.6f, c.y + r * 1.2f)) {
     drawOval(color, Offset(c.x - r * 0.55f, c.y - r * 0.35f + r * 0.6f), Size(r * 1.1f, r * 0.75f))
     val sx = c.x + r * 0.5f
     drawLine(color, Offset(sx, c.y + r * 0.9f), Offset(sx, c.y - r * 1.2f), strokeWidth = r * 0.22f, cap = StrokeCap.Round)
@@ -318,4 +324,5 @@ internal fun DrawScope.drawNote(c: Offset, r: Float, color: Color) {
         close()
     }
     drawPath(flag, color)
+    }
 }

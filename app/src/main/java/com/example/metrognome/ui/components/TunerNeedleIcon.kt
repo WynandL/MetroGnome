@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
@@ -27,16 +28,17 @@ import kotlin.math.sin
  * inset from each edge, so the arc fills the full canvas width.
  */
 @Composable
-fun TunerNeedleIcon() {
-    val color = LocalContentColor.current
-    Canvas(modifier = Modifier.size(24.dp)) {
+fun TunerNeedleIcon(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
+    val color = tint.opaque()
+    // One ink (OneInk.kt): the needle, the pivot and the arc meet without knotting.
+    Canvas(modifier = modifier.size(24.dp)) { oneInk(tint.alpha) {
         val cx     = size.width / 2f
         val pivotY = size.height * 0.83f
         val r      = size.height * 0.77f
 
         // Arc track — muted, spans ±40° around the 12 o'clock position
         drawArc(
-            color      = color.copy(alpha = 0.38f),
+            color      = color.copy(alpha = FAINT_INK),
             startAngle = 230f,
             sweepAngle = 80f,
             useCenter  = false,
@@ -60,5 +62,5 @@ fun TunerNeedleIcon() {
 
         // Pivot circle
         drawCircle(color, radius = 2.5.dp.toPx(), center = Offset(cx, pivotY))
-    }
+    } }
 }

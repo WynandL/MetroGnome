@@ -1,92 +1,11 @@
 package com.example.metrognome.ui.components
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.ui.graphics.vector.PathParser
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
-
 /*
- * The app's icons. One family, one line: every small icon in the app is a single-colour glyph
- * drawn with a 1.5 dp line, whatever size it is shown at (see CLAUDE.md, "Icons"). Material's
- * filled icons used to sit beside the hand-drawn glyphs (TunerNeedleIcon, ChordGridIcon) and
- * read as a second, heavier family.
- *
- * Path data is Lucide's (ISC licensed, see THIRD_PARTY_LICENSES.md), the set the instrument
- * glyphs already came from, on its 24 x 24 grid. This file is generated: add an icon by adding
- * a row to tools/icons/gen_icons.py and running it, not by pasting path data here.
- *
- * Use [AppIcon] exactly as Material's Icon was used; pass an [AppGlyph] wherever an icon
- * travels as a value (a button's leading icon, a banner model).
+ * The app's icons: path data only. Lucide's (ISC licensed, see THIRD_PARTY_LICENSES.md) on its
+ * 24 x 24 grid, plus the app's own marks. This file is generated: add an icon by adding a row
+ * to tools/icons/gen_icons.py and running it, not by pasting path data here. How a glyph is
+ * drawn ([AppGlyph], [AppIcon], [drawGlyph]) lives in AppIcon.kt, which is hand-written.
  */
-
-/**
- * One icon: path data on a 24 x 24 grid, parsed on first use. [filled] fills every path and is
- * for transport shapes only. The app's own marks can fill single paths ([filledPaths]) and draw
- * others as the family's faint secondary line ([faintPaths], 38% and dropped under 14 dp).
- */
-@Immutable
-class AppGlyph internal constructor(
-    private val data: List<String>,
-    internal val filled: Boolean = false,
-    internal val filledPaths: Set<Int> = emptySet(),
-    internal val faintPaths: Set<Int> = emptySet(),
-) {
-    internal val paths: List<Path> by lazy(LazyThreadSafetyMode.NONE) {
-        data.map { PathParser().parsePathString(it).toPath() }
-    }
-}
-
-private const val GRID = 24f
-
-/**
- * Draws [glyph] in [tint]. 24 dp unless [modifier] sets a size. The line is 1.5 dp at every
- * size (1.25 dp under 14 dp, where 1.5 closes the counters up): it is never scaled with the
- * icon, which is what keeps a 13 dp icon and a 26 dp icon looking like the same pen.
- */
-@Composable
-fun AppIcon(
-    glyph: AppGlyph,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current,
-) {
-    val semantics = if (contentDescription != null) {
-        Modifier.semantics { this.contentDescription = contentDescription; role = Role.Image }
-    } else Modifier
-    Canvas(modifier = modifier.size(24.dp).then(semantics)) {
-        val s = size.minDimension / GRID
-        val line = (if (size.minDimension < 14.dp.toPx()) 1.25f else 1.5f).dp.toPx() / s
-        val dx = (size.width - GRID * s) / 2f
-        val dy = (size.height - GRID * s) / 2f
-        scale(s, s, pivot = Offset.Zero) {
-            drawContext.transform.translate(dx / s, dy / s)
-            val stroke = Stroke(width = line, cap = StrokeCap.Round, join = StrokeJoin.Round)
-            val small = size.minDimension < 14.dp.toPx()
-            glyph.paths.forEachIndexed { i, path ->
-                val faint = i in glyph.faintPaths
-                if (faint && small) return@forEachIndexed
-                val colour = if (faint) tint.copy(alpha = tint.alpha * 0.38f) else tint
-                if (glyph.filled || i in glyph.filledPaths) drawPath(path, colour)
-                drawPath(path, colour, style = stroke)
-            }
-        }
-    }
-}
 
 object AppIcons {
     /** lucide "award" (was Material WorkspacePremium). */
@@ -129,14 +48,10 @@ object AppIcons {
     val MusicNote = AppGlyph(listOf("M4 18a4 4 0 1 0 8 0a4 4 0 1 0 -8 0Z", "M12 18V2l7 4"))
     /** lucide "pause" (was Material Pause). */
     val Pause = AppGlyph(listOf("M15 4h2a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-14a1 1 0 0 1 1 -1Z", "M7 4h2a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-14a1 1 0 0 1 1 -1Z"), filled = true)
-    /** lucide "piano" (was Material Piano). */
-    val Piano = AppGlyph(listOf("M18.5 8c-1.4 0-2.6-.8-3.2-2A6.87 6.87 0 0 0 2 9v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-8.5C22 9.6 20.4 8 18.5 8", "M2 14h20", "M6 14v4", "M10 14v4", "M14 14v4", "M18 14v4"))
     /** lucide "play" (was Material PlayArrow). */
     val Play = AppGlyph(listOf("M6 3L20 12L6 21L6 3Z"), filled = true)
     /** lucide "circle-play" (was Material PlayCircle). */
     val PlayCircle = AppGlyph(listOf("M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0Z", "M10 8L16 12L10 16L10 8Z"))
-    /** lucide "activity" (was Material Stars). */
-    val Pulse = AppGlyph(listOf("M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"))
     /** lucide "search" (was Material Search). */
     val Search = AppGlyph(listOf("M3 11a8 8 0 1 0 16 0a8 8 0 1 0 -16 0Z", "m21 21-4.3-4.3"))
     /** lucide "settings" (was Material Settings). */
@@ -173,16 +88,24 @@ object AppIcons {
     val VolumeUp = AppGlyph(listOf("M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z", "M16 9a5 5 0 0 1 0 6", "M19.364 18.364a9 9 0 0 0 0-12.728"))
     /** lucide "triangle-alert" (was Material Warning). */
     val Warning = AppGlyph(listOf("m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3", "M12 9v4", "M12 17h.01"))
-    /** lucide "waves" (was Material Waves). */
-    val Waves = AppGlyph(listOf("M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1", "M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1", "M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"))
 
     /**
      * The Gnote: a music note wearing Metro's hat. The mark for the currency everywhere it is
      * named (the Home pill, the earn banner, the two Gnotes dialogs). Not the bolt, which is
-     * the Speed Trainer's. Paths: hat left, hat right, brim, stem, head (filled), hat band (faint).
+     * the Speed Trainer's. Paths: hat left, hat right, brim, stem, head (filled).
      */
     val Gnote = AppGlyph(
-        listOf("M13.4 1.5 9.3 11.2", "M13.4 1.5l3.5 9.7", "M7.6 11.2Q13.1 13 18.6 11.2", "M13.1 12.6V18", "M6.28 20.14A3.7 2.9 -18 1 0 13.32 17.86A3.7 2.9 -18 1 0 6.28 20.14Z", "M11.2 7.4H15.5"),
-        filledPaths = setOf(4), faintPaths = setOf(5),
+        listOf("M13.4 1.5 9.3 11.2", "M13.4 1.5l3.5 9.7", "M7.6 11.2Q13.1 13 18.6 11.2", "M13.1 12.6V18", "M6.28 20.14A3.7 2.9 -18 1 0 13.32 17.86A3.7 2.9 -18 1 0 6.28 20.14Z"),
+        filledPaths = setOf(4), faintPaths = setOf(),
+    )
+
+    /**
+     * A tuning fork: two tines open at the top, joined by a U, a stem and the ball it is held by.
+     * Drawn for the Tuner's fork calibration; the first one closed the tines over the top and
+     * read as an ice cream. Paths: tines and U, stem, ball (filled).
+     */
+    val TuningFork = AppGlyph(
+        listOf("M9 2V11A3 3 0 0 0 15 11V2", "M12 14V19", "M10.6 20.6a1.4 1.4 0 1 0 2.8 0a1.4 1.4 0 1 0 -2.8 0Z"),
+        filledPaths = setOf(2), faintPaths = setOf(),
     )
 }

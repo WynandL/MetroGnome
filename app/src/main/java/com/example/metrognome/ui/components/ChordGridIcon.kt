@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
@@ -21,9 +22,11 @@ import androidx.compose.ui.unit.dp
  * is faint, so the dots and the nut carry the glyph.
  */
 @Composable
-fun ChordGridIcon() {
-    val color = LocalContentColor.current
-    Canvas(modifier = Modifier.size(24.dp)) {
+fun ChordGridIcon(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
+    val color = tint.opaque()
+    // One ink (OneInk.kt): the grid is its own faint layer, so its crossings and its meeting
+    // with the nut and the dots are one shade, not darker knots.
+    Canvas(modifier = modifier.size(24.dp)) { oneInk(tint.alpha) {
         val strings = 3
         val fretSpaces = 3
         val left = size.width * 0.20f
@@ -38,14 +41,15 @@ fun ChordGridIcon() {
         drawLine(color, Offset(left, top), Offset(right, top), strokeWidth = 2.2.dp.toPx(), cap = StrokeCap.Round)
 
         // Frets and strings, muted like the needle icon's arc track.
-        val grid = color.copy(alpha = 0.38f)
-        for (i in 1..fretSpaces) {
-            val y = top + i * fretGap
-            drawLine(grid, Offset(left, y), Offset(right, y), strokeWidth = thin, cap = StrokeCap.Round)
-        }
-        for (i in 0 until strings) {
-            val x = left + i * stringGap
-            drawLine(grid, Offset(x, top), Offset(x, bottom), strokeWidth = thin, cap = StrokeCap.Round)
+        oneInk(FAINT_INK) {
+            for (i in 1..fretSpaces) {
+                val y = top + i * fretGap
+                drawLine(color, Offset(left, y), Offset(right, y), strokeWidth = thin, cap = StrokeCap.Round)
+            }
+            for (i in 0 until strings) {
+                val x = left + i * stringGap
+                drawLine(color, Offset(x, top), Offset(x, bottom), strokeWidth = thin, cap = StrokeCap.Round)
+            }
         }
 
         // Two fingered notes: (string index, fret space). Neither sits in the first space,
@@ -59,5 +63,5 @@ fun ChordGridIcon() {
                 center = Offset(left + string * stringGap, top + (fret - 0.5f) * fretGap),
             )
         }
-    }
+    } }
 }

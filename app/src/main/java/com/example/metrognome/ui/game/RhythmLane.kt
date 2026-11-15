@@ -11,7 +11,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import com.example.metrognome.ui.components.Particle
-import com.example.metrognome.ui.components.drawNote
+import com.example.metrognome.ui.components.AppIcons
+import com.example.metrognome.ui.components.drawGlyph
 import com.example.metrognome.ui.components.drawParticles
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.GameColors
@@ -420,7 +421,19 @@ private fun DrawScope.drawNotes(g: LaneGeometry, chart: RhythmChart?, notes: Lis
             ),
             radius = r, center = c, alpha = alpha,
         )
-        drawNote(Offset(g.cx - r * 0.10f, y), r * 0.40f, GameColors.noteGlyph.copy(alpha = 0.72f * alpha))
+        // The mark inside is the Gnote, the currency the notes are played for, in one ink so
+        // its hat, stem and head read as one note rather than parts laid side by side. Its
+        // line scales with the ball (the family's 1.5/24 of the glyph, a touch heavier so it
+        // holds at speed), unlike a UI icon's fixed 1.5 dp.
+        val side = r * 1.36f
+        drawGlyph(
+            glyph = AppIcons.Gnote,
+            topLeft = Offset(g.cx - side * 0.52f, y - side * 0.48f),
+            side = side,
+            tint = GameColors.noteGlyph.copy(alpha = 0.72f * alpha),
+            linePx = side / 13f,
+            dropFaint = side < 14.dp.toPx(),
+        )
     }
 }
 

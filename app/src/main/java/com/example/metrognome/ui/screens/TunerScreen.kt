@@ -1488,7 +1488,7 @@ private fun IdleCalibration(
     Spacer(Modifier.height(10.dp))
     CalibrationOptionButton(
         icon = {
-            TuningForkIcon(modifier = Modifier.size(24.dp), tint = AppColors.gold)
+            AppIcon(AppIcons.TuningFork, null, tint = AppColors.gold, modifier = Modifier.size(24.dp))
         },
         title = "Tuning Fork",
         instruction = "Strike A${referenceHz.roundToInt()} Hz fork · hold near mic",
@@ -1540,56 +1540,6 @@ private fun CalibrationOptionButton(
     }
 }
 
-/**
- * Canvas-drawn tuning fork icon — two prongs with a U-curve at the top,
- * joined by a short arc at the base, and a vertical handle below.
- * Geometry is proportional so the icon scales cleanly at any size.
- */
-@Composable
-private fun TuningForkIcon(
-    modifier: Modifier = Modifier,
-    tint: Color = AppColors.gold,
-) {
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val sw = 2.4.dp.toPx()
-        val stroke = Stroke(width = sw, cap = StrokeCap.Round, join = StrokeJoin.Round)
-
-        val cx        = w / 2f
-        val spread    = w * 0.26f   // half-gap between prong centre lines
-        val prongTop  = h * 0.09f
-        val prongBot  = h * 0.50f
-        val handleBot = h * 0.95f
-
-        // Left prong
-        drawLine(tint, Offset(cx - spread, prongBot), Offset(cx - spread, prongTop), sw, StrokeCap.Round)
-        // Right prong
-        drawLine(tint, Offset(cx + spread, prongBot), Offset(cx + spread, prongTop), sw, StrokeCap.Round)
-
-        // U-curve at top (cubic Bézier: prong tips curve over the top)
-        val arcPath = Path().apply {
-            moveTo(cx - spread, prongTop)
-            cubicTo(
-                cx - spread, h * -0.06f,
-                cx + spread, h * -0.06f,
-                cx + spread, prongTop,
-            )
-        }
-        drawPath(arcPath, tint, style = stroke)
-
-        // Junction curve connecting prong bottoms
-        val juncPath = Path().apply {
-            moveTo(cx - spread, prongBot)
-            quadraticTo(cx, prongBot + h * 0.08f, cx + spread, prongBot)
-        }
-        drawPath(juncPath, tint, style = stroke)
-
-        // Handle (stem)
-        drawLine(tint, Offset(cx, prongBot + h * 0.04f), Offset(cx, handleBot), sw, StrokeCap.Round)
-    }
-}
-
 @Composable
 private fun CalibrationStatus(info: CalibrationInfo) {
     val accent = if (info.calibrated) GameColors.good else AppColors.textDim
@@ -1614,7 +1564,7 @@ private fun CalibrationStatus(info: CalibrationInfo) {
                     info.calibrated && info.mode == CalibrationMode.LOOPBACK ->
                         AppIcon(AppIcons.Mic, null, tint = accent, modifier = Modifier.size(16.dp))
                     info.calibrated && info.mode == CalibrationMode.REFERENCE ->
-                        TuningForkIcon(Modifier.size(16.dp), tint = accent)
+                        AppIcon(AppIcons.TuningFork, null, tint = accent, modifier = Modifier.size(16.dp))
                     info.calibrated ->
                         AppIcon(AppIcons.MusicNote, null, tint = accent, modifier = Modifier.size(16.dp))
                     else ->

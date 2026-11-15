@@ -2,12 +2,7 @@ package com.example.metrognome.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -36,9 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -52,8 +44,6 @@ import com.example.metrognome.audio.drone.DroneState
 import com.example.metrognome.audio.drone.DroneTimbre
 import com.example.metrognome.ui.theme.AppColors
 import java.util.Locale
-import kotlin.math.PI
-import kotlin.math.sin
 
 /**
  * The tuning drone: pick a note, hold it, tune against it by ear.
@@ -336,48 +326,6 @@ private fun DroneKeyboard(
         onKeyTap = onSelect,
         modifier = modifier,
     )
-}
-
-// ── Header glyph ─────────────────────────────────────────────────────────────────
-
-/**
- * A sine wave that travels while the tone sounds and sits still when it does not.
- *
- * The panel's identity mark and its state indicator in one: a drone that keeps playing
- * after the user has scrolled or switched tabs is visibly still running.
- */
-@Composable
-private fun DroneWaveIcon(sounding: Boolean, modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "droneWave")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
-        label = "droneWavePhase",
-    )
-    val color by animateColorAsState(
-        targetValue = if (sounding) AppColors.gold else AppColors.textDim,
-        animationSpec = tween(260),
-        label = "droneWaveTint",
-    )
-
-    Canvas(modifier = modifier) {
-        val travel = if (sounding) phase else 0f
-        val amplitude = size.height * 0.34f
-        val midY = size.height / 2f
-        val path = Path()
-        val steps = 28
-        for (i in 0..steps) {
-            val x = size.width * i / steps
-            val y = midY + amplitude * sin(2.0 * PI * (1.6 * i / steps - travel)).toFloat()
-            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-        }
-        drawPath(
-            path = path,
-            color = color,
-            style = Stroke(width = 1.6.dp.toPx(), cap = StrokeCap.Round),
-        )
-    }
 }
 
 // ── Previews ─────────────────────────────────────────────────────────────────────

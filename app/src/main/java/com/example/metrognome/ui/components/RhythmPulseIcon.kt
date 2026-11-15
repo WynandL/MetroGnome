@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -21,9 +22,8 @@ import androidx.compose.ui.unit.dp
  * visually centred at 24 dp.
  */
 @Composable
-fun RhythmPulseIcon() {
-    val color = LocalContentColor.current
-    Canvas(modifier = Modifier.size(24.dp)) {
+fun RhythmPulseIcon(modifier: Modifier = Modifier, color: Color = LocalContentColor.current) {
+    Canvas(modifier = modifier.size(24.dp)) {
         val w     = size.width
         val h     = size.height
         val baseY = h * 0.58f

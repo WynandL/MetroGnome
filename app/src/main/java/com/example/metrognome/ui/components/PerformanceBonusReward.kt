@@ -85,7 +85,7 @@ fun PerformanceBonusReward(
                 horizontalArrangement = Arrangement.Center,
             ) {
                 AppIcon(
-                    glyph = AppIcons.MusicNote,
+                    glyph = AppIcons.Gnote,
                     contentDescription = null,
                     tint = AppColors.gold,
                     modifier = Modifier.size(16.dp),

@@ -4,6 +4,10 @@ import com.example.metrognome.ui.theme.AppRadius
 import com.example.metrognome.ui.components.AppGlyph
 import com.example.metrognome.ui.components.AppIcons
 import com.example.metrognome.ui.components.AppIcon
+import com.example.metrognome.ui.components.ChordGridIcon
+import com.example.metrognome.ui.components.DroneWaveIcon
+import com.example.metrognome.ui.components.RhythmPulseIcon
+import com.example.metrognome.ui.components.TunerNeedleIcon
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -150,12 +154,7 @@ private fun EarnRuleCard(rule: EarnRule) {
 
             // Icon + label + description
             Row(verticalAlignment = Alignment.Top) {
-                AppIcon(
-                        glyph        = iconFor(rule.iconKey),
-                        contentDescription = null,
-                        tint               = AppColors.gold,
-                        modifier           = Modifier.size(24.dp),
-                    )
+                RuleIcon(rule.iconKey)
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.padding(top = 1.dp)) {
                     Text(
@@ -241,17 +240,32 @@ private fun StatChip(
     }
 }
 
-private fun iconFor(iconKey: String): AppGlyph = when (iconKey) {
-    "metronome" -> AppIcons.MusicNote
-    "tuner"     -> AppIcons.Equalizer
-    "drone"     -> AppIcons.Waves
-    "chords"    -> AppIcons.Piano
-    "game"      -> AppIcons.Pulse
+/**
+ * Each rule's icon is the one its feature carries everywhere else, never a second one: the nav
+ * bar's drawn tab icons for Tuner, Chords and Rhythm, the Tuner drone panel's wave for the
+ * drone, the mic that marks Groove Check in the session pill, the Home buttons' timer and bolt.
+ */
+@Composable
+private fun RuleIcon(iconKey: String) {
+    val gold = AppColors.gold
+    val box = Modifier.size(24.dp)
+    when (iconKey) {
+        "tuner"  -> TunerNeedleIcon(box, tint = gold)
+        "chords" -> ChordGridIcon(box, tint = gold)
+        "game"   -> RhythmPulseIcon(box, color = gold)
+        "drone"  -> Box(box, contentAlignment = Alignment.Center) {
+            DroneWaveIcon(Modifier.size(width = 24.dp, height = 17.dp), idleColor = gold)
+        }
+        else -> AppIcon(glyphFor(iconKey), contentDescription = null, tint = gold, modifier = box)
+    }
+}
+
+private fun glyphFor(iconKey: String): AppGlyph = when (iconKey) {
     "practice"  -> AppIcons.Timer
     "speed"     -> AppIcons.Bolt
-    "timing"    -> AppIcons.Equalizer
+    "timing"    -> AppIcons.Mic
     "feedback"  -> AppIcons.ThumbUp
     "loyalty"   -> AppIcons.Trophy
     "ad"        -> AppIcons.PlayCircle
-    else        -> AppIcons.MusicNote
+    else        -> AppIcons.MusicNote   // "metronome": the Gnome tab's note
 }
