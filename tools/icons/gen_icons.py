@@ -59,6 +59,19 @@ ICONS = [
 ]
 
 
+# The app's own marks: not from Lucide, drawn for Metro Gnome on the same 24 x 24 grid.
+# (name, paths, indices of filled paths, indices of faint paths, KDoc)
+CUSTOM = [
+    ('Gnote',
+     ['M13.4 1.5 9.3 11.2', 'M13.4 1.5l3.5 9.7', 'M7.6 11.2Q13.1 13 18.6 11.2', 'M13.1 12.6V18',
+      'M6.28 20.14A3.7 2.9 -18 1 0 13.32 17.86A3.7 2.9 -18 1 0 6.28 20.14Z', 'M11.2 7.4H15.5'],
+     [4], [5],
+     'The Gnote: a music note wearing Metro\'s hat. The mark for the currency everywhere it is\n'
+     '     * named (the Home pill, the earn banner, the two Gnotes dialogs). Not the bolt, which is\n'
+     '     * the Speed Trainer\'s. Paths: hat left, hat right, brim, stem, head (filled), hat band (faint).'),
+]
+
+
 def f(x):
     return ('%.3f' % float(x)).rstrip('0').rstrip('.')
 
@@ -102,6 +115,12 @@ for name, src, filled, was in ICONS:
     body = ', '.join('"%s"' % d for d in ds)
     lines.append('    val %s = AppGlyph(listOf(%s)%s)' % (name, body, ', filled = true' if filled else ''))
 
+for name, ds, fills, faint, doc in CUSTOM:
+    lines.append('')
+    lines.append('    /**\n     * %s\n     */' % doc)
+    lines.append('    val %s = AppGlyph(\n        listOf(%s),\n        filledPaths = setOf(%s), faintPaths = setOf(%s),\n    )' % (
+        name, ', '.join('"%s"' % d for d in ds), ', '.join(map(str, fills)), ', '.join(map(str, faint))))
+
 open(OUT, 'w', encoding='utf-8', newline='\n').write('''package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.Canvas
@@ -138,9 +157,18 @@ import androidx.compose.ui.unit.dp
  * travels as a value (a button's leading icon, a banner model).
  */
 
-/** One icon: Lucide path data, parsed on first use. [filled] is for transport shapes only. */
+/**
+ * One icon: path data on a 24 x 24 grid, parsed on first use. [filled] fills every path and is
+ * for transport shapes only. The app's own marks can fill single paths ([filledPaths]) and draw
+ * others as the family's faint secondary line ([faintPaths], 38% and dropped under 14 dp).
+ */
 @Immutable
-class AppGlyph internal constructor(private val data: List<String>, internal val filled: Boolean = false) {
+class AppGlyph internal constructor(
+    private val data: List<String>,
+    internal val filled: Boolean = false,
+    internal val filledPaths: Set<Int> = emptySet(),
+    internal val faintPaths: Set<Int> = emptySet(),
+) {
     internal val paths: List<Path> by lazy(LazyThreadSafetyMode.NONE) {
         data.map { PathParser().parsePathString(it).toPath() }
     }
@@ -171,9 +199,13 @@ fun AppIcon(
         scale(s, s, pivot = Offset.Zero) {
             drawContext.transform.translate(dx / s, dy / s)
             val stroke = Stroke(width = line, cap = StrokeCap.Round, join = StrokeJoin.Round)
-            glyph.paths.forEach { path ->
-                if (glyph.filled) drawPath(path, tint)
-                drawPath(path, tint, style = stroke)
+            val small = size.minDimension < 14.dp.toPx()
+            glyph.paths.forEachIndexed { i, path ->
+                val faint = i in glyph.faintPaths
+                if (faint && small) return@forEachIndexed
+                val colour = if (faint) tint.copy(alpha = tint.alpha * 0.38f) else tint
+                if (glyph.filled || i in glyph.filledPaths) drawPath(path, colour)
+                drawPath(path, colour, style = stroke)
             }
         }
     }

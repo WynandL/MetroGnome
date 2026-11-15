@@ -111,7 +111,7 @@ private fun PointsBannerData.toBannerModel(): BannerModel {
     return if (pointsEarned > 0) {
         BannerModel(
             accent   = AppColors.gold,
-            icon     = AppIcons.Bolt,
+            icon     = AppIcons.Gnote,
             lead     = "+$pointsEarned",
             leadUnit = PointsConfig.CURRENCY_NAME,
             segments = listOf(

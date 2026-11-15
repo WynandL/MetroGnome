@@ -66,7 +66,7 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     AppIcon(
-                            glyph        = AppIcons.Bolt,
+                            glyph        = AppIcons.Gnote,
                             contentDescription = null,
                             tint               = AppColors.gold,
                             modifier           = Modifier.size(24.dp),

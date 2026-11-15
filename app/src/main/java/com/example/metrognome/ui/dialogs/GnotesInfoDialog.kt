@@ -70,7 +70,7 @@ fun GnotesInfoDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     AppIcon(
-                            glyph        = AppIcons.Bolt,
+                            glyph        = AppIcons.Gnote,
                             contentDescription = null,
                             tint               = AppColors.gold,
                             modifier           = Modifier.size(24.dp),

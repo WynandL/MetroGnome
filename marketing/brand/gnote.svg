@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="240" height="240" fill="none" stroke="#FFD700" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <title>Gnote</title>
+  <path d="M13.4 1.5 9.3 11.2"/>
+  <path d="M13.4 1.5l3.5 9.7"/>
+  <path d="M7.6 11.2Q13.1 13 18.6 11.2"/>
+  <path d="M13.1 12.6V18"/>
+  <path fill="#FFD700" d="M6.28 20.14A3.7 2.9 -18 1 0 13.32 17.86A3.7 2.9 -18 1 0 6.28 20.14Z"/>
+  <path d="M11.2 7.4H15.5" opacity=".38"/>
+</svg>

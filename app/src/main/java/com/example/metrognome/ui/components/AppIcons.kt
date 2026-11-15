@@ -34,9 +34,18 @@ import androidx.compose.ui.unit.dp
  * travels as a value (a button's leading icon, a banner model).
  */
 
-/** One icon: Lucide path data, parsed on first use. [filled] is for transport shapes only. */
+/**
+ * One icon: path data on a 24 x 24 grid, parsed on first use. [filled] fills every path and is
+ * for transport shapes only. The app's own marks can fill single paths ([filledPaths]) and draw
+ * others as the family's faint secondary line ([faintPaths], 38% and dropped under 14 dp).
+ */
 @Immutable
-class AppGlyph internal constructor(private val data: List<String>, internal val filled: Boolean = false) {
+class AppGlyph internal constructor(
+    private val data: List<String>,
+    internal val filled: Boolean = false,
+    internal val filledPaths: Set<Int> = emptySet(),
+    internal val faintPaths: Set<Int> = emptySet(),
+) {
     internal val paths: List<Path> by lazy(LazyThreadSafetyMode.NONE) {
         data.map { PathParser().parsePathString(it).toPath() }
     }
@@ -67,9 +76,13 @@ fun AppIcon(
         scale(s, s, pivot = Offset.Zero) {
             drawContext.transform.translate(dx / s, dy / s)
             val stroke = Stroke(width = line, cap = StrokeCap.Round, join = StrokeJoin.Round)
-            glyph.paths.forEach { path ->
-                if (glyph.filled) drawPath(path, tint)
-                drawPath(path, tint, style = stroke)
+            val small = size.minDimension < 14.dp.toPx()
+            glyph.paths.forEachIndexed { i, path ->
+                val faint = i in glyph.faintPaths
+                if (faint && small) return@forEachIndexed
+                val colour = if (faint) tint.copy(alpha = tint.alpha * 0.38f) else tint
+                if (glyph.filled || i in glyph.filledPaths) drawPath(path, colour)
+                drawPath(path, colour, style = stroke)
             }
         }
     }
@@ -162,4 +175,14 @@ object AppIcons {
     val Warning = AppGlyph(listOf("m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3", "M12 9v4", "M12 17h.01"))
     /** lucide "waves" (was Material Waves). */
     val Waves = AppGlyph(listOf("M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1", "M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1", "M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"))
+
+    /**
+     * The Gnote: a music note wearing Metro's hat. The mark for the currency everywhere it is
+     * named (the Home pill, the earn banner, the two Gnotes dialogs). Not the bolt, which is
+     * the Speed Trainer's. Paths: hat left, hat right, brim, stem, head (filled), hat band (faint).
+     */
+    val Gnote = AppGlyph(
+        listOf("M13.4 1.5 9.3 11.2", "M13.4 1.5l3.5 9.7", "M7.6 11.2Q13.1 13 18.6 11.2", "M13.1 12.6V18", "M6.28 20.14A3.7 2.9 -18 1 0 13.32 17.86A3.7 2.9 -18 1 0 6.28 20.14Z", "M11.2 7.4H15.5"),
+        filledPaths = setOf(4), faintPaths = setOf(5),
+    )
 }

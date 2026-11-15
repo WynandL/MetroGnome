@@ -291,7 +291,7 @@ fun MetronomeScreen(
                 ) {
                     com.example.metrognome.ui.components.GoldPill(
                         text        = "$gnoteCount ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME}",
-                        leadingIcon = AppIcons.Bolt,
+                        leadingIcon = AppIcons.Gnote,
                         onClick     = { showGnotesInfo = true },
                     )
                 }
