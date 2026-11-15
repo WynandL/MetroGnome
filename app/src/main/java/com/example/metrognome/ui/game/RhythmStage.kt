@@ -57,7 +57,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.metrognome.ui.components.GhostButton
+import com.example.metrognome.ui.components.AppIcon
+import com.example.metrognome.ui.components.AppIcons
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.semantics.Role
 import com.example.metrognome.ui.components.RaisedControl
 import com.example.metrognome.ui.overlays.OverlayEyebrow
 import com.example.metrognome.ui.theme.AppColors
@@ -195,11 +200,58 @@ internal fun RhythmStage(vm: RhythmGameViewModel, phase: GamePhase, countDown: I
         )
         Spacer(Modifier.height(10.dp))
 
-        TapKey(enabled = playing, onTapDown = vm::onScreenTapAt, onAccessibleClick = vm::onScreenTap)
+        // TAP stays dead centre; Stop sits on the same line at the left edge, its key centred
+        // on TAP's centre. It used to be a full-width button under TAP, 56 dp of the screen's
+        // height for a control used once a game. Left, not right: a right thumb working TAP
+        // drifts right, and a stray touch on Stop ends the run.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            TapKey(enabled = playing, onTapDown = vm::onScreenTapAt, onAccessibleClick = vm::onScreenTap)
+            StopKey(
+                onClick = { vm.stopGame() },
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    // The label hangs below the key; shift down by half of it so the KEY,
+                    // not the key-plus-label, is centred on TAP.
+                    .offset(y = (STOP_LABEL_GAP + STOP_LABEL_HEIGHT) / 2),
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+    }
+}
 
-        Spacer(Modifier.height(10.dp))
-        GhostButton("Stop", { vm.stopGame() }, Modifier.width(132.dp))
-        Spacer(Modifier.height(10.dp))
+private val STOP_KEY_SIZE = 52.dp
+private val STOP_LABEL_GAP = 4.dp
+private val STOP_LABEL_HEIGHT = 14.dp
+
+/**
+ * Ends the game: a round key with a red rim and a stop square, labelled, in the app's stop
+ * colours, so it reads as "stop" at a glance without taking a row of its own.
+ */
+@Composable
+private fun StopKey(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(STOP_KEY_SIZE)
+                .clip(CircleShape)
+                .background(AppColors.surface)
+                .border(1.dp, AppColors.stopRedBorder, CircleShape)
+                .clickable(onClickLabel = "Stop the game", role = Role.Button, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            AppIcon(AppIcons.Stop, contentDescription = "Stop game", tint = AppColors.stopRed, modifier = Modifier.size(16.dp))
+        }
+        Spacer(Modifier.height(STOP_LABEL_GAP))
+        Text(
+            "Stop", color = AppColors.stopRed, fontSize = 10.sp, lineHeight = 14.sp,
+            fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
+            modifier = Modifier.height(STOP_LABEL_HEIGHT),
+        )
     }
 }
 
