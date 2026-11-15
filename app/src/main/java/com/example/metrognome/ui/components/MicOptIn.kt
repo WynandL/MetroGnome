@@ -88,6 +88,7 @@ fun MicOptIn(
                     "Stay on the beat to earn bonus Gnotes.",
                     color = AppColors.textMuted,
                     fontSize = 12.sp,
+                    lineHeight = 16.sp,
                 )
             }
             Spacer(Modifier.width(12.dp))

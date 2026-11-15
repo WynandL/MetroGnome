@@ -92,6 +92,7 @@ fun SpeedTrainerDialog(
                 "${config.startBpm} BPM",
                 color = AppColors.textMutedBlue,
                 fontSize = 10.sp,
+                lineHeight = 14.sp,
                 fontWeight = FontWeight.Medium,
             )
             val stepCount = remember(config) { config.stepsSequence().size }
@@ -99,11 +100,13 @@ fun SpeedTrainerDialog(
                 "$stepCount steps",
                 color = AppColors.textMuted,
                 fontSize = 10.sp,
+                lineHeight = 14.sp,
             )
             Text(
                 "${config.targetBpm} BPM",
                 color = AppColors.gold,
                 fontSize = 10.sp,
+                lineHeight = 14.sp,
                 fontWeight = FontWeight.Medium,
             )
         }
@@ -257,6 +260,7 @@ fun SpeedTrainerDialog(
             }.",
             color = AppColors.textMuted,
             fontSize = 11.sp,
+            lineHeight = 15.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )

@@ -222,6 +222,7 @@ fun StreakWeekCard(
                         text       = label,
                         color      = if (isToday) AppColors.gold else AppColors.textSubtle,
                         fontSize   = 9.sp,
+                        lineHeight = 12.sp,
                         fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
                     )
                 }
@@ -241,10 +242,10 @@ private fun StreakHeaderText(
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         when {
             streak > 0 -> {
-                Text("Day $streak", color = AppColors.gold, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Text(" streak", color = AppColors.textMuted, fontSize = 13.sp)
+                Text("Day $streak", color = AppColors.gold, fontWeight = FontWeight.Bold, fontSize = 13.sp, lineHeight = 18.sp)
+                Text(" streak", color = AppColors.textMuted, fontSize = 13.sp, lineHeight = 18.sp)
                 if (bestStreak > streak) {
-                    Text("  ·  best $bestStreak", color = AppColors.textSubtle, fontSize = 11.sp)
+                    Text("  ·  best $bestStreak", color = AppColors.textSubtle, fontSize = 11.sp, lineHeight = 15.sp)
                 }
             }
             bestStreak > 0 -> {
@@ -252,15 +253,17 @@ private fun StreakHeaderText(
                     text     = "Best: $bestStreak day${if (bestStreak != 1) "s" else ""}",
                     color    = AppColors.textMuted,
                     fontSize = 13.sp,
+                    lineHeight = 18.sp,
                 )
                 Text(
                     text     = "  ·  practice today to restart",
                     color    = AppColors.textSubtle,
                     fontSize = 11.sp,
+                    lineHeight = 15.sp,
                 )
             }
             else -> {
-                Text("Start your streak", color = AppColors.textMuted, fontSize = 13.sp)
+                Text("Start your streak", color = AppColors.textMuted, fontSize = 13.sp, lineHeight = 18.sp)
             }
         }
     }

@@ -72,6 +72,7 @@ fun ConfirmDestructiveDialog(
             text = body,
             color = AppColors.textSecondary,
             fontSize = 13.sp,
+            lineHeight = 18.sp,
             textAlign = TextAlign.Center,
         )
 

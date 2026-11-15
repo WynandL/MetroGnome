@@ -88,6 +88,7 @@ fun GnotesInfoDialog(
                             text       = "Your MetroGnome practice currency",
                             color      = AppColors.textMuted,
                             fontSize   = 11.sp,
+                            lineHeight = 15.sp,
                             modifier   = Modifier.padding(top = 2.dp),
                         )
                     }
@@ -133,11 +134,13 @@ fun GnotesInfoDialog(
                                     text     = "${c.label}  ·  ${c.rawValue} ${c.rawUnit}",
                                     color    = AppColors.textMuted,
                                     fontSize = 12.sp,
+                                    lineHeight = 16.sp,
                                 )
                                 Text(
                                     text       = "+${c.points}",
                                     color      = AppColors.textSecondary,
                                     fontSize   = 12.sp,
+                                    lineHeight = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                 )
                             }

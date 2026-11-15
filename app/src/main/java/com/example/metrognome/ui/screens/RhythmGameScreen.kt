@@ -448,12 +448,14 @@ private fun DailyTargetMeter(earned: Int, cap: Int) {
                         text = if (reached) "Daily target reached" else "Daily ${PointsConfig.CURRENCY_NAME}",
                         color = AppColors.textSecondary,
                         fontSize = 12.sp,
+                        lineHeight = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
                         text = "$earned / $cap",
                         color = AppColors.gold,
                         fontSize = 12.sp,
+                        lineHeight = 16.sp,
                         fontWeight = FontWeight.Bold,
                     )
                 }
@@ -557,6 +559,7 @@ private fun PointsCard(
                         text          = PointsConfig.CURRENCY_NAME.uppercase(),
                         color         = AppColors.goldSoft,
                         fontSize      = 10.sp,
+                        lineHeight    = 14.sp,
                         fontWeight    = FontWeight.Bold,
                         letterSpacing = 2.5.sp,
                         modifier      = Modifier.padding(top = 2.dp),
@@ -602,6 +605,7 @@ private fun PointsCard(
                         text      = "Start playing to earn your first ${PointsConfig.CURRENCY_NAME_SINGULAR}.",
                         color     = AppColors.textMuted,
                         fontSize  = 12.sp,
+                        lineHeight= 16.sp,
                         fontStyle = FontStyle.Italic,
                     )
                 } else {
@@ -620,11 +624,13 @@ private fun PointsCard(
                                 text     = "${c.label}  ·  ${c.rawValue} ${c.rawUnit}",
                                 color    = AppColors.textMuted,
                                 fontSize = 12.sp,
+                                lineHeight = 16.sp,
                             )
                             Text(
                                 text       = "+${c.points}",
                                 color      = AppColors.textSecondary,
                                 fontSize   = 12.sp,
+                                lineHeight = 16.sp,
                                 fontWeight = FontWeight.Bold,
                             )
                         }
@@ -636,6 +642,7 @@ private fun PointsCard(
                     text       = "How to earn  →",
                     color      = AppColors.goldBorderStrong,
                     fontSize   = 11.sp,
+                    lineHeight = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier   = Modifier
                         .clickable(onClick = onInfoClick)
@@ -668,11 +675,13 @@ private fun LoyaltyCard(
                 color      = AppColors.gold,
                 fontWeight = FontWeight.Bold,
                 fontSize   = 13.sp,
+                lineHeight = 18.sp,
             )
             Text(
                 text     = " loyalty",
                 color    = AppColors.textMuted,
                 fontSize = 13.sp,
+                lineHeight = 18.sp,
             )
             if (nextMilestone != null) {
                 Spacer(Modifier.weight(1f))
@@ -680,6 +689,7 @@ private fun LoyaltyCard(
                     text     = "${nextMilestone.days - currentDays}d to ${nextMilestone.name}",
                     color    = AppColors.textSubtle,
                     fontSize = 11.sp,
+                    lineHeight = 15.sp,
                 )
             }
         }
@@ -719,6 +729,7 @@ private fun PracticeStreakCard(
                 text          = "How streaks work",
                 color         = AppColors.textSubtle,
                 fontSize      = 11.sp,
+                lineHeight    = 15.sp,
                 fontWeight    = FontWeight.SemiBold,
                 letterSpacing = 0.3.sp,
                 modifier      = Modifier.weight(1f),
@@ -785,11 +796,13 @@ private fun CollectionCard(activeItemIds: Set<String>, onClick: () -> Unit) {
                     color      = AppColors.textPrimary,
                     fontWeight = FontWeight.SemiBold,
                     fontSize   = 14.sp,
+                    lineHeight = 20.sp,
                 )
                 Text(
                     text     = "$unlocked of $total items unlocked",
                     color    = AppColors.textMuted,
                     fontSize = 11.sp,
+                    lineHeight = 15.sp,
                     modifier = Modifier.padding(top = 1.dp),
                 )
             }

@@ -346,6 +346,7 @@ fun AudioShowcase(title: String, caption: String) {
                 text       = title,
                 color      = Color.White,
                 fontSize   = 15.sp,
+                lineHeight = 21.sp,
                 fontWeight = FontWeight.Bold,
             )
         }
@@ -387,6 +388,7 @@ private fun StateMessage(text: String, color: Color, bold: Boolean = false, ital
         text       = text,
         color      = color,
         fontSize   = 14.sp,
+        lineHeight = 20.sp,
         fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
         fontStyle  = if (italic) FontStyle.Italic else FontStyle.Normal,
         modifier   = Modifier.padding(vertical = 8.dp),
@@ -467,6 +469,7 @@ private fun PrimaryCta(
                 text          = text,
                 color         = if (isPurchasing) AppColors.textMuted else AppColors.background,
                 fontSize      = 15.sp,
+                lineHeight    = 21.sp,
                 fontWeight    = FontWeight.ExtraBold,
                 letterSpacing = 0.3.sp,
             )
@@ -480,6 +483,7 @@ private fun RestoreLink(enabled: Boolean, onClick: () -> Unit) {
         text     = "Already purchased? Restore",
         color    = if (enabled) AppColors.textDim else Color(0x22FFFFFF),
         fontSize = 12.sp,
+        lineHeight = 16.sp,
         modifier = Modifier
             .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 6.dp, horizontal = 12.dp),
@@ -517,6 +521,7 @@ fun PreviewActionButton(label: String, onClick: () -> Unit, active: Boolean = fa
                 text       = label,
                 color      = tint,
                 fontSize   = 13.sp,
+                lineHeight = 18.sp,
                 fontWeight = FontWeight.SemiBold,
             )
         }

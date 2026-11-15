@@ -92,7 +92,7 @@ fun SavePresetDialog(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             label = { Text("Preset name") },
-            placeholder = { Text("Optional, e.g. Verse or Warm-up", fontSize = 13.sp) },
+            placeholder = { Text("Optional, e.g. Verse or Warm-up", fontSize = 13.sp, lineHeight = 18.sp) },
             trailingIcon = {
                 Icon(
                     Icons.Filled.Edit,
@@ -118,7 +118,7 @@ fun SavePresetDialog(
                 errorCursorColor = AppColors.gold,
             ),
             supportingText = if (isDuplicate) {
-                { Text("A preset with this name already exists", color = AppColors.warning, fontSize = 11.sp) }
+                { Text("A preset with this name already exists", color = AppColors.warning, fontSize = 11.sp, lineHeight = 15.sp) }
             } else null,
         )
 

@@ -124,12 +124,14 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
                                 text     = "Daily maximum total",
                                 color    = AppColors.textMuted,
                                 fontSize = 12.sp,
+                                lineHeight = 16.sp,
                             )
                             Text(
                                 text       = "${EARN_RULES.sumOf { it.maxPerDay }} pts / day",
                                 color      = AppColors.gold,
                                 fontWeight = FontWeight.Bold,
                                 fontSize   = 12.sp,
+                                lineHeight = 16.sp,
                             )
                         }
                     }
@@ -137,6 +139,7 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
                         text     = "All limits reset at midnight each day.",
                         color    = AppColors.textMuted,
                         fontSize = 10.sp,
+                        lineHeight = 14.sp,
                         modifier = Modifier.padding(top = if (isDevMode) 1.dp else 8.dp, bottom = 4.dp),
                     )
                 }
@@ -174,6 +177,7 @@ private fun EarnRuleCard(rule: EarnRule) {
                         color      = AppColors.textPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize   = 13.sp,
+                        lineHeight = 18.sp,
                     )
                     Text(
                         text       = rule.description,
@@ -243,6 +247,7 @@ private fun StatChip(
             text          = label,
             color         = AppColors.textMuted,
             fontSize      = 9.sp,
+            lineHeight    = 12.sp,
             letterSpacing = 0.3.sp,
             textAlign     = TextAlign.Center,
             modifier      = Modifier.padding(top = 2.dp),

@@ -112,6 +112,7 @@ fun BannerPill(model: BannerModel) {
                 color      = model.accent,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize   = 14.sp,
+                lineHeight = 20.sp,
             )
             model.leadUnit?.let { unit ->
                 Text(
@@ -119,6 +120,7 @@ fun BannerPill(model: BannerModel) {
                     color         = model.accent.copy(alpha = 0.7f),
                     fontWeight    = FontWeight.Bold,
                     fontSize      = 10.sp,
+                    lineHeight    = 14.sp,
                     letterSpacing = 1.5.sp,
                 )
             }
@@ -128,7 +130,7 @@ fun BannerPill(model: BannerModel) {
             // A dot precedes a segment only when a headline (lead) or an earlier
             // segment sits before it — never when the segment is itself the headline.
             if (i > 0 || model.lead != null) {
-                Text("·", color = AppColors.textMuted, fontSize = 13.sp)
+                Text("·", color = AppColors.textMuted, fontSize = 13.sp, lineHeight = 18.sp)
             }
             Text(
                 text       = seg.text,

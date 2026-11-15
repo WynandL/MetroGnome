@@ -244,6 +244,7 @@ private fun FeedbackButton(
                 label,
                 color = tint,
                 fontSize = 14.sp,
+                lineHeight = 20.sp,
                 fontWeight = if (positive) FontWeight.Bold else FontWeight.Medium,
             )
         }
@@ -259,6 +260,6 @@ fun FeedbackThanks(text: String) {
             .padding(vertical = 22.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, color = AppColors.textSecondary, fontSize = 14.sp)
+        Text(text, color = AppColors.textSecondary, fontSize = 14.sp, lineHeight = 20.sp)
     }
 }

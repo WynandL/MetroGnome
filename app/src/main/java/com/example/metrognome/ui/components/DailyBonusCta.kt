@@ -112,6 +112,7 @@ fun DailyBonusCta(
                     text     = if (canWatchToday) "Free · up to 3 times a day" else "More tomorrow",
                     color    = AppColors.textMuted,
                     fontSize = 10.sp,
+                    lineHeight = 14.sp,
                     modifier = Modifier.padding(top = 1.dp),
                 )
             }
@@ -189,6 +190,7 @@ private fun DailyBonusBadge(canTap: Boolean, canWatchToday: Boolean, earn: Int) 
                     text       = "+$earn",
                     color      = if (canTap) AppColors.background else AppColors.textSubtle,
                     fontSize   = 13.sp,
+                    lineHeight = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
                 )
             }

@@ -277,6 +277,7 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
                             "Bar 3 of 4  ·  95 BPM",
                             color = AppColors.goldSoft,
                             fontSize = 10.sp,
+                            lineHeight = 14.sp,
                             fontWeight = FontWeight.Medium,
                         )
                     }
@@ -292,6 +293,7 @@ private fun V5FeatureIntroOverlay(onDismiss: () -> Unit) {
                     text = "Structured · Precise · Up or Down",
                     color = AppColors.textMutedBlue,
                     fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     fontStyle = FontStyle.Italic,
                     textAlign = TextAlign.Center,
                 )
@@ -420,6 +422,7 @@ private fun V6FeatureIntroOverlay(onDismiss: () -> Unit) {
                     text = "Guitar \u00b7 Piano \u00b7 Microphone",
                     color = AppColors.textMutedBlue,
                     fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     fontStyle = FontStyle.Italic,
                     textAlign = TextAlign.Center,
                 )
@@ -531,6 +534,7 @@ private fun V3FeatureIntroOverlay(onDismiss: () -> Unit) {
                             text = "Items & Surprises",
                             color = AppColors.gold,
                             fontSize = 14.sp,
+                            lineHeight = 20.sp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                         )
@@ -547,6 +551,7 @@ private fun V3FeatureIntroOverlay(onDismiss: () -> Unit) {
                     text = "Brand-new cosmetic items",
                     color = AppColors.textMutedBlue,
                     fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     fontStyle = FontStyle.Italic,
                     textAlign = TextAlign.Center,
                 )
@@ -654,6 +659,7 @@ private fun V4FeatureIntroOverlay(onDismiss: () -> Unit) {
                             text = "A4  ·  IN TUNE",
                             color = tunerGreenInTune,
                             fontSize = 11.sp,
+                            lineHeight = 15.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 1.5.sp,
                             modifier = Modifier.padding(top = 2.dp, bottom = 10.dp),
@@ -671,6 +677,7 @@ private fun V4FeatureIntroOverlay(onDismiss: () -> Unit) {
                     text = "Chromatic · Calibrated · Noise-aware",
                     color = AppColors.textMutedBlue,
                     fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     fontStyle = FontStyle.Italic,
                     textAlign = TextAlign.Center,
                 )

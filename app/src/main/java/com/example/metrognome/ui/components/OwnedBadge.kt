@@ -21,6 +21,7 @@ fun OwnedBadge(message: String, modifier: Modifier = Modifier) {
         text      = message,
         color     = AppColors.textMuted,
         fontSize  = 12.sp,
+        lineHeight= 16.sp,
         fontStyle = FontStyle.Italic,
         modifier  = modifier.padding(top = 4.dp),
     )

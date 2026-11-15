@@ -149,6 +149,7 @@ private fun ActiveReminder(modifier: Modifier) {
             "· change in Settings",
             color = AppColors.textMuted,
             fontSize = 10.sp,
+            lineHeight = 14.sp,
         )
     }
 }
@@ -238,6 +239,7 @@ private fun PermissionNeededReminder(modifier: Modifier, onFix: (() -> Unit)?) {
                 if (onFix != null) "Tap to fix" else "Fix in Settings",
                 color = AppColors.textMuted,
                 fontSize = 10.sp,
+                lineHeight = 14.sp,
                 modifier = Modifier.padding(top = 1.dp),
             )
         }
@@ -282,6 +284,7 @@ private fun StartCheckCta(modifier: Modifier, onStartCheck: () -> Unit) {
             "· run a quick Groove Check",
             color = AppColors.textMuted,
             fontSize = 10.sp,
+            lineHeight = 14.sp,
             modifier = Modifier.weight(1f),
         )
         Icon(

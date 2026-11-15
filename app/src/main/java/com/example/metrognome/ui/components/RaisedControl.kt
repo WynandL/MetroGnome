@@ -114,7 +114,7 @@ private fun RaisedControlPreview() {
             tint = AppColors.surfaceVariant,
             modifier = Modifier.height(44.dp).size(width = 56.dp, height = 44.dp),
         ) {
-            Text("-5", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text("-5", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 20.sp)
         }
         RaisedControl(
             onClick = {},
@@ -130,7 +130,7 @@ private fun RaisedControlPreview() {
             tint = AppColors.primaryPurple,
             modifier = Modifier.size(width = 56.dp, height = 44.dp),
         ) {
-            Text("TAP", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text("TAP", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, lineHeight = 18.sp)
         }
     }
 }

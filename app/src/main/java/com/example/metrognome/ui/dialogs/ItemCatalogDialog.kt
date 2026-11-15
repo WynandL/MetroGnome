@@ -140,6 +140,7 @@ fun ItemCatalogDialog(
                             color      = AppColors.gold,
                             fontWeight = FontWeight.Bold,
                             fontSize   = 12.sp,
+                            lineHeight = 16.sp,
                             modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         )
                     }
@@ -244,6 +245,7 @@ private fun ItemCard(
                     color      = AppColors.textPrimary,
                     fontWeight = FontWeight.SemiBold,
                     fontSize   = 12.sp,
+                    lineHeight = 16.sp,
                     maxLines   = 1,
                     overflow   = TextOverflow.Ellipsis,
                 )
@@ -254,12 +256,14 @@ private fun ItemCard(
                         color      = AppColors.gold,
                         fontWeight = FontWeight.SemiBold,
                         fontSize   = 10.sp,
+                        lineHeight = 14.sp,
                     )
                 } else {
                     Text(
                         text      = progressLabel,
                         color     = AppColors.textMuted,
                         fontSize  = 10.sp,
+                        lineHeight= 14.sp,
                         maxLines  = 1,
                         overflow  = TextOverflow.Ellipsis,
                     )

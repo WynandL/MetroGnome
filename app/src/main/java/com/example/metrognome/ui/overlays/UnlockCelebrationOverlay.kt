@@ -200,6 +200,7 @@ fun UnlockCelebrationOverlay(
                     text = entry.condition.displayText(),
                     color = AppColors.textMutedBlue,
                     fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     fontStyle = FontStyle.Italic,
                     textAlign = TextAlign.Center,
                 )

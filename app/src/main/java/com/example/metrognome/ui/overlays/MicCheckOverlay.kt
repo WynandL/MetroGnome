@@ -313,7 +313,7 @@ private fun RunningContent(phase: SelfTestPhase, status: String) {
     )
     ItemProgressBar(progress = animated, modifier = Modifier.fillMaxWidth().height(6.dp))
     Spacer(Modifier.height(10.dp))
-    Text(status, color = AppColors.textMuted, fontSize = 12.sp, textAlign = TextAlign.Center)
+    Text(status, color = AppColors.textMuted, fontSize = 12.sp, lineHeight = 16.sp, textAlign = TextAlign.Center)
 }
 
 private fun phaseProgress(phase: SelfTestPhase): Float = when (phase) {

@@ -51,6 +51,7 @@ fun PerformanceBonusReward(
             text = "GROOVE SCORE",
             color = AppColors.textSecondary,
             fontSize = 11.sp,
+            lineHeight = 15.sp,
             fontWeight = FontWeight.Medium,
             letterSpacing = 1.sp,
         )
@@ -76,6 +77,7 @@ fun PerformanceBonusReward(
                 text = read,
                 color = AppColors.textSecondary,
                 fontSize = 13.sp,
+                lineHeight = 18.sp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
             )
@@ -104,6 +106,7 @@ fun PerformanceBonusReward(
                     text = if (bonus == 1) PointsConfig.CURRENCY_NAME_SINGULAR else PointsConfig.CURRENCY_NAME,
                     color = AppColors.gold,
                     fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
                 )
             }

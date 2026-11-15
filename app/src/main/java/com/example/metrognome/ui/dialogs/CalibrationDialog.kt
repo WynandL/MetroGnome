@@ -165,6 +165,7 @@ private fun RunningContent(state: CalibrationState.Running) {
         text = subtitle,
         color = AppColors.textSecondary,
         fontSize = 13.sp,
+        lineHeight = 18.sp,
         textAlign = TextAlign.Center,
     )
 
@@ -174,6 +175,7 @@ private fun RunningContent(state: CalibrationState.Running) {
             text = "Remain quiet",
             color = AppColors.textMuted,
             fontSize = 12.sp,
+            lineHeight = 16.sp,
             textAlign = TextAlign.Center,
         )
     }
@@ -209,7 +211,7 @@ private fun DoneLoopbackContent(
     Spacer(Modifier.height(12.dp))
     DialogTitle(headline)
     Spacer(Modifier.height(6.dp))
-    Text(detail, color = AppColors.textSecondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+    Text(detail, color = AppColors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp, textAlign = TextAlign.Center)
     Spacer(Modifier.height(22.dp))
     ActionRow(onDismiss = onDismiss, onRetry = onRetry)
 }
@@ -244,7 +246,7 @@ private fun DoneReferenceContent(
     Spacer(Modifier.height(12.dp))
     DialogTitle(headline)
     Spacer(Modifier.height(6.dp))
-    Text(detail, color = AppColors.textSecondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+    Text(detail, color = AppColors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp, textAlign = TextAlign.Center)
     Spacer(Modifier.height(22.dp))
     ActionRow(onDismiss = onDismiss, onRetry = onRetry)
 }
@@ -261,7 +263,7 @@ private fun FailedContent(
     Spacer(Modifier.height(12.dp))
     DialogTitle("Calibration failed")
     Spacer(Modifier.height(6.dp))
-    Text(state.message, color = AppColors.textSecondary, fontSize = 13.sp,
+    Text(state.message, color = AppColors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp,
         textAlign = TextAlign.Center)
     Spacer(Modifier.height(22.dp))
     ActionRow(onDismiss = onDismiss, onRetry = onRetry)

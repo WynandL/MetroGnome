@@ -119,6 +119,7 @@ fun PracticeCompleteOverlay(
                     text      = "minutes",
                     color     = AppColors.textMuted,
                     fontSize  = 14.sp,
+                    lineHeight= 20.sp,
                     modifier  = Modifier.padding(top = 0.dp, bottom = 16.dp),
                 )
 

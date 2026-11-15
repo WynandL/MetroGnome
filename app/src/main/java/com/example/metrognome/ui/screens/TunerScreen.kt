@@ -592,6 +592,7 @@ private fun CalibrationNudgeBanner(onDismiss: () -> Unit) {
                 "Got it",
                 color = AppColors.gold,
                 fontSize = 12.sp,
+                lineHeight = 16.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -685,6 +686,7 @@ private fun GaugeReadout(reading: Tuner.Reading?, amplitude: Float) {
             infoLine,
             color = if (reading == null) Color.Transparent else accent,
             fontSize = 12.sp,
+            lineHeight = 16.sp,
             fontWeight = FontWeight.Black,
             letterSpacing = 2.sp,
         )
@@ -698,7 +700,7 @@ private fun GaugeReadout(reading: Tuner.Reading?, amplitude: Float) {
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 LabelValueBadge("DETECTED", String.format(Locale.US, "%.1f Hz", reading.frequency))
-                Text("→", color = AppColors.textDim, fontSize = 14.sp)
+                Text("→", color = AppColors.textDim, fontSize = 14.sp, lineHeight = 20.sp)
                 LabelValueBadge(
                     "${reading.noteName}${reading.octave} SITS AT",
                     String.format(Locale.US, "%.1f Hz", targetHz),
@@ -842,7 +844,7 @@ private fun AmbientPanel(
                     Text(
                         noteText,
                         color = if (shown.locked) GameColors.good else AppColors.gold,
-                        fontSize = 14.sp, fontWeight = FontWeight.Black,
+                        fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Black,
                     )
                 }
                 Spacer(Modifier.width(4.dp))
@@ -937,6 +939,7 @@ private fun AmbientPanel(
                                 headline,
                                 color = AppColors.textSecondary,
                                 fontSize = 13.sp,
+                                lineHeight = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                             )
@@ -1127,6 +1130,7 @@ private fun FrequencyRail(
                     label,
                     color = if (hz == 440f) AppColors.goldSoft else AppColors.textDim,
                     fontSize = 9.sp,
+                    lineHeight = 12.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.offset(x = railWidth * frac(hz) - 6.dp),
                 )
@@ -1160,7 +1164,7 @@ private fun AmbientDetailRow(label: String, indicator: @Composable () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, color = AppColors.textSubtle, fontSize = 10.sp)
+        Text(label, color = AppColors.textSubtle, fontSize = 10.sp, lineHeight = 14.sp)
         Spacer(Modifier.weight(1f))
         indicator()
     }
@@ -1217,7 +1221,7 @@ private fun DetailSegmentMeter(filled: Int, segments: Int, color: Color) {
 @Composable
 private fun DetailValue(text: String, color: Color) {
     Box(modifier = Modifier.width(DETAIL_VALUE_WIDTH)) {
-        Text(text, color = color, fontSize = 10.sp, maxLines = 1)
+        Text(text, color = color, fontSize = 10.sp, lineHeight = 14.sp, maxLines = 1)
     }
 }
 
@@ -1362,7 +1366,7 @@ private fun ReferencePitchControls(
                 Text(
                     "A4 = ${referenceHz.roundToInt()} Hz",
                     color = if (isStandard) AppColors.textSecondary else AppColors.gold,
-                    fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold,
                 )
             }
 
@@ -1395,17 +1399,18 @@ private fun ReferencePitchControls(
             ) {
                 Text(
                     "${TunerViewModel.MIN_REFERENCE.toInt()}",
-                    color = AppColors.textDim, fontSize = 9.sp,
+                    color = AppColors.textDim, fontSize = 9.sp, lineHeight = 12.sp,
                 )
                 Text(
                     "440",
                     color = if (isStandard) AppColors.goldSoft else AppColors.textDim,
                     fontSize = 9.sp,
+                    lineHeight = 12.sp,
                     fontWeight = if (isStandard) FontWeight.Bold else FontWeight.Normal,
                 )
                 Text(
                     "${TunerViewModel.MAX_REFERENCE.toInt()}",
-                    color = AppColors.textDim, fontSize = 9.sp,
+                    color = AppColors.textDim, fontSize = 9.sp, lineHeight = 12.sp,
                 )
             }
         }
@@ -1482,7 +1487,7 @@ private fun IdleCalibration(
             Icon(Icons.Filled.Warning, null, tint = AppColors.warning,
                 modifier = Modifier.size(12.dp))
             Spacer(Modifier.width(5.dp))
-            Text(warnText, color = AppColors.warning, fontSize = 11.sp)
+            Text(warnText, color = AppColors.warning, fontSize = 11.sp, lineHeight = 15.sp)
         }
     }
     Spacer(Modifier.height(10.dp))
@@ -1527,7 +1532,7 @@ private fun CalibrationOptionButton(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     title, color = Color.White,
-                    fontWeight = FontWeight.Bold, fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold, fontSize = 15.sp, lineHeight = 21.sp,
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
@@ -1638,6 +1643,7 @@ private fun CalibrationStatus(info: CalibrationInfo) {
                         "±${fmtCents(info.accuracyCents)}",
                         color = accent,
                         fontSize = 15.sp,
+                        lineHeight = 21.sp,
                         fontWeight = FontWeight.Bold,
                     )
                 } else {
@@ -1646,6 +1652,7 @@ private fun CalibrationStatus(info: CalibrationInfo) {
                             "Not calibrated",
                             color = AppColors.textMuted,
                             fontSize = 13.sp,
+                            lineHeight = 18.sp,
                         )
                         Spacer(Modifier.width(5.dp))
                         Box(
@@ -1732,7 +1739,7 @@ private fun ReferencePitchMorph(
         pill = {
             Text(
                 "A4 = ${referenceHz.roundToInt()} Hz",
-                color = AppColors.gold, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                color = AppColors.gold, fontSize = 10.sp, lineHeight = 14.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             )
         },

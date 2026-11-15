@@ -688,7 +688,7 @@ private fun BpmStepperRow(
             tint = AppColors.primaryPurple,
             modifier = Modifier.weight(1f).height(44.dp)
         ) {
-            Text("TAP", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text("TAP", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, lineHeight = 18.sp)
         }
     }
 }
@@ -989,6 +989,7 @@ private fun PracticeProgressRow(
                 color = digitColor,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
+                lineHeight = 18.sp,
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier.weight(1f)
             )
@@ -1072,6 +1073,7 @@ private fun PracticeDurationDialog(
                     text = "Time spent practicing unlocks new gnome items",
                     color = AppColors.goldSoft,
                     fontSize = 11.sp,
+                    lineHeight = 15.sp,
                     textAlign = TextAlign.Center,
                 )
 
@@ -1231,6 +1233,7 @@ private fun BpmDisplay(bpm: Int, modifier: Modifier = Modifier) {
             Text(
                 text = tempoLabel(bpm),
                 fontSize = 11.sp,
+                lineHeight = 15.sp,
                 fontWeight = FontWeight.Medium,
                 color = AppColors.gold,
                 letterSpacing = 1.5.sp,
@@ -1255,7 +1258,7 @@ private fun BpmButton(label: String, description: String, modifier: Modifier = M
             onClick { onClick(); true }
         }
     ) {
-        Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Text(label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 20.sp)
     }
 }
 

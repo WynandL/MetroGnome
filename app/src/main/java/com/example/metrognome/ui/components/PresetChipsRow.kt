@@ -93,6 +93,7 @@ fun PresetChipsRow(
                 text = "Tip: long-press a preset to delete",
                 color = AppColors.textDim.copy(alpha = 0.85f),
                 fontSize = 10.sp,
+                lineHeight = 14.sp,
                 modifier = Modifier.padding(top = 4.dp, start = 4.dp),
             )
         }
@@ -130,6 +131,7 @@ fun PresetPill(
                 text = label,
                 color = if (active) AppColors.gold else Color.White,
                 fontSize = 12.sp,
+                lineHeight = 16.sp,
                 fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
             )
         }

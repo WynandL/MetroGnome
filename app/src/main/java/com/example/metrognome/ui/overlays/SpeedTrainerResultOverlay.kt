@@ -159,12 +159,14 @@ private fun NoMicResultBody(state: TrainerSessionState.Complete) {
             "${config.startBpm} BPM",
             color = AppColors.textMutedBlue,
             fontSize = 10.sp,
+            lineHeight = 14.sp,
             fontWeight = FontWeight.Medium,
         )
         Text(
             "${config.targetBpm} BPM",
             color = AppColors.gold,
             fontSize = 10.sp,
+            lineHeight = 14.sp,
             fontWeight = FontWeight.Medium,
         )
     }
@@ -187,7 +189,7 @@ private fun NoMicResultBody(state: TrainerSessionState.Complete) {
 private fun MicResultBody(state: TrainerSessionState.Complete) {
     val reachedBpm = state.steps.getOrNull(state.reachedStepIndex) ?: state.config.targetBpm
 
-    Text("Locked in at", color = AppColors.textSecondary, fontSize = 12.sp)
+    Text("Locked in at", color = AppColors.textSecondary, fontSize = 12.sp, lineHeight = 16.sp)
     Spacer(Modifier.height(4.dp))
     Text(
         "$reachedBpm BPM",
@@ -203,7 +205,7 @@ private fun MicResultBody(state: TrainerSessionState.Complete) {
             Spacer(Modifier.height(4.dp))
             val (label, colour) = if (delta > 0) ("↑ +$delta BPM from last time" to AppColors.gold)
                                    else ("↓ ${abs(delta)} BPM from last time" to AppColors.textMuted)
-            Text(label, color = colour, fontSize = 11.sp)
+            Text(label, color = colour, fontSize = 11.sp, lineHeight = 15.sp)
         }
     }
 

@@ -180,6 +180,6 @@ private fun ReasonChip(label: String, onClick: () -> Unit) {
             .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Text(label, color = Color.White, fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
     }
 }

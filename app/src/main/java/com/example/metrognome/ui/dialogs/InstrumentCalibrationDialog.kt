@@ -143,6 +143,7 @@ fun InstrumentCalibrationDialog(
                         "Detected: ${String.format(Locale.US, "%.1f Hz", reading.frequency)}  →  Target: $target",
                         color = AppColors.textMuted,
                         fontSize = 11.sp,
+                        lineHeight = 15.sp,
                         textAlign = TextAlign.Center,
                     )
                 }

@@ -42,6 +42,7 @@ fun PremiumChip(
                 "  ★",
                 color = AppColors.gold,
                 fontSize = 9.sp,
+                lineHeight = 12.sp,
             )
         }
     }

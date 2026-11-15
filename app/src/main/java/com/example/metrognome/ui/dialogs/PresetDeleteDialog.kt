@@ -62,6 +62,7 @@ fun PresetDeleteDialog(
                     text = "\"${preset.name}\" · ${preset.bpm} BPM",
                     color = AppColors.textSecondary,
                     fontSize = 13.sp,
+                    lineHeight = 18.sp,
                     textAlign = TextAlign.Center,
                 )
 

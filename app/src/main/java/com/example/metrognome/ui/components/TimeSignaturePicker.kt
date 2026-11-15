@@ -96,6 +96,7 @@ fun TimeSignaturePicker(
             MeterTheory.description(meter),
             color = AppColors.textMuted,
             fontSize = 13.sp,
+            lineHeight = 18.sp,
         )
         Spacer(Modifier.height(8.dp))
 
@@ -259,6 +260,7 @@ private fun AccentCell(number: Int, accented: Boolean, onClick: () -> Unit) {
             color = if (accented) Color.Black else AppColors.textSecondary,
             fontWeight = if (accented) FontWeight.Bold else FontWeight.Normal,
             fontSize = 14.sp,
+            lineHeight = 20.sp,
             modifier = Modifier.clearAndSetSemantics {},
         )
     }
@@ -274,7 +276,7 @@ private fun ResetAccentsButton(onClick: () -> Unit) {
             .padding(horizontal = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text("Reset", color = AppColors.textMuted, fontSize = 13.sp)
+        Text("Reset", color = AppColors.textMuted, fontSize = 13.sp, lineHeight = 18.sp)
     }
 }
 

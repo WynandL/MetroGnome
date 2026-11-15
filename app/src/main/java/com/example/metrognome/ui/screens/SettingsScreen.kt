@@ -190,6 +190,7 @@ fun SettingsScreen(
                             MeterTheory.label(Meter(timeSig, timeSigDenom)),
                             color = AppColors.textMuted,
                             fontSize = 13.sp,
+                            lineHeight = 18.sp,
                         )
                     },
                 ) {
@@ -338,6 +339,7 @@ fun SettingsScreen(
                             "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                             color = AppColors.textMuted,
                             fontSize = 13.sp,
+                            lineHeight = 18.sp,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                         DevTapTarget(onToggled = { isDevMode = it }) {
@@ -349,7 +351,8 @@ fun SettingsScreen(
                                     }
                                 },
                                 color = if (isDevMode) AppColors.gold else AppColors.textMuted,
-                                fontSize = 12.sp
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
                             )
                         }
                     }
@@ -489,6 +492,7 @@ private fun PurchasableItemRow(
                     text = "Loading…",
                     color = AppColors.textMuted,
                     fontSize = 13.sp,
+                    lineHeight = 18.sp,
                     fontStyle = FontStyle.Italic,
                 )
             }
@@ -497,6 +501,7 @@ private fun PurchasableItemRow(
                     text = "Unavailable",
                     color = AppColors.textMuted,
                     fontSize = 13.sp,
+                    lineHeight = 18.sp,
                     fontStyle = FontStyle.Italic,
                 )
             }
@@ -634,6 +639,7 @@ private fun RemoveAdsSection(
                     text = "Loading…",
                     color = AppColors.textMuted,
                     fontSize = 13.sp,
+                    lineHeight = 18.sp,
                     fontStyle = FontStyle.Italic,
                 )
             }
@@ -643,6 +649,7 @@ private fun RemoveAdsSection(
                     text = "Unavailable",
                     color = AppColors.textMuted,
                     fontSize = 13.sp,
+                    lineHeight = 18.sp,
                     fontStyle = FontStyle.Italic,
                 )
             }
@@ -689,7 +696,8 @@ private fun SettingsSliderRow(
                 valueText,
                 color = AppColors.textSecondary,
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
+                fontSize = 14.sp,
+                lineHeight = 20.sp
             )
         }
         GoldSlider(
@@ -743,7 +751,7 @@ private fun SettingsSwitchRow(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text("Flash on Beat", color = AppColors.textPrimary, fontWeight = FontWeight.Medium)
-            Text("Golden screen flash on each beat", color = AppColors.textMuted, fontSize = 12.sp)
+            Text("Golden screen flash on each beat", color = AppColors.textMuted, fontSize = 12.sp, lineHeight = 16.sp)
         }
         Spacer(Modifier.width(12.dp))
         AppSwitch(
@@ -783,6 +791,7 @@ private fun NotificationsRow(state: NotificationPermissionState) {
                 },
                 color = if (state.permanentlyDenied) AppColors.goldSoft else AppColors.textMuted,
                 fontSize = 12.sp,
+                lineHeight = 16.sp,
             )
         }
         Spacer(Modifier.width(12.dp))

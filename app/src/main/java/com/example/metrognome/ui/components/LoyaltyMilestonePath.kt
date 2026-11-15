@@ -191,6 +191,7 @@ fun LoyaltyMilestonePath(
                         text      = "${milestone.days}d",
                         color     = if (achieved) AppColors.gold else AppColors.textSubtle,
                         fontSize  = 8.sp,
+                        lineHeight= 11.sp,
                         fontWeight = if (achieved) FontWeight.Bold else FontWeight.Normal,
                         textAlign = TextAlign.Center,
                     )
@@ -198,6 +199,7 @@ fun LoyaltyMilestonePath(
                         text      = milestone.name,
                         color     = if (achieved) AppColors.textSecondary else AppColors.textSubtle.copy(alpha = 0.5f),
                         fontSize  = 8.sp,
+                        lineHeight= 11.sp,
                         textAlign = TextAlign.Center,
                         maxLines  = 1,
                         overflow  = TextOverflow.Ellipsis,
