@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.game
 
 import androidx.compose.animation.core.Animatable
+import com.example.metrognome.ui.components.drawStar
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -32,10 +33,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.haptics.HapticPattern
@@ -56,54 +55,7 @@ import com.example.metrognome.viewmodel.GameResult
 import com.example.metrognome.viewmodel.rhythmStars
 import kotlinx.coroutines.delay
 import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.random.Random
-
-// ── Stars ─────────────────────────────────────────────────────────────────────
-
-/** A five-point star centred on [c] with outer radius [r]. Drawn, never a text glyph. */
-internal fun starPath(c: Offset, r: Float): Path = Path().apply {
-    val inner = r * 0.46f
-    for (i in 0 until 10) {
-        val radius = if (i % 2 == 0) r else inner
-        val a = (-PI / 2 + i * PI / 5).toFloat()
-        val x = c.x + cos(a) * radius
-        val y = c.y + sin(a) * radius
-        if (i == 0) moveTo(x, y) else lineTo(x, y)
-    }
-    close()
-}
-
-internal fun DrawScope.drawStar(c: Offset, r: Float, earned: Boolean) {
-    if (r <= 0f) return
-    val path = starPath(c, r)
-    if (earned) {
-        drawPath(
-            path,
-            Brush.linearGradient(
-                listOf(ItemPalette.goldLight, AppColors.gold, ItemPalette.goldMid),
-                start = Offset(c.x - r, c.y - r), end = Offset(c.x + r, c.y + r),
-            ),
-        )
-    } else {
-        drawPath(path, GameColors.starEmpty)
-    }
-}
-
-/**
- * The game's three-star rating as a still row. One drawing for the difficulty tiles on the
- * Rhythm page and (animated, in [RhythmResultPanel]) the result, so the two cannot disagree
- * about what a star looks like.
- */
-@Composable
-internal fun StarRating(stars: Int, starSize: Dp, modifier: Modifier = Modifier, gap: Dp = 2.dp) {
-    Canvas(modifier = modifier.size(width = starSize * 3 + gap * 2, height = starSize)) {
-        val r = size.height / 2f
-        val step = starSize.toPx() + gap.toPx()
-        repeat(3) { i -> drawStar(Offset(r + i * step, r), r, earned = i < stars) }
-    }
-}
 
 // ── Result ────────────────────────────────────────────────────────────────────
 

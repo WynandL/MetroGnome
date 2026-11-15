@@ -79,7 +79,7 @@ import com.example.metrognome.ui.components.CardGap
 import com.example.metrognome.ui.components.CardHeader
 import com.example.metrognome.ui.game.RhythmResultPanel
 import com.example.metrognome.ui.game.RhythmStage
-import com.example.metrognome.ui.game.StarRating
+import com.example.metrognome.ui.components.StarRating
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.example.metrognome.ui.components.MetroCollectionIcon

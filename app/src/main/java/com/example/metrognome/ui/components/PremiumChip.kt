@@ -1,15 +1,14 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.metrognome.ui.theme.AppColors
 
 /**
  * An [AppFilterChip] carrying the gold star that marks a paid feature.
@@ -38,12 +37,8 @@ fun PremiumChip(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(label)
-            Text(
-                "  ★",
-                color = AppColors.gold,
-                fontSize = 9.sp,
-                lineHeight = 12.sp,
-            )
+            Spacer(Modifier.width(6.dp))
+            StarGlyph(9.dp)
         }
     }
 }

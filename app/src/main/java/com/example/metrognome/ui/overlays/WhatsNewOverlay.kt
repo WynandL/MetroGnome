@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.overlays
 
 import androidx.activity.compose.BackHandler
+import com.example.metrognome.ui.components.SparkleGlyph
 import com.example.metrognome.ui.theme.GameColors
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -528,7 +529,7 @@ private fun V3FeatureIntroOverlay(onDismiss: () -> Unit) {
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "✨", fontSize = 52.sp)
+                        SparkleGlyph(52.dp)
                         Spacer(Modifier.height(8.dp))
                         Text(
                             text = "Items & Surprises",
