@@ -166,7 +166,11 @@ private class Burst(
     val duration: Float get() = if (finale) 1.7f else 1.25f
 }
 
-private class Particle(
+/**
+ * One piece of a burst. Internal so the rhythm game's hit bursts are made of the same sparks,
+ * notes and glints as the About card's, drawn by the same [drawParticles].
+ */
+internal class Particle(
     val angle: Float,       // radians
     val speed: Float,       // dp/s
     val size: Float,        // dp
@@ -255,15 +259,23 @@ private fun DrawScope.drawBurst(b: Burst, frameNs: Long, surfaceClip: Path) {
         }
     }
 
-    // Particles.
+    drawParticles(b.particles, b.origin, t)
+}
+
+/**
+ * Draws [particles] thrown from [origin], [t] seconds into their flight: drag, gravity, a pop
+ * on launch and a fade at the end. The one particle renderer for every burst in the app.
+ */
+internal fun DrawScope.drawParticles(particles: List<Particle>, origin: Offset, t: Float) {
+    val dp = 1.dp.toPx()
     val gravity = 420f * dp
-    b.particles.forEach { p ->
+    particles.forEach { p ->
         val age = t - p.delay
         if (age <= 0f || age >= p.life) return@forEach
         val u = age / p.life
         val drag = (1f - exp(-3f * age)) / 3f
-        val x = b.origin.x + cos(p.angle) * p.speed * dp * drag
-        val y = b.origin.y + sin(p.angle) * p.speed * dp * drag + 0.5f * gravity * age * age
+        val x = origin.x + cos(p.angle) * p.speed * dp * drag
+        val y = origin.y + sin(p.angle) * p.speed * dp * drag + 0.5f * gravity * age * age
         val pop = if (age < 0.1f) 0.4f + 1.2f * (age / 0.1f) - 0.6f * (age / 0.1f).pow(2) else 1f
         val alpha = min(1f, (1f - u) * 2.6f)
         val r = p.size * dp * pop * (1f - 0.35f * u)
@@ -281,7 +293,7 @@ private fun DrawScope.drawBurst(b: Burst, frameNs: Long, surfaceClip: Path) {
 }
 
 /** Four-point glint with concave sides. */
-private fun DrawScope.drawSpark(c: Offset, r: Float, color: Color) {
+internal fun DrawScope.drawSpark(c: Offset, r: Float, color: Color) {
     val n = r * 0.2f
     val path = Path().apply {
         moveTo(c.x, c.y - r)
@@ -295,7 +307,7 @@ private fun DrawScope.drawSpark(c: Offset, r: Float, color: Color) {
 }
 
 /** A single eighth note: head, stem and flag. */
-private fun DrawScope.drawNote(c: Offset, r: Float, color: Color) {
+internal fun DrawScope.drawNote(c: Offset, r: Float, color: Color) {
     drawOval(color, Offset(c.x - r * 0.55f, c.y - r * 0.35f + r * 0.6f), Size(r * 1.1f, r * 0.75f))
     val sx = c.x + r * 0.5f
     drawLine(color, Offset(sx, c.y + r * 0.9f), Offset(sx, c.y - r * 1.2f), strokeWidth = r * 0.22f, cap = StrokeCap.Round)

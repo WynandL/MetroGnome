@@ -201,6 +201,27 @@ object GameColors {
 
     // Rhythm game timing-hint text + tuner quiet/profiling state
     val rangeBlue = Color(0xFF5566AA)
+
+    // The stage: the moonlit forest lane the notes fall down (RhythmLane.kt)
+    val stageSkyTop    = Color(0xFF070514)
+    val stageSkyBottom = Color(0xFF1B1446)
+    val stagePineFar   = Color(0xFF130F33)
+    val stagePineNear  = Color(0xFF0A0819)
+    val laneGlow       = Color(0xFF6A3FB0)   // the lane's own light, strongest at the line
+    val moon           = Color(0xFFE9EEFF)
+    val moonShade      = Color(0xFFCDD6F5)
+    val firefly        = Color(0xFFFFE98A)
+
+    // A falling note: lit / base / shaded, upper-left key light like everything Metro owns
+    val noteLight      = Color(0xFFEBDCFF)
+    val noteBase       = Color(0xFFAB7DE0)
+    val noteDark       = Color(0xFF4A2478)
+    val noteGoldLight  = Color(0xFFFFF6C2)   // the same note inside the perfect window
+    val noteGoldDark   = Color(0xFFB88A00)
+    val noteGlyph      = Color(0xFF1E1140)   // the eighth note stamped on it
+
+    // An unearned star
+    val starEmpty      = Color(0x33FFFFFF)
 }
 
 // ── Shared cosmetic-item palette ──────────────────────────────────────────────

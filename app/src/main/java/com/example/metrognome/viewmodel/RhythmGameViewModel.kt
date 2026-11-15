@@ -76,6 +76,27 @@ data class RenderNote(
     val state: NoteState
 )
 
+/**
+ * Everything the stage needs to draw a game from the clock instead of from the game loop's
+ * snapshots: when each note's click leaves the speaker (boot clock, ms), the exact beat length,
+ * and this session's judgement windows. Immutable for the length of a game.
+ *
+ * The stage computes every note's position per display frame from [hitElapsedMs], so motion is
+ * locked to vsync at any refresh rate and the note is on the line when the click is.
+ */
+class RhythmChart(
+    val hitElapsedMs: LongArray,
+    val beatMs: Double,
+    val beatsPerBar: Int,
+    val travelMs: Long,
+    val perfectMs: Long,
+    val goodMs: Long,
+    val missMs: Long,
+)
+
+/** One scored hit, for the stage's burst at the line. [offsetMs] is + late, - early. */
+data class HitEvent(val noteId: Int, val quality: HitQuality, val offsetMs: Long, val combo: Int)
+
 data class GameResult(
     val score: Int,
     val maxCombo: Int,
@@ -164,6 +185,14 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     val highScores: StateFlow<Map<String, Int>> = _highScores.asStateFlow()
     val visibleNotes: StateFlow<List<RenderNote>> = _visibleNotes.asStateFlow()
 
+    /** The current game's note times and windows; null outside PLAYING. See [RhythmChart]. */
+    private val _chart = MutableStateFlow<RhythmChart?>(null)
+    val chart: StateFlow<RhythmChart?> = _chart.asStateFlow()
+
+    /** Fires once per scored hit (never for a miss or a stray tap). */
+    private val _hitEvents = MutableSharedFlow<HitEvent>(extraBufferCapacity = 16)
+    val hitEvents: SharedFlow<HitEvent> = _hitEvents.asSharedFlow()
+
     /** Live mic amplitude 0..1. Non-zero only while mic mode is active. */
     val micAmplitude: StateFlow<Float> = detector.amplitude
 
@@ -188,6 +217,14 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private var gameStartElapsedMs = 0L
 
     private var intervalMs = 750L
+
+    // The beat grid, shared with the engine (see RhythmTimeline). The engine runs muted from the
+    // countdown so the grid is anchored to real output timestamps before the first note appears.
+    @Volatile private var timeline = RhythmTimeline(80)
+    @Volatile private var timelineFrozen = false
+    private val engineBeatCount = java.util.concurrent.atomic.AtomicInteger(0)
+    /** The engine beat whose callback un-mutes the click, so the next beat is the first heard. */
+    @Volatile private var unmuteAfterBeat = Int.MAX_VALUE
     private var totalBeats = 32
     private var maxCombo = 0
     private var countPerfect = 0
@@ -228,11 +265,19 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         engine.onBeat = { beat ->
             // The detector rejects the metronome click spectrally, so no
             // time-suppression window is set here - an on-beat clap is no longer blocked.
-            if (isDevMode && _useMic.value) {
+            if (isDevMode && _useMic.value && _phase.value == GamePhase.PLAYING) {
                 val now = SystemClock.elapsedRealtime()
                 MicDiagnosticsBuffer.logBeat(beat, now, now)
             }
             viewModelScope.launch { _currentBeat.value = beat }
+        }
+        // Audio thread. Each beat reports when it will leave the speaker; until the game's notes
+        // are laid out that anchors the grid. The callback fires after the beat's own buffer is
+        // built, so un-muting here makes the NEXT beat the first audible one.
+        engine.onBeatTimed = { _, presentedMs ->
+            val k = engineBeatCount.getAndIncrement()
+            if (!timelineFrozen) timeline.observe(k, presentedMs)
+            if (k >= unmuteAfterBeat) engine.muted = false
         }
     }
 
@@ -247,6 +292,18 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
 
     fun startGame() {
         reset()
+        // Start the click now, silently. By the end of the countdown the output has reported real
+        // presentation timestamps, so the notes can be laid out on the very grid the click is on.
+        timeline = RhythmTimeline(_bpm.value)
+        timelineFrozen = false
+        engineBeatCount.set(0)
+        unmuteAfterBeat = Int.MAX_VALUE
+        engine.bpm = _bpm.value
+        engine.timeSignature = _timeSig.value
+        engine.accentBeats = emptySet()
+        engine.soundType = 0
+        engine.muted = true
+        engine.start()
         _phase.value = GamePhase.COUNTDOWN
         AnalyticsTracker.logGameStarted(currentDifficultyName, _bpm.value)
         countdownJob = viewModelScope.launch {
@@ -259,9 +316,17 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Called on screen tap or button press. tapTimeMs = songTimeMs at tap. */
-    fun onScreenTap() {
+    fun onScreenTap() = onScreenTapAt(SystemClock.elapsedRealtime())
+
+    /**
+     * A tap stamped by the caller: [eventElapsedMs] is the touch-DOWN time on the boot clock,
+     * taken from the pointer event itself. A click callback fires on release and only once the
+     * main thread gets to it, which scored the finger's rest time and any frame delay as the
+     * player being late.
+     */
+    fun onScreenTapAt(eventElapsedMs: Long) {
         if (_phase.value != GamePhase.PLAYING) return
-        processTap(songTimeMs())
+        processTap(eventElapsedMs - gameStartElapsedMs)
     }
 
     fun dismissResult() {
@@ -284,9 +349,15 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
     private fun songTimeMs(): Long = SystemClock.elapsedRealtime() - gameStartElapsedMs
 
     private fun beginPlay() {
-        val bpm = _bpm.value
-        intervalMs = (60_000.0 / bpm).toLong()
+        // Freeze the grid: from here the notes are laid out on it and it must not move.
+        val grid = timeline
+        val startElapsed = SystemClock.elapsedRealtime()
+        if (!grid.anchored) grid.observe(0, startElapsed)   // engine failed to start: free-run
+        timelineFrozen = true
+        intervalMs = grid.beatMs.toLong()
         _beatsRemaining.value = totalBeats
+        // The first note lands on the first engine beat that leaves it a full lane to travel.
+        val firstBeat = grid.firstBeatAtOrAfter(startElapsed + NOTE_TRAVEL_MS)
 
         // Compute tolerance-scaled windows once for this session (Fix 1).
         // Both tick() and processTap() read these — they can never disagree.
@@ -301,23 +372,26 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         // With    offset: beat 0 hitTimeMs = NOTE_TRAVEL_MS → note spawns at top of lane
         //                 at songT=0 and travels the full lane before the click fires.
         //
-        // Invariant preserved: delta between consecutive hitTimes == beatIntervalMs.
+        // Hit times come from the engine's own grid (RhythmTimeline), each rounded from the
+        // exact beat length, so note n is where click n is and nothing accumulates.
         notes.clear()
+        val hitElapsed = LongArray(totalBeats) { grid.beatTimeMs(firstBeat + it) }
         repeat(totalBeats) { beat ->
-            val hitTime = NOTE_TRAVEL_MS + beat.toLong() * intervalMs
+            val hitTime = hitElapsed[beat] - startElapsed
             notes.add(
                 Note(
                     targetBeat = beat,
                     hitTimeMs = hitTime,
-                    spawnTimeMs = hitTime - NOTE_TRAVEL_MS   // == beat * intervalMs  (≥ 0 always)
+                    spawnTimeMs = hitTime - NOTE_TRAVEL_MS   // >= 0: firstBeat leaves a full lane
                 )
             )
         }
 
-        engine.bpm = bpm
-        engine.timeSignature = _timeSig.value
-        engine.accentBeats = setOf(0)
-        engine.soundType = 0
+        // The engine is already running (muted) on this grid. Accent the beat class the first
+        // note falls on, and let the click be heard from that note onward, as before.
+        engine.accentBeats = setOf(firstBeat % _timeSig.value)
+        unmuteAfterBeat = firstBeat - 1
+        if (engineBeatCount.get() > firstBeat - 1) engine.muted = false
 
         // Mic mode is the single app-wide toggle (MicCalibration.isActive); the game uses
         // the mic automatically when it is on. Only start if RECORD_AUDIO is actually held
@@ -408,17 +482,19 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
-        // Record game start on the monotonic clock — the single timebase shared
-        // by the game loop, screen taps, and mic detections alike.
-        gameStartElapsedMs = SystemClock.elapsedRealtime()
+        // Game start on the boot clock: the single timebase shared by the engine's presentation
+        // timestamps, the game loop, screen taps and mic detections alike.
+        gameStartElapsedMs = startElapsed
+        _chart.value = RhythmChart(
+            hitElapsedMs = hitElapsed,
+            beatMs = grid.beatMs,
+            beatsPerBar = _timeSig.value,
+            travelMs = NOTE_TRAVEL_MS,
+            perfectMs = winPerfect,
+            goodMs = winGood,
+            missMs = winMiss,
+        )
         _phase.value = GamePhase.PLAYING
-
-        // Delay engine start by NOTE_TRAVEL_MS so the click fires exactly when
-        // each note reaches the hit line — metronome and visuals stay in sync.
-        engineStartJob = viewModelScope.launch {
-            delay(NOTE_TRAVEL_MS.milliseconds)
-            engine.start()
-        }
 
         // Main game loop: updates note states and produces render snapshots at ~60 fps.
         // All coroutines share viewModelScope (Main thread) so there is no shared-state race.
@@ -533,6 +609,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         _lastQuality.value = quality
+        _hitEvents.tryEmit(HitEvent(notes.indexOf(candidate), quality, delta, newCombo))
         when (quality) {
             HitQuality.PERFECT -> countPerfect++
             HitQuality.GOOD -> countGood++
@@ -648,6 +725,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         _lastHitOffset.value = 0L
         _result.value = null
         _visibleNotes.value = emptyList()
+        _chart.value = null
         _beatsRemaining.value = 0
         notes.clear()
         maxCombo = 0
