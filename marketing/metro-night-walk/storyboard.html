@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}img{max-width:100%;height:auto}</style>
+<title>Metro's Night Walk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a film strip read top to bottom. One score chart (15 bars) up top is the key;
+   every shot card below repeats its bars so picture and music are always read together. */
+:root {
+  color-scheme: dark;
+  --night: #0D0B1E;        /* the app's background */
+  --card: #13102A;         /* the app's deep card surface */
+  --lift: #1E1B3A;
+  --gold: #FFD700;
+  --gold-line: rgba(255, 215, 0, .32);
+  --gold-wash: rgba(255, 215, 0, .09);
+  --hat: #D51C22;
+  --violet: #7B4DB0;
+  --ink: #EEEEFF;
+  --soft: #B4B3D6;
+  --dim: #8080AA;
+  --display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--night); color: var(--ink);
+  font-family: var(--body); font-size: 15px; line-height: 1.55;
+}
+.wrap {
+  max-width: 1040px; margin: 0 auto; padding-block: 36px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 44px;
+}
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.2rem, 7vw, 4rem); font-weight: 800; letter-spacing: -0.02em; }
+h1 em { font-style: normal; color: var(--gold); }
+h2 { font-size: 1.5rem; font-weight: 700; }
+h3 { font-size: 1.3rem; font-weight: 700; }
+p { margin: 0; }
+.label {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--dim);
+}
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* header */
+header { display: flex; flex-direction: column; gap: 18px; }
+.logline { font-size: 1.15rem; color: var(--soft); max-width: 62ch; }
+.spec { display: flex; flex-wrap: wrap; gap: 8px; }
+.spec span {
+  font-family: var(--mono); font-size: 12px; padding: 5px 10px; border-radius: 999px;
+  border: 1px solid var(--gold-line); background: var(--gold-wash); color: var(--ink);
+}
+
+/* score chart */
+.score { display: flex; flex-direction: column; gap: 14px; }
+.score-scroll { overflow-x: auto; }
+.score-grid {
+  min-width: 640px; display: grid; grid-template-columns: 118px repeat(15, 1fr);
+  row-gap: 5px; align-items: center;
+}
+.score-grid .bar-no { font-family: var(--mono); font-size: 11px; color: var(--dim); text-align: center; }
+.score-grid .row-name { font-size: 12px; color: var(--soft); padding-right: 10px; white-space: nowrap; }
+.blk {
+  height: 22px; border-radius: 5px; font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; padding: 0 7px; white-space: nowrap; overflow: hidden;
+  margin: 0 1px;
+}
+.blk.shot { height: 30px; background: var(--lift); border: 1px solid var(--gold-line); color: var(--ink); }
+.blk.amb { background: #2b3a4d; }
+.blk.click { background: var(--gold); color: #1a1500; }
+.blk.bass { background: #5B2D8A; }
+.blk.mel { background: #2f7d6d; }
+.blk.gtr { background: #a8632a; }
+.blk.drum { background: var(--hat); }
+.blk.all { background: linear-gradient(90deg, #7B4DB0, #FFD700); color: #1a1500; }
+.time-row { font-family: var(--mono); font-size: 10px; color: var(--dim); text-align: left; padding-left: 2px; }
+.note { color: var(--soft); max-width: 70ch; }
+
+/* shots */
+.shots { display: flex; flex-direction: column; gap: 22px; }
+.shots-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; justify-content: space-between; }
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--soft); cursor: pointer; }
+.toggle input { accent-color: var(--gold); width: 16px; height: 16px; }
+.toggle input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.shot {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 22px;
+  background: var(--card); border: 1px solid var(--gold-line); border-radius: 20px; padding: 18px;
+}
+.shot > * { min-width: 0; }
+.frame { width: 100%; height: auto; display: block; border-radius: 10px; background: #060512; }
+.frame .crop { fill: none; stroke-dasharray: 4 3; stroke-width: 1; display: none; }
+.frame .crop.v { stroke: #fff; }
+.frame .crop.s { stroke: var(--gold); }
+body.crops .frame .crop { display: block; }
+.frame-col { display: flex; flex-direction: column; gap: 10px; }
+.frame-cap { font-size: 12px; color: var(--dim); }
+.shot-body { display: flex; flex-direction: column; gap: 12px; }
+.shot-top { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.shot-top .tc { font-family: var(--mono); font-size: 13px; color: var(--gold); font-weight: 700; }
+.shot-top .bars { font-family: var(--mono); font-size: 12px; color: var(--dim); }
+dl { margin: 0; display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 8px 12px; }
+dt { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); padding-top: 3px; }
+dd { margin: 0; color: var(--soft); }
+dd strong { color: var(--ink); font-weight: 600; }
+details { border-top: 1px solid rgba(255,255,255,.08); padding-top: 10px; }
+summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink); }
+.prompt {
+  margin-top: 10px; background: var(--night); border-radius: 10px; padding: 12px;
+  font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--soft);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+button.copy {
+  margin-top: 8px; font: 600 12px var(--body); color: #1a1500; background: var(--gold);
+  border: 0; border-radius: 8px; padding: 7px 12px; cursor: pointer;
+}
+
+/* reference + briefs */
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; }
+.two > * { min-width: 0; }
+.panel { background: var(--card); border: 1px solid var(--gold-line); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.refs { display: flex; gap: 12px; align-items: flex-start; }
+.refs figure { margin: 0; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.refs img { width: 100%; border-radius: 10px; display: block; }
+.refs figcaption { font-size: 12px; color: var(--dim); }
+ul, ol { margin: 0; padding-left: 20px; color: var(--soft); display: flex; flex-direction: column; gap: 7px; }
+li strong { color: var(--ink); font-weight: 600; }
+.endcard {
+  border: 1px dashed var(--gold-line); border-radius: 12px; padding: 14px; text-align: center;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.endcard b { font-family: var(--display); font-size: 1.4rem; }
+.endcard span { color: var(--soft); font-size: 13px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid rgba(255,255,255,.08); vertical-align: top; }
+th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+td { color: var(--soft); }
+td:first-child { color: var(--ink); font-weight: 600; white-space: nowrap; }
+.tbl { overflow-x: auto; }
+@media (max-width: 720px) {
+  .shot { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="metro" viewBox="0 0 44 84">
+      <ellipse cx="16" cy="80" rx="5.5" ry="2.6" fill="#D51C22"/><ellipse cx="27" cy="80" rx="5.5" ry="2.6" fill="#D51C22"/>
+      <rect x="14.5" y="67" width="5" height="12" fill="#17161f" stroke="#4a4770" stroke-width=".5"/>
+      <rect x="22.5" y="67" width="5" height="12" fill="#17161f" stroke="#4a4770" stroke-width=".5"/>
+      <line x1="29" y1="55" x2="35" y2="49" stroke="#17161f" stroke-width="3.4" stroke-linecap="round"/>
+      <line x1="35" y1="49" x2="41" y2="36" stroke="#FFD700" stroke-width="1.4" stroke-linecap="round"/>
+      <rect x="13" y="51" width="16" height="17" rx="3" fill="#17161f" stroke="#4a4770" stroke-width=".5"/>
+      <circle cx="21" cy="59" r=".9" fill="#FFD700"/><circle cx="21" cy="63" r=".9" fill="#FFD700"/>
+      <polygon points="13,42 6,39.5 13,46" fill="#F2B77A"/><polygon points="29,42 36,39.5 29,46" fill="#F2B77A"/>
+      <circle cx="21" cy="43" r="8" fill="#F2B77A"/>
+      <polygon points="21,53 16.5,50.8 16.5,55.2" fill="#D51C22"/><polygon points="21,53 25.5,50.8 25.5,55.2" fill="#D51C22"/>
+      <path d="M21 46.5 q-5 -2 -9.5 3 q6 1.4 9.5 -1 q3.5 2.4 9.5 1 q-4.5 -5 -9.5 -3z" fill="#fff"/>
+      <rect x="13.5" y="39.5" width="6.5" height="4.6" rx=".8" fill="#111" stroke="#FFD700" stroke-width=".9"/>
+      <rect x="22" y="39.5" width="6.5" height="4.6" rx=".8" fill="#111" stroke="#FFD700" stroke-width=".9"/>
+      <line x1="20" y1="41.5" x2="22" y2="41.5" stroke="#FFD700" stroke-width=".9"/>
+      <polygon points="21,0 32,36 10,36" fill="#D51C22"/>
+      <ellipse cx="21" cy="36" rx="13.5" ry="3" fill="#a81218"/>
+    </symbol>
+    <symbol id="gnote" viewBox="0 0 10 14">
+      <ellipse cx="3.5" cy="11" rx="3.2" ry="2.4" fill="#FFD700"/><rect x="5.7" y="1" width="1.1" height="10" fill="#FFD700"/><path d="M6.8 1 q3 1 2.6 4.5 q-1 -2 -2.6 -2z" fill="#FFD700"/>
+    </symbol>
+    <linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1747"/><stop offset=".6" stop-color="#5a3a78"/><stop offset="1" stop-color="#d98a5a"/></linearGradient>
+    <linearGradient id="nightsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#070618"/><stop offset="1" stop-color="#1c1a4a"/></linearGradient>
+    <linearGradient id="lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a4a80"/><stop offset="1" stop-color="#1a1840"/></linearGradient>
+    <radialGradient id="warm"><stop offset="0" stop-color="#ffcf70" stop-opacity=".95"/><stop offset="1" stop-color="#ffcf70" stop-opacity="0"/></radialGradient>
+    <radialGradient id="teal"><stop offset="0" stop-color="#6ff0d8" stop-opacity=".95"/><stop offset="1" stop-color="#6ff0d8" stop-opacity="0"/></radialGradient>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<header>
+  <span class="label">Metro Gnome &middot; 30 second film &middot; storyboard v1</span>
+  <h1>Metro's <em>Night Walk</em></h1>
+  <p class="logline">At dusk the forest is out of time. Metro steps out with his baton and walks from the creek to the lake to the clearing, and at every stop one more voice falls onto the beat, until the whole forest is a band and the band is in your pocket.</p>
+  <div class="spec">
+    <span>0:30</span><span>120 BPM &middot; 4/4 &middot; C major</span><span>15 bars &middot; 2 s per bar</span><span>7 shots, cut on bar lines</span><span>16:9 master, safe for 9:16 and 1:1</span><span>music only, no voice</span>
+  </div>
+</header>
+
+<section class="score">
+  <h2>The score is the edit</h2>
+  <p class="note">The film is built like the app: on a click. At 120 BPM a bar is exactly two seconds, so every shot is a whole number of bars and every cut lands on a downbeat. The music is additive. Each place Metro visits adds one layer, which is the whole story told in sound, and it still reads with the sound off because each layer has its own light in the picture.</p>
+  <div class="score-scroll">
+    <div class="score-grid" role="img" aria-label="Arrangement chart: seven shots across fifteen bars, with the music layers that play under each">
+      <span></span>
+      <span class="bar-no">1</span><span class="bar-no">2</span><span class="bar-no">3</span><span class="bar-no">4</span><span class="bar-no">5</span><span class="bar-no">6</span><span class="bar-no">7</span><span class="bar-no">8</span><span class="bar-no">9</span><span class="bar-no">10</span><span class="bar-no">11</span><span class="bar-no">12</span><span class="bar-no">13</span><span class="bar-no">14</span><span class="bar-no">15</span>
+
+      <span class="row-name">Shot</span>
+      <span class="blk shot" style="grid-column: span 2">1 Door</span>
+      <span class="blk shot" style="grid-column: span 2">2 Path</span>
+      <span class="blk shot" style="grid-column: span 2">3 Creek</span>
+      <span class="blk shot" style="grid-column: span 2">4 Lake</span>
+      <span class="blk shot" style="grid-column: span 3">5 Drum circle</span>
+      <span class="blk shot" style="grid-column: span 2">6 Forest</span>
+      <span class="blk shot" style="grid-column: span 2">7 Pocket</span>
+
+      <span></span>
+      <span class="time-row" style="grid-column: span 2">0:00</span><span class="time-row" style="grid-column: span 2">0:04</span><span class="time-row" style="grid-column: span 2">0:08</span><span class="time-row" style="grid-column: span 2">0:12</span><span class="time-row" style="grid-column: span 3">0:16</span><span class="time-row" style="grid-column: span 2">0:22</span><span class="time-row" style="grid-column: span 2">0:26</span>
+
+      <span class="row-name">Forest, untimed</span>
+      <span class="blk amb" style="grid-column: 2 / span 2">crickets, frog, drips</span>
+      <span class="row-name">Click</span>
+      <span class="blk click" style="grid-column: 3 / span 14">the app's own click, from the baton taps to the last frame</span>
+      <span class="row-name">Pizzicato bass</span>
+      <span class="blk bass" style="grid-column: 4 / span 11">footsteps</span>
+      <span class="row-name">Flute, kalimba</span>
+      <span class="blk mel" style="grid-column: 6 / span 9">melody, in tune</span>
+      <span class="row-name">Acoustic guitar</span>
+      <span class="blk gtr" style="grid-column: 8 / span 7">C, E, G, then the chord</span>
+      <span class="row-name">Log drums</span>
+      <span class="blk drum" style="grid-column: 10 / span 5">ragged, then tight</span>
+      <span class="row-name">Everyone</span>
+      <span class="blk all" style="grid-column: 13 / span 2">peak, last chord rings</span>
+    </div>
+  </div>
+</section>
+
+<section class="shots">
+  <div class="shots-head">
+    <h2>Seven shots</h2>
+    <label class="toggle" for="cropToggle"><input type="checkbox" id="cropToggle"> Show the 9:16 (white) and 1:1 (gold) crop guides</label>
+  </div>
+  <p class="note">The frames are composition sketches, there to fix where Metro stands, where the light is and what moves. Keep the action inside the white guide and one master cut gives you the YouTube film, a vertical Short and a square ad.</p>
+
+  <!-- 1 -->
+  <article class="shot">
+    <div class="frame-col">
+      <svg class="frame" viewBox="0 0 320 180" role="img" aria-label="Metro stepping out of a round door in a tree trunk, warm light behind him">
+        <rect width="320" height="180" fill="url(#dusk)"/>
+        <rect y="140" width="320" height="40" fill="#15301f"/>
+        <path d="M95 180 L104 0 L200 0 L214 180z" fill="#2a1c14"/>
+        <circle cx="158" cy="118" r="60" fill="url(#warm)"/>
+        <path d="M134 150 v-38 a24 24 0 0 1 48 0 v38z" fill="#ffd98a"/>
+        <path d="M182 150 v-38 a24 24 0 0 0 -6 -16 l18 -6 v66z" fill="#5a3a22"/>
+        <use href="#metro" x="140" y="92" width="34" height="65"/>
+        <line x1="240" y1="150" x2="240" y2="96" stroke="#4a3320" stroke-width="3"/><circle cx="240" cy="92" r="16" fill="url(#warm)"/><circle cx="240" cy="92" r="3" fill="#ffcf70"/>
+        <ellipse cx="60" cy="150" rx="10" ry="5" fill="#2f8f83"/><rect x="58" y="150" width="4" height="8" fill="#d8d2c0"/>
+        <text x="186" y="170" font-size="8" fill="#FFD700" font-family="monospace">tick, tick</text>
+      </svg>
+      <span class="frame-cap">Low angle from the path. Slow push in to a medium shot.</span>
+    </div>
+    <div class="shot-body">
+      <div class="shot-top"><h3>1. The door</h3><span class="tc">0:00 to 0:04</span><span class="bars">bars 1 and 2</span></div>
+      <dl>
+        <dt>Action</dt><dd>Dusk. A round door in the old forest tree swings open and lamp light spills over the moss. Metro steps out, straightens his bow tie, lifts the gold baton and <strong>taps it twice on the root at his feet</strong>.</dd>
+        <dt>Camera</dt><dd>Starts low and wide on the path, pushes in. Shallow depth of field, the torch post soft in the foreground. Metro is on screen and recognisable inside the first second.</dd>
+        <dt>Sound</dt><dd>Bar 1 is the forest on its own and it is a mess: crickets, a frog and dripping water, all at different speeds. Bar 2: two baton taps on beats 3 and 4, and the click starts on the next downbeat.</dd>
+        <dt>From</dt><dd>The tree with a door in the colouring book; the forest tree and torch post behind Metro on the app's home screen.</dd>
+      </dl>
+      <details><summary>Generation prompt</summary>
+        <div class="prompt" id="p1">Dusk in an old mossy forest. A round wooden door in the trunk of a huge tree swings open and warm lamp light spills out onto the moss. [METRO] steps out through the door, straightens his red bow tie, raises his gold baton and taps it twice on a tree root at his feet. A wooden torch post with a small flame stands to the right, a teal glowing mushroom to the left. Low camera on the forest path, slow push in to a medium shot, shallow depth of field, cinematic 3D animation with photoreal materials and lighting, warm key light from the door against cool blue dusk. 4 seconds, 16:9, subject centred.</div>
+        <button class="copy" data-copy="p1">Copy prompt</button>
+      </details>
+    </div>
+  </article>
+
+  <!-- 2 -->
+  <article class="shot">
+    <div class="frame-col">
+      <svg class="frame" viewBox="0 0 320 180" role="img" aria-label="Metro walking a lakeside path, mushrooms lighting up at each step">
+        <rect width="320" height="180" fill="url(#dusk)"/>
+        <rect y="92" width="320" height="50" fill="url(#lake)"/>
+        <path d="M0 92 l40 -14 l40 10 l50 -18 l60 16 l60 -12 l70 18z" fill="#231d44"/>
+        <g fill="#ffcf70"><rect x="236" y="84" width="2" height="3"/><rect x="246" y="82" width="2" height="5"/><rect x="258" y="85" width="2" height="2"/><rect x="270" y="81" width="2" height="6"/></g>
+        <path d="M0 142 q160 -14 320 0 v38 h-320z" fill="#15301f"/>
+        <path d="M0 160 q160 -12 320 0" stroke="#5b4630" stroke-width="12" fill="none"/>
+        <g>
+          <circle cx="62" cy="150" r="13" fill="url(#teal)" opacity=".55"/><ellipse cx="62" cy="150" rx="7" ry="3.5" fill="#2f8f83"/>
+          <circle cx="112" cy="150" r="13" fill="url(#teal)" opacity=".7"/><ellipse cx="112" cy="150" rx="7" ry="3.5" fill="#3fb5a5"/>
+          <circle cx="162" cy="150" r="22" fill="url(#teal)"/><ellipse cx="162" cy="150" rx="8" ry="4" fill="#8ff5e2"/>
+          <ellipse cx="212" cy="150" rx="7" ry="3.5" fill="#1d4a45"/><ellipse cx="262" cy="150" rx="7" ry="3.5" fill="#1d4a45"/>
+        </g>
+        <use href="#metro" x="146" y="88" width="36" height="69"/>
+        <use href="#gnote" x="118" y="112" width="9" height="13"/>
+        <g fill="#ffe98a"><circle cx="40" cy="60" r="1.6"/><circle cx="90" cy="48" r="1.6"/><circle cx="230" cy="54" r="1.6"/><circle cx="286" cy="66" r="1.6"/><circle cx="200" cy="36" r="1.6"/></g>
+        <text x="150" y="174" font-size="8" fill="#8ff5e2" font-family="monospace">1</text><text x="208" y="174" font-size="8" fill="#5a8f88" font-family="monospace">2</text><text x="258" y="174" font-size="8" fill="#5a8f88" font-family="monospace">3</text>
+      </svg>
+      <span class="frame-cap">Side tracking shot at gnome height. Lake and far lights behind.</span>
+    </div>
+    <div class="shot-body">
+      <div class="shot-top"><h3>2. The path</h3><span class="tc">0:04 to 0:08</span><span class="bars">bars 3 and 4</span></div>
+      <dl>
+        <dt>Action</dt><dd>Metro walks the lakeside path. Every bootfall lands on a beat and a mushroom lights up beside it. <strong>The first of every four glows brighter</strong>, exactly like an accented downbeat. Fireflies drift into a shared pulse. The last mushroom lets go of a small gold note that floats along behind him.</dd>
+        <dt>Camera</dt><dd>Sideways tracking shot, level with Metro, moving at his pace. The lake and distant town lights sit behind him, as on the colouring book cover.</dd>
+        <dt>Sound</dt><dd>Click plus a pizzicato bass that doubles his footsteps. A soft chime when the gold note appears.</dd>
+        <dt>Sells</dt><dd>The metronome and its accents, without showing a single button.</dd>
+      </dl>
+      <details><summary>Generation prompt</summary>
+        <div class="prompt" id="p2">[METRO] walks left to right along a mossy lakeside forest path at dusk with a steady, confident stride. A row of teal glowing mushrooms lines the path and each one lights up exactly as his red shoe lands beside it, every fourth one glowing brighter. Fireflies pulse in the air. A small glowing gold music note floats up from a mushroom and follows him. Calm lake and distant warm town lights in the background. Side tracking camera at character height, smooth, cinematic 3D animation with photoreal moss, water and lighting, shallow depth of field. 4 seconds, 16:9, subject centred.</div>
+        <button class="copy" data-copy="p2">Copy prompt</button>
+      </details>
+    </div>
+  </article>
+
+  <!-- 3 -->
+  <article class="shot">
+    <div class="frame-col">
+      <svg class="frame" viewBox="0 0 320 180" role="img" aria-label="Metro at the creek holding a tuning fork over the water, gold rings around a frog on a lily pad">
+        <rect width="320" height="180" fill="#101a2e"/>
+        <rect y="70" width="320" height="110" fill="#17304a"/>
+        <path d="M0 70 q80 -16 160 -4 t160 -6 v-60 h-320z" fill="#0f2418"/>
+        <g fill="none" stroke="#FFD700"><ellipse cx="206" cy="124" rx="18" ry="6" stroke-width="1.6"/><ellipse cx="206" cy="124" rx="36" ry="12" stroke-width="1.2" opacity=".7"/><ellipse cx="206" cy="124" rx="56" ry="19" stroke-width=".9" opacity=".4"/></g>
+        <ellipse cx="206" cy="124" rx="13" ry="4.5" fill="#2e6b3a"/>
+        <ellipse cx="206" cy="119" rx="7" ry="5" fill="#5fae4e"/><circle cx="203" cy="115" r="1.8" fill="#fff"/><circle cx="209" cy="115" r="1.8" fill="#fff"/>
+        <path d="M0 180 v-46 q50 -12 104 4 q14 20 0 42z" fill="#3a3f48"/>
+        <use href="#metro" x="56" y="68" width="40" height="76"/>
+        <g stroke="#d8dbe6" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M112 96 v-14 M118 96 v-14 M112 96 q3 4 6 0 M115 98 v9"/></g>
+        <g stroke="#d8dbe6" stroke-width=".7" fill="none" opacity=".7"><path d="M124 84 q4 5 0 10 M130 81 q6 8 0 16"/></g>
+        <ellipse cx="262" cy="52" rx="6" ry="4.5" fill="#f2b632"/><rect x="259.5" y="48" width="2" height="8.5" fill="#1b1508"/><rect x="263.5" y="48" width="2" height="8.5" fill="#1b1508"/><ellipse cx="260" cy="46" rx="4" ry="2" fill="#cfe6ff" opacity=".7"/>
+        <use href="#gnote" x="232" y="88" width="9" height="13"/>
+      </svg>
+      <span class="frame-cap">Over the shoulder, then rack focus from the fork to the frog.</span>
+    </div>
+    <div class="shot-body">
+      <div class="shot-top"><h3>3. The creek</h3><span class="tc">0:08 to 0:12</span><span class="bars">bars 5 and 6</span></div>
+      <dl>
+        <dt>Action</dt><dd>A frog on a lily pad croaks a sour, sagging note and the water around it wobbles. Metro takes a tuning fork from his jacket, <strong>strikes it on his boot</strong> and holds it out over the creek. The wobbling ripples settle into perfect rings that flash gold, and the croak slides up into tune. A bumblebee hangs in the air holding one long steady hum underneath.</dd>
+        <dt>Camera</dt><dd>Over Metro's shoulder, then a rack focus from the ringing fork to the frog. Finish close on the water as the rings lock.</dd>
+        <dt>Sound</dt><dd>The croak bends up to the note. Flute and kalimba enter with the melody, now in tune with it. The bee is a held drone on the root.</dd>
+        <dt>Sells</dt><dd>The tuner (the rings locking is the needle settling) and the tuning drone. The fork on the boot is the colouring page pose.</dd>
+      </dl>
+      <details><summary>Generation prompt</summary>
+        <div class="prompt" id="p3">At a forest creek at blue hour, [METRO] stands on a flat rock at the water's edge, strikes a silver tuning fork against his red shoe and holds it out over the water. A small green frog sits on a lily pad. The messy ripples around the frog settle into perfect concentric rings that glow gold. A fat bumblebee hovers nearby. A small glowing gold music note rises from the water. Over the shoulder camera, rack focus from the vibrating tuning fork to the frog, cinematic 3D animation with photoreal water, wet rock and moss, soft moonlight and gold reflections. 4 seconds, 16:9, action centred.</div>
+        <button class="copy" data-copy="p3">Copy prompt</button>
+      </details>
+    </div>
+  </article>
+
+  <!-- 4 -->
+  <article class="shot">
+    <div class="frame-col">
+      <svg class="frame" viewBox="0 0 320 180" role="img" aria-label="Metro plucking a guitar leaning on a tree by the lake, three fireflies forming a triangle above">
+        <rect width="320" height="180" fill="url(#nightsky)"/>
+        <rect y="104" width="320" height="76" fill="#141238"/>
+        <rect y="150" width="320" height="30" fill="#12281b"/>
+        <path d="M84 180 L92 0 L128 0 L136 180z" fill="#2a1c14"/>
+        <g transform="rotate(-12 150 150)"><rect x="147" y="78" width="5" height="42" fill="#3b2412"/><ellipse cx="149.5" cy="124" rx="12" ry="10" fill="#c8843c"/><ellipse cx="149.5" cy="142" rx="16" ry="13" fill="#c8843c"/><circle cx="149.5" cy="131" r="4.5" fill="#2a1608"/></g>
+        <use href="#metro" x="172" y="92" width="36" height="69"/>
+        <g stroke="#ffe98a" stroke-width=".8" stroke-dasharray="2 2" fill="none"><path d="M160 60 L128 96 L196 96z"/></g>
+        <circle cx="160" cy="60" r="12" fill="url(#warm)"/><circle cx="128" cy="96" r="12" fill="url(#warm)"/><circle cx="196" cy="96" r="12" fill="url(#warm)"/>
+        <g fill="#fff3b0"><circle cx="160" cy="60" r="2.4"/><circle cx="128" cy="96" r="2.4"/><circle cx="196" cy="96" r="2.4"/></g>
+        <g font-size="8" fill="#FFD700" font-family="monospace"><text x="157" y="46">G</text><text x="112" y="99">C</text><text x="204" y="99">E</text></g>
+        <g fill="#fff3b0" opacity=".5"><circle cx="160" cy="132" r="1.6"/><circle cx="130" cy="118" r="1.6"/><circle cx="194" cy="118" r="1.6"/></g>
+      </svg>
+      <span class="frame-cap">Wide on the shore. Crane up with the fireflies as they rise.</span>
+    </div>
+    <div class="shot-body">
+      <div class="shot-top"><h3>4. The lake</h3><span class="tc">0:12 to 0:16</span><span class="bars">bars 7 and 8</span></div>
+      <dl>
+        <dt>Action</dt><dd>An acoustic guitar leans against a tree at the lake's edge. Metro plucks <strong>three strings, one at a time</strong>. Each note sends a firefly up from the string. The three hang over the water as a triangle, flash together, and the full chord rings out across the lake.</dd>
+        <dt>Camera</dt><dd>Wide and still for the three plucks, then a slow crane up following the fireflies. Their reflections sit in the lake below.</dd>
+        <dt>Sound</dt><dd>Guitar: C, E, G on beats 1, 2 and 3 of bar 7, then the chord strummed on the downbeat of bar 8.</dd>
+        <dt>Sells</dt><dd>The Chord Finder: play the notes as an arpeggio, and they are named as one chord. The guitar is the item you earn there, propped on the tree as it is in the app.</dd>
+      </dl>
+      <details><summary>Generation prompt</summary>
+        <div class="prompt" id="p4">Night at a calm forest lake. A classical acoustic guitar leans against a big tree at the shore, as tall as [METRO], who stands beside it and plucks three strings one after another with his gloved hand. With each pluck a glowing firefly rises from the string. The three fireflies hover above the water in a triangle and flash brightly together, reflected in the lake. Wide shot that slowly cranes upward following the fireflies, cinematic 3D animation with photoreal wood grain, water reflections and soft moonlight, warm firefly glow. 4 seconds, 16:9, subject centred.</div>
+        <button class="copy" data-copy="p4">Copy prompt</button>
+      </details>
+    </div>
+  </article>
+
+  <!-- 5 -->
+  <article class="shot">
+    <div class="frame-col">
+      <svg class="frame" viewBox="0 0 320 180" role="img" aria-label="Metro conducting on a tree stump, forest animals drumming on logs around him, gold sparks at each hit">
+        <rect width="320" height="180" fill="#0c0a1c"/>
+        <ellipse cx="160" cy="150" rx="170" ry="44" fill="#1b3320"/>
+        <circle cx="160" cy="100" r="96" fill="url(#warm)" opacity=".35"/>
+        <g><line x1="30" y1="150" x2="30" y2="80" stroke="#4a3320" stroke-width="3"/><circle cx="30" cy="76" r="14" fill="url(#warm)"/><line x1="290" y1="150" x2="290" y2="80" stroke="#4a3320" stroke-width="3"/><circle cx="290" cy="76" r="14" fill="url(#warm)"/></g>
+        <rect x="142" y="126" width="36" height="22" rx="3" fill="#5a3a22"/><ellipse cx="160" cy="126" rx="18" ry="5" fill="#8a623c"/>
+        <use href="#metro" x="140" y="56" width="40" height="76"/>
+        <g>
+          <rect x="62" y="138" width="34" height="16" rx="8" fill="#6b4a2c"/><ellipse cx="80" cy="128" rx="11" ry="8" fill="#8d7a66"/><path d="M70 124 l4 -8 l4 7 l4 -8 l4 7 l3 -6" stroke="#5c4e42" stroke-width="2" fill="none"/>
+          <rect x="222" y="138" width="34" height="16" rx="8" fill="#6b4a2c"/><ellipse cx="240" cy="128" rx="9" ry="9" fill="#d9d2c8"/><ellipse cx="236" cy="113" rx="2.6" ry="8" fill="#d9d2c8"/><ellipse cx="244" cy="113" rx="2.6" ry="8" fill="#d9d2c8"/>
+          <ellipse cx="118" cy="160" rx="13" ry="6" fill="#2f8f83"/><ellipse cx="118" cy="152" rx="6" ry="4.5" fill="#5fae4e"/>
+          <ellipse cx="204" cy="162" rx="13" ry="6" fill="#2f8f83"/><ellipse cx="204" cy="153" rx="7" ry="6" fill="#d9d2c8"/><ellipse cx="201" cy="143" rx="2" ry="6" fill="#d9d2c8"/><ellipse cx="207" cy="143" rx="2" ry="6" fill="#d9d2c8"/>
+        </g>
+        <g stroke="#FFD700" stroke-width="1.3" stroke-linecap="round"><path d="M80 112 v-7 M72 115 l-5 -5 M88 115 l5 -5"/><path d="M240 98 v-7 M232 101 l-5 -5 M248 101 l5 -5"/><path d="M118 142 v-6 M204 132 v-6"/></g>
+        <use href="#gnote" x="100" y="70" width="9" height="13"/><use href="#gnote" x="212" y="60" width="9" height="13"/><use href="#gnote" x="186" y="36" width="9" height="13"/><use href="#gnote" x="124" y="40" width="9" height="13"/>
+      </svg>
+      <span class="frame-cap">Orbit around Metro, with beat-cut inserts of paws on drums.</span>
+    </div>
+    <div class="shot-body">
+      <div class="shot-top"><h3>5. The drum circle</h3><span class="tc">0:16 to 0:22</span><span class="bars">bars 9 to 11</span></div>
+      <dl>
+        <dt>Action</dt><dd>A clearing ringed by torches. A hedgehog, two rabbits and the frog from the creek are drumming on logs and mushroom caps, each a little off. Metro hops onto a stump and conducts. Bar 9 is ragged. In bar 10 the hits start landing together and <strong>every one that lands throws a burst of gold sparks</strong>. By bar 11 the clearing moves as one and gold notes spin up around him.</dd>
+        <dt>Camera</dt><dd>One slow orbit around Metro, cut on the beat with three quick inserts: a paw on a log, a mushroom cap bouncing, Metro's baton coming down.</dd>
+        <dt>Sound</dt><dd>Log drums join, loose then tight. This is the longest shot because it is the payoff: the first moment the whole band plays.</dd>
+        <dt>Sells</dt><dd>The rhythm game and Groove Check: hit it on the beat and it lights up gold. The drum circle is a colouring book scene.</dd>
+      </dl>
+      <details><summary>Generation prompt</summary>
+        <div class="prompt" id="p5">A forest clearing at night ringed by wooden torch posts with warm flames. [METRO] stands on a tree stump in the centre conducting with his gold baton with big, joyful, precise gestures. Around him a hedgehog, two rabbits and a small green frog drum on hollow logs and on big mushroom caps. Each time a paw hits a drum, a burst of gold sparks flies up. Small glowing gold music notes spiral upward around the stump. Camera slowly orbits the conductor, cinematic 3D animation with photoreal fur, bark and firelight, warm torch light against deep blue night. 6 seconds, 16:9, conductor centred.</div>
+        <button class="copy" data-copy="p5">Copy prompt</button>
+      </details>
+    </div>
+  </article>
+
+  <!-- 6 -->
+  <article class="shot">
+    <div class="frame-col">
+      <svg class="frame" viewBox="0 0 320 180" role="img" aria-label="Metro in silhouette on a hilltop against a huge moon, baton raised, gold notes rising into the stars">
+        <rect width="320" height="180" fill="url(#nightsky)"/>
+        <g fill="#fff"><circle cx="30" cy="24" r="1"/><circle cx="70" cy="50" r=".8"/><circle cx="270" cy="30" r="1"/><circle cx="296" cy="70" r=".8"/><circle cx="238" cy="14" r=".8"/><circle cx="96" cy="16" r="1"/><circle cx="46" cy="86" r=".8"/></g>
+        <circle cx="160" cy="74" r="60" fill="#dfe6ff" opacity=".12"/><circle cx="160" cy="74" r="46" fill="#e9eeff"/>
+        <circle cx="146" cy="62" r="7" fill="#cdd6f5"/><circle cx="176" cy="88" r="9" fill="#cdd6f5"/><circle cx="172" cy="54" r="4" fill="#cdd6f5"/>
+        <path d="M0 180 v-28 q30 -22 62 -6 q30 -26 62 -8 q36 -30 72 0 q30 -20 62 6 q34 -14 62 8 v28z" fill="#0b1a12"/>
+        <use href="#metro" x="142" y="60" width="38" height="72"/>
+        <g><circle cx="52" cy="150" r="9" fill="url(#teal)"/><circle cx="104" cy="158" r="9" fill="url(#warm)"/><circle cx="222" cy="156" r="9" fill="url(#teal)"/><circle cx="276" cy="150" r="9" fill="url(#warm)"/><circle cx="160" cy="164" r="9" fill="url(#warm)"/></g>
+        <use href="#gnote" x="84" y="96" width="9" height="13"/><use href="#gnote" x="232" y="84" width="9" height="13"/><use href="#gnote" x="58" y="46" width="7" height="10"/><use href="#gnote" x="256" y="40" width="7" height="10"/><use href="#gnote" x="110" y="26" width="5" height="7"/><use href="#gnote" x="214" y="20" width="5" height="7"/>
+      </svg>
+      <span class="frame-cap">Crane up through the canopy. Hold the last pose for a full beat.</span>
+    </div>
+    <div class="shot-body">
+      <div class="shot-top"><h3>6. The whole forest</h3><span class="tc">0:22 to 0:26</span><span class="bars">bars 12 and 13</span></div>
+      <dl>
+        <dt>Action</dt><dd>The camera lifts through the leaves. Below, every light in the forest is pulsing on the beat: mushrooms, torches, fireflies. The gold notes rise past the lens and <strong>settle into the sky as stars</strong> while the moon comes out from behind a cloud. Metro gives one last flourish and freezes on the downbeat, baton high, against the moon.</dd>
+        <dt>Camera</dt><dd>Continuous crane up and back from the clearing to a wide moonlit silhouette. This is the poster frame and the YouTube thumbnail.</dd>
+        <dt>Sound</dt><dd>Everyone playing. The last chord lands on the downbeat of bar 13 and is left to ring.</dd>
+        <dt>Sells</dt><dd>Gnotes, and the forest that fills in as you practise: the moon and stars are items in his collection.</dd>
+      </dl>
+      <details><summary>Generation prompt</summary>
+        <div class="prompt" id="p6">The camera rises up through forest leaves at night to reveal the whole forest below pulsing with rhythmic light: teal glowing mushrooms, warm torches and fireflies all brightening together. Dozens of small glowing gold music notes float upward past the camera and become stars in the sky as a huge full moon comes out from behind a cloud. [METRO] stands on a rise in the centre, sweeps his gold baton up in a final flourish and holds the pose, framed against the moon. Crane up and pull back to a wide shot, cinematic 3D animation with photoreal lighting and volumetric moonlight. 4 seconds, 16:9, subject centred.</div>
+        <button class="copy" data-copy="p6">Copy prompt</button>
+      </details>
+    </div>
+  </article>
+
+  <!-- 7 -->
+  <article class="shot">
+    <div class="frame-col">
+      <svg class="frame" viewBox="0 0 320 180" role="img" aria-label="A phone on a music stand showing the Metro Gnome app, a guitar beside it, the logo and a store badge">
+        <rect width="320" height="180" fill="#17131f"/>
+        <circle cx="120" cy="80" r="110" fill="url(#warm)" opacity=".18"/>
+        <line x1="120" y1="180" x2="120" y2="150" stroke="#2c2c34" stroke-width="5"/><rect x="76" y="144" width="88" height="6" rx="2" fill="#2c2c34"/>
+        <rect x="88" y="18" width="64" height="128" rx="9" fill="#05040c" stroke="#3a3850" stroke-width="1.5"/>
+        <rect x="92" y="24" width="56" height="116" rx="5" fill="#0D0B1E"/>
+        <circle cx="132" cy="38" r="5" fill="#e9eeff"/>
+        <rect x="92" y="96" width="56" height="8" fill="#12281b"/>
+        <use href="#metro" x="106" y="44" width="28" height="54"/>
+        <text x="120" y="116" font-size="9" font-weight="700" fill="#EEEEFF" text-anchor="middle" font-family="monospace">120</text>
+        <circle cx="120" cy="128" r="7" fill="#5B2D8A"/><polygon points="118,124.5 118,131.5 124,128" fill="#fff"/>
+        <g transform="rotate(14 40 120)"><rect x="37" y="30" width="7" height="80" fill="#3b2412"/><ellipse cx="40.5" cy="128" rx="20" ry="17" fill="#c8843c"/><ellipse cx="40.5" cy="156" rx="26" ry="22" fill="#c8843c"/><circle cx="40.5" cy="140" r="7" fill="#2a1608"/></g>
+        <text x="186" y="74" font-size="17" font-weight="800" fill="#EEEEFF" font-family="sans-serif">Metro Gnome</text>
+        <text x="186" y="90" font-size="7.5" fill="#B4B3D6" font-family="sans-serif">Metronome. Tuner. Chords. Rhythm.</text>
+        <rect x="186" y="102" width="74" height="22" rx="4" fill="#000" stroke="#8080AA" stroke-width=".8"/>
+        <polygon points="193,107 193,119 203,113" fill="#FFD700"/><text x="208" y="116" font-size="7" fill="#fff" font-family="sans-serif">Google Play</text>
+      </svg>
+      <span class="frame-cap">One pull back, out of the screen and into a real practice room.</span>
+    </div>
+    <div class="shot-body">
+      <div class="shot-top"><h3>7. In your pocket</h3><span class="tc">0:26 to 0:30</span><span class="bars">bars 14 and 15</span></div>
+      <dl>
+        <dt>Action</dt><dd>The moonlit frame keeps pulling back until its edges become a phone screen on a music stand. On the screen is <strong>the real app</strong>: Metro as he looks in the app, swinging on the same click, the same moon behind him. A guitarist's hand comes in and lifts the guitar. Logo, four words, store badge.</dd>
+        <dt>Camera</dt><dd>A single continuous pull back that hides the cut from the 3D forest to a screen recording of the app. Warm lamp light, the room slightly out of focus.</dd>
+        <dt>Sound</dt><dd>The band is gone and only the click is left, four beats of it, exactly as it sounds in the app. One soft guitar chord on the last beat.</dd>
+        <dt>Why</dt><dd>The film has to hand over to the product people will actually open. Showing the in-app Metro here, in time with the same click, makes the 3D forest a story about the app instead of a promise of something else.</dd>
+      </dl>
+      <div class="endcard"><b>Metro Gnome</b><span>Metronome. Tuner. Chords. Rhythm.</span><span class="mono">Get it on Google Play</span></div>
+      <details><summary>Generation prompt</summary>
+        <div class="prompt" id="p7">A cosy home practice room at night, warm lamp light, shallow depth of field. A smartphone stands upright on a black music stand, an acoustic guitar leaning beside it. The camera pulls slowly back from the phone screen. A hand reaches in from the left and picks up the guitar by the neck. Photoreal live action look, 4 seconds, 16:9, phone left of centre with clean dark space on the right for a logo. Leave the phone screen plain dark: the real app recording is composited onto it in the edit.</div>
+        <button class="copy" data-copy="p7">Copy prompt</button>
+      </details>
+    </div>
+  </article>
+</section>
+
+<section class="two">
+  <div class="panel">
+    <span class="label">Character and look</span>
+    <h2>Keep Metro the same in every shot</h2>
+    <div class="refs">
+      <figure><img src="metro-story.png" alt="3D render of Metro: red cone hat, gold square sunglasses, white moustache, black pinstripe suit, red bow tie, red shoes, gold baton" width="600" height="833"><figcaption>Character reference: the site's 3D Metro. Feed this image to every shot.</figcaption></figure>
+      <figure><img src="cover.webp" alt="Colouring book cover: a gnome walking a lakeside forest path at dusk carrying a lantern" width="360" height="540"><figcaption>World reference: the colouring book's lakeside path at dusk.</figcaption></figure>
+    </div>
+    <p class="note">The look is your existing 3D Metro placed in a photoreal forest: real moss, wet rock, felt and firelight, with a shallow depth of field. The character stays stylised so he matches the store icon and the site; the realism comes from the world and the light. Paste this in place of <span class="mono">[METRO]</span> in each prompt:</p>
+    <div class="prompt" id="pc">Metro, a small cheerful garden gnome conductor in a stylised 3D animated film look: a tall bright red felt cone hat with a round brim, square gold-framed sunglasses with dark lenses, a big white handlebar moustache, pointed ears, white hair at the temples, a black pinstripe suit with three gold buttons and a gold belt buckle, a white collar with a red bow tie, glossy red shoes with white soles, and a slim gold conductor's baton in his right hand</div>
+    <button class="copy" data-copy="pc">Copy character description</button>
+  </div>
+
+  <div class="panel">
+    <span class="label">Music brief</span>
+    <h2>One tune that builds itself</h2>
+    <ul>
+      <li><strong>120 BPM, 4/4, C major, exactly 15 bars.</strong> Locking the tempo is what lets every cut sit on a bar line. Ask for a hard ending on the last beat, no fade.</li>
+      <li><strong>The click is the app's Classic click</strong>, recorded straight from the app, running from bar 3 to the final frame. It is the one sound in the film a user will hear again when they open the app.</li>
+      <li><strong>Additive arrangement</strong>, one layer per place, as in the chart: bass, then flute and kalimba, then guitar, then log drums, then everyone.</li>
+      <li><strong>Acoustic and woody</strong>, played small: pizzicato, kalimba, nylon guitar, hand drums. Playful folk, closer to a woodland band than an orchestra.</li>
+      <li><strong>Three sync points</strong> the composer must hit: the two baton taps (bar 2, beats 3 and 4), the C, E, G plucks (bar 7, beats 1 to 3), the final chord (bar 13, beat 1).</li>
+      <li><strong>Rights:</strong> the track has to be cleared for paid advertising, which many free libraries and some AI music plans do not cover. Check the licence before the edit, since the picture is cut to it.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="two">
+  <div class="panel">
+    <span class="label">Making it</span>
+    <h2>Production route</h2>
+    <ol>
+      <li><strong>Music first.</strong> Get the 30 second track made or licensed and lay it on the timeline with a marker every 2 seconds. Everything is cut to those markers.</li>
+      <li><strong>One still per shot.</strong> Generate a key frame for each shot from the character reference image plus the shot prompt, and keep going until Metro matches across all seven. This is where consistency is won.</li>
+      <li><strong>Animate each still</strong> with an image to video tool. Every shot is 4 or 6 seconds, which suits the clip lengths those tools produce. Generate a second or two extra and trim to the bar.</li>
+      <li><strong>Shot 7 is real.</strong> Screen record the app's home screen at 120 BPM with the moon item active, and composite it onto the phone. Start the recording's beat on a bar marker so the swing matches the click.</li>
+      <li><strong>Add the gold by hand.</strong> The Gnotes, sparks and ring flashes are easier to add as simple overlays in the edit than to get right inside a generated clip, and it keeps them identical from shot to shot.</li>
+    </ol>
+    <p class="note">The beat-exact moments (bootfalls on mushrooms, drum hits) are the hard part for generated video. If a clip drifts, retime it in the edit to the markers; a 5 to 10 percent speed change is invisible.</p>
+  </div>
+
+  <div class="panel">
+    <span class="label">Delivery</span>
+    <h2>YouTube and Google Ads</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Version</th><th>Shots</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>0:30, 16:9</td><td>All seven</td><td>YouTube upload, in-stream ad</td></tr>
+          <tr><td>0:30, 9:16</td><td>All seven, cropped to the white guide</td><td>Shorts, vertical ad placements</td></tr>
+          <tr><td>0:30, 1:1</td><td>All seven, cropped to the gold guide</td><td>Feed placements</td></tr>
+          <tr><td>0:16 cutdown</td><td>1, 2, 5, 7 (bars 1 to 4, 10 to 11, 14 to 15)</td><td>Short ad slot. Have the composer make an 8 bar edit of the track.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li><strong>It works muted.</strong> Each musical layer has a visible light: mushrooms, rings, fireflies, sparks. Many ad views start without sound.</li>
+      <li><strong>Metro is on screen in the first second</strong> and the baton taps land before the skip button appears.</li>
+      <li><strong>The end card leads with what the app does.</strong> Keep the four words for the ad version. On the YouTube upload, the description can carry the longer pitch and the Play Store link.</li>
+      <li><strong>Upload all three shapes</strong> to the app campaign so Google does not crop the landscape one for you.</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<script>
+document.querySelectorAll('svg.frame').forEach(function (svg) {
+  var ns = 'http://www.w3.org/2000/svg';
+  [['v', 109.4, 101.2], ['s', 70, 180]].forEach(function (c) {
+    var r = document.createElementNS(ns, 'rect');
+    r.setAttribute('class', 'crop ' + c[0]);
+    r.setAttribute('x', c[1]); r.setAttribute('y', 0.5);
+    r.setAttribute('width', c[2]); r.setAttribute('height', 179);
+    svg.appendChild(r);
+  });
+});
+document.getElementById('cropToggle').addEventListener('change', function (e) {
+  document.body.classList.toggle('crops', e.target.checked);
+});
+document.querySelectorAll('button.copy').forEach(function (btn) {
+  var label = btn.textContent;
+  btn.addEventListener('click', function () {
+    var el = document.getElementById(btn.dataset.copy);
+    var text = el.textContent;
+    if (btn.dataset.copy !== 'pc') text = text.replace('[METRO]', document.getElementById('pc').textContent);
+    function done() { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = label; }, 1400); }
+    function fallback() {
+      var range = document.createRange(); range.selectNodeContents(el);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      btn.textContent = 'Selected, press Ctrl+C'; setTimeout(function () { btn.textContent = label; }, 2200);
+    }
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (err) { fallback(); }
+  });
+});
+</script>
