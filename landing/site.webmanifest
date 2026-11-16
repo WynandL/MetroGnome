@@ -1,0 +1,20 @@
+{
+  "name": "MetroGnome",
+  "short_name": "MetroGnome",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/metro.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#06091E",
+  "theme_color": "#06091E"
+}
