@@ -54,8 +54,10 @@ fun GoldPill(
             // the BPM on a narrow phone with large fonts) shortens the label, never wraps it.
             Text(
                 text, color = AppColors.gold, fontSize = fontSize, fontWeight = fontWeight,
+                // No weight: a Row already measures its last child in the width left, so this
+                // ellipsizes in a capped pill; a weight would collapse the label to nothing in
+                // an unbounded parent (the Chords page's horizontally scrolling alternatives).
                 maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
             )
         }
     }
