@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.components.metro_items
 
 import com.example.metrognome.ui.components.metro_items.items.GoldEarring
+import com.example.metrognome.ui.components.metro_items.items.ShoulderRobin
 import com.example.metrognome.ui.components.metro_items.items.GlowingMushroom
 import com.example.metrognome.ui.components.metro_items.items.LuxuryWatch
 import com.example.metrognome.ui.components.metro_items.items.GoldChain
@@ -43,6 +44,10 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
 
     // ── Wearables ─────────────────────────────────────────────────────────────
     MetroItemEntry(GoldEarring,      UnlockCondition.MetronomeSeconds(300)),        // 5 min
+    // 15 min (2026-11-19): fills the gap the analytics showed between the earring (117
+    // users in six weeks) and the watch (20), so a new player meets a second unlock in their
+    // first real session. Perches on the far shoulder, clear of the lapel pin and the mic.
+    MetroItemEntry(ShoulderRobin,    UnlockCondition.MetronomeSeconds(900)),        // 15 min
     MetroItemEntry(LuxuryWatch,      UnlockCondition.MetronomeSeconds(1_800)),      // 30 min
     MetroItemEntry(GoldChain,        UnlockCondition.MetronomeSeconds(3_600)),      // 1 h
 
