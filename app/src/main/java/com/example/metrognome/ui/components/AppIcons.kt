@@ -110,27 +110,31 @@ object AppIcons {
     )
 
     /**
-     * Classic: a pyramid metronome with its pendulum swung. Paths: body, base, arm, weight (filled).
+     * Classic: a pyramid metronome, its pendulum swung a little inside the case with the weight
+     * on the arm (the first cut swung the arm out through the side). Paths: body, base, arm,
+     * weight (filled).
      */
     val SoundClassic = AppGlyph(
-        listOf("M8 20.5 10.6 3.5h2.8L16 20.5Z", "M5.5 20.5h13", "M12 17 16.2 7.2", "M14.7 9.6a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0Z"),
+        listOf("M8 20.5 10.6 3.5h2.8L16 20.5Z", "M5.5 20.5h13", "M12 17 13.1 7.5", "M12.05 10.3h1.4l-.2 1.5h-1.4Z"),
         filledPaths = setOf(3), faintPaths = setOf(),
     )
 
     /**
-     * Hi-Hat: a pair of cymbals on a stand. Paths: top cymbal, bottom cymbal (faint), rod, feet.
+     * Hi-Hat: a pair of domed cymbals clamped face to face on the stand. Thin arcs read as an
+     * umbrella and then a coat hanger. Paths: top cymbal, bottom cymbal, rod, feet.
      */
     val SoundHiHat = AppGlyph(
-        listOf("M3.5 7.5Q12 3.5 20.5 7.5", "M3.5 10.5Q12 6.5 20.5 10.5", "M12 5.5V20.5", "M8.5 20.5 12 17.5l3.5 3"),
-        filledPaths = setOf(), faintPaths = setOf(1),
+        listOf("M3.5 8.4Q12 4.6 20.5 8.4Q12 9.6 3.5 8.4Z", "M3.5 10.4Q12 9.2 20.5 10.4Q12 14.2 3.5 10.4Z", "M12 6.3V20.5", "M8.5 20.5 12 17.5l3.5 3"),
+        filledPaths = setOf(), faintPaths = setOf(),
     )
 
     /**
-     * Wood: a woodblock with its slot, and the beater over it. Paths: block, slot (faint), stick,
-     * beater (filled).
+     * Wood: a woodblock with its slot, a stick coming down to strike its top. A short beater in
+     * the corner read as a radio aerial, knock lines as a notification. Paths: block, slot
+     * (faint), stick, tip (filled).
      */
     val SoundWood = AppGlyph(
-        listOf("M4 10.5Q4 8.5 6 8.5H18Q20 8.5 20 10.5V16.5Q20 18.5 18 18.5H6Q4 18.5 4 16.5Z", "M7 13.5h10", "M13.5 2.5 16.6 5.6", "M16.1 6.6a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0Z"),
+        listOf("M3.5 13Q3.5 11 5.5 11H16.5Q18.5 11 18.5 13V18.5Q18.5 20.5 16.5 20.5H5.5Q3.5 20.5 3.5 18.5Z", "M6.5 15.5h9", "M21 3 12.6 9.6", "M11.1 10.2a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0 -2.2 0Z"),
         filledPaths = setOf(3), faintPaths = setOf(1),
     )
 
