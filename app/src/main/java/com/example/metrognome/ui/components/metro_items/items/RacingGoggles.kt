@@ -12,6 +12,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
+import com.example.metrognome.ui.components.HAT_BASE_Y
+import com.example.metrognome.ui.components.HAT_TILT_DEG
+import com.example.metrognome.ui.components.hatConePath
 import com.example.metrognome.ui.components.metro_items.MetroItem
 import com.example.metrognome.ui.theme.ItemPalette
 
@@ -39,8 +42,6 @@ object RacingGoggles : MetroItem {
     override val isBodyAttached = true
     override val isHeadAttached = true
 
-    private const val HAT_BASE_Y = -11.14f
-    private const val TILT_DEG   = 4f
     private const val STRAP_Y    = -12.06f   // strap centre line at the cone's edges
     private const val SAG        = 0.16f     // how far the strap dips at the front of the cone
     private const val LENS_R     = 0.40f
@@ -61,30 +62,62 @@ object RacingGoggles : MetroItem {
     private val glint        = Color(0xFFEAF2FF)
 
     override fun DrawScope.draw(u: Float, cx: Float, baseY: Float) {
-        rotate(TILT_DEG, pivot = Offset(0f, HAT_BASE_Y * u)) {
-            drawStrap(u)
+        rotate(HAT_TILT_DEG, pivot = Offset(0f, HAT_BASE_Y * u)) {
+            // Everything that lies ON the felt (the strap, and the shadows of strap and
+            // lenses) is clipped to the cone's own outline, so the strap ends exactly at the
+            // hat's edge and reads as wrapping round it. A strap cut to a guessed width
+            // stopped short of the edge with a hard square end and read as a sticker.
+            clipPath(hatConePath(u)) {
+                drawFeltShadows(u)
+                drawStrap(u)
+            }
             drawLens(Offset(LX * u, LY * u), u)
             drawLens(Offset(RX * u, LY * u), u)
             drawBridge(u)
         }
     }
 
-    /** The strap round the cone: a band that dips at the front and darkens at both ends. */
-    private fun DrawScope.drawStrap(u: Float) {
-        val left = -1.44f * u
-        val right = 1.44f * u
+    /** Soft shadows the strap and the lenses cast on the felt, down and right of each. */
+    private fun DrawScope.drawFeltShadows(u: Float) {
+        drawPath(strapPath(u, dy = 0.08f * u), Color.Black.copy(alpha = 0.22f))
+        for (x in floatArrayOf(LX, RX)) {
+            val c = Offset(x * u + 0.06f * u, LY * u + 0.10f * u)
+            drawCircle(
+                Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.35f), Color.Transparent), c, LENS_R * u * 1.35f),
+                LENS_R * u * 1.35f, c,
+            )
+        }
+    }
+
+    /**
+     * The band round the cone, dipping at the front. It runs well past the cone on both
+     * sides on purpose: the caller clips it to the cone, which gives the true ends.
+     */
+    private fun strapPath(u: Float, dy: Float = 0f): Path {
+        val left = -2.2f * u
+        val right = 2.2f * u
         val half = 0.13f * u
-        val y = STRAP_Y * u
+        val y = STRAP_Y * u + dy
         val sag = SAG * u
-        val band = Path().apply {
+        return Path().apply {
             moveTo(left, y - half)
             quadraticTo(0f, y - half + sag * 2f, right, y - half)
             lineTo(right, y + half)
             quadraticTo(0f, y + half + sag * 2f, left, y + half)
             close()
         }
+    }
+
+    /** The strap: leather, darkening towards both edges of the cone where it turns away. */
+    private fun DrawScope.drawStrap(u: Float) {
+        // The cone is about 1.5u wide each side at the strap's height; the gradient spans
+        // that, so the darkest leather lands where the strap turns out of sight.
+        val left = -1.52f * u
+        val right = 1.52f * u
+        val y = STRAP_Y * u
+        val sag = SAG * u
         drawPath(
-            band,
+            strapPath(u),
             Brush.horizontalGradient(
                 0f to leatherDark, 0.18f to leather, 0.38f to leatherLight, 0.75f to leather, 1f to leatherDark,
                 startX = left, endX = right,
@@ -92,8 +125,8 @@ object RacingGoggles : MetroItem {
         )
         // Stitching along the middle of the band, faint, so the strap reads as leather.
         val seam = Path().apply {
-            moveTo(left + 0.12f * u, y + 0.01f * u)
-            quadraticTo(0f, y + 0.01f * u + sag * 2f, right - 0.12f * u, y + 0.01f * u)
+            moveTo(-2.2f * u, y + 0.01f * u)
+            quadraticTo(0f, y + 0.01f * u + sag * 2f, 2.2f * u, y + 0.01f * u)
         }
         drawPath(
             seam, stitch.copy(alpha = 0.45f),

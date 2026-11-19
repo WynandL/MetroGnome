@@ -1275,12 +1275,40 @@ private fun goldRollColor(shade: Float): Color = when {
 // upper-LEFT. Every shading layer is painted through the cone path / brim paths below, so
 // the silhouette is exactly what it always was — only the fill inside it gained depth.
 
-private const val HAT_TILT_DEG = 4f
+/** The hat's rake, about (0, [HAT_BASE_Y] u). Internal so an item worn on the hat follows it. */
+internal const val HAT_TILT_DEG = 4f
+
+/** The hat cone's base line, in body units (head-group space, before the rake). */
+internal const val HAT_BASE_Y = -11.14f
+
+/**
+ * The hat cone's silhouette in head-group space, before the rake: the one path drawHat fills
+ * and an item on the hat clips to (the Racing Goggles' strap), so anything resting on the
+ * cone ends exactly at its edge instead of at a guessed width.
+ */
+internal fun hatConePath(u: Float): Path {
+    val hatBaseY = HAT_BASE_Y * u
+    val coneTipY = hatBaseY - 5.0f * u
+    return Path().apply {
+        moveTo(-1.75f * u, hatBaseY)
+        cubicTo(
+            -1.45f * u, hatBaseY - 2.0f * u,
+            -0.22f * u, hatBaseY - 4.8f * u,
+            0f, coneTipY
+        )
+        cubicTo(
+            0.22f * u, hatBaseY - 4.8f * u,
+            1.45f * u, hatBaseY - 2.0f * u,
+            1.75f * u, hatBaseY
+        )
+        close()
+    }
+}
 
 private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
     // Raked 4° rather than 11°, so the brim's front lip sits just on the brows on the low
     // side of the tilt instead of covering the whole right brow.
-    val hatBaseY = -11.14f * u
+    val hatBaseY = HAT_BASE_Y * u
     val hatBobOffset = beatBounce * (-0.15f * u)
 
     // === CONTACT SHADOW ===
@@ -1334,20 +1362,7 @@ private fun DrawScope.drawHat(u: Float, beatBounce: Float) {
         // two shapes meet at identical pixels and the seam has nothing left to show. The
         // brim only departs from the cone as it travels away from it (see brim() below).
         val coneTipY = hatBaseY - 5.0f * u
-        val conePath = Path().apply {
-            moveTo(-1.75f * u, hatBaseY)
-            cubicTo(
-                -1.45f * u, hatBaseY - 2.0f * u,
-                -0.22f * u, hatBaseY - 4.8f * u,
-                0f, coneTipY
-            )
-            cubicTo(
-                0.22f * u, hatBaseY - 4.8f * u,
-                1.45f * u, hatBaseY - 2.0f * u,
-                1.75f * u, hatBaseY
-            )
-            close()
-        }
+        val conePath = hatConePath(u)
         // A sweep gradient about the apex makes the light and shadow bands radiate from the
         // tip exactly the way a cone's surface does. Stops are sampled from the Lambert term
         // across the base circle: right silhouette edge → facing the viewer → left edge.
