@@ -1,3 +1,5 @@
+/* Stop Android Chrome inflating small text */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* Embed widget overrides.
    Loaded AFTER /blog/style.css, which supplies every .tool-panel rule the
    widgets use. Nothing is duplicated here: this file only strips the page

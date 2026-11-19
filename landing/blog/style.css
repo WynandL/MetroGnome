@@ -1,3 +1,5 @@
+/* Stop Android Chrome inflating small text */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* ── Reset & base ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
