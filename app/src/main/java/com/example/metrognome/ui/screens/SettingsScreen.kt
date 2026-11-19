@@ -65,8 +65,6 @@ import com.example.metrognome.billing.PurchasableItemDef
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.ui.components.OwnedBadge
 import com.example.metrognome.ui.components.instruments.InstrumentAffinityRow
-import com.example.metrognome.ui.components.instruments.InstrumentAffinityBadges
-import com.example.metrognome.ui.dialogs.AudioShowcase
 import com.example.metrognome.ui.dialogs.GrooveCheckRecalibrateDialog
 import com.example.metrognome.notifications.NotificationPermissionState
 import com.example.metrognome.ui.components.GoldButton
@@ -121,15 +119,11 @@ fun SettingsScreen(
     val removeAdsPriceText by vm.removeAdsPriceText.collectAsStateWithLifecycle()
     val isBillingAvailable by vm.isBillingAvailable.collectAsStateWithLifecycle()
     val isPurchasing by vm.isPurchasing.collectAsStateWithLifecycle()
-    val soundPreviewing by vm.soundPreviewing.collectAsStateWithLifecycle()
-    val soundPreviewBlocked by vm.soundPreviewBlocked.collectAsStateWithLifecycle()
     val isBillingConnecting by vm.isBillingConnecting.collectAsStateWithLifecycle()
     // The failed-purchase toast is raised app-wide in MetroGnomeApp, not here: the Tuner
     // sells drone voices too, and a failure started from there must still be seen.
 
     val purchasedSoundIds by vm.purchasedSoundIds.collectAsStateWithLifecycle()
-    val soundPrices by vm.soundPrices.collectAsStateWithLifecycle()
-    val availableSoundProductIds by vm.availableSoundProductIds.collectAsStateWithLifecycle()
 
     val purchasedItemProductIds by vm.purchasedItemProductIds.collectAsStateWithLifecycle()
     val itemPrices by vm.itemPrices.collectAsStateWithLifecycle()
@@ -140,11 +134,6 @@ fun SettingsScreen(
     var dialogSoundDef by remember { mutableStateOf<PremiumSoundDef?>(null) }
     var dialogItemDef  by remember { mutableStateOf<PurchasableItemDef?>(null) }
 
-    LaunchedEffect(purchasedSoundIds) {
-        val def = dialogSoundDef ?: return@LaunchedEffect
-        // Close the paywall once it is owned; the ViewModel selects the voice (buySound).
-        if (def.productId in purchasedSoundIds) dialogSoundDef = null
-    }
 
     LaunchedEffect(purchasedItemProductIds) {
         val def = dialogItemDef ?: return@LaunchedEffect
@@ -432,18 +421,13 @@ fun SettingsScreen(
     }
 
     dialogSoundDef?.let { def ->
-        PremiumSoundDialog(
-            def = def,
-            priceText = soundPrices[def.productId],
-            isPurchasing = isPurchasing,
-            isBillingConnecting = isBillingConnecting,
-            isAvailable = def.productId in availableSoundProductIds,
-            previewing = soundPreviewing,
-            previewBlocked = soundPreviewBlocked,
-            onPreview = { vm.previewSound(def.soundTypeIndex) },
-            onPurchase = { activity?.let { vm.buySound(it, def.soundTypeIndex) } },
-            onRestore = { vm.restorePurchases() },
-            onDismiss = { vm.stopSoundPreview(); dialogSoundDef = null }
+        // The sound stage, opened on the tapped voice: the same screen the Home pill opens,
+        // so a click is browsed, heard and bought in one place.
+        com.example.metrognome.ui.sounds.MetronomeSoundStage(
+            vm = vm,
+            source = "settings",
+            onClose = { dialogSoundDef = null },
+            focusSoundIndex = def.soundTypeIndex,
         )
     }
 
@@ -550,51 +534,6 @@ private fun PurchasableItemDialog(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             }
-        },
-    )
-}
-
-@Composable
-private fun PremiumSoundDialog(
-    def: PremiumSoundDef,
-    priceText: String?,
-    isPurchasing: Boolean,
-    isBillingConnecting: Boolean,
-    isAvailable: Boolean,
-    previewing: Boolean,
-    previewBlocked: Boolean,
-    onPreview: () -> Unit,
-    onPurchase: () -> Unit,
-    onRestore: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    com.example.metrognome.ui.dialogs.PremiumPurchaseDialog(
-        title              = def.displayName,
-        description        = def.description,
-        actionLabel        = "Unlock ${def.displayName}",
-        priceText          = priceText,
-        isPurchasing       = isPurchasing,
-        isBillingConnecting = isBillingConnecting,
-        isAvailable        = isAvailable,
-        onPurchase         = onPurchase,
-        onRestore          = onRestore,
-        onDismiss          = onDismiss,
-        previewContent     = { AudioShowcase(def.displayName, caption = "PREMIUM SOUND") },
-        belowDescription   = { InstrumentAffinityBadges(soundType = def.soundTypeIndex) },
-        secondaryButton    = {
-            com.example.metrognome.ui.dialogs.PreviewActionButton(
-                // Names the sound while it plays, as the drone's does: over a running metronome
-                // the preview takes the beat's place rather than layering on it, and the
-                // listener has no other way to know that.
-                label   = when {
-                    previewing     -> "Sounding ${def.displayName} on its own"
-                    previewBlocked -> "Preview after your session"
-                    else           -> "▶  Preview (4 beats)"
-                },
-                active  = previewing,
-                enabled = !previewBlocked,
-                onClick = onPreview,
-            )
         },
     )
 }
