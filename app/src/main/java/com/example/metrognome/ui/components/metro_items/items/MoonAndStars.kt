@@ -23,27 +23,34 @@ import kotlin.math.sin
  * and independent twinkle phases. Three tones (warm gold, blue-white, faint silver)
  * give the field natural variety — astronomer's trick: star colour indicates temperature.
  *
- * Position: size.width * 0.82f, size.height * 0.10f — width- and height-anchored
- * so it always sits in the upper-right corner of the sky regardless of device aspect ratio.
+ * Position: size.width * MOON_X, size.height * MOON_Y, width- and height-anchored so it
+ * always sits in the upper-right of the sky regardless of device aspect ratio. Moved down
+ * from 0.10 to 0.17 of the height (stars with it) on 2026-11-19, when the Home screen's
+ * sound pill took the top-right corner: at 0.10 the pill covered the top of the moon and two
+ * stars, and took the moon's taps.
  */
+private const val MOON_X = 0.82f
+private const val MOON_Y = 0.17f
+
 object MoonAndStars : MetroItem {
 
     override val id             = "moon_and_stars"
     override val displayName    = "Crescent Moon"
     override val description    = "A crescent moon that rises when Metro plays deep into the night."
-    override val earnedMessage  = "10 hours of music! The moon herself has noticed. She rises now whenever Metro plays, bathing the forest in silver light."
+    override val earnedMessage  = "Four hours of music! The moon herself has noticed. She rises now whenever Metro plays, bathing the forest in silver light."
     override val isBodyAttached  = false
 
-    // Moon draws at (canvasW*0.82, canvasH*0.10). Body-space conversion (subtract cx, baseY):
-    //   Y: 0.10*h - 0.97*h = -0.87*h → -0.87*17 = -14.8u  (independent of aspect ratio)
+    // Moon draws at (canvasW*MOON_X, canvasH*MOON_Y). Body-space conversion (subtract cx, baseY):
+    //   Y: 0.17*h - 0.97*h = -0.80*h → -0.80*17 = -13.6u  (independent of aspect ratio)
     //   X: 0.82*w - 0.50*w = 0.32*w → 0.32*(w/h)*17 ≈ 2.7u on a typical portrait phone
-    // Old hitCenter(-13.0u) was 1.8u off in Y — outside the 1.3u radius, so taps never landed.
-    override fun hitCenter(u: Float) = Offset(2.7f * u, -14.8f * u)
+    // Keep these three in step with MOON_X/MOON_Y (draw, hit, preview): when they disagreed
+    // (an old hitCenter of -13.0u against a moon at -14.8u), taps never landed.
+    override fun hitCenter(u: Float) = Offset(2.7f * u, -13.6f * u)
     override fun hitRadius(u: Float) = u * 1.3f
 
     // mx = canvasW*0.82, my = canvasH*0.10 — zooms into just the crescent
     override fun previewCenter(canvasW: Float, canvasH: Float, u: Float, baseY: Float) =
-        Offset(canvasW * 0.82f, canvasH * 0.10f)
+        Offset(canvasW * MOON_X, canvasH * MOON_Y)
     override fun previewRadius(u: Float) = u * 1.2f
 
     // ── Palette ───────────────────────────────────────────────────────────────
@@ -58,8 +65,8 @@ object MoonAndStars : MetroItem {
 
     override fun DrawScope.draw(u: Float, cx: Float, baseY: Float) {
         val t    = (System.nanoTime() / 1_000_000_000.0).toFloat()
-        val mx   = size.width  * 0.82f
-        val my   = size.height * 0.10f
+        val mx   = size.width  * MOON_X
+        val my   = size.height * MOON_Y
         val moonR = 0.90f * u
 
         // Soft ambient glow halo
@@ -95,11 +102,13 @@ object MoonAndStars : MetroItem {
         }
 
         // Stars — screen-relative, independent twinkle phases, varied tone
-        drawStarSpark(u, size.width * 0.60f, size.height * 0.14f, 0.11f, t, 0.00f, starCool)
-        drawStarSpark(u, size.width * 0.72f, size.height * 0.05f, 0.09f, t, 1.20f, starFaint)
-        drawStarSpark(u, size.width * 0.90f, size.height * 0.12f, 0.13f, t, 2.40f, starWarm)
-        drawStarSpark(u, size.width * 0.55f, size.height * 0.08f, 0.08f, t, 3.60f, starFaint)
-        drawStarSpark(u, size.width * 0.88f, size.height * 0.04f, 0.10f, t, 4.80f, starCool)
+        // The field moves with the moon (each y is its old height plus the moon's 0.07 drop).
+        val dy = size.height * (MOON_Y - 0.10f)
+        drawStarSpark(u, size.width * 0.60f, size.height * 0.14f + dy, 0.11f, t, 0.00f, starCool)
+        drawStarSpark(u, size.width * 0.72f, size.height * 0.05f + dy, 0.09f, t, 1.20f, starFaint)
+        drawStarSpark(u, size.width * 0.90f, size.height * 0.12f + dy, 0.13f, t, 2.40f, starWarm)
+        drawStarSpark(u, size.width * 0.55f, size.height * 0.08f + dy, 0.08f, t, 3.60f, starFaint)
+        drawStarSpark(u, size.width * 0.88f, size.height * 0.04f + dy, 0.10f, t, 4.80f, starCool)
     }
 
     /**

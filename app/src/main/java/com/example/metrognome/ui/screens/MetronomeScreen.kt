@@ -149,6 +149,8 @@ fun MetronomeScreen(
     val gnoteCount by vm.gnoteCount.collectAsStateWithLifecycle()
     val rewardedAdLoaded by vm.rewardedAdLoaded.collectAsStateWithLifecycle()
     var showGnotesInfo by remember { mutableStateOf(false) }
+    var showSoundStage by remember { mutableStateOf(false) }
+    val soundType by vm.soundType.collectAsStateWithLifecycle()
 
     var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
@@ -296,6 +298,21 @@ fun MetronomeScreen(
                     )
                 }
             }
+
+            // The click in use, by name and mark, opening the sound stage: the Gnote pill's
+            // twin on the right, so it costs Metro no height. Naming the current voice is the
+            // invitation ("Classic" says there are others); the sounds used to be reachable
+            // only from a Settings card, and 92% of users never changed sound.
+            val sound = com.example.metrognome.billing.clickSoundFor(soundType)
+            com.example.metrognome.ui.components.GoldPill(
+                text        = sound.displayName,
+                leadingIcon = com.example.metrognome.ui.sounds.soundGlyphFor(sound.slug),
+                onClick     = { showSoundStage = true },
+                modifier    = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 12.dp, top = 12.dp)
+                    .semantics { contentDescription = "Click sound: ${sound.displayName}. Browse sounds" },
+            )
         }
 
         BpmStepperRow(
@@ -578,6 +595,14 @@ fun MetronomeScreen(
         )
     }
     // Mic self-test now lives in Settings (dev tools) as the single canonical launcher.
+
+    if (showSoundStage) {
+        com.example.metrognome.ui.sounds.MetronomeSoundStage(
+            vm = vm,
+            source = "home",
+            onClose = { showSoundStage = false },
+        )
+    }
 
     if (showGnotesInfo) {
         val pointsSnapshot = remember(gnoteCount) {
