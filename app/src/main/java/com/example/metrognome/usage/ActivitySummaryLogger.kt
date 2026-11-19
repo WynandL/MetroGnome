@@ -58,6 +58,7 @@ class ActivitySummaryLogger(context: Context) {
             practiceMinutesTotal          = tracker.totalPracticeMinutes(),
             practiceSessionsCompleted     = tracker.practiceSessionsCompleted(),
             speedTrainerSessionsCompleted = tracker.speedTrainingSessionsCompleted(),
+            speedTrainerDays              = tracker.speedTrainerDays(),
             performanceBonusPoints        = tracker.performanceBonusPoints(),
             micChecksCompleted            = tracker.micChecksCompleted(),
             chordsDiscovered              = tracker.chordsDiscoveredSet(),
@@ -88,7 +89,7 @@ class ActivitySummaryLogger(context: Context) {
             appendLine("chords     : named ${s.chordsNamed} (mic ${s.chordsNamedByMic}, tap ${s.chordsNamedByTap})  distinct: ${s.chordsDiscovered.size}")
             appendLine("game       : ${s.gamesCompleted} rounds  score: ${s.totalGameScore}  highs: ${s.rhythmHighScores}")
             appendLine("practice   : ${s.practiceMinutesTotal}min  sessions: ${s.practiceSessionsCompleted}  best streak: ${s.bestPracticeStreak}  days: ${s.practicedEpochDays.size}")
-            appendLine("speed      : ${s.speedTrainerSeconds}s  sessions: ${s.speedTrainerSessionsCompleted}  records: ${s.speedTrainerRecords.size}")
+            appendLine("speed      : ${s.speedTrainerSeconds}s  sessions: ${s.speedTrainerSessionsCompleted}  days: ${s.speedTrainerDays}  records: ${s.speedTrainerRecords.size}")
             appendLine("bonus pts  : timing ${s.performanceBonusPoints}  ad ${s.rewardedAdGnotes}")
             appendLine("rewards    : ad-free until ${s.adFreeRewardUntilMs}")
             appendLine("items      : ${s.unlockedItemCount} unlocked  ${s.celebratedItemIds.size} celebrated")

@@ -60,6 +60,7 @@ class ActivitySummaryRestorer(private val context: Context) {
             putInt("practice_minutes_total",    s.practiceMinutesTotal)
             putInt("tuner_feedback_count",      s.tunerFeedbackGiven)
             putInt("speed_training_sessions",   s.speedTrainerSessionsCompleted)
+            putInt("speed_trainer_days",        s.speedTrainerDays)
             putInt("performance_bonus_points",  s.performanceBonusPoints)
             putInt("mic_checks_completed",      s.micChecksCompleted)
             putStringSet("chords_discovered",   s.chordsDiscovered)
@@ -146,6 +147,7 @@ internal fun mergeSummaries(local: ActivitySummary, incoming: ActivitySummary): 
         practiceMinutesTotal          = max(local.practiceMinutesTotal, incoming.practiceMinutesTotal),
         practiceSessionsCompleted     = max(local.practiceSessionsCompleted, incoming.practiceSessionsCompleted),
         speedTrainerSessionsCompleted = max(local.speedTrainerSessionsCompleted, incoming.speedTrainerSessionsCompleted),
+        speedTrainerDays              = max(local.speedTrainerDays, incoming.speedTrainerDays),
         performanceBonusPoints        = max(local.performanceBonusPoints, incoming.performanceBonusPoints),
         micChecksCompleted            = max(local.micChecksCompleted, incoming.micChecksCompleted),
         chordsDiscovered              = local.chordsDiscovered + incoming.chordsDiscovered,

@@ -83,6 +83,9 @@ data class ActivitySummary(
     /** Number of Speed Trainer ramps completed end-to-end. */
     val speedTrainerSessionsCompleted: Int,
 
+    /** Distinct practice days with a completed Speed Trainer session (from 2026-11-19). */
+    val speedTrainerDays: Int = 0,
+
     /** Lifetime graded timing-bonus points (raw input to the "Timing Bonus" Gnotes). */
     val performanceBonusPoints: Int,
 

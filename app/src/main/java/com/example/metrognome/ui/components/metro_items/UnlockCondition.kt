@@ -37,8 +37,9 @@ sealed class UnlockCondition {
     data class LoyaltyDays(val required: Int) : UnlockCondition()
 
     /**
-     * Total number of practice sessions ever completed (requires Practice Mode purchased).
-     * Monotonically increasing — safe for permanent item unlocks.
+     * Distinct days on which a practice session was completed (PracticeSessionManager's
+     * total adds one per day, however many sessions that day holds). Monotonically
+     * increasing — safe for permanent item unlocks.
      * Use this, not streak, for items: a broken streak would hide an earned item.
      */
     data class PracticeSessionsCompleted(val required: Int) : UnlockCondition()
@@ -60,6 +61,13 @@ sealed class UnlockCondition {
      * Monotonically increasing — safe for permanent item unlocks.
      */
     data class SpeedTrainingSessionsCompleted(val required: Int) : UnlockCondition()
+
+    /**
+     * Distinct practice days on which a Speed Trainer session was completed (added
+     * 2026-11-19). The Speed Trainer's item uses this rather than the raw session count, the
+     * same "on N different days" rule as the Music Stand. Monotonically increasing.
+     */
+    data class SpeedTrainerDays(val required: Int) : UnlockCondition()
 
     /**
      * Number of microphone "Groove Check" runs that resolved to an outcome (any verdict
@@ -121,13 +129,19 @@ fun UnlockCondition.displayText(): String = when (this) {
         "Use the app for $required day${if (required != 1) "s" else ""}"
     is UnlockCondition.LoyaltyDays ->
         "Open the app on $required different day${if (required != 1) "s" else ""}"
+    // Counts distinct days, not sessions (PracticeSessionManager adds one per day), so the
+    // text says so: "5 practice sessions" let a player do five in one day and earn nothing.
     is UnlockCondition.PracticeSessionsCompleted ->
-        "Complete $required practice session${if (required != 1) "s" else ""}"
+        if (required == 1) "Complete a practice session"
+        else "Complete a practice session on $required different days"
     is UnlockCondition.TunerFeedbackGiven ->
         if (required == 1) "Submit a tuner feedback rating"
         else "Submit $required tuner feedback ratings"
     is UnlockCondition.SpeedTrainingSessionsCompleted ->
         "Complete $required speed training session${if (required != 1) "s" else ""}"
+    is UnlockCondition.SpeedTrainerDays ->
+        if (required == 1) "Finish a Speed Trainer session"
+        else "Finish a Speed Trainer session on $required different days"
     is UnlockCondition.MicChecksCompleted ->
         if (required == 1) "Run a microphone Groove Check"
         else "Run $required microphone Groove Checks"

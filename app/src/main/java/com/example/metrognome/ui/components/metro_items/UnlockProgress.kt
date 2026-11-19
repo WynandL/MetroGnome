@@ -44,6 +44,9 @@ fun UnlockCondition.unlockProgress(tracker: MetroItemTracker): Float = when (thi
     is UnlockCondition.SpeedTrainingSessionsCompleted ->
         (tracker.speedTrainingSessionsCompleted().toFloat() / required).coerceIn(0f, 1f)
 
+    is UnlockCondition.SpeedTrainerDays ->
+        (tracker.speedTrainerDays().toFloat() / required).coerceIn(0f, 1f)
+
     is UnlockCondition.MicChecksCompleted ->
         (tracker.micChecksCompleted().toFloat() / required).coerceIn(0f, 1f)
 
@@ -120,7 +123,7 @@ fun UnlockCondition.progressLabel(tracker: MetroItemTracker): String = when (thi
 
     is UnlockCondition.PracticeSessionsCompleted -> {
         val cur = tracker.practiceSessionsCompleted()
-        "$cur / $required practice session${if (required != 1) "s" else ""}"
+        "$cur / $required practice day${if (required != 1) "s" else ""}"
     }
 
     is UnlockCondition.TunerFeedbackGiven -> {
@@ -131,6 +134,11 @@ fun UnlockCondition.progressLabel(tracker: MetroItemTracker): String = when (thi
     is UnlockCondition.SpeedTrainingSessionsCompleted -> {
         val cur = tracker.speedTrainingSessionsCompleted()
         "$cur / $required speed session${if (required != 1) "s" else ""}"
+    }
+
+    is UnlockCondition.SpeedTrainerDays -> {
+        val cur = tracker.speedTrainerDays()
+        "$cur / $required Speed Trainer day${if (required != 1) "s" else ""}"
     }
 
     is UnlockCondition.MicChecksCompleted -> {

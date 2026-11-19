@@ -45,6 +45,9 @@ fun UnlockCondition.pointsEquivalent(): Int = when (this) {
     is UnlockCondition.SpeedTrainingSessionsCompleted ->
         required * PointsConfig.SPEED_TRAINER_MINUTES_AVG_PER_SESSION * PointsConfig.PER_SPEED_TRAINER_MINUTE
 
+    is UnlockCondition.SpeedTrainerDays ->
+        required * PointsConfig.SPEED_TRAINER_MINUTES_AVG_PER_SESSION * PointsConfig.PER_SPEED_TRAINER_MINUTE
+
     // A one-off action, not a Gnotes-earning activity — no points equivalent.
     is UnlockCondition.MicChecksCompleted -> 0
 
@@ -90,6 +93,9 @@ fun UnlockCondition.pointsDisplayText(): String {
             "Earn $pts $name from Tuner Feedback"
 
         is UnlockCondition.SpeedTrainingSessionsCompleted ->
+            "Earn $pts $name from Speed Trainer"
+
+        is UnlockCondition.SpeedTrainerDays ->
             "Earn $pts $name from Speed Trainer"
 
         // Not Gnotes-framed — it is a single action, so name the action directly.

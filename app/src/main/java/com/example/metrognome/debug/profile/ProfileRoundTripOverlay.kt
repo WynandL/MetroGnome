@@ -334,6 +334,7 @@ private fun syntheticOtherDevice(l: ActivitySummary): ActivitySummary {
         practiceMinutesTotal          = l.practiceMinutesTotal + 15,           // other ahead
         practiceSessionsCompleted     = l.practiceSessionsCompleted + 2,
         speedTrainerSessionsCompleted = (l.speedTrainerSessionsCompleted - 3).coerceAtLeast(0), // local
+        speedTrainerDays              = l.speedTrainerDays + 2,                // other ahead
         performanceBonusPoints        = l.performanceBonusPoints + 30,
         micChecksCompleted            = l.micChecksCompleted + 1,
         chordsDiscovered              = l.chordsDiscovered + setOf("F#m", "B\u266d7"),   // new chords → union
@@ -378,6 +379,7 @@ private fun compareRows(b: ActivitySummary, a: ActivitySummary): List<CmpRow> = 
     CmpRow("practiceMinutesTotal", b.practiceMinutesTotal.toString(), a.practiceMinutesTotal.toString()),
     CmpRow("practiceSessionsCompleted", b.practiceSessionsCompleted.toString(), a.practiceSessionsCompleted.toString()),
     CmpRow("speedTrainerSessionsCompleted", b.speedTrainerSessionsCompleted.toString(), a.speedTrainerSessionsCompleted.toString()),
+    CmpRow("speedTrainerDays", b.speedTrainerDays.toString(), a.speedTrainerDays.toString()),
     CmpRow("performanceBonusPoints", b.performanceBonusPoints.toString(), a.performanceBonusPoints.toString()),
     CmpRow("micChecksCompleted", b.micChecksCompleted.toString(), a.micChecksCompleted.toString()),
     CmpRow("chordsDiscovered", fmtSet(b.chordsDiscovered), fmtSet(a.chordsDiscovered)),
@@ -422,6 +424,7 @@ private fun mergeRows(l: ActivitySummary, o: ActivitySummary, m: ActivitySummary
     maxRowI("practiceMinutesTotal", l.practiceMinutesTotal, o.practiceMinutesTotal, m.practiceMinutesTotal),
     maxRowI("practiceSessionsCompleted", l.practiceSessionsCompleted, o.practiceSessionsCompleted, m.practiceSessionsCompleted),
     maxRowI("speedTrainerSessionsCompleted", l.speedTrainerSessionsCompleted, o.speedTrainerSessionsCompleted, m.speedTrainerSessionsCompleted),
+    maxRowI("speedTrainerDays", l.speedTrainerDays, o.speedTrainerDays, m.speedTrainerDays),
     maxRowI("performanceBonusPoints", l.performanceBonusPoints, o.performanceBonusPoints, m.performanceBonusPoints),
     maxRowI("micChecksCompleted", l.micChecksCompleted, o.micChecksCompleted, m.micChecksCompleted),
     maxRowI("chordsNamed", l.chordsNamed, o.chordsNamed, m.chordsNamed),

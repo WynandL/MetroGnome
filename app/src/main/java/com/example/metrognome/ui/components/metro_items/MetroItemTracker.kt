@@ -39,6 +39,12 @@ class MetroItemTracker(context: Context) {
         private const val KEY_PRACTICE_MINUTES_TOTAL   = "practice_minutes_total"
         private const val KEY_TUNER_FEEDBACK          = "tuner_feedback_count"
         private const val KEY_SPEED_TRAINING_SESSIONS = "speed_training_sessions"
+        // Distinct practice days with a completed Speed Trainer session, and the last such
+        // day (PracticeSessionManager.currentEpochDay, the app's practice day). Added
+        // 2026-11-19 for the Speed Trainer item, which follows the Music Stand's rule: five
+        // days, not five sessions. Counting starts with this version.
+        private const val KEY_SPEED_TRAINER_DAYS      = "speed_trainer_days"
+        private const val KEY_SPEED_TRAINER_LAST_DAY  = "speed_trainer_last_day"
         private const val KEY_SPEED_TRAINER_SECONDS   = "speed_trainer_seconds"
         private const val KEY_PERFORMANCE_BONUS       = "performance_bonus_points"
         private const val KEY_MIC_CHECKS_COMPLETED    = "mic_checks_completed"
@@ -161,7 +167,15 @@ class MetroItemTracker(context: Context) {
     /** Increment the Speed Trainer completed-sessions counter by 1. */
     fun recordSpeedTrainingCompleted() {
         val current = prefs.getInt(KEY_SPEED_TRAINING_SESSIONS, 0)
-        prefs.edit { putInt(KEY_SPEED_TRAINING_SESSIONS, current + 1) }
+        val today = com.example.metrognome.practice.PracticeSessionManager.currentEpochDay()
+        val newDay = prefs.getLong(KEY_SPEED_TRAINER_LAST_DAY, -1L) != today
+        prefs.edit {
+            putInt(KEY_SPEED_TRAINING_SESSIONS, current + 1)
+            if (newDay) {
+                putInt(KEY_SPEED_TRAINER_DAYS, prefs.getInt(KEY_SPEED_TRAINER_DAYS, 0) + 1)
+                putLong(KEY_SPEED_TRAINER_LAST_DAY, today)
+            }
+        }
     }
 
     /** Accumulate [seconds] into the lifetime speed trainer time total (used for Beats points). */
@@ -194,6 +208,8 @@ class MetroItemTracker(context: Context) {
     fun totalPracticeMinutes(): Int = prefs.getInt(KEY_PRACTICE_MINUTES_TOTAL, 0)
     fun tunerFeedbackGiven(): Int           = prefs.getInt(KEY_TUNER_FEEDBACK, 0)
     fun speedTrainingSessionsCompleted(): Int = prefs.getInt(KEY_SPEED_TRAINING_SESSIONS, 0)
+    /** Distinct practice days with a completed Speed Trainer session (see the key's note). */
+    fun speedTrainerDays(): Int = prefs.getInt(KEY_SPEED_TRAINER_DAYS, 0)
     fun speedTrainerSeconds(): Long           = prefs.getLong(KEY_SPEED_TRAINER_SECONDS, 0L)
     fun performanceBonusPoints(): Int        = prefs.getInt(KEY_PERFORMANCE_BONUS, 0)
     fun micChecksCompleted(): Int            = prefs.getInt(KEY_MIC_CHECKS_COMPLETED, 0)
@@ -259,6 +275,7 @@ class MetroItemTracker(context: Context) {
             is UnlockCondition.PracticeSessionsCompleted -> practiceSessionsCompleted() >= condition.required
             is UnlockCondition.TunerFeedbackGiven              -> tunerFeedbackGiven() >= condition.required
             is UnlockCondition.SpeedTrainingSessionsCompleted  -> speedTrainingSessionsCompleted() >= condition.required
+            is UnlockCondition.SpeedTrainerDays                -> speedTrainerDays() >= condition.required
             is UnlockCondition.MicChecksCompleted              -> micChecksCompleted() >= condition.required
             is UnlockCondition.ChordsDiscovered                -> chordsDiscovered() >= condition.required
             UnlockCondition.Always                             -> true
@@ -321,6 +338,8 @@ class MetroItemTracker(context: Context) {
             remove(KEY_REPORTED_IDS)
             remove(KEY_TUNER_FEEDBACK)
             remove(KEY_SPEED_TRAINING_SESSIONS)
+            remove(KEY_SPEED_TRAINER_DAYS)
+            remove(KEY_SPEED_TRAINER_LAST_DAY)
             remove(KEY_SPEED_TRAINER_SECONDS)
             remove(KEY_PERFORMANCE_BONUS)
             remove(KEY_MIC_CHECKS_COMPLETED)

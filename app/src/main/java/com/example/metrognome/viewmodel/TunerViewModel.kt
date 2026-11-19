@@ -543,6 +543,9 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             if (thumbsUp) {
                 tracker.recordTunerFeedback()
+                // The Tuning Fork unlocks on the third: check now. The periodic check only
+                // runs while a note is locked, so the popup used to wait for the next lock.
+                checkForNewUnlocks()
                 val todayFeedback = dailyLog.todayActivity(tracker).tunerFeedbackGiven
                 com.example.metrognome.points.PointsBannerQueue.postActivity(
                     "Tuner Feedback", com.example.metrognome.points.PointsConfig.PER_TUNER_FEEDBACK,

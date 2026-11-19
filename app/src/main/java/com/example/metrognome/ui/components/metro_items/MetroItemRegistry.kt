@@ -12,6 +12,7 @@ import com.example.metrognome.ui.components.metro_items.items.Fireflies
 import com.example.metrognome.ui.components.metro_items.items.MoonAndStars
 import com.example.metrognome.ui.components.metro_items.items.GlissieFairy
 import com.example.metrognome.ui.components.metro_items.items.MusicStand
+import com.example.metrognome.ui.components.metro_items.items.RacingGoggles
 import com.example.metrognome.ui.components.metro_items.items.TuningFork
 import com.example.metrognome.ui.components.metro_items.items.HatFeather
 import com.example.metrognome.ui.components.metro_items.items.LapelPin
@@ -35,8 +36,8 @@ import com.example.metrognome.ui.components.metro_items.items.AcousticGuitar
  *   10 h    =  36 000 s
  *
  * Practice sessions (PracticeSessionsCompleted):
- *   Counts unique days practised (not raw session count — one session per day).
- *   Only available to users who purchased Practice Mode.
+ *   Counts unique days practised (not raw session count — one session per day); the
+ *   unlock text says "on N different days" so players know.
  *   Safe for permanent unlocks — total never decreases.
  *   Do NOT use PracticeStreakDays as an unlock condition: a broken streak hides earned items.
  */
@@ -68,9 +69,14 @@ val METRO_ITEM_REGISTRY: List<MetroItemEntry> = listOf(
     // gap between ForestFloorFlowers (3 d) and ForestTree (30 d).
     MetroItemEntry(LapelPin, UnlockCondition.LoyaltyDays(7)),   // 7 distinct days opened
 
-    // ── Practice rewards — require Practice Mode IAP to earn ─────────────────
-    // Earn-only (no purchase path): these reward consistent practice, not spending.
-    MetroItemEntry(MusicStand, UnlockCondition.PracticeSessionsCompleted(5)),  // 5 sessions
+    // ── Practice — earned by practising on different days ─────────────────────
+    // Earn-only (no purchase path): consistency, not spending.
+    MetroItemEntry(MusicStand, UnlockCondition.PracticeSessionsCompleted(5)),  // 5 practice days
+
+    // ── Speed Trainer (2026-11-19) — the same days-not-sessions rule as the stand ──
+    // Head-attached: drawn before the plume (HatFeather, below) so the plume's quill sits
+    // over the strap it is tucked into.
+    MetroItemEntry(RacingGoggles, UnlockCondition.SpeedTrainerDays(5)),        // 5 days
 
     // ── Tuner feedback reward ─────────────────────────────────────────────────
     // Earned by submitting three feedback readings via the tuner feedback card
