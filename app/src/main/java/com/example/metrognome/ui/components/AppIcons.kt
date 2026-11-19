@@ -189,4 +189,63 @@ object AppIcons {
         listOf("M4 12a8 8 0 1 0 16 0a8 8 0 1 0 -16 0Z", "M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0Z", "M6.3 17.7 4 21", "M17.7 17.7 20 21"),
         filledPaths = setOf(), faintPaths = setOf(1),
     )
+
+    /**
+     * Pure: one clean sine wave, the plainest tone. Path: wave.
+     */
+    val DronePure = AppGlyph(
+        listOf("M2 12C5 3.5 9 3.5 12 12S19 20.5 22 12"),
+        filledPaths = setOf(), faintPaths = setOf(),
+    )
+
+    /**
+     * Warm: three organ pipes, each with its pointed foot and its mouth. Straight bars on a base
+     * read as a bar chart. Paths: three pipes, three mouths (faint).
+     */
+    val DroneWarm = AppGlyph(
+        listOf("M5 15V10h3V15l-1.5 4.5Z", "M10.5 15V4h3V15l-1.5 4.5Z", "M16 15V7.5h3V15l-1.5 4.5Z", "M5.6 13.2Q6.5 11.9 7.4 13.2", "M11.1 13.2Q12.0 11.9 12.9 13.2", "M16.6 13.2Q17.5 11.9 18.4 13.2"),
+        filledPaths = setOf(), faintPaths = setOf(3, 4, 5),
+    )
+
+    /**
+     * Reed: an accordion, two end boards and the bellows between. Paths: boards, bellows top
+     * and bottom, folds (faint).
+     */
+    val DroneReed = AppGlyph(
+        listOf("M3 5.5h3.5v13H3Z", "M17.5 5.5H21v13h-3.5Z", "M6.5 5.5l2.75 2 2.75-2 2.75 2 2.75-2", "M6.5 18.5l2.75-2 2.75 2 2.75-2 2.75 2", "M9.25 7.5v9", "M12 5.5v13", "M14.75 7.5v9"),
+        filledPaths = setOf(), faintPaths = setOf(4, 5, 6),
+    )
+
+    /**
+     * String: a violin (body, neck and scroll) with the bow across it. A bow over bare strings
+     * read as hatching. Paths: body, neck, scroll, two strings (faint), bow.
+     */
+    val DroneString = AppGlyph(
+        listOf("M12 9.5C9.3 9.5 8.6 11 8.9 12.4C9.2 13.4 9.9 13.6 9.9 14.4C9.9 15.2 8.3 15.6 8.3 18C8.3 20.4 10.2 21.5 12 21.5C13.8 21.5 15.7 20.4 15.7 18C15.7 15.6 14.1 15.2 14.1 14.4C14.1 13.6 14.8 13.4 15.1 12.4C15.4 11 14.7 9.5 12 9.5Z", "M12 9.5V4.1", "M10.9 3a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0 -2.2 0Z", "M11.3 10.5V20.5", "M12.7 10.5V20.5", "M3.5 17.5 20.5 12.5"),
+        filledPaths = setOf(), faintPaths = setOf(3, 4),
+    )
+
+    /**
+     * Root: one note on the staff. Paths: five staff lines (faint), note.
+     */
+    val BlendRoot = AppGlyph(
+        listOf("M3 6h18", "M3 9h18", "M3 12h18", "M3 15h18", "M3 18h18", "M9.7 12 a2.3 1.6 0 1 0 4.6 0a2.3 1.6 0 1 0 -4.6 0Z"),
+        filledPaths = setOf(), faintPaths = setOf(0, 1, 2, 3, 4),
+    )
+
+    /**
+     * Fifth: two notes a fifth apart, G4 and D5. Paths: five staff lines (faint), two notes.
+     */
+    val BlendFifth = AppGlyph(
+        listOf("M3 6h18", "M3 9h18", "M3 12h18", "M3 15h18", "M3 18h18", "M9.7 15 a2.3 1.6 0 1 0 4.6 0a2.3 1.6 0 1 0 -4.6 0Z", "M9.7 9 a2.3 1.6 0 1 0 4.6 0a2.3 1.6 0 1 0 -4.6 0Z"),
+        filledPaths = setOf(), faintPaths = setOf(0, 1, 2, 3, 4),
+    )
+
+    /**
+     * Octave: the same note an octave apart, F4 and F5. Paths: five staff lines (faint), two notes.
+     */
+    val BlendOctave = AppGlyph(
+        listOf("M3 6h18", "M3 9h18", "M3 12h18", "M3 15h18", "M3 18h18", "M9.7 16.5 a2.3 1.6 0 1 0 4.6 0a2.3 1.6 0 1 0 -4.6 0Z", "M9.7 6 a2.3 1.6 0 1 0 4.6 0a2.3 1.6 0 1 0 -4.6 0Z"),
+        filledPaths = setOf(), faintPaths = setOf(0, 1, 2, 3, 4),
+    )
 }

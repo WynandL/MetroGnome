@@ -1,9 +1,7 @@
 package com.example.metrognome.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -11,7 +9,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -52,11 +48,13 @@ import java.util.Locale
  * stateless in the same way as the rest of that screen so previews and UI tests can drive
  * every combination.
  *
- * Collapsed it shows only what is needed to sound a note: the keyboard, the octave, and the
- * play key. The voice controls live behind the chevron, because "which note" is a decision
- * made every time and "which timbre" is one made about once. [expanded] is hoisted rather
- * than held here, because the caller persists it: the panel opens on a first visit so the
- * controls are seen at all, and afterwards stays wherever the user last left it.
+ * The card always shows what is needed to sound a note: the keyboard, the octave, the voice
+ * pill and the play key. The pill names the voice in use (timbre, and the blend unless it is
+ * the plain Root) with the timbre's mark, and opens the drone's sound stage, where every
+ * timbre and blend is browsed, heard and bought (2026-11-19; it replaced two chip rows and a
+ * purchase dialog). Only the volume lives behind the chevron, and the header says what it is
+ * set to so the hidden control is never a mystery. [expanded] is hoisted because the caller
+ * persists it.
  *
  * The keyboard is drawn rather than labelled. A musician finds a note on a keyboard by the
  * black-key groups of two and three, the same way they do on a real one, so letters would
@@ -72,19 +70,11 @@ fun DronePanel(
     onToggle: () -> Unit,
     onSetNote: (Int) -> Unit,
     onShiftOctave: (Int) -> Unit,
-    onSetTimbre: (DroneTimbre) -> Unit,
-    onSetBlend: (DroneBlend) -> Unit,
+    onOpenVoices: () -> Unit,
     onSetVolume: (Float) -> Unit,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    /**
-     * Which voices are paid, so their chips carry the star. Not which ones are *locked*:
-     * the star marks a premium feature and stays after purchase, and whether a tap selects
-     * the voice or opens the purchase dialog is the caller's decision, not this panel's.
-     */
-    premiumTimbres: Set<DroneTimbre> = emptySet(),
-    premiumBlends: Set<DroneBlend> = emptySet(),
 ) {
     val chevronDeg by animateFloatAsState(if (expanded) 180f else 0f, label = "droneChevron")
 
@@ -104,10 +94,10 @@ fun DronePanel(
                 Spacer(Modifier.width(8.dp))
                 CardHeaderLabel("DRONE")
                 Spacer(Modifier.weight(1f))
+                // What the chevron hides, so the folded control is never a mystery.
                 Text(
-                    "${state.noteLabel} · ${state.timbre.displayName}" +
-                        if (state.blend == DroneBlend.ROOT) "" else " · ${state.blend.displayName}",
-                    color = if (state.playing) AppColors.gold else AppColors.textMuted,
+                    "Volume ${(state.volume * 100).roundToInt()}%",
+                    color = AppColors.textMuted,
                     fontSize = 12.sp, lineHeight = 16.sp,
                     fontWeight = FontWeight.Bold,
                 )
@@ -165,7 +155,19 @@ fun DronePanel(
                     CircleButton("+", onClick = { onShiftOctave(1) }, contentDescription = "Octave up", enabled = state.canOctaveUp)
                 }
 
-                Spacer(Modifier.weight(1f))
+                // The voice in use, opening the drone's sound stage: the Home sound pill's
+                // twin. Takes whatever width the row leaves and shortens its label to fit.
+                Box(Modifier.weight(1f).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+                    GoldPill(
+                        text = state.timbre.displayName +
+                            if (state.blend == DroneBlend.ROOT) "" else " · ${state.blend.displayName}",
+                        leadingIcon = com.example.metrognome.ui.sounds.droneGlyphFor(state.timbre),
+                        onClick = onOpenVoices,
+                        modifier = Modifier.semantics {
+                            contentDescription = "Drone voice: ${state.timbre.displayName}, ${state.blend.displayName}. Browse voices"
+                        },
+                    )
+                }
 
                 PlayStopKey(
                     playing = state.playing,
@@ -202,52 +204,14 @@ fun DronePanel(
                 }
             }
 
-            // ── Voice controls ────────────────────────────────────────────────────
+            // ── Volume (behind the chevron) ───────────────────────────────────────
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut(),
             ) {
                 Column {
-                    Spacer(Modifier.height(18.dp))
-                    ChipSection(heading = "TIMBRE", caption = state.timbre.caption) {
-                        DroneTimbre.entries.forEach { timbre ->
-                            if (timbre in premiumTimbres) {
-                                PremiumChip(
-                                    selected = timbre == state.timbre,
-                                    label = timbre.displayName,
-                                    onClick = { onSetTimbre(timbre) },
-                                )
-                            } else {
-                                AppFilterChip(
-                                    selected = timbre == state.timbre,
-                                    onClick = { onSetTimbre(timbre) },
-                                    label = timbre.displayName,
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(14.dp))
-                    ChipSection(heading = "BLEND", caption = state.blend.caption) {
-                        DroneBlend.entries.forEach { blend ->
-                            if (blend in premiumBlends) {
-                                PremiumChip(
-                                    selected = blend == state.blend,
-                                    label = blend.displayName,
-                                    onClick = { onSetBlend(blend) },
-                                )
-                            } else {
-                                AppFilterChip(
-                                    selected = blend == state.blend,
-                                    onClick = { onSetBlend(blend) },
-                                    label = blend.displayName,
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(16.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SectionLabel("VOLUME")
                         Spacer(Modifier.width(12.dp))
@@ -271,36 +235,6 @@ fun DronePanel(
                 }
             }
         }
-}
-
-/** Caps heading, a scrollable chip row, and the one-line explanation of what is selected. */
-@Composable
-private fun ChipSection(
-    heading: String,
-    caption: String,
-    chips: @Composable () -> Unit,
-) {
-    Column {
-        SectionLabel(heading)
-        Spacer(Modifier.height(6.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            chips()
-        }
-        Spacer(Modifier.height(8.dp))
-        Crossfade(targetState = caption, animationSpec = tween(200), label = "droneCaption") { text ->
-            // The chip row already says which one is selected, so the caption's job is to
-            // say what it is for. Capped at two lines so switching chips never reflows the card.
-            Text(
-                text,
-                color = AppColors.textMuted,
-                fontSize = 11.sp, lineHeight = 15.sp,
-                maxLines = 2,
-            )
-        }
-    }
 }
 
 // ── Keyboard ─────────────────────────────────────────────────────────────────────
@@ -337,7 +271,7 @@ private fun DronePanelIdlePreview() {
         state = DroneState(),
         referenceHz = 440f,
         onToggle = {}, onSetNote = {}, onShiftOctave = {},
-        onSetTimbre = {}, onSetBlend = {}, onSetVolume = {},
+        onOpenVoices = {}, onSetVolume = {},
         expanded = true, onExpandedChange = {},
         modifier = Modifier.padding(16.dp),
     )
@@ -350,7 +284,7 @@ private fun DronePanelPlayingPreview() {
         state = DroneState(playing = true, midi = 50, timbre = DroneTimbre.REED, blend = DroneBlend.FIFTH),
         referenceHz = 442f,
         onToggle = {}, onSetNote = {}, onShiftOctave = {},
-        onSetTimbre = {}, onSetBlend = {}, onSetVolume = {},
+        onOpenVoices = {}, onSetVolume = {},
         expanded = false, onExpandedChange = {},
         modifier = Modifier.padding(16.dp),
     )

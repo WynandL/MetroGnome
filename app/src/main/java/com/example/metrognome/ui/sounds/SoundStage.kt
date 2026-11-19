@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -56,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.ui.components.AppCard
+import com.example.metrognome.ui.components.AppFilterChip
 import com.example.metrognome.ui.components.AppGlyph
 import com.example.metrognome.ui.components.AppIcons
 import com.example.metrognome.ui.components.PinnedLines
@@ -122,6 +124,13 @@ data class SoundStageState(
     val previewReplacesLive: Boolean = false,
     /** One or two lines at the foot of the stage, for a rule the player must know. */
     val footnote: String? = null,
+    /**
+     * Optional groups shown as chips under the header (the drone's TIMBRE / BLEND); empty
+     * for a stage with one set of sounds. [sounds] and [selectedKey] are the group at
+     * [tabIndex]; the caller swaps them when [onTab] fires.
+     */
+    val tabs: List<String> = emptyList(),
+    val tabIndex: Int = 0,
 )
 
 /**
@@ -142,12 +151,13 @@ fun SoundStageOverlay(
     onClose: () -> Unit,
     beats: Flow<*>? = null,
     initialKey: String? = null,
+    onTab: (Int) -> Unit = {},
 ) {
     Dialog(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        SoundStage(eyebrow, hint, state, onPreview, onStopPreview, onChoose, onBuy, onRestore, onClose, beats, initialKey)
+        SoundStage(eyebrow, hint, state, onPreview, onStopPreview, onChoose, onBuy, onRestore, onClose, beats, initialKey, onTab)
     }
 }
 
@@ -166,19 +176,10 @@ fun SoundStage(
     beats: Flow<*>? = null,
     /** The sound to open on; the one in use when null. */
     initialKey: String? = null,
+    onTab: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     if (state.sounds.isEmpty()) return
-    val initial = state.sounds.indexOfFirst { it.key == (initialKey ?: state.selectedKey) }.coerceAtLeast(0)
-    val pager = rememberPagerState(initialPage = initial) { state.sounds.size }
-    val focused = state.sounds[pager.currentPage.coerceIn(state.sounds.indices)]
-
-    // Swiping away from a sound that is being auditioned ends the audition: what is heard
-    // must always be the sound in the spotlight.
-    LaunchedEffect(pager.currentPage) {
-        val p = state.previewingKey
-        if (p != null && p != state.sounds[pager.currentPage].key) onStopPreview()
-    }
 
     // The click's pulse: 1 on each beat, easing back to 0.
     val glow = remember { Animatable(0f) }
@@ -237,33 +238,64 @@ fun SoundStage(
                 DialogCloseButton(onClick = onClose)
             }
 
-            Spacer(Modifier.weight(1f))
+            if (state.tabs.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                ) {
+                    state.tabs.forEachIndexed { i, label ->
+                        AppFilterChip(selected = i == state.tabIndex, onClick = { if (i != state.tabIndex) onTab(i) }, label = label)
+                    }
+                }
+            }
 
-            SoundCarousel(
-                state = state,
-                pager = pager,
-                glow = glow.value,
-                ripple = ripple,
-                onTapFocused = { key ->
-                    if (state.previewingKey == key) onStopPreview()
-                    else if (!state.previewBlocked) onPreview(key)
-                },
-            )
-            Spacer(Modifier.height(10.dp))
-            PageDots(state.sounds, pager.currentPage)
+            // A fresh carousel per group, opening on that group's sound in use (or on
+            // [initialKey] the first time), so switching tabs never lands mid-list.
+            key(state.tabIndex) {
+                // [initialKey] when it is in this group (the sound the stage was opened for),
+                // else the group's sound in use.
+                val initial = listOf(initialKey, state.selectedKey).firstNotNullOfOrNull { k ->
+                    state.sounds.indexOfFirst { it.key == k }.takeIf { it >= 0 }
+                } ?: 0
+                val pager = rememberPagerState(initialPage = initial) { state.sounds.size }
+                val focused = state.sounds[pager.currentPage.coerceIn(state.sounds.indices)]
 
-            Spacer(Modifier.weight(1f))
+                // Swiping away from a sound that is being auditioned ends the audition: what
+                // is heard must always be the sound in the spotlight.
+                LaunchedEffect(pager.currentPage) {
+                    val p = state.previewingKey
+                    if (p != null && p != state.sounds[pager.currentPage.coerceIn(state.sounds.indices)].key) onStopPreview()
+                }
 
-            SoundDetails(
-                sound = focused,
-                state = state,
-                onPreview = onPreview,
-                onStopPreview = onStopPreview,
-                onChoose = onChoose,
-                onBuy = onBuy,
-                onRestore = onRestore,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
+                Spacer(Modifier.weight(1f))
+
+                SoundCarousel(
+                    state = state,
+                    pager = pager,
+                    glow = glow.value,
+                    ripple = ripple,
+                    onTapFocused = { key ->
+                        if (state.previewingKey == key) onStopPreview()
+                        else if (!state.previewBlocked) onPreview(key)
+                    },
+                )
+                Spacer(Modifier.height(10.dp))
+                PageDots(state.sounds, pager.currentPage)
+
+                Spacer(Modifier.weight(1f))
+
+                SoundDetails(
+                    sound = focused,
+                    state = state,
+                    onPreview = onPreview,
+                    onStopPreview = onStopPreview,
+                    onChoose = onChoose,
+                    onBuy = onBuy,
+                    onRestore = onRestore,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
             Spacer(Modifier.height(16.dp))
         }
     }
@@ -506,8 +538,12 @@ private fun SoundDetails(
             )
         }
         Spacer(Modifier.height(6.dp))
-        Box(Modifier.fillMaxWidth().height(30.dp), contentAlignment = Alignment.Center) {
-            InstrumentAffinityBadges(instruments = sound.instruments, iconSize = 24.dp)
+        // Only for a group that has instrument fits at all (the clicks; not the drone), so a
+        // group without them has no empty row, and a group with them never jumps.
+        if (state.sounds.any { it.instruments.isNotEmpty() }) {
+            Box(Modifier.fillMaxWidth().height(30.dp), contentAlignment = Alignment.Center) {
+                InstrumentAffinityBadges(instruments = sound.instruments, iconSize = 24.dp)
+            }
         }
         Spacer(Modifier.height(12.dp))
 

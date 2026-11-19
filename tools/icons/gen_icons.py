@@ -124,6 +124,43 @@ CUSTOM = [
       'M6.3 17.7 4 21', 'M17.7 17.7 20 21'],
      [], [1],
      'Metal Kick: a kick drum face-on on its spurs. Paths: head, port ring (faint), two spurs.'),
+    # The drone's voices (Tuner), for its sound stage. Timbres are what the tone is made of,
+    # blends are which notes sound; the blends are drawn on a staff so the interval is the
+    # real one: B4 alone, G4 + D5 (a fifth, line to line), F4 + F5 (an octave, space to line).
+    ('DronePure',
+     ['M2 12C5 3.5 9 3.5 12 12S19 20.5 22 12'],
+     [], [],
+     'Pure: one clean sine wave, the plainest tone. Path: wave.'),
+    ('DroneWarm',
+     ['M5 15V10h3V15l-1.5 4.5Z', 'M10.5 15V4h3V15l-1.5 4.5Z', 'M16 15V7.5h3V15l-1.5 4.5Z', 'M5.6 13.2Q6.5 11.9 7.4 13.2', 'M11.1 13.2Q12.0 11.9 12.9 13.2', 'M16.6 13.2Q17.5 11.9 18.4 13.2'],
+     [], [3, 4, 5],
+     'Warm: three organ pipes, each with its pointed foot and its mouth. Straight bars on a base\n'
+     '     * read as a bar chart. Paths: three pipes, three mouths (faint).'),
+    ('DroneReed',
+     ['M3 5.5h3.5v13H3Z', 'M17.5 5.5H21v13h-3.5Z', 'M6.5 5.5l2.75 2 2.75-2 2.75 2 2.75-2',
+      'M6.5 18.5l2.75-2 2.75 2 2.75-2 2.75 2', 'M9.25 7.5v9', 'M12 5.5v13', 'M14.75 7.5v9'],
+     [], [4, 5, 6],
+     'Reed: an accordion, two end boards and the bellows between. Paths: boards, bellows top\n'
+     '     * and bottom, folds (faint).'),
+    ('DroneString',
+     ['M12 9.5C9.3 9.5 8.6 11 8.9 12.4C9.2 13.4 9.9 13.6 9.9 14.4C9.9 15.2 8.3 15.6 8.3 18C8.3 20.4 10.2 21.5 12 21.5C13.8 21.5 15.7 20.4 15.7 18C15.7 15.6 14.1 15.2 14.1 14.4C14.1 13.6 14.8 13.4 15.1 12.4C15.4 11 14.7 9.5 12 9.5Z',
+      'M12 9.5V4.1', 'M10.9 3a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0 -2.2 0Z', 'M11.3 10.5V20.5', 'M12.7 10.5V20.5',
+      'M3.5 17.5 20.5 12.5'],
+     [], [3, 4],
+     'String: a violin (body, neck and scroll) with the bow across it. A bow over bare strings\n'
+     '     * read as hatching. Paths: body, neck, scroll, two strings (faint), bow.'),
+    ('BlendRoot',
+     ['M3 6h18', 'M3 9h18', 'M3 12h18', 'M3 15h18', 'M3 18h18', 'M9.7 12 a2.3 1.6 0 1 0 4.6 0a2.3 1.6 0 1 0 -4.6 0Z'],
+     [], [0, 1, 2, 3, 4],
+     'Root: one note on the staff. Paths: five staff lines (faint), note.'),
+    ('BlendFifth',
+     ['M3 6h18', 'M3 9h18', 'M3 12h18', 'M3 15h18', 'M3 18h18', 'M9.7 15 a2.3 1.6 0 1 0 4.6 0a2.3 1.6 0 1 0 -4.6 0Z', 'M9.7 9 a2.3 1.6 0 1 0 4.6 0a2.3 1.6 0 1 0 -4.6 0Z'],
+     [], [0, 1, 2, 3, 4],
+     'Fifth: two notes a fifth apart, G4 and D5. Paths: five staff lines (faint), two notes.'),
+    ('BlendOctave',
+     ['M3 6h18', 'M3 9h18', 'M3 12h18', 'M3 15h18', 'M3 18h18', 'M9.7 16.5 a2.3 1.6 0 1 0 4.6 0a2.3 1.6 0 1 0 -4.6 0Z', 'M9.7 6 a2.3 1.6 0 1 0 4.6 0a2.3 1.6 0 1 0 -4.6 0Z'],
+     [], [0, 1, 2, 3, 4],
+     'Octave: the same note an octave apart, F4 and F5. Paths: five staff lines (faint), two notes.'),
 ]
 
 

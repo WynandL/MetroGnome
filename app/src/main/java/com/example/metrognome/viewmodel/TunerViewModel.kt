@@ -141,19 +141,16 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
     private val _droneExpanded = MutableStateFlow(prefs.getBoolean(KEY_DRONE_EXPANDED, true))
 
     /**
-     * Whether the drone's voice controls are showing.
-     *
-     * Starts **open**, and stays wherever the user last put it. People do not go looking
-     * for a chevron: shipped collapsed, the timbre, blend and level controls were invisible
-     * enough that the header's own "F2 . Reed" readout read as a bug, since it named a
-     * setting with no visible way to reach it. Opening it once is a cheap way to show the
-     * feature exists, and anyone who wants the compact card collapses it and keeps it.
+     * Whether the drone's volume control is showing (the only thing behind its chevron since
+     * 2026-11-19; timbre and blend moved to the voice pill and its sound stage, which are
+     * always visible). Starts open and stays wherever the user last put it. The prefs key
+     * keeps its old name so existing users keep their choice.
      */
     val droneExpanded: StateFlow<Boolean> = _droneExpanded.asStateFlow()
 
     private val _dronePreviewing = MutableStateFlow(false)
 
-    /** True while a paywalled voice is being auditioned from its purchase dialog. */
+    /** True while a voice is being auditioned from the drone's sound stage. */
     val dronePreviewing: StateFlow<Boolean> = _dronePreviewing.asStateFlow()
 
     private var dronePreviewJob: Job? = null
@@ -391,7 +388,8 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun previewDroneVoice(timbre: DroneTimbre, blend: DroneBlend) {
         dronePreviewJob?.cancel()
-        // Only a paid voice reaches here, since a free one is simply selected.
+        // Logged for paid voices only (the analytics question is preview-to-sale). Free ones
+        // are auditioned from the drone's sound stage too since 2026-11-19.
         (premiumProductFor(timbre) ?: premiumProductFor(blend))
             ?.let { AnalyticsTracker.logDroneVoicePreviewed(it) }
         val state = _droneState.value
@@ -420,7 +418,7 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Cut an audition short, e.g. when its dialog is dismissed. */
+    /** Cut an audition short, e.g. when the sound stage closes or swipes on. */
     fun stopDronePreview() {
         dronePreviewJob?.cancel()
     }

@@ -88,13 +88,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.debug.tuner.TunerReadingRecordingPill
-import com.example.metrognome.billing.PREMIUM_DRONE_BLENDS
-import com.example.metrognome.billing.PREMIUM_DRONE_TIMBRES
-import com.example.metrognome.billing.PremiumDroneDef
 import com.example.metrognome.billing.PurchaseStore
-import com.example.metrognome.ui.dialogs.AudioShowcase
-import com.example.metrognome.ui.dialogs.PremiumPurchaseDialog
-import com.example.metrognome.ui.dialogs.PreviewActionButton
 import com.example.metrognome.audio.drone.DroneBlend
 import com.example.metrognome.audio.drone.DroneState
 import com.example.metrognome.audio.drone.DroneTimbre
@@ -349,20 +343,8 @@ internal fun TunerScreenContent(
     dronePreviewing: Boolean = false,
 ) {
     val pendingReading = remember { mutableStateOf<Tuner.Reading?>(null) }
-    var dronePaywall by remember { mutableStateOf<DronePaywall?>(null) }
-
-    // Close the dialog the moment the purchase lands, and switch to the voice that was just
-    // bought - the same "you asked for this, so here it is" follow-through the premium
-    // click sounds have in SettingsScreen. Without it the user pays and then has to find
-    // and tap the chip again, which reads as the purchase not having worked.
-    LaunchedEffect(store.purchasedProductIds) {
-        val paywall = dronePaywall ?: return@LaunchedEffect
-        if (store.owns(paywall.def.productId)) {
-            onStopDronePreview()
-            dronePaywall = null
-            paywall.select()
-        }
-    }
+    // The drone's sound stage (timbres and blends), opened from the panel's voice pill.
+    var showDroneVoices by remember { mutableStateOf(false) }
     var pendingConfirm by remember { mutableStateOf<CalibrationMode?>(null) }
     var showClearCalibrationDialog by remember { mutableStateOf(false) }
 
@@ -431,42 +413,10 @@ internal fun TunerScreenContent(
             onToggle = onToggleDrone,
             onSetNote = onSetDroneNote,
             onShiftOctave = onShiftDroneOctave,
-            onSetTimbre = { timbre ->
-                val def = PREMIUM_DRONE_TIMBRES[timbre]
-                if (def != null && !store.owns(def.productId)) {
-                    dronePaywall = DronePaywall(
-                        def = def,
-                        displayName = timbre.displayName,
-                        // Audition the locked timbre against the blend already chosen, which
-                        // is always one the user owns, so the audition is what they would
-                        // actually get rather than a second thing they have not bought.
-                        previewTimbre = timbre,
-                        previewBlend = droneState.blend,
-                        select = { onSetDroneTimbre(timbre) },
-                    )
-                } else {
-                    onSetDroneTimbre(timbre)
-                }
-            },
-            onSetBlend = { blend ->
-                val def = PREMIUM_DRONE_BLENDS[blend]
-                if (def != null && !store.owns(def.productId)) {
-                    dronePaywall = DronePaywall(
-                        def = def,
-                        displayName = blend.displayName,
-                        previewTimbre = droneState.timbre,
-                        previewBlend = blend,
-                        select = { onSetDroneBlend(blend) },
-                    )
-                } else {
-                    onSetDroneBlend(blend)
-                }
-            },
+            onOpenVoices = { showDroneVoices = true },
             onSetVolume = onSetDroneVolume,
             expanded = droneExpanded,
             onExpandedChange = onSetDroneExpanded,
-            premiumTimbres = PREMIUM_DRONE_TIMBRES.keys,
-            premiumBlends = PREMIUM_DRONE_BLENDS.keys,
         )
 
         Spacer(Modifier.height(12.dp))
@@ -516,18 +466,18 @@ internal fun TunerScreenContent(
         )
     }
 
-    dronePaywall?.let { paywall ->
-        DroneVoiceDialog(
-            paywall = paywall,
+    if (showDroneVoices) {
+        com.example.metrognome.ui.sounds.DroneSoundStage(
+            drone = droneState,
             store = store,
             previewing = dronePreviewing,
-            onPreview = { onPreviewDroneVoice(paywall.previewTimbre, paywall.previewBlend) },
-            onPurchase = { onPurchase(paywall.def.productId) },
+            onPreview = onPreviewDroneVoice,
+            onStopPreview = onStopDronePreview,
+            onSetTimbre = onSetDroneTimbre,
+            onSetBlend = onSetDroneBlend,
+            onPurchase = onPurchase,
             onRestore = onRestore,
-            onDismiss = {
-                onStopDronePreview()
-                dronePaywall = null
-            },
+            onClose = { showDroneVoices = false },
         )
     }
 
@@ -1271,66 +1221,6 @@ private fun SuppressionLevelToggle(
             }
         }
     }
-}
-
-// ── Drone paywall ────────────────────────────────────────────────────────────────
-
-/**
- * A paid drone voice being offered, and everything the dialog needs to sell it.
- *
- * A plain class rather than a data class: it carries [select], the action to run once the
- * purchase lands, and a lambda has no meaningful equality. It is only ever held in one
- * nullable slot and compared against null.
- */
-private class DronePaywall(
-    val def: PremiumDroneDef,
-    val displayName: String,
-    val previewTimbre: DroneTimbre,
-    val previewBlend: DroneBlend,
-    val select: () -> Unit,
-)
-
-/**
- * The purchase dialog for a drone voice.
- *
- * Deliberately the same [PremiumPurchaseDialog] as the premium click sounds, down to the
- * audible-preview slot: they are the same kind of offer, and a second paywall design would
- * only teach the user that some purchases in this app work differently from others.
- */
-@Composable
-private fun DroneVoiceDialog(
-    paywall: DronePaywall,
-    store: PurchaseStore,
-    previewing: Boolean,
-    onPreview: () -> Unit,
-    onPurchase: () -> Unit,
-    onRestore: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    PremiumPurchaseDialog(
-        title               = paywall.displayName,
-        description         = paywall.def.description,
-        actionLabel         = "Unlock ${paywall.displayName}",
-        priceText           = store.priceOf(paywall.def.productId),
-        isPurchasing        = store.isPurchasing,
-        isBillingConnecting = store.isConnecting,
-        isAvailable         = store.isAvailable(paywall.def.productId),
-        onPurchase          = onPurchase,
-        onRestore           = onRestore,
-        onDismiss           = onDismiss,
-        previewContent      = { AudioShowcase(paywall.displayName, caption = "PREMIUM DRONE VOICE") },
-        secondaryButton     = {
-            PreviewActionButton(
-                // Names the voice while it sounds, because the audition replaces whatever
-                // was already playing rather than layering over it, and the listener has
-                // no other way to know that.
-                label   = if (previewing) "Sounding ${paywall.displayName} on its own"
-                          else "▶  Preview (5 seconds)",
-                active  = previewing,
-                onClick = onPreview,
-            )
-        },
-    )
 }
 
 // ── Reference pitch ──────────────────────────────────────────────────────────────
