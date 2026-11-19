@@ -541,17 +541,18 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun submitFeedback(snapshot: TunerSessionSnapshot, thumbsUp: Boolean, reason: String? = null) {
         viewModelScope.launch {
-            if (thumbsUp) {
-                tracker.recordTunerFeedback()
-                // The Tuning Fork unlocks on the third: check now. The periodic check only
-                // runs while a note is locked, so the popup used to wait for the next lock.
-                checkForNewUnlocks()
-                val todayFeedback = dailyLog.todayActivity(tracker).tunerFeedbackGiven
-                com.example.metrognome.points.PointsBannerQueue.postActivity(
-                    "Tuner Feedback", com.example.metrognome.points.PointsConfig.PER_TUNER_FEEDBACK,
-                    todayFeedback, com.example.metrognome.points.PointsLimits.TUNER_FEEDBACK_PER_DAY
-                )
-            }
+            // Every rating counts, thumbs-down included (the dev's call, 2026-11-19): a
+            // down is as useful to the tuner as an up, and rewarding only praise would tilt
+            // the feedback towards it. Until then a thumbs-down earned nothing.
+            tracker.recordTunerFeedback()
+            // The Tuning Fork unlocks on the third: check now. The periodic check only runs
+            // while a note is locked, so the popup used to wait for the next lock.
+            checkForNewUnlocks()
+            val todayFeedback = dailyLog.todayActivity(tracker).tunerFeedbackGiven
+            com.example.metrognome.points.PointsBannerQueue.postActivity(
+                "Tuner Feedback", com.example.metrognome.points.PointsConfig.PER_TUNER_FEEDBACK,
+                todayFeedback, com.example.metrognome.points.PointsLimits.TUNER_FEEDBACK_PER_DAY
+            )
             val given = prefs.getInt(KEY_RESPONSES_GIVEN, 0) + 1
             prefs.edit { putInt(KEY_RESPONSES_GIVEN, given) }
             TunerFeedbackReporter.submit(snapshot, thumbsUp, reason)

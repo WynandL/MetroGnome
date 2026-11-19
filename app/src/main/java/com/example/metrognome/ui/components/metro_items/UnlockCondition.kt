@@ -45,8 +45,9 @@ sealed class UnlockCondition {
     data class PracticeSessionsCompleted(val required: Int) : UnlockCondition()
 
     /**
-     * Number of thumbs-up tuner feedback submissions.
-     * Only positive feedback counts — the reward is for helping improve the tuner.
+     * Number of tuner feedback ratings submitted, thumbs-up or thumbs-down (both since
+     * 2026-11-19; before that only a thumbs-up counted). The item is for helping improve
+     * the tuner, which an honest "down" does as much as an "up".
      */
     data class TunerFeedbackGiven(val required: Int) : UnlockCondition()
 

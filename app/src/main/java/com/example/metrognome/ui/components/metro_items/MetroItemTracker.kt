@@ -158,7 +158,7 @@ class MetroItemTracker(context: Context) {
         prefs.edit { putInt(KEY_PRACTICE_MINUTES_TOTAL, current + minutes) }
     }
 
-    /** Increment the thumbs-up tuner feedback counter by 1. */
+    /** Increment the tuner feedback counter by 1 (any rating, up or down). */
     fun recordTunerFeedback() {
         val current = prefs.getInt(KEY_TUNER_FEEDBACK, 0)
         prefs.edit { putInt(KEY_TUNER_FEEDBACK, current + 1) }
