@@ -54,6 +54,7 @@ import com.example.metrognome.dev.DevTapTarget
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.billing.PremiumSoundDef
+import com.example.metrognome.billing.CLICK_SOUNDS
 import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
 import com.example.metrognome.ui.overlays.ItemPreviewCanvas
 import com.example.metrognome.ui.overlays.MicCheckOverlay
@@ -141,10 +142,8 @@ fun SettingsScreen(
 
     LaunchedEffect(purchasedSoundIds) {
         val def = dialogSoundDef ?: return@LaunchedEffect
-        if (def.productId in purchasedSoundIds) {
-            dialogSoundDef = null
-            vm.setSoundType(def.soundTypeIndex)
-        }
+        // Close the paywall once it is owned; the ViewModel selects the voice (buySound).
+        if (def.productId in purchasedSoundIds) dialogSoundDef = null
     }
 
     LaunchedEffect(purchasedItemProductIds) {
@@ -252,11 +251,11 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(CHIP_ROW_GAP),
                     ) {
-                        listOf("Classic", "Hi-Hat", "Wood", "Warm").forEachIndexed { index, name ->
+                        CLICK_SOUNDS.filterNot { it.isPremium }.forEach { sound ->
                             AppFilterChip(
-                                selected = index == soundType,
-                                onClick = { vm.setSoundType(index) },
-                                label = name,
+                                selected = sound.index == soundType,
+                                onClick = { vm.setSoundType(sound.index, "settings") },
+                                label = sound.displayName,
                             )
                         }
                         // Premium sounds — one chip per registry entry
@@ -266,7 +265,7 @@ fun SettingsScreen(
                                 selected = soundType == def.soundTypeIndex,
                                 label = def.displayName,
                                 onClick = {
-                                    if (owned) vm.setSoundType(def.soundTypeIndex)
+                                    if (owned) vm.setSoundType(def.soundTypeIndex, "settings")
                                     else dialogSoundDef = def
                                 },
                             )
@@ -442,7 +441,7 @@ fun SettingsScreen(
             previewing = soundPreviewing,
             previewBlocked = soundPreviewBlocked,
             onPreview = { vm.previewSound(def.soundTypeIndex) },
-            onPurchase = { activity?.let { vm.purchaseSound(it, def.productId) } },
+            onPurchase = { activity?.let { vm.buySound(it, def.soundTypeIndex) } },
             onRestore = { vm.restorePurchases() },
             onDismiss = { vm.stopSoundPreview(); dialogSoundDef = null }
         )

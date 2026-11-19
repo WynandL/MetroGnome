@@ -23,11 +23,12 @@ object AnalyticsTracker {
 
     // ── Metronome ─────────────────────────────────────────────────────────────
 
-    fun logMetronomeStarted(bpm: Int, soundType: Int, timeSig: Int) {
+    /** [soundSlug] is the chosen voice's [com.example.metrognome.billing.ClickSound.slug]. */
+    fun logMetronomeStarted(bpm: Int, soundSlug: String, timeSig: Int) {
         metronomeSessionStartMs = System.currentTimeMillis()
         Firebase.analytics.logEvent("metronome_started") {
             param("bpm",        bpm.toLong())
-            param("sound_type", soundType.toLong())
+            param("sound_type", soundSlug)
             param("time_sig",   timeSig.toLong())
         }
     }
@@ -41,9 +42,11 @@ object AnalyticsTracker {
         }
     }
 
-    fun logSoundChanged(soundType: Int) {
+    /** [soundSlug] is [com.example.metrognome.billing.ClickSound.slug], e.g. "kalimba". */
+    fun logSoundChanged(soundSlug: String, source: String) {
         Firebase.analytics.logEvent("sound_changed") {
-            param("sound_type", soundType.toLong())
+            param("sound_type", soundSlug)
+            param("source",     source)
         }
     }
 

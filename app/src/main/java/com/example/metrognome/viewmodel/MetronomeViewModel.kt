@@ -17,6 +17,7 @@ import com.example.metrognome.audio.selftest.MicCalibration
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.metronome.MetronomeEngine
 import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
+import com.example.metrognome.billing.clickSoundFor
 import com.example.metrognome.billing.BillingManager
 import com.example.metrognome.practice.PracticeSessionManager
 import com.example.metrognome.theory.Meter
@@ -207,6 +208,26 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     fun purchaseRemoveAds(activity: Activity) = billingManager.launchPurchaseFlow(activity)
     fun purchaseSound(activity: Activity, productId: String) =
         billingManager.launchSoundPurchaseFlow(activity, productId)
+
+    // A click voice being bought to be used: selected the moment its purchase lands, from
+    // whichever screen bought it. This used to be a LaunchedEffect in SettingsScreen, which
+    // would not have followed a second selling surface.
+    private var soundAwaitingPurchase: Int? = null
+
+    /** Buy the paid click voice [soundTypeIndex] and switch to it once it is owned. */
+    fun buySound(activity: Activity, soundTypeIndex: Int) {
+        val productId = clickSoundFor(soundTypeIndex).productId ?: return setSoundType(soundTypeIndex, "stage")
+        soundAwaitingPurchase = soundTypeIndex
+        billingManager.launchSoundPurchaseFlow(activity, productId)
+    }
+
+    private fun selectSoundIfJustBought(owned: Set<String>) {
+        val waiting = soundAwaitingPurchase ?: return
+        if (clickSoundFor(waiting).productId in owned) {
+            soundAwaitingPurchase = null
+            setSoundType(waiting, "purchase")
+        }
+    }
     fun purchaseItem(activity: Activity, productId: String) =
         billingManager.launchItemPurchaseFlow(activity, productId)
     fun restorePurchases() = billingManager.restorePurchases()
@@ -226,7 +247,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     fun debugClearSoundPurchases() {
         billingManager.debugClearSoundPurchases()
         val premiumIndexes = PREMIUM_SOUND_REGISTRY.map { it.soundTypeIndex }.toSet()
-        if (_soundType.value in premiumIndexes) setSoundType(0)
+        if (_soundType.value in premiumIndexes) setSoundType(0, "dev")
     }
     fun debugClearItemPurchases() {
         billingManager.debugClearItemPurchases()
@@ -279,7 +300,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             engine.start()
             sessionStartMs = System.currentTimeMillis()
             _isPlaying.value = true
-            AnalyticsTracker.logMetronomeStarted(_bpm.value, _soundType.value, _timeSig.value)
+            AnalyticsTracker.logMetronomeStarted(_bpm.value, clickSoundFor(_soundType.value).slug, _timeSig.value)
             startPlayTimer()
         } else {
             // Metronome already running — swap the live click to classic for the mic session.
@@ -675,6 +696,17 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             prefs.edit { putInt("sound_type", 0) }
         }
 
+        // Ownership follows Play: select a voice the moment its purchase lands, and drop a
+        // paid voice that is no longer owned (a refund, seen by reconcile) back to Classic
+        // straight away rather than at the next launch, which was the only check before.
+        viewModelScope.launch {
+            billingManager.purchasedSoundIds.collect { owned ->
+                selectSoundIfJustBought(owned)
+                val required = clickSoundFor(_soundType.value).productId
+                if (required != null && required !in owned) setSoundType(0, "ownership")
+            }
+        }
+
         viewModelScope.launch {
             com.example.metrognome.points.PointsBannerQueue.events.collect { _ ->
                 _gnoteCount.value = pointsManager.getSnapshot().total
@@ -791,7 +823,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             engine.start()
             sessionStartMs = System.currentTimeMillis()
             _isPlaying.value = true
-            AnalyticsTracker.logMetronomeStarted(_bpm.value, _soundType.value, _timeSig.value)
+            AnalyticsTracker.logMetronomeStarted(_bpm.value, clickSoundFor(_soundType.value).slug, _timeSig.value)
             startPlayTimer()
         }
     }
@@ -904,15 +936,21 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         return MeterTheory.defaultAccents(Meter(top, bottom))
     }
 
-    fun setSoundType(type: Int) {
+    /**
+     * Choose the click voice. [source] says where ("settings", "stage", "purchase") for
+     * `sound_changed`. A paid voice that is not owned is ignored; to buy and then use one,
+     * call [buySound], which selects it itself when the purchase lands.
+     */
+    fun setSoundType(type: Int, source: String = "settings") {
         val requiredProduct = PREMIUM_SOUND_REGISTRY.find { it.soundTypeIndex == type }?.productId
         if (requiredProduct != null && requiredProduct !in billingManager.purchasedSoundIds.value) return
+        val changed = type != _soundType.value
         _soundType.value = type
         // Respect an active mic override: keep playing the classic click, but remember the pick
         // so it takes effect the moment the override lifts.
         engine.soundType = effectiveSoundType()
         prefs.edit { putInt("sound_type", type) }
-        AnalyticsTracker.logSoundChanged(type)
+        if (changed) AnalyticsTracker.logSoundChanged(clickSoundFor(type).slug, source)
     }
 
     /** The click the engine should actually play: classic while a mic session overrides it. */
