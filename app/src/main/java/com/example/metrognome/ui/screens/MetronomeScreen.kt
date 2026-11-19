@@ -67,6 +67,8 @@ import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
 import com.example.metrognome.ui.overlays.WhatsNewOverlayDispatcher
 import com.example.metrognome.ui.components.metro_items.MetroItem
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -256,10 +258,20 @@ fun MetronomeScreen(
                 .padding(top = 48.dp, bottom = 4.dp)
         )
 
+        // The two pills share the strip either side of the BPM, never reaching under it: on a
+        // 360 dp phone with large fonts the Gnote pill used to overlap the BPM box, and a long
+        // sound name ("Crystal Bowl") would have done the same on the right.
+        var sceneWidthPx by remember { mutableIntStateOf(0) }
+        var bpmWidthPx by remember { mutableIntStateOf(0) }
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val pillMaxWidth = if (sceneWidthPx > 0 && bpmWidthPx > 0) with(density) {
+            ((sceneWidthPx - bpmWidthPx) / 2f).toDp() - 12.dp - 6.dp
+        }.coerceAtLeast(56.dp) else androidx.compose.ui.unit.Dp.Unspecified
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .onSizeChanged { sceneWidthPx = it.width }
         ) {
             GnomeCanvas(
                 bpm = bpm,
@@ -282,6 +294,7 @@ fun MetronomeScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 12.dp)
+                    .onSizeChanged { bpmWidthPx = it.width }
             )
 
             if (gnoteCount > 0) {
@@ -295,6 +308,7 @@ fun MetronomeScreen(
                         text        = "$gnoteCount ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME}",
                         leadingIcon = AppIcons.Gnote,
                         onClick     = { showGnotesInfo = true },
+                        modifier    = Modifier.widthIn(max = pillMaxWidth),
                     )
                 }
             }
@@ -311,6 +325,7 @@ fun MetronomeScreen(
                 modifier    = Modifier
                     .align(Alignment.TopEnd)
                     .padding(end = 12.dp, top = 12.dp)
+                    .widthIn(max = pillMaxWidth)
                     .semantics { contentDescription = "Click sound: ${sound.displayName}. Browse sounds" },
             )
         }

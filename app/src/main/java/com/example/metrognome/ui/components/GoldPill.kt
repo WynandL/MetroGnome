@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.ui.theme.AppColors
@@ -49,7 +50,13 @@ fun GoldPill(
                     tint = AppColors.gold, modifier = Modifier.size(13.dp),
                 )
             }
-            Text(text, color = AppColors.gold, fontSize = fontSize, fontWeight = fontWeight)
+            // One line always: a pill given less width than its label (the Home pills beside
+            // the BPM on a narrow phone with large fonts) shortens the label, never wraps it.
+            Text(
+                text, color = AppColors.gold, fontSize = fontSize, fontWeight = fontWeight,
+                maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
         }
     }
 

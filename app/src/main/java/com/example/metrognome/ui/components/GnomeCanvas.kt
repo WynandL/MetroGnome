@@ -164,7 +164,7 @@ fun GnomeCanvas(
                 val bodyX = tapOffset.x - cx
                 val bodyY = tapOffset.y - baseY
                 activeItems.firstOrNull { item ->
-                    val center = item.hitCenter(u) ?: return@firstOrNull false
+                    val center = item.hitCenterOnCanvas(s.width, s.height, u, density) ?: return@firstOrNull false
                     val dx = bodyX - center.x
                     val dy = bodyY - center.y
                     val r  = item.hitRadius(u)

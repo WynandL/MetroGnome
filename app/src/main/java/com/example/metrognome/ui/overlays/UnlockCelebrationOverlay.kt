@@ -249,7 +249,7 @@ internal fun ItemPreviewCanvas(
                 // Compute its visual center + radius, then center+zoom it to fill the box.
                 val u     = size.height / 17f
                 val baseY = size.height * 0.97f
-                val center = item.previewCenter(size.width, size.height, u, baseY)
+                val center = item.previewCenterOnCanvas(size.width, size.height, u, baseY, density)
                 val radius = item.previewRadius(u).coerceAtLeast(u * 0.5f)
                 val zoom   = (size.minDimension * 0.40f / radius).coerceIn(1.0f, 10f)
                 val dx     = halfW - center.x

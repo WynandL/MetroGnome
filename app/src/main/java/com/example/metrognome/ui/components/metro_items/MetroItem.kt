@@ -33,6 +33,20 @@ interface MetroItem {
     fun previewCenter(canvasW: Float, canvasH: Float, u: Float, baseY: Float): Offset =
         Offset(canvasW * 0.5f, canvasH * 0.5f)
 
+    /**
+     * [hitCenter] for an item placed by the canvas's own width or by a dp clearance rather
+     * than by `u` alone: [canvasW]/[canvasH] are the canvas in px, [dp] is one dp in px.
+     * Defaults to [hitCenter], so only an item that needs the canvas overrides it.
+     * GnomeCanvas's tap detection calls this one. Added 2026-11-19 for the Crescent Moon,
+     * which sits at a fraction of the WIDTH and below the Home sound pill; a u-only hitCenter
+     * can match that on one aspect ratio only, and on a short canvas missed the moon by ~3u.
+     */
+    fun hitCenterOnCanvas(canvasW: Float, canvasH: Float, u: Float, dp: Float): Offset? = hitCenter(u)
+
+    /** [previewCenter] with the density, for the same items; defaults to [previewCenter]. */
+    fun previewCenterOnCanvas(canvasW: Float, canvasH: Float, u: Float, baseY: Float, dp: Float): Offset =
+        previewCenter(canvasW, canvasH, u, baseY)
+
     /** Approximate half-extent (radius in px) of the item for preview zoom calculation. */
     fun previewRadius(u: Float): Float = u * 4f
 

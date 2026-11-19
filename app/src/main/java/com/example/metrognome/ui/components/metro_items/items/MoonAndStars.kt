@@ -25,12 +25,20 @@ import kotlin.math.sin
  *
  * Position: size.width * MOON_X, size.height * MOON_Y, width- and height-anchored so it
  * always sits in the upper-right of the sky regardless of device aspect ratio. Moved down
- * from 0.10 to 0.17 of the height (stars with it) on 2026-11-19, when the Home screen's
+ * from 0.10 to 0.18 of the height (stars with it) on 2026-11-19, when the Home screen's
  * sound pill took the top-right corner: at 0.10 the pill covered the top of the moon and two
  * stars, and took the moon's taps.
  */
 private const val MOON_X = 0.82f
-private const val MOON_Y = 0.17f
+private const val MOON_Y = 0.18f
+
+/**
+ * The moon's top never rises above this far below the canvas top, whatever the canvas
+ * height: the Home sound pill is a fixed size in dp (12 dp margin + about 32 dp, more with
+ * large fonts), while MOON_Y scales with the canvas, so on a short canvas (a small phone)
+ * the fraction alone put the moon under the pill.
+ */
+private const val MOON_TOP_CLEAR_DP = 58f
 
 object MoonAndStars : MetroItem {
 
@@ -41,11 +49,24 @@ object MoonAndStars : MetroItem {
     override val isBodyAttached  = false
 
     // Moon draws at (canvasW*MOON_X, canvasH*MOON_Y). Body-space conversion (subtract cx, baseY):
-    //   Y: 0.17*h - 0.97*h = -0.80*h → -0.80*17 = -13.6u  (independent of aspect ratio)
+    //   Y: 0.18*h - 0.97*h = -0.79*h → -0.79*17 = -13.4u  (independent of aspect ratio)
     //   X: 0.82*w - 0.50*w = 0.32*w → 0.32*(w/h)*17 ≈ 2.7u on a typical portrait phone
     // Keep these three in step with MOON_X/MOON_Y (draw, hit, preview): when they disagreed
     // (an old hitCenter of -13.0u against a moon at -14.8u), taps never landed.
-    override fun hitCenter(u: Float) = Offset(2.7f * u, -13.6f * u)
+    override fun hitCenter(u: Float) = Offset(2.7f * u, -13.4f * u)
+
+    /** Where the moon is drawn, in canvas px: the single source for draw, hit and preview. */
+    private fun moonCenter(w: Float, h: Float, u: Float, dp: Float): Offset =
+        Offset(w * MOON_X, maxOf(h * MOON_Y, MOON_TOP_CLEAR_DP * dp + 0.90f * u))
+
+    // Exact on every canvas: the drawn centre less the body origin (cx, baseY).
+    override fun hitCenterOnCanvas(canvasW: Float, canvasH: Float, u: Float, dp: Float): Offset {
+        val c = moonCenter(canvasW, canvasH, u, dp)
+        return Offset(c.x - canvasW / 2f, c.y - canvasH * 0.97f)
+    }
+
+    override fun previewCenterOnCanvas(canvasW: Float, canvasH: Float, u: Float, baseY: Float, dp: Float) =
+        moonCenter(canvasW, canvasH, u, dp)
     override fun hitRadius(u: Float) = u * 1.3f
 
     // mx = canvasW*0.82, my = canvasH*0.10 — zooms into just the crescent
@@ -65,8 +86,9 @@ object MoonAndStars : MetroItem {
 
     override fun DrawScope.draw(u: Float, cx: Float, baseY: Float) {
         val t    = (System.nanoTime() / 1_000_000_000.0).toFloat()
-        val mx   = size.width  * MOON_X
-        val my   = size.height * MOON_Y
+        val mc   = moonCenter(size.width, size.height, u, density)
+        val mx   = mc.x
+        val my   = mc.y
         val moonR = 0.90f * u
 
         // Soft ambient glow halo
@@ -102,8 +124,8 @@ object MoonAndStars : MetroItem {
         }
 
         // Stars — screen-relative, independent twinkle phases, varied tone
-        // The field moves with the moon (each y is its old height plus the moon's 0.07 drop).
-        val dy = size.height * (MOON_Y - 0.10f)
+        // The field moves with the moon (each y is its old height plus the moon's drop).
+        val dy = my - size.height * 0.10f
         drawStarSpark(u, size.width * 0.60f, size.height * 0.14f + dy, 0.11f, t, 0.00f, starCool)
         drawStarSpark(u, size.width * 0.72f, size.height * 0.05f + dy, 0.09f, t, 1.20f, starFaint)
         drawStarSpark(u, size.width * 0.90f, size.height * 0.12f + dy, 0.13f, t, 2.40f, starWarm)
