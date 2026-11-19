@@ -763,7 +763,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         val toAdd = newEntries.filter { it.item.id !in existing }
         if (toAdd.isNotEmpty()) {
             _unlockQueue.value += toAdd
-            toAdd.forEach { AnalyticsTracker.logItemUnlocked(it.item.id, it.item.displayName) }
+            AnalyticsTracker.logItemsUnlocked(itemTracker, toAdd)
         }
     }
 

@@ -286,12 +286,10 @@ class TunerViewModel(app: Application) : AndroidViewModel(app) {
         val previous = _activeItemIds.value
         val current = tracker.unlockedIds(METRO_ITEM_REGISTRY)
         _activeItemIds.value = current
-        current.filter { it !in previous && it !in tracker.celebratedIds() }
+        val fresh = current.filter { it !in previous && it !in tracker.celebratedIds() }
             .mapNotNull { id -> METRO_ITEM_REGISTRY.find { entry -> entry.item.id == id } }
-            .forEach { entry ->
-                _newlyUnlocked.tryEmit(entry)
-                AnalyticsTracker.logItemUnlocked(entry.item.id, entry.item.displayName)
-            }
+        fresh.forEach { entry -> _newlyUnlocked.tryEmit(entry) }
+        AnalyticsTracker.logItemsUnlocked(tracker, fresh)
     }
 
     // ── Reference pitch ─────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.core.content.edit
+import com.example.metrognome.analytics.AnalyticsTracker
 import kotlin.time.Duration.Companion.seconds
 
 class BillingManager(application: Application) {
@@ -106,17 +107,32 @@ class BillingManager(application: Application) {
 
     // ── Billing client ────────────────────────────────────────────────────────
 
+    /**
+     * The product whose purchase sheet is open, for the `iap_result` event. Play's listener
+     * reports purchases (on success) but no product id on a cancel or an error, so the id
+     * is remembered from [launchPurchaseFlowFor].
+     */
+    private var inFlightProductId: String? = null
+
     private val purchasesUpdatedListener = PurchasesUpdatedListener { result, purchases ->
         _isPurchasing.value = false
+        val productId = inFlightProductId
+        inFlightProductId = null
         when (result.responseCode) {
             BillingClient.BillingResponseCode.OK ->
                 purchases?.forEach { handlePurchase(it) }
-            BillingClient.BillingResponseCode.USER_CANCELED -> Unit
+            BillingClient.BillingResponseCode.USER_CANCELED ->
+                productId?.let { AnalyticsTracker.logPurchaseResult(it, "cancelled") }
             // ITEM_ALREADY_OWNED means Play knows the user owns it — silently reconcile
             // so the local cache reflects reality without requiring a manual restore.
-            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED ->
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                productId?.let { AnalyticsTracker.logPurchaseResult(it, "already_owned") }
                 scope.launch { reconcileInBackground() }
-            else -> _purchaseError.value = errorMessageFor(result.responseCode)
+            }
+            else -> {
+                productId?.let { AnalyticsTracker.logPurchaseResult(it, "error_${result.responseCode}") }
+                _purchaseError.value = errorMessageFor(result.responseCode)
+            }
         }
     }
 
@@ -207,7 +223,14 @@ class BillingManager(application: Application) {
 
     private fun launchPurchaseFlowFor(activity: Activity, productId: String) {
         if (_isPurchasing.value) return
-        if (!billingClient.isReady) return
+        // Not connected (yet, or any more): say so and try again, rather than a Buy button
+        // that does nothing, which is the failure the 2026-08-24 error surfacing was for.
+        if (!billingClient.isReady) {
+            _purchaseError.value = errorMessageFor(BillingClient.BillingResponseCode.SERVICE_DISCONNECTED)
+            AnalyticsTracker.logPurchaseResult(productId, "error_not_ready")
+            if (!_isConnecting.value) { _isConnecting.value = true; connect() }
+            return
+        }
         _isPurchasing.value = true
 
         scope.launch {
@@ -224,12 +247,14 @@ class BillingManager(application: Application) {
             if (result.billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 _isPurchasing.value = false
                 _purchaseError.value = errorMessageFor(result.billingResult.responseCode)
+                AnalyticsTracker.logPurchaseResult(productId, "error_${result.billingResult.responseCode}")
                 return@launch
             }
             val productDetails = result.productDetailsList?.firstOrNull()
             if (productDetails == null) {
                 _isPurchasing.value = false
                 _purchaseError.value = errorMessageFor(BillingClient.BillingResponseCode.ITEM_UNAVAILABLE)
+                AnalyticsTracker.logPurchaseResult(productId, "error_no_details")
                 return@launch
             }
             val flowParams = BillingFlowParams.newBuilder()
@@ -250,6 +275,10 @@ class BillingManager(application: Application) {
             if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 _isPurchasing.value = false
                 _purchaseError.value = errorMessageFor(billingResult.responseCode)
+                AnalyticsTracker.logPurchaseResult(productId, "error_${billingResult.responseCode}")
+            } else {
+                inFlightProductId = productId
+                AnalyticsTracker.logPurchaseStarted(productId)
             }
         }
     }
@@ -315,8 +344,19 @@ class BillingManager(application: Application) {
 
     // ── Handle purchase callback ──────────────────────────────────────────────
 
+    /**
+     * A purchase Play just returned through the listener (never a restore or reconcile, so
+     * `iap_result` = "purchased" counts real sales only). A PENDING one (a cash or delayed
+     * payment) is logged as "pending" and granted later by [reconcileInBackground], which
+     * logs nothing: that sale shows in the Play Console, not as a second event here.
+     */
     private fun handlePurchase(purchase: Purchase) {
+        if (purchase.purchaseState == Purchase.PurchaseState.PENDING) {
+            purchase.products.forEach { AnalyticsTracker.logPurchaseResult(it, "pending") }
+            return
+        }
         if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) return
+        purchase.products.forEach { AnalyticsTracker.logPurchaseResult(it, "purchased") }
         when {
             purchase.products.contains(PRODUCT_REMOVE_ADS) ->
                 setAdFree(true)

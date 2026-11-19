@@ -707,6 +707,7 @@ class RhythmGameViewModel(app: Application) : AndroidViewModel(app) {
         val toAdd = newEntries.filter { it.item.id !in existing }
         if (toAdd.isNotEmpty()) {
             _unlockQueue.value += toAdd
+            AnalyticsTracker.logItemsUnlocked(itemTracker, toAdd)
         }
     }
 

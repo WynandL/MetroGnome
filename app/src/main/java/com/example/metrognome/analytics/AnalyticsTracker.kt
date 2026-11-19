@@ -1,6 +1,8 @@
 package com.example.metrognome.analytics
 
 import com.example.metrognome.ads.UserTier
+import com.example.metrognome.ui.components.metro_items.MetroItemEntry
+import com.example.metrognome.ui.components.metro_items.MetroItemTracker
 import com.google.firebase.Firebase
 import com.google.firebase.analytics.analytics
 import com.google.firebase.analytics.logEvent
@@ -330,12 +332,49 @@ object AnalyticsTracker {
         }
     }
 
+    // ── Purchases ─────────────────────────────────────────────────────────────
+    //
+    // Named iap_* on purpose: `in_app_purchase` is a Firebase automatic event and `purchase`
+    // is a reserved ecommerce event, and logging either by hand would mix with or be
+    // rejected by Google's own handling. The Play Console remains the record of money; these
+    // say where in the funnel people stop. Both params (product_id, response) are already
+    // registered as custom dimensions, so reports show them with no extra setup.
+
+    /** Google Play's purchase sheet opened for [productId]. */
+    fun logPurchaseStarted(productId: String) {
+        Firebase.analytics.logEvent("iap_started") {
+            param("product_id", productId)
+        }
+    }
+
+    /**
+     * How a purchase attempt ended: "purchased", "pending", "cancelled" (closed the Play
+     * sheet), "already_owned", or "error_<code>" ("error_not_ready" when the store was not
+     * connected, "error_no_details" when Play did not return the product).
+     */
+    fun logPurchaseResult(productId: String, response: String) {
+        Firebase.analytics.logEvent("iap_result") {
+            param("product_id", productId)
+            param("response",   response)
+        }
+    }
+
     // ── Items ─────────────────────────────────────────────────────────────────
 
-    fun logItemUnlocked(itemId: String, itemName: String) {
-        Firebase.analytics.logEvent("item_unlocked") {
-            param("item_id",   itemId)
-            param("item_name", itemName)
+    /**
+     * The one way to log `item_unlocked`: every screen that queues an unlock celebration
+     * passes the new entries here, and [MetroItemTracker.claimUnreported] lets each item
+     * through once per install. So event count = users who earned it (from 2026-11-19 on;
+     * earlier counts are inflated by repeats and miss every Rhythm-tab unlock).
+     */
+    fun logItemsUnlocked(tracker: MetroItemTracker, entries: List<MetroItemEntry>) {
+        if (entries.isEmpty()) return
+        val fresh = tracker.claimUnreported(entries.map { it.item.id }).toSet()
+        entries.filter { it.item.id in fresh }.distinctBy { it.item.id }.forEach { entry ->
+            Firebase.analytics.logEvent("item_unlocked") {
+                param("item_id",   entry.item.id)
+                param("item_name", entry.item.displayName)
+            }
         }
     }
 

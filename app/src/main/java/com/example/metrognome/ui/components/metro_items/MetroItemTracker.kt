@@ -287,6 +287,25 @@ class MetroItemTracker(context: Context) {
     fun celebratedIds(): Set<String> =
         prefs.getStringSet(KEY_CELEBRATED_IDS, emptySet()) ?: emptySet()
 
+    // ── Unlock reporting ──────────────────────────────────────────────────────
+
+    private val KEY_REPORTED_IDS = "reported_unlock_ids"
+
+    /**
+     * Of [ids], the ones whose unlock has not been reported to analytics on this install yet,
+     * marking them reported as it goes. The `item_unlocked` event is logged only through
+     * `AnalyticsTracker.logItemsUnlocked`, which calls this, so each item is counted once per
+     * install whichever screen notices it first. Before 2026-11-19 every ViewModel logged its
+     * own unlocks: the Rhythm game logged none at all (so its two items read as never earned),
+     * and the others logged the same item again on every check until its popup was dismissed.
+     */
+    fun claimUnreported(ids: Collection<String>): List<String> {
+        val reported = prefs.getStringSet(KEY_REPORTED_IDS, emptySet()) ?: emptySet()
+        val fresh = ids.filter { it !in reported }.distinct()
+        if (fresh.isNotEmpty()) prefs.edit { putStringSet(KEY_REPORTED_IDS, reported + fresh) }
+        return fresh
+    }
+
     /** DEV: wipe all progress counters and celebrations — simulates a clean installation. */
     fun resetAllProgress() {
         prefs.edit {
@@ -299,6 +318,7 @@ class MetroItemTracker(context: Context) {
             remove(KEY_PRACTICE_MINUTES_TOTAL)
             remove(KEY_FIRST_LAUNCH_MS)
             remove(KEY_CELEBRATED_IDS)
+            remove(KEY_REPORTED_IDS)
             remove(KEY_TUNER_FEEDBACK)
             remove(KEY_SPEED_TRAINING_SESSIONS)
             remove(KEY_SPEED_TRAINER_SECONDS)
