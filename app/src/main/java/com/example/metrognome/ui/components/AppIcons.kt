@@ -108,4 +108,81 @@ object AppIcons {
         listOf("M9 2V11A3 3 0 0 0 15 11V2", "M12 14V19", "M10.6 20.6a1.4 1.4 0 1 0 2.8 0a1.4 1.4 0 1 0 -2.8 0Z"),
         filledPaths = setOf(2), faintPaths = setOf(),
     )
+
+    /**
+     * Classic: a pyramid metronome with its pendulum swung. Paths: body, base, arm, weight (filled).
+     */
+    val SoundClassic = AppGlyph(
+        listOf("M8 20.5 10.6 3.5h2.8L16 20.5Z", "M5.5 20.5h13", "M12 17 16.2 7.2", "M14.7 9.6a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0Z"),
+        filledPaths = setOf(3), faintPaths = setOf(),
+    )
+
+    /**
+     * Hi-Hat: a pair of cymbals on a stand. Paths: top cymbal, bottom cymbal (faint), rod, feet.
+     */
+    val SoundHiHat = AppGlyph(
+        listOf("M3.5 7.5Q12 3.5 20.5 7.5", "M3.5 10.5Q12 6.5 20.5 10.5", "M12 5.5V20.5", "M8.5 20.5 12 17.5l3.5 3"),
+        filledPaths = setOf(), faintPaths = setOf(1),
+    )
+
+    /**
+     * Wood: a woodblock with its slot, and the beater over it. Paths: block, slot (faint), stick,
+     * beater (filled).
+     */
+    val SoundWood = AppGlyph(
+        listOf("M4 10.5Q4 8.5 6 8.5H18Q20 8.5 20 10.5V16.5Q20 18.5 18 18.5H6Q4 18.5 4 16.5Z", "M7 13.5h10", "M13.5 2.5 16.6 5.6", "M16.1 6.6a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0Z"),
+        filledPaths = setOf(3), faintPaths = setOf(1),
+    )
+
+    /**
+     * Warm: one rounded wave with its echo. Paths: wave, echo (faint).
+     */
+    val SoundWarm = AppGlyph(
+        listOf("M2 12c2-5 4-5 6 0s4 5 6 0 4-5 6 0", "M5 17.5c1.4-2 2.6-2 4 0s2.6 2 4 0 2.6-2 4 0"),
+        filledPaths = setOf(), faintPaths = setOf(1),
+    )
+
+    /**
+     * Bell: a hand bell, handle up, clapper below. Not AppIcons.Bell, which means notifications.
+     * Paths: handle, body, lip, clapper (filled).
+     */
+    val SoundBell = AppGlyph(
+        listOf("M12 2.5v3", "M6.5 16.5Q6.5 6.5 12 5.5Q17.5 6.5 17.5 16.5Z", "M4.5 16.5h15", "M10.8 19.3a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0Z"),
+        filledPaths = setOf(3), faintPaths = setOf(),
+    )
+
+    /**
+     * Crystal Bowl: a singing bowl on its foot, two rings of sound over it. Paths: bowl, foot,
+     * inner ring (faint), outer ring (faint).
+     */
+    val SoundCrystalBowl = AppGlyph(
+        listOf("M3.5 11h17Q20 19 12 19Q4 19 3.5 11Z", "M9 21h6", "M7.5 7.5Q12 5 16.5 7.5", "M10 4.3Q12 3.3 14 4.3"),
+        filledPaths = setOf(), faintPaths = setOf(2, 3),
+    )
+
+    /**
+     * Kalimba: the board with five tines, the middle one longest, and its sound hole. Paths:
+     * board, five tines, hole (faint).
+     */
+    val SoundKalimba = AppGlyph(
+        listOf("M5 20.5 3.5 9Q12 5.5 20.5 9L19 20.5Z", "M8.5 7.6V13", "M10.5 7.1V14.5", "M12 6.9V15", "M13.5 7.1V14.5", "M15.5 7.6V13", "M10.8 17.7a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0Z"),
+        filledPaths = setOf(), faintPaths = setOf(6),
+    )
+
+    /**
+     * Cowbell: the bell, its handle, the open mouth and a glint. Paths: body, handle, mouth,
+     * glint (faint).
+     */
+    val SoundCowbell = AppGlyph(
+        listOf("M8 6h8l3 13H5Z", "M10 6V3.5h4V6", "M5 19Q12 21.5 19 19", "M9.5 10.5 8.5 15"),
+        filledPaths = setOf(), faintPaths = setOf(3),
+    )
+
+    /**
+     * Metal Kick: a kick drum face-on on its spurs. Paths: head, port ring (faint), two spurs.
+     */
+    val SoundMetalKick = AppGlyph(
+        listOf("M4 12a8 8 0 1 0 16 0a8 8 0 1 0 -16 0Z", "M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0Z", "M6.3 17.7 4 21", "M17.7 17.7 20 21"),
+        filledPaths = setOf(), faintPaths = setOf(1),
+    )
 }

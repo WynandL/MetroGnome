@@ -11,6 +11,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import com.example.metrognome.ui.components.Particle
+import com.example.metrognome.ui.scene.Star
+import com.example.metrognome.ui.scene.drawNightSky
+import com.example.metrognome.ui.scene.drawPineForest
 import com.example.metrognome.ui.components.AppIcons
 import com.example.metrognome.ui.components.drawGlyph
 import com.example.metrognome.ui.components.drawParticles
@@ -68,8 +71,6 @@ internal class LaneGeometry(size: Size, dp: Float) {
 }
 
 // ── Scenery (fixed for the life of the stage) ────────────────────────────────
-
-internal class Star(val x: Float, val y: Float, val size: Float, val speed: Float, val phase: Float)
 
 internal class Firefly(
     val x: Float, val y: Float, val ax: Float, val ay: Float,
@@ -207,8 +208,8 @@ internal fun DrawScope.drawStage(
     val beatGlow = if (onGrid) (1f - beatPhase).pow(2) else 0f
     val downbeat = onGrid && chart != null && beatIndex % chart.beatsPerBar == 0
 
-    drawSky(scenery, g, dp, t, beatGlow)
-    drawForest(g)
+    drawNightSky(scenery.stars, g.w, g.h, dp, t, beatGlow)
+    drawPineForest(g.w, g.h)
     drawLane(g, dp, heat)
     if (chart != null) {
         drawWindows(g, chart)
@@ -234,58 +235,6 @@ internal fun DrawScope.drawStage(
         }
         drawParticles(b.particles, origin, age)
     }
-}
-
-private fun DrawScope.drawSky(scenery: LaneScenery, g: LaneGeometry, dp: Float, t: Float, beatGlow: Float) {
-    drawRect(Brush.verticalGradient(listOf(GameColors.stageSkyTop, GameColors.stageSkyBottom)))
-
-    scenery.stars.forEach { s ->
-        val tw = sin(t * s.speed + s.phase)
-        drawCircle(Color.White.copy(alpha = 0.18f + 0.62f * tw * tw), s.size * dp, Offset(s.x * g.w, s.y * g.h))
-    }
-
-    // The moon breathes with the beat: its halo swells on each click and settles before the next.
-    val moon = Offset(g.w * 0.83f, g.h * 0.105f)
-    val mr = 17f * dp
-    val halo = mr * (2.9f + 0.7f * beatGlow)
-    drawCircle(
-        Brush.radialGradient(listOf(GameColors.moon.copy(alpha = 0.20f + 0.10f * beatGlow), Color.Transparent), moon, halo),
-        halo, moon,
-    )
-    drawCircle(GameColors.moon, mr, moon)
-    drawCircle(GameColors.moonShade, mr * 0.20f, Offset(moon.x - mr * 0.30f, moon.y - mr * 0.22f))
-    drawCircle(GameColors.moonShade, mr * 0.26f, Offset(moon.x + mr * 0.32f, moon.y + mr * 0.30f))
-    drawCircle(GameColors.moonShade, mr * 0.11f, Offset(moon.x + mr * 0.22f, moon.y - mr * 0.42f))
-}
-
-/** Pines rising from the bottom edge on both sides, a far row and a near row. */
-private fun DrawScope.drawForest(g: LaneGeometry) {
-    val far = floatArrayOf(0.02f, 0.13f, 0.235f, 0.765f, 0.87f, 0.98f)
-    val farH = floatArrayOf(0.30f, 0.36f, 0.27f, 0.28f, 0.37f, 0.31f)
-    for (i in far.indices) drawPine(far[i] * g.w, g.h, farH[i] * g.h, g.w * 0.17f, GameColors.stagePineFar)
-    val near = floatArrayOf(-0.02f, 0.085f, 0.915f, 1.02f)
-    val nearH = floatArrayOf(0.50f, 0.40f, 0.42f, 0.52f)
-    for (i in near.indices) drawPine(near[i] * g.w, g.h, nearH[i] * g.h, g.w * 0.22f, GameColors.stagePineNear)
-}
-
-private fun DrawScope.drawPine(x: Float, baseY: Float, height: Float, width: Float, color: Color) {
-    val top = baseY - height
-    val hw = width / 2f
-    val path = Path().apply {
-        moveTo(x, top)
-        lineTo(x + hw * 0.46f, top + height * 0.36f)
-        lineTo(x + hw * 0.22f, top + height * 0.36f)
-        lineTo(x + hw * 0.74f, top + height * 0.66f)
-        lineTo(x + hw * 0.36f, top + height * 0.66f)
-        lineTo(x + hw, baseY)
-        lineTo(x - hw, baseY)
-        lineTo(x - hw * 0.36f, top + height * 0.66f)
-        lineTo(x - hw * 0.74f, top + height * 0.66f)
-        lineTo(x - hw * 0.22f, top + height * 0.36f)
-        lineTo(x - hw * 0.46f, top + height * 0.36f)
-        close()
-    }
-    drawPath(path, color)
 }
 
 private fun DrawScope.drawLane(g: LaneGeometry, dp: Float, heat: Float) {

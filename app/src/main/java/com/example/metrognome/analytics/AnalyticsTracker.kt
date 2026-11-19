@@ -335,6 +335,31 @@ object AnalyticsTracker {
         }
     }
 
+    // ── Sound stage ───────────────────────────────────────────────────────────
+
+    /**
+     * The click-sound stage opened. [source] is "home" (the pill) or "settings". Against
+     * active users this is the reach of the sounds; against sound_previewed and iap_started
+     * per product, it is the funnel the stage exists to fill.
+     */
+    fun logSoundStageOpened(source: String) {
+        Firebase.analytics.logEvent("sound_stage_opened") {
+            param("source", source)
+        }
+    }
+
+    /**
+     * A click voice was auditioned on the stage. [productId] is "free" for a free voice, so
+     * the registered product_id dimension carries the paid/free split without a new param.
+     */
+    fun logSoundPreviewed(soundSlug: String, productId: String?, source: String) {
+        Firebase.analytics.logEvent("sound_previewed") {
+            param("sound_type", soundSlug)
+            param("product_id", productId ?: "free")
+            param("source",     source)
+        }
+    }
+
     // ── Purchases ─────────────────────────────────────────────────────────────
     //
     // Named iap_* on purpose: `in_app_purchase` is a Firebase automatic event and `purchase`

@@ -49,6 +49,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.metrognome.ui.components.PinnedLines
+import com.example.metrognome.ui.components.PinnedSlot
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -1133,43 +1135,6 @@ private fun TipStrip(reading: ChordReading, engine: ChordEngine) {
 }
 
 /** The big name: root in gold, quality and slash smaller beside it, sharing a baseline. */
-/**
- * Makes `lineHeight` literal within the paragraph: a line is exactly that tall whatever
- * is on it. The app's ambient style leaves the default `Trim.Both`, under which a single
- * line is its *natural* height and `lineHeight` only spaces the lines between.
- */
-private val PinnedLines = TextStyle(
-    lineHeightStyle = LineHeightStyle(
-        alignment = LineHeightStyle.Alignment.Center,
-        trim = LineHeightStyle.Trim.None,
-    ),
-)
-
-/**
- * A slot exactly [lines] x [lineHeight] tall, whatever the text inside it measures.
- *
- * [PinnedLines] alone is not enough: with font padding off, Compose adds a top and bottom
- * padding to a `Text` derived from the ink bounds of the glyphs on its first and last line
- * (`TextLayout.getVerticalPaddings`), so a 44 sp Black "C" and a 24 sp "Play or tap notes"
- * on the same 50 sp line still measure a pixel or two apart, and the card below them
- * shifted by that much between readings. Taking the height from the density instead of
- * the text is what finally pins it; a text that measures a hair taller than its slot
- * simply paints over the edge, which is invisible.
- */
-@Composable
-private fun PinnedSlot(
-    lineHeight: TextUnit,
-    lines: Int = 1,
-    alignment: Alignment = Alignment.CenterStart,
-    content: @Composable () -> Unit,
-) {
-    val height = with(LocalDensity.current) { (lineHeight * lines).toDp() }
-    Box(
-        contentAlignment = alignment,
-        modifier = Modifier.fillMaxWidth().height(height),
-    ) { content() }
-}
-
 @Composable
 private fun HeroSymbol(root: String, suffix: String, slash: String = "") = PinnedSlot(lineHeight = 50.sp) {
     Text(

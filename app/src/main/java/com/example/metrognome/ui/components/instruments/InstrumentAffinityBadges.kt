@@ -22,6 +22,20 @@ fun InstrumentAffinityBadges(
     iconSize: Dp = 26.dp,
 ) {
     val ideal = remember(soundType) { InstrumentAffinity.instrumentsFor(soundType) }
+    InstrumentAffinityBadges(instruments = ideal, modifier = modifier, iconSize = iconSize)
+}
+
+/**
+ * The same cluster for an explicit set, for callers that describe a sound by its own data
+ * rather than a click index (the sound stage, and later the drone's voices).
+ */
+@Composable
+fun InstrumentAffinityBadges(
+    instruments: Set<Instrument>,
+    modifier: Modifier = Modifier,
+    iconSize: Dp = 26.dp,
+) {
+    val ideal = instruments
     if (ideal.isEmpty()) return
     Row(
         modifier = modifier,
