@@ -232,24 +232,8 @@ private fun RhythmDashboard(
 
         Spacer(Modifier.height(CardGap))
 
-        LoyaltyCard(
-            currentDays = loyaltyDays,
-            modifier    = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(Modifier.height(CardGap))
-
-        // Always show the streak on the Rhythm page, even at Day 0 - it reads "Start your streak"
-        // and nudges the user to begin one. (The home page keeps the conditional gating so Metro
-        // gets maximum space there.)
-        PracticeStreakCard(
-            streak             = practiceStreak,
-            bestStreak         = bestStreak,
-            practicedEpochDays = practicedEpochDays,
-            modifier           = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(CardGap))
-
+        // Order (2026-11-20): Gnotes, then what they unlock, then the game, then the two
+        // day counters. Every card is CardGap apart; the last one is followed by 24 dp.
         CollectionCard(
             activeItemIds = activeItemIds,
             onClick       = { showItemCatalog = true },
@@ -268,6 +252,25 @@ private fun RhythmDashboard(
             highScores = highScores,
             dailyEarned = dailyTarget.first,
             dailyCap = dailyTarget.second,
+        )
+
+        Spacer(Modifier.height(CardGap))
+
+        LoyaltyCard(
+            currentDays = loyaltyDays,
+            modifier    = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(CardGap))
+
+        // Always show the streak on the Rhythm page, even at Day 0 - it reads "Start your streak"
+        // and nudges the user to begin one. (The home page keeps the conditional gating so Metro
+        // gets maximum space there.)
+        PracticeStreakCard(
+            streak             = practiceStreak,
+            bestStreak         = bestStreak,
+            practicedEpochDays = practicedEpochDays,
+            modifier           = Modifier.fillMaxWidth(),
         )
 
         Spacer(Modifier.height(24.dp))

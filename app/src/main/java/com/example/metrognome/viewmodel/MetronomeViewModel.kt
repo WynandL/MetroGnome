@@ -937,11 +937,11 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Choose the click voice. [source] says where ("settings", "stage", "purchase") for
+     * Choose the click voice. [source] says where ("stage", "purchase", "ownership", "dev") for
      * `sound_changed`. A paid voice that is not owned is ignored; to buy and then use one,
      * call [buySound], which selects it itself when the purchase lands.
      */
-    fun setSoundType(type: Int, source: String = "settings") {
+    fun setSoundType(type: Int, source: String) {
         val requiredProduct = PREMIUM_SOUND_REGISTRY.find { it.soundTypeIndex == type }?.productId
         if (requiredProduct != null && requiredProduct !in billingManager.purchasedSoundIds.value) return
         val changed = type != _soundType.value

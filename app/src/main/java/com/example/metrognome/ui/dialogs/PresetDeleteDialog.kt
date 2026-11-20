@@ -58,7 +58,7 @@ fun PresetDeleteDialog(
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    text = "\"${preset.name}\" · ${preset.bpm} BPM",
+                    text = if (preset.name.isBlank()) "${preset.bpm} BPM" else "\"${preset.name}\" · ${preset.bpm} BPM",
                     color = AppColors.textSecondary,
                     fontSize = 13.sp,
                     lineHeight = 18.sp,

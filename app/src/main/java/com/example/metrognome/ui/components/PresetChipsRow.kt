@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Surface
@@ -22,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -61,7 +64,8 @@ fun PresetChipsRow(
             presets.forEachIndexed { index, preset ->
                 val isActive = preset.bpm == currentBpm
                 PresetPill(
-                    label = preset.name,
+                    name = preset.name,
+                    bpm = preset.bpm,
                     active = isActive,
                     interaction = Modifier
                             // combinedClickable rather than raw tap detection, so a screen
@@ -105,10 +109,14 @@ fun PresetChipsRow(
  * look" preview draws the active one with it, so the preview cannot drift from the real thing
  * (it had: 13 sp text, its own padding and no fixed height; UI audit U19). [interaction] goes
  * on the clipped inner box, where the row puts its tap, long press and semantics.
+ *
+ * A blank [name] (an unnamed preset) shows the Gnome tab's note mark and the [bpm]; never a
+ * note character typed into the text, which the font draws unlike the app's note.
  */
 @Composable
 fun PresetPill(
-    label: String,
+    name: String,
+    bpm: Int,
     active: Boolean,
     modifier: Modifier = Modifier,
     interaction: Modifier = Modifier,
@@ -120,19 +128,26 @@ fun PresetPill(
         border = BorderStroke(1.dp, if (active) AppColors.goldBorder else AppColors.surfaceVariant),
         modifier = modifier.height(30.dp),
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
+        val ink = if (active) AppColors.gold else Color.White
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
             modifier = Modifier
                 .clip(shape)
                 .then(interaction)
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = 12.dp)
+                .fillMaxHeight(),
         ) {
+            if (name.isBlank()) {
+                AppIcon(AppIcons.MusicNote, contentDescription = null, tint = ink, modifier = Modifier.size(13.dp))
+            }
             Text(
-                text = label,
-                color = if (active) AppColors.gold else Color.White,
+                text = name.ifBlank { "$bpm" },
+                color = ink,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
                 fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+                modifier = if (name.isBlank()) Modifier.semantics { contentDescription = "$bpm BPM" } else Modifier,
             )
         }
     }

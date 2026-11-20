@@ -3,7 +3,6 @@ package com.example.metrognome.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,14 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.example.metrognome.ui.components.AppCard
-import com.example.metrognome.ui.components.AppFilterChip
 import com.example.metrognome.ui.components.AppSwitch
-import com.example.metrognome.ui.components.CHIP_ROW_GAP
 import com.example.metrognome.ui.components.CardGap
 import com.example.metrognome.ui.components.CardHeader
 import com.example.metrognome.ui.components.GoldSlider
 import com.example.metrognome.ui.components.tapDelight
-import com.example.metrognome.ui.components.PremiumChip
 import com.example.metrognome.ui.components.TimeSignaturePicker
 import com.example.metrognome.theory.Meter
 import com.example.metrognome.theory.MeterTheory
@@ -53,9 +49,6 @@ import com.example.metrognome.debug.settings.DevToolsSection
 import com.example.metrognome.dev.DevTapTarget
 import com.example.metrognome.ui.components.AdBannerView
 import com.example.metrognome.ui.overlays.UnlockCelebrationOverlay
-import com.example.metrognome.billing.PremiumSoundDef
-import com.example.metrognome.billing.CLICK_SOUNDS
-import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
 import com.example.metrognome.ui.overlays.ItemPreviewCanvas
 import com.example.metrognome.ui.overlays.MicCheckOverlay
 import com.example.metrognome.ui.components.MicOptIn
@@ -64,7 +57,6 @@ import com.example.metrognome.ui.components.metro_items.METRO_ITEM_REGISTRY
 import com.example.metrognome.billing.PurchasableItemDef
 import com.example.metrognome.billing.PURCHASABLE_ITEM_REGISTRY
 import com.example.metrognome.ui.components.OwnedBadge
-import com.example.metrognome.ui.components.instruments.InstrumentAffinityRow
 import com.example.metrognome.ui.dialogs.GrooveCheckRecalibrateDialog
 import com.example.metrognome.notifications.NotificationPermissionState
 import com.example.metrognome.ui.components.GoldButton
@@ -90,7 +82,6 @@ fun SettingsScreen(
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
     val timeSigDenom by vm.timeSigDenom.collectAsStateWithLifecycle()
     val accentBeats by vm.accentBeats.collectAsStateWithLifecycle()
-    val soundType by vm.soundType.collectAsStateWithLifecycle()
     val volume by vm.volume.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
     var isDevMode by remember { mutableStateOf(DevEasterEgg.isDevModeActive(context)) }
@@ -123,15 +114,12 @@ fun SettingsScreen(
     // The failed-purchase toast is raised app-wide in MetroGnomeApp, not here: the Tuner
     // sells drone voices too, and a failure started from there must still be seen.
 
-    val purchasedSoundIds by vm.purchasedSoundIds.collectAsStateWithLifecycle()
-
     val purchasedItemProductIds by vm.purchasedItemProductIds.collectAsStateWithLifecycle()
     val itemPrices by vm.itemPrices.collectAsStateWithLifecycle()
     val availableItemProductIds by vm.availableItemProductIds.collectAsStateWithLifecycle()
     val activeItemIds by vm.activeItemIds.collectAsStateWithLifecycle()
 
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
-    var dialogSoundDef by remember { mutableStateOf<PremiumSoundDef?>(null) }
     var dialogItemDef  by remember { mutableStateOf<PurchasableItemDef?>(null) }
 
 
@@ -198,8 +186,7 @@ fun SettingsScreen(
                 // Rhythm Game all use the result; there is no per-feature toggle. Turning it on
                 // requires a passing self-test — if the device is not calibrated yet, the check
                 // runs first and the toggle reflects the outcome (so the X / a fail leaves it
-                // off). Kept first under Sound so it's seen before the click-sound chips rather
-                // than after, since mic mode overrides the effective sound type when active.
+                // off). The click voices themselves live on the sound stage (the Home pill).
                 MicOptIn(
                     // ANDed with live permission: if the OS grant is gone (stale post-reinstall
                     // state) the switch reads as off, so the "permission required" copy and the
@@ -227,40 +214,6 @@ fun SettingsScreen(
                 )
 
                 Spacer(Modifier.height(10.dp))
-
-                // Sound type chips, with the instrument-affinity nudge inline in the heading row:
-                // the instruments the selected sound suits glow gold, the rest stay dim.
-                SettingsRow(
-                    label = "Click Sound",
-                    trailing = { InstrumentAffinityRow(soundType = soundType) },
-                    trailingFillWidth = true,
-                    trailingSpacing = 20.dp,
-                ) {
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(CHIP_ROW_GAP),
-                    ) {
-                        CLICK_SOUNDS.filterNot { it.isPremium }.forEach { sound ->
-                            AppFilterChip(
-                                selected = sound.index == soundType,
-                                onClick = { vm.setSoundType(sound.index, "settings") },
-                                label = sound.displayName,
-                            )
-                        }
-                        // Premium sounds — one chip per registry entry
-                        PREMIUM_SOUND_REGISTRY.forEach { def ->
-                            val owned = def.productId in purchasedSoundIds
-                            PremiumChip(
-                                selected = soundType == def.soundTypeIndex,
-                                label = def.displayName,
-                                onClick = {
-                                    if (owned) vm.setSoundType(def.soundTypeIndex, "settings")
-                                    else dialogSoundDef = def
-                                },
-                            )
-                        }
-                    }
-                }
 
                 // Volume slider
                 SettingsSliderRow(
@@ -418,17 +371,6 @@ fun SettingsScreen(
                 onDismiss = { dialogItemDef = null }
             )
         }
-    }
-
-    dialogSoundDef?.let { def ->
-        // The sound stage, opened on the tapped voice: the same screen the Home pill opens,
-        // so a click is browsed, heard and bought in one place.
-        com.example.metrognome.ui.sounds.MetronomeSoundStage(
-            vm = vm,
-            source = "settings",
-            onClose = { dialogSoundDef = null },
-            focusSoundIndex = def.soundTypeIndex,
-        )
     }
 
     unlockQueue.firstOrNull()?.let { entry ->
@@ -650,8 +592,6 @@ private fun SettingsSliderRow(
 private fun SettingsRow(
     label: String,
     trailing: (@Composable () -> Unit)? = null,
-    trailingFillWidth: Boolean = false,
-    trailingSpacing: Dp = 10.dp,
     content: @Composable () -> Unit,
 ) {
     Column(modifier = Modifier.padding(bottom = 14.dp)) {
@@ -664,12 +604,8 @@ private fun SettingsRow(
                 modifier = Modifier.padding(bottom = 8.dp),
             ) {
                 Text(label, color = AppColors.textPrimary, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.width(trailingSpacing))
-                if (trailingFillWidth) {
-                    Box(Modifier.weight(1f)) { trailing() }
-                } else {
-                    trailing()
-                }
+                Spacer(Modifier.width(10.dp))
+                trailing()
             }
         }
         content()

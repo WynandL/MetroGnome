@@ -5,8 +5,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.withTransform
 import com.example.metrognome.ui.components.metro_items.MetroItem
 import kotlin.math.sin
@@ -14,10 +14,11 @@ import kotlin.math.sin
 /**
  * A crescent moon that rises in the upper sky whenever Metro plays late.
  *
- * Drawn as a dark base disc (the full moon silhouette) with a gold disc clipped
- * to the moon boundary on top. The clip ensures no gold overflows the moon circle,
- * so both the outer lit limb and the inner terminator are arcs of the same radius —
- * a geometrically consistent crescent with no occluder disc floating inside.
+ * Only the lit crescent is drawn: the moon disc with the night-side disc cut out of it
+ * (`PathOperation.Difference`), filled once with the gold gradient. The night side used to be
+ * painted as a dark navy disc, which read as a second, darker moon against the sky; since
+ * 2026-11-20 the sky shows through it instead. One path, so the crescent has a single
+ * anti-aliased edge, and its outer limb and inner terminator are both true circular arcs.
  *
  * Stars: five 4-pointed diamond stars with secondary diagonal rays, glow halos,
  * and independent twinkle phases. Three tones (warm gold, blue-white, faint silver)
@@ -77,7 +78,6 @@ object MoonAndStars : MetroItem {
     // ── Palette ───────────────────────────────────────────────────────────────
     private val moonGold   = Color(0xFFFFDB4D)
     private val moonYellow = Color(0xFFFFF0A0)
-    private val moonShadow = Color(0xFF1A1050)
     private val glowColor  = Color(0x33FFF0A0)
     // Star tones — warm = giant/nearby star, cool = blue-white main sequence, faint = distant
     private val starWarm   = Color(0xFFFFF0C0)   // warm pale gold
@@ -91,37 +91,37 @@ object MoonAndStars : MetroItem {
         val my   = mc.y
         val moonR = 0.90f * u
 
-        // Soft ambient glow halo
+        // Soft ambient glow halo, centred a little toward the lit limb now that the night
+        // side is open sky.
+        val glowC = Offset(mx - 0.25f * u, my)
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(glowColor, Color.Transparent),
-                center = Offset(mx, my),
+                center = glowC,
                 radius = u * 2.2f
             ),
             radius = u * 2.2f,
-            center = Offset(mx, my)
+            center = glowC
         )
 
-        // All moon drawing inside one clipPath so the boundary has a single anti-aliased edge.
-        // Gold disc is drawn oversized (fills past the clip) to avoid any fringe at the edge.
-        clipPath(Path().apply {
-            addOval(Rect(mx - moonR, my - moonR, mx + moonR, my + moonR))
-        }) {
-            // Gold fills the entire moon disc
-            drawCircle(moonGold, radius = moonR * 1.1f, center = Offset(mx, my))
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(moonYellow, moonGold),
-                    center = Offset(mx - 0.20f * u, my - 0.20f * u),
-                    radius = 0.60f * u
-                ),
-                radius = moonR * 1.1f,
-                center = Offset(mx, my)
+        // The crescent alone: the moon disc less the night-side disc, so the sky shows through.
+        val shadowR = u * 0.96f
+        val shadowC = Offset(mx + 0.55f * u, my - 0.10f * u)
+        val crescent = Path().apply {
+            op(
+                Path().apply { addOval(Rect(mx - moonR, my - moonR, mx + moonR, my + moonR)) },
+                Path().apply { addOval(Rect(shadowC.x - shadowR, shadowC.y - shadowR, shadowC.x + shadowR, shadowC.y + shadowR)) },
+                PathOperation.Difference,
             )
-            // Dark occluder covers the night side. Slightly larger than moonR so anti-aliasing
-            // at the intersection points can't let gold peek through; clip prevents any overflow.
-            drawCircle(moonShadow, radius = u * 0.96f, center = Offset(mx + 0.55f * u, my - 0.10f * u))
         }
+        drawPath(
+            crescent,
+            brush = Brush.radialGradient(
+                colors = listOf(moonYellow, moonGold),
+                center = Offset(mx - 0.20f * u, my - 0.20f * u),
+                radius = 0.60f * u,
+            ),
+        )
 
         // Stars — screen-relative, independent twinkle phases, varied tone
         // The field moves with the moon (each y is its old height plus the moon's drop).

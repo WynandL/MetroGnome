@@ -219,7 +219,8 @@ fun SoundStage(
     ) {
         Canvas(Modifier.fillMaxSize()) {
             val dp = 1.dp.toPx()
-            drawNightSky(stars, size.width, size.height, dp, t, glow.value)
+            // The moon sits lower than on the Rhythm lane, clear of the header's hint line.
+            drawNightSky(stars, size.width, size.height, dp, t, glow.value, moonY = 0.165f)
             drawPineForest(size.width, size.height)
         }
 
@@ -323,12 +324,22 @@ private fun SoundCarousel(
             val c = Offset(size.width / 2f, size.height / 2f)
             val r = MEDALLION.toPx() / 2f * 0.74f
             val top = -size.height * 1.1f
+            val floorY = c.y + r * 1.05f
+            val floor = androidx.compose.ui.geometry.Rect(
+                c.x - r * 1.3f, floorY - r * 0.22f, c.x + r * 1.3f, floorY + r * 0.22f,
+            )
+            // The beam takes in the whole floor oval, so the pool of light is one shade; ending
+            // it at the oval's middle lit only the back half.
             val beam = androidx.compose.ui.graphics.Path().apply {
                 moveTo(c.x - r * 0.22f, top)
                 lineTo(c.x + r * 0.22f, top)
-                lineTo(c.x + r * 1.25f, c.y + r * 1.05f)
-                lineTo(c.x - r * 1.25f, c.y + r * 1.05f)
+                lineTo(c.x + r * 1.25f, floorY)
+                lineTo(c.x - r * 1.25f, floorY)
                 close()
+            }.let { trapezoid ->
+                androidx.compose.ui.graphics.Path().apply {
+                    op(trapezoid, androidx.compose.ui.graphics.Path().apply { addOval(floor) }, androidx.compose.ui.graphics.PathOperation.Union)
+                }
             }
             drawPath(
                 beam,
@@ -337,7 +348,6 @@ private fun SoundCarousel(
                     startY = top, endY = c.y + r,
                 ),
             )
-            val floorY = c.y + r * 1.05f
             drawOval(
                 Brush.radialGradient(
                     listOf(AppColors.gold.copy(alpha = 0.22f + 0.10f * glow), Color.Transparent),

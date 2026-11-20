@@ -10,10 +10,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Shows ONLY the instruments the given [soundType] is ideal for, all lit gold. Unlike
- * [InstrumentAffinityRow] (which shows the full set with the matches highlighted), this is a
- * compact "great for" badge cluster for contexts where the sound cannot be auditioned in the
- * row, for example the premium paywall dialog of an unowned sound. See [InstrumentAffinity].
+ * Shows ONLY the instruments the given [soundType] is ideal for, all lit gold: a compact
+ * "great for" badge cluster, shown on the sound stage's card. See [InstrumentAffinity].
  */
 @Composable
 fun InstrumentAffinityBadges(

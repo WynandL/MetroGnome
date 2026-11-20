@@ -165,11 +165,11 @@ object AppIcons {
     )
 
     /**
-     * Kalimba: the board with five tines, the middle one longest, and its sound hole. Paths:
+     * Kalimba: the board with five tines rising from its curved top edge, the middle one longest, and its sound hole. Paths:
      * board, five tines, hole (faint).
      */
     val SoundKalimba = AppGlyph(
-        listOf("M5 20.5 3.5 9Q12 5.5 20.5 9L19 20.5Z", "M8.5 7.6V13", "M10.5 7.1V14.5", "M12 6.9V15", "M13.5 7.1V14.5", "M15.5 7.6V13", "M10.8 17.7a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0Z"),
+        listOf("M5 20.5 3.5 9Q12 5.5 20.5 9L19 20.5Z", "M8.5 7.55V13", "M10.5 7.3V14.5", "M12 7.25V15", "M13.5 7.3V14.5", "M15.5 7.55V13", "M10.8 17.7a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0Z"),
         filledPaths = setOf(), faintPaths = setOf(6),
     )
 

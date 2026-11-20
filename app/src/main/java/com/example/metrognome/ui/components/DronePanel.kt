@@ -30,6 +30,10 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.platform.LocalDensity
+import com.example.metrognome.audio.NoteNames
 import androidx.compose.ui.text.style.TextAlign
 import kotlin.math.roundToInt
 import androidx.compose.ui.tooling.preview.Preview
@@ -49,8 +53,8 @@ import java.util.Locale
  * every combination.
  *
  * The card always shows what is needed to sound a note: the keyboard, the octave, the voice
- * pill and the play key. The pill names the voice in use (timbre, and the blend unless it is
- * the plain Root) with the timbre's mark, and opens the drone's sound stage, where every
+ * pill and the play key, on one row whatever the voice (2026-11-20). The pill names the voice
+ * in use on two lines, timbre over blend, with the timbre's mark, and opens the drone's sound stage, where every
  * timbre and blend is browsed, heard and bought (2026-11-19; it replaced two chip rows and a
  * purchase dialog). Only the volume lives behind the chevron, and the header says what it is
  * set to so the hidden control is never a mystery. [expanded] is hoisted because the caller
@@ -131,13 +135,27 @@ fun DronePanel(
 
             Spacer(Modifier.height(12.dp))
 
-            // ── Octave stepper + note readout + play key ──────────────────────────
+            // ── Octave stepper + note readout + voice pill + play key ─────────────
+            // The steppers, readout and play key never shrink; the pill takes what is left.
+            // The readout is as wide as the widest note and Hz it can show at this font scale
+            // (measured, not guessed), so the pill never moves when a key is tapped, and no
+            // wider: a flat 70 dp left a 360 dp phone's pill room for "Pure" and little else.
+            val measurer = rememberTextMeasurer()
+            val density = LocalDensity.current
+            val readoutWidth = remember(referenceHz, density) {
+                val note = listOf("C#5", "D#5", "F#5", "G#5", "A#5").maxOf {
+                    measurer.measure(it, TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Black)).size.width
+                }
+                val topHz = String.format(Locale.US, "%.1f Hz", NoteNames.frequencyOf(DroneState.MAX_MIDI, referenceHz))
+                val hz = measurer.measure(topHz, TextStyle(fontSize = 9.sp)).size.width
+                with(density) { maxOf(note, hz).toDp() + 4.dp }
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.alpha(if (state.canOctaveDown) 1f else 0.3f)) {
                     CircleButton("−", onClick = { onShiftOctave(-1) }, contentDescription = "Octave down", enabled = state.canOctaveDown)
                 }
-                Spacer(Modifier.width(10.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(70.dp)) {
+                Spacer(Modifier.width(6.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(readoutWidth)) {
                     Text(
                         state.noteLabel,
                         color = if (state.playing) AppColors.gold else AppColors.textPrimary,
@@ -148,19 +166,21 @@ fun DronePanel(
                         String.format(Locale.US, "%.1f Hz", state.frequencyHz(referenceHz)),
                         color = AppColors.textDim,
                         fontSize = 9.sp, lineHeight = 12.sp,
+                        maxLines = 1, softWrap = false,
                     )
                 }
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(6.dp))
                 Box(modifier = Modifier.alpha(if (state.canOctaveUp) 1f else 0.3f)) {
                     CircleButton("+", onClick = { onShiftOctave(1) }, contentDescription = "Octave up", enabled = state.canOctaveUp)
                 }
 
                 // The voice in use, opening the drone's sound stage: the Home sound pill's
-                // twin. Takes whatever width the row leaves and shortens its label to fit.
-                Box(Modifier.weight(1f).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+                // twin, on two lines (timbre over blend) so both fit in the longer word's
+                // width and inside the play key's height. Takes whatever width the row leaves.
+                Box(Modifier.weight(1f).padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
                     GoldPill(
-                        text = state.timbre.displayName +
-                            if (state.blend == DroneBlend.ROOT) "" else " · ${state.blend.displayName}",
+                        text = state.timbre.displayName,
+                        secondaryText = state.blend.displayName,
                         leadingIcon = com.example.metrognome.ui.sounds.droneGlyphFor(state.timbre),
                         onClick = onOpenVoices,
                         modifier = Modifier.semantics {

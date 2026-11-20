@@ -38,14 +38,12 @@ fun SavePresetDialog(
     onSave: (name: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // Starts empty: a blank name saves as "♩ <bpm>" (BpmPresetsManager), shown live in the preview
-    // below. Pre-filling "♩ 120" put the note glyph in the field, where the text font draws it as a dot.
+    // Starts empty: a blank name saves an unnamed preset, which the pill (and the live preview
+    // below) draws as the Gnome tab's note mark beside the BPM.
     var name by remember { mutableStateOf("") }
     val trimmed = name.trim()
     val isDuplicate = trimmed.isNotEmpty() &&
             existingNames.any { it.equals(trimmed, ignoreCase = true) }
-    // Mirrors BpmPresetsManager.savePreset's fallback when the name is blank.
-    val previewLabel = trimmed.ifEmpty { "♩ $bpm" }
 
     // Scrollable: with the keyboard up, the dialog's window shrinks to what is left above it,
     // and the fixed column used to push the Save button off the bottom (UI audit U13).
@@ -87,7 +85,7 @@ fun SavePresetDialog(
         // ── Live chip preview ───────────────────────────────────────
         SectionLabel("HOW IT'LL LOOK", color = AppColors.goldSoft)
         Spacer(Modifier.height(8.dp))
-        PresetPill(label = previewLabel, active = true)
+        PresetPill(name = trimmed, bpm = bpm, active = true)
 
         Spacer(Modifier.height(18.dp))
 

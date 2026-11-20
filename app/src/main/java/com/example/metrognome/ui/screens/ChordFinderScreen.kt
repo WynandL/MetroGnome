@@ -1,5 +1,19 @@
 package com.example.metrognome.ui.screens
 
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.Canvas
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.zIndex
+import com.example.metrognome.ui.components.Particle
+import com.example.metrognome.ui.components.drawParticles
+import kotlin.random.Random
 import android.Manifest
 import com.example.metrognome.ui.theme.AppRadius
 import com.example.metrognome.ui.components.AppIcons
@@ -346,6 +360,12 @@ internal fun ChordFinderContent(
             Spacer(Modifier.height(16.dp))
             ChordHero(reading = reading)
 
+            // The next step (or the other readings) right under the result it is about. Its
+            // height comes from the font scale, never from the tip, so a longer tip cannot
+            // move the page below it.
+            Spacer(Modifier.height(SECTION_GAP))
+            TipStrip(reading = reading, engine = engine)
+
             Spacer(Modifier.height(SECTION_GAP))
             InstrumentCard(
                 instrument = instrument,
@@ -358,6 +378,16 @@ internal fun ChordFinderContent(
                 onToggleNote = onToggleNote,
                 savedScrollDp = savedScrollDp,
                 onScrollSettled = onScrollSettled,
+            )
+
+            Spacer(Modifier.height(SECTION_GAP))
+            NotesStrip(
+                notes = sortedNotes,
+                spell = ::spell,
+                octaveOf = ::octave,
+                degreeOf = { degreeLabels[it] ?: "" },
+                onRemove = onRemoveNote,
+                onClear = onClear,
             )
 
             Spacer(Modifier.height(SECTION_GAP))
@@ -375,15 +405,6 @@ internal fun ChordFinderContent(
                 onRequestMic = onRequestMic,
             )
 
-            Spacer(Modifier.height(SECTION_GAP))
-            NotesStrip(
-                notes = sortedNotes,
-                spell = ::spell,
-                octaveOf = ::octave,
-                degreeOf = { degreeLabels[it] ?: "" },
-                onRemove = onRemoveNote,
-                onClear = onClear,
-            )
 
             Spacer(Modifier.height(SECTION_GAP))
             HearStrip(
@@ -394,8 +415,6 @@ internal fun ChordFinderContent(
                 onSetPace = onSetPace,
             )
 
-            Spacer(Modifier.height(SECTION_GAP))
-            TipStrip(reading = reading, engine = engine)
             Spacer(Modifier.height(24.dp))
         }
 
@@ -767,6 +786,27 @@ private fun MicAskRow(permanentlyDenied: Boolean, onClick: () -> Unit) {
 /** One chip row, always this tall; more chips than fit scroll sideways. */
 private val NOTES_STRIP_HEIGHT = 32.dp
 
+/** A burst of the About card's sparks thrown from a note chip as it arrives. */
+private class NoteBurst(val midi: Int, val startNs: Long, val particles: List<Particle>)
+
+private const val NOTE_BURST_SECONDS = 1.3f
+
+private fun noteBurst(midi: Int, startNs: Long): NoteBurst {
+    val r = Random(startNs xor midi.toLong())
+    return NoteBurst(midi, startNs, List(12) { Particle.random(r, finale = false) })
+}
+
+/**
+ * The collected notes, directly under the instrument they were played or tapped on, in a
+ * card of their own so the empty state reads as a place notes will go rather than a gap
+ * (2026-11-20; it was a bare row under the Listening card). One fixed height whatever it
+ * holds, and Clear always present, dimmed with nothing to clear, so nothing below moves.
+ *
+ * Each note that arrives (tapped or heard) throws a small fountain of the About card's
+ * sparks and notes from its chip, drawn by the shared [drawParticles]. Notes already there
+ * when the page opens do not, nor does a removal. The burst is drawn over the page, above
+ * the cards either side, so a spark falling past the card's edge is not cut off.
+ */
 @Composable
 private fun NotesStrip(
     notes: List<Int>,
@@ -776,50 +816,110 @@ private fun NotesStrip(
     onRemove: (Int) -> Unit,
     onClear: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().height(NOTES_STRIP_HEIGHT),
-    ) {
-        if (notes.isEmpty()) {
-            Text(
-                "No notes yet",
-                color = AppColors.textDim,
-                fontSize = 12.sp, lineHeight = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f).padding(start = 4.dp),
-            )
-        } else {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
-            ) {
-                notes.forEach { midi ->
-                    NoteChip(
-                        name = spell(midi),
-                        octave = octaveOf(midi),
-                        degree = degreeOf(midi),
-                        onRemove = { onRemove(midi) },
-                    )
-                }
+    // Chip centres in the strip's own coordinates, read at draw time, so a burst follows
+    // its chip as the sorted row shifts to make room for it.
+    val centres = remember { mutableStateMapOf<Int, Offset>() }
+    var stripCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val bursts = remember { mutableStateListOf<NoteBurst>() }
+    var frameNs by remember { mutableLongStateOf(0L) }
+    val known = remember { arrayOf<Set<Int>?>(null) }
+
+    LaunchedEffect(notes) {
+        val now = notes.toSet()
+        val before = known[0]
+        known[0] = now
+        if (before == null) return@LaunchedEffect   // the notes the page opened with
+        val added = now - before
+        if (added.isEmpty()) return@LaunchedEffect
+        val t = withFrameNanos { it }
+        added.forEach { bursts += noteBurst(it, t) }
+    }
+    LaunchedEffect(bursts.isNotEmpty()) {
+        while (bursts.isNotEmpty()) {
+            withFrameNanos { t ->
+                frameNs = t
+                bursts.removeAll { (t - it.startNs) / 1e9f > NOTE_BURST_SECONDS }
             }
         }
-        Spacer(Modifier.width(10.dp))
-        // Always present, dimmed when there is nothing to clear, so the row never changes shape.
-        Text(
-            "Clear",
-            color = AppColors.textMuted,
-            fontSize = 12.sp, lineHeight = 16.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .alpha(if (notes.isEmpty()) 0.35f else 1f)
-                .clickable(
-                    enabled = notes.isNotEmpty(),
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onClear,
-                ),
-        )
+    }
+
+    Box(Modifier.zIndex(1f)) {
+        AppCard(
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
+            modifier = Modifier.onGloballyPositioned { stripCoords = it },
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().height(NOTES_STRIP_HEIGHT),
+            ) {
+                if (notes.isEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        AppIcon(
+                            AppIcons.MusicNote, contentDescription = null,
+                            tint = AppColors.textDim, modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "No notes yet",
+                            color = AppColors.textDim,
+                            fontSize = 12.sp, lineHeight = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                } else {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                    ) {
+                        notes.forEach { midi ->
+                            key(midi) {
+                                NoteChip(
+                                    name = spell(midi),
+                                    octave = octaveOf(midi),
+                                    degree = degreeOf(midi),
+                                    onRemove = { onRemove(midi) },
+                                    modifier = Modifier.onGloballyPositioned { c ->
+                                        val strip = stripCoords ?: return@onGloballyPositioned
+                                        if (strip.isAttached && c.isAttached) {
+                                            centres[midi] = strip.localPositionOf(
+                                                c, Offset(c.size.width / 2f, c.size.height / 2f),
+                                            )
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.width(10.dp))
+                // Always present, dimmed when there is nothing to clear, so the row never changes shape.
+                Text(
+                    "Clear",
+                    color = AppColors.textMuted,
+                    fontSize = 12.sp, lineHeight = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .alpha(if (notes.isEmpty()) 0.35f else 1f)
+                        .clickable(
+                            enabled = notes.isNotEmpty(),
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onClear,
+                        ),
+                )
+            }
+        }
+        Canvas(Modifier.matchParentSize()) {
+            // Read the frame clock before anything can return, or the canvas never redraws.
+            val now = frameNs
+            bursts.forEach { b ->
+                val c = centres[b.midi] ?: return@forEach
+                // A chip scrolled out of the row bursts from the row's nearer end.
+                val origin = Offset(c.x.coerceIn(0f, size.width), c.y)
+                drawParticles(b.particles, origin, ((now - b.startNs) / 1e9f).coerceAtLeast(0f))
+            }
+        }
     }
 }
 
@@ -835,11 +935,12 @@ private fun NoteChip(
     octave: Int,
     degree: String,
     onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     AppInset(
         onClick = onRemove,
         shape = AppRadius.Chip,
-        modifier = Modifier
+        modifier = modifier
             .height(NOTES_STRIP_HEIGHT)
             .semantics { contentDescription = "$name$octave, $degree. Tap to remove" },
     ) {
@@ -969,12 +1070,13 @@ private val HEAR_KEY_SIZE = 52.dp
  * grey out with the key, because lit pills beside a dim key read as the thing to tap to
  * start the sound, which the dev found confusing on the first build.
  *
- * Laid out as the Listening card's twin (2026-09-21): the same header row, whose value is
- * "Sounding" in gold while it plays and nothing otherwise (the pace is the selected chip), the pace chips sharing a row with the
- * key and centred on it, and a pinned two-line caption. Two earlier layouts failed: label,
- * chips and key on one line ellipsed the subtitle on narrow phones ("Arpeggio, then
- * tog..."), and chips stacked under a two-line label read as squashed once the card above
- * it had proper room. Every slot is pinned; only colours and words change.
+ * Two rows (2026-11-20; it had a third, a pinned two-line caption, which made the card tall
+ * for one key and two chips): the header carries the caption on its right ("Bass up, then all
+ * together", "Add notes to hear them", or "Sounding" in gold while it plays), kept short
+ * enough to sit beside "HEAR IT" on a 360 dp phone at 1.3x fonts; below it the pace chips
+ * share a row with the key. Earlier layouts that failed: label, chips and key on one line
+ * ellipsed the subtitle on narrow phones ("Arpeggio, then tog..."), and chips stacked under
+ * a two-line label read as squashed. Every slot is pinned; only colours and words change.
  */
 @Composable
 private fun HearStrip(
@@ -985,23 +1087,33 @@ private fun HearStrip(
     onSetPace: (ChordPlaybackPace) -> Unit,
 ) {
     AppCard {
-            // Header: label left, the pace (or "Sounding") right, as the Listening card does.
+            // Header: label left, what the key does (or "Sounding") right.
             PinnedSlot(lineHeight = 18.sp) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     CardHeaderLabel("HEAR IT")
-                    Spacer(Modifier.weight(1f))
-                    // Only what the chips do not already say: the selected pace is visible
-                    // below, so the value is "Sounding" while it plays and nothing otherwise.
+                    Spacer(Modifier.width(12.dp))
                     Text(
-                        if (playing) "Sounding" else "",
-                        color = AppColors.gold,
-                        fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold,
-                        maxLines = 1,
+                        when {
+                            playing -> "Sounding"
+                            hasNotes -> "Bass up, then all together"
+                            else -> "Add notes to hear them"
+                        },
+                        color = when {
+                            playing -> AppColors.gold
+                            hasNotes -> AppColors.textMuted
+                            else -> AppColors.textDim
+                        },
+                        fontSize = if (playing) 14.sp else 11.sp,
+                        lineHeight = 18.sp,
+                        fontWeight = if (playing) FontWeight.Bold else FontWeight.Normal,
+                        textAlign = TextAlign.End,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
 
             // The pace chips share the row with the key and centre on it. Greyed out and
             // inert with nothing to hear, so they cannot be mistaken for the play key.
@@ -1028,19 +1140,6 @@ private fun HearStrip(
                     size = HEAR_KEY_SIZE,
                     playDescription = "Hear the chord",
                     stopDescription = "Stop the chord",
-                )
-            }
-
-            Spacer(Modifier.height(10.dp))
-
-            PinnedSlot(lineHeight = 15.sp, lines = 2, alignment = Alignment.TopStart) {
-                Text(
-                    if (hasNotes) "Plays the notes one by one from the bass, then all together."
-                    else "Add notes to hear them.",
-                    color = if (hasNotes) AppColors.textMuted else AppColors.textDim,
-                    fontSize = 11.sp, lineHeight = 15.sp,
-                    minLines = 2, maxLines = 2,
-                    style = PinnedLines,
                 )
             }
         }
@@ -1084,6 +1183,9 @@ private fun tipFor(reading: ChordReading, engine: ChordEngine): String {
 
 @Composable
 private fun TipStrip(reading: ChordReading, engine: ChordEngine) {
+    // Two lines of tip at the phone's font scale, never less than the icon's 30 dp: a flat
+    // 30 dp cut the second line off at 1.3x fonts.
+    val rowHeight = with(LocalDensity.current) { maxOf(TIP_ROW_HEIGHT, (15.sp * 2).toDp()) }
     AppCard(contentPadding = PaddingValues(0.dp)) {
         Crossfade(targetState = reading, animationSpec = tween(220), label = "chordTip") { r ->
             val alternatives = (r as? ChordReading.Identified)?.alternatives.orEmpty()
@@ -1094,7 +1196,7 @@ private fun TipStrip(reading: ChordReading, engine: ChordEngine) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 14.dp, vertical = 8.dp)
-                    .height(TIP_ROW_HEIGHT),
+                    .height(rowHeight),
             ) {
                 // Bare gold glyph in the same 26 dp slot as the mic strip's icon: the app's
                 // strips carry their icon without a disc behind it, so this one does too.
@@ -1125,8 +1227,10 @@ private fun TipStrip(reading: ChordReading, engine: ChordEngine) {
                         tipFor(r, engine),
                         color = AppColors.textSecondary,
                         fontSize = 11.sp, lineHeight = 15.sp,
+                        // Literal line height, so two lines are exactly the row's 2 x 15 sp.
+                        style = PinnedLines,
                         maxLines = 2,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).wrapContentHeight(unbounded = true),
                     )
                 }
             }

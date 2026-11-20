@@ -305,10 +305,14 @@ fun MetronomeScreen(
                         .padding(start = 12.dp, top = 12.dp),
                 ) {
                     com.example.metrognome.ui.components.GoldPill(
-                        text        = "$gnoteCount ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME}",
+                        // The mark says Gnotes; the word ellipsized the count once it reached
+                        // the thousands, even on a wide phone.
+                        text        = "$gnoteCount",
                         leadingIcon = AppIcons.Gnote,
                         onClick     = { showGnotesInfo = true },
-                        modifier    = Modifier.widthIn(max = pillMaxWidth),
+                        modifier    = Modifier
+                            .widthIn(max = pillMaxWidth)
+                            .semantics { contentDescription = "$gnoteCount ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME}" },
                     )
                 }
             }
@@ -540,7 +544,7 @@ fun MetronomeScreen(
     if (showSavePresetDialog) {
         SavePresetDialog(
             bpm = bpm,
-            existingNames = presets.map { it.name }.toSet(),
+            existingNames = presets.map { it.name }.filter { it.isNotBlank() }.toSet(),
             onSave = { name ->
                 vm.savePreset(name, bpm)
                 showSavePresetDialog = false

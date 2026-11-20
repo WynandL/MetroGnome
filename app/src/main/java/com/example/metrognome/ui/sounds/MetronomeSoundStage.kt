@@ -22,9 +22,8 @@ import com.example.metrognome.viewmodel.MetronomeViewModel
 /**
  * The sound stage for the metronome's click voices: the one place that knows how
  * [MetronomeViewModel] and the click list ([CLICK_SOUNDS]) map onto [SoundStageOverlay].
- * Opened from the Home pill ([source] "home") and from a premium chip in Settings
- * ("settings", focused on that chip's sound): one way to browse, hear and buy a click, so
- * the two places cannot drift apart. Settings' old click paywall dialog was removed for it.
+ * Opened from the Home pill ([source] "home"): the one way to browse, hear, choose and buy a
+ * click.
  *
  * Rules it inherits rather than restates: an audition replaces a running click and never
  * layers over it (MetronomeEngine.playPreview), and is refused during a mic-scored session
@@ -36,7 +35,6 @@ fun MetronomeSoundStage(
     vm: MetronomeViewModel,
     source: String,
     onClose: () -> Unit,
-    focusSoundIndex: Int? = null,
 ) {
     val context = LocalContext.current
     val activity = LocalActivity.current
@@ -111,6 +109,5 @@ fun MetronomeSoundStage(
         onRestore = { vm.restorePurchases() },
         onClose = close,
         beats = vm.beatEvents,
-        initialKey = focusSoundIndex?.let { clickSoundFor(it).slug },
     )
 }

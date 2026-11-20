@@ -19,7 +19,7 @@ import kotlin.math.sin
 
 /*
  * The app's star and sparkle, drawn. A "★" or "✨" typed into a string is drawn by whatever
- * font the phone falls back to (the "♩" in a text field came out as a dot), so anything that
+ * font the phone falls back to (a quarter-note character in a text field came out as a dot), so anything that
  * means "star" in the UI is one of these: the premium mark on a chip, the rhythm game's rating.
  */
 

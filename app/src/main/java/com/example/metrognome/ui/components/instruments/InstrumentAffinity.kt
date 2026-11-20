@@ -2,13 +2,13 @@ package com.example.metrognome.ui.components.instruments
 
 /**
  * Single source of truth mapping each metronome sound (by soundType index, as defined in
- * MetronomeEngine) to the instruments it is ideally suited for. Drives the affinity-icon
- * row in Settings: the matching instruments glow, the rest stay dim.
+ * MetronomeEngine) to the instruments it is ideally suited for. Drives the sound stage's
+ * instrument badges.
  *
  * Affinity is a soft nudge, not a restriction. Any sound works for any instrument. The
  * "Classic" default suits everyone, so it maps to the full set.
  *
- * To extend: add a sound to the map keyed by its soundType index. The row picks it up with
+ * To extend: add a sound to the map keyed by its soundType index. The badges pick it up with
  * no UI changes.
  */
 object InstrumentAffinity {

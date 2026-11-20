@@ -338,7 +338,8 @@ object AnalyticsTracker {
     // ── Sound stage ───────────────────────────────────────────────────────────
 
     /**
-     * The click-sound stage opened. [source] is "home" (the pill) or "settings". Against
+     * The click-sound stage opened. [source] is "home" (the pill; "settings" before 2026-11-20, when Settings'
+     * click chips were removed). Against
      * active users this is the reach of the sounds; against sound_previewed and iap_started
      * per product, it is the funnel the stage exists to fill.
      */

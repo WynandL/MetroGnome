@@ -3,8 +3,10 @@ package com.example.metrognome.ui.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -39,7 +41,8 @@ val PinnedLines = TextStyle(
  * on the same 50 sp line still measure a pixel or two apart, and the card below them
  * shifted by that much between readings. Taking the height from the density instead of
  * the text is what finally pins it; a text that measures a hair taller than its slot
- * simply paints over the edge, which is invisible.
+ * simply paints over the edge, which is invisible (the content is measured unbounded so
+ * it never drops a line to fit).
  */
 @Composable
 fun PinnedSlot(
@@ -52,5 +55,20 @@ fun PinnedSlot(
     Box(
         contentAlignment = alignment,
         modifier = Modifier.fillMaxWidth().height(height),
-    ) { content() }
+    ) {
+        // The content is measured without the slot's height limit. A Text with
+        // `overflow = Ellipsis` drops whole lines to fit a height constraint, and two lines
+        // measure a hair over 2 x lineHeight on some densities, so a two-line caption came out
+        // as one ellipsized line (the drone's Octave blend). Unbounded, it lays out every line
+        // and at most paints a pixel past the slot, which is invisible.
+        Box(
+            contentAlignment = alignment,
+            modifier = Modifier.fillMaxWidth().wrapContentHeight(
+                // The slot's own vertical placement (a TopStart slot stays top-aligned).
+                align = (alignment as? BiasAlignment)?.let { BiasAlignment.Vertical(it.verticalBias) }
+                    ?: Alignment.CenterVertically,
+                unbounded = true,
+            ),
+        ) { content() }
+    }
 }

@@ -109,10 +109,10 @@ CUSTOM = [
      'Crystal Bowl: a singing bowl on its foot, two rings of sound over it. Paths: bowl, foot,\n'
      '     * inner ring (faint), outer ring (faint).'),
     ('SoundKalimba',
-     ['M5 20.5 3.5 9Q12 5.5 20.5 9L19 20.5Z', 'M8.5 7.6V13', 'M10.5 7.1V14.5', 'M12 6.9V15',
-      'M13.5 7.1V14.5', 'M15.5 7.6V13', 'M10.8 17.7a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0Z'],
+     ['M5 20.5 3.5 9Q12 5.5 20.5 9L19 20.5Z', 'M8.5 7.55V13', 'M10.5 7.3V14.5', 'M12 7.25V15',
+      'M13.5 7.3V14.5', 'M15.5 7.55V13', 'M10.8 17.7a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0Z'],
      [], [6],
-     'Kalimba: the board with five tines, the middle one longest, and its sound hole. Paths:\n'
+     'Kalimba: the board with five tines rising from its curved top edge, the middle one longest, and its sound hole. Paths:\n'
      '     * board, five tines, hole (faint).'),
     ('SoundCowbell',
      ['M8 6h8l3 13H5Z', 'M10 6V3.5h4V6', 'M5 19Q12 21.5 19 19', 'M9.5 10.5 8.5 15'],
