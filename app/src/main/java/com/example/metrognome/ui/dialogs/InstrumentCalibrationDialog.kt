@@ -32,7 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ui.overlays.AppWindowDialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.audio.tuner.Tuner
 import com.example.metrognome.ui.components.AppCardDefaults
@@ -72,7 +72,7 @@ fun InstrumentCalibrationDialog(
     val adjective = if (reading.cents < -0.5f || reading.cents > 0.5f)
         "$centsAbs¢ $direction" else "in tune"
 
-    Dialog(
+    AppWindowDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {

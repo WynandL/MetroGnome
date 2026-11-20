@@ -31,7 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
-import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ui.overlays.AppWindowDialog
 import com.example.metrognome.ads.AdEngineConfig
 import com.example.metrognome.ads.AdPlacement
 import androidx.compose.ui.text.font.FontWeight
@@ -182,6 +182,51 @@ fun DevToolsSection(
             { vm.debugClearAdFree() },
             modifier = Modifier.fillMaxWidth(),
             kind = DevButtonKind.DESTRUCTIVE,
+        )
+
+        // ── Ad-free trial ─────────────────────────────────────────────────────
+        Spacer(Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+            DevButton(
+                "Preview Trial Offer",
+                { vm.adFreeTrial.debugPreview(com.example.metrognome.adfree.TrialCard.OFFER) },
+                modifier = Modifier.weight(1f),
+                kind = DevButtonKind.PREVIEW,
+            )
+            DevButton(
+                "Preview Trial Ended",
+                { vm.adFreeTrial.debugPreview(com.example.metrognome.adfree.TrialCard.ENDED) },
+                modifier = Modifier.weight(1f),
+                kind = DevButtonKind.PREVIEW,
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        var trialStatusKey by remember { mutableIntStateOf(0) }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+            DevButton(
+                "Run 2-Min Trial",
+                { vm.adFreeTrial.debugRunShortTrial(); trialStatusKey++ },
+                modifier = Modifier.weight(1f),
+                kind = DevButtonKind.ACTION,
+            )
+            DevButton(
+                "Reset Trial",
+                { vm.adFreeTrial.debugReset(); trialStatusKey++ },
+                modifier = Modifier.weight(1f),
+                kind = DevButtonKind.DESTRUCTIVE,
+            )
+        }
+        val trialActive by vm.adFreeTrial.active.collectAsStateWithLifecycle()
+        val trialStatus = remember(trialStatusKey, trialActive) { vm.adFreeTrial.debugSummary() }
+        Text(
+            "Previews show the real cards and change nothing. Run 2-Min Trial starts a real trial " +
+                "(ads off, countdown under Remove Ads); when it ends, the real \"ads are back\" card " +
+                "comes at the next calm moment. Reset makes this a never-offered install, so the " +
+                "offer appears on its own if the app has been opened on 3+ days. Now: $trialStatus.",
+            color = AppColors.textMuted,
+            fontSize = 9.sp,
+            lineHeight = 12.sp,
+            modifier = Modifier.padding(top = 5.dp),
         )
 
         Spacer(Modifier.height(6.dp))
@@ -617,7 +662,7 @@ private val engagedColor  = AppColors.gold
 
 @Composable
 private fun AdPolicyDialog(onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
+    AppWindowDialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape    = AppRadius.Button,

@@ -26,6 +26,9 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.metrognome.ads.AdManager
+import com.example.metrognome.ui.overlays.AdFreeTrialHost
+import com.example.metrognome.viewmodel.GamePhase
+import com.example.metrognome.viewmodel.TrainerSessionState
 import com.example.metrognome.ads.AdPlacement
 import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.haptics.HapticEngine
@@ -160,6 +163,7 @@ fun MetroGnomeApp(
     val context = LocalContext.current
     val activity = LocalActivity.current
     val adManager     = remember { AdManager(context).also { it.preload() } }
+    adManager.adFreeNow = { metronomeVm.isAdFree.value }
     val reviewManager = remember { AppReviewManager(context) }
     val hapticEngine  = remember { HapticEngine(context) }
 
@@ -207,7 +211,8 @@ fun MetroGnomeApp(
         val landingOnCalmTab = tab != currentTab &&
             (tab == AppTab.TUNER || tab == AppTab.CHORDS || tab == AppTab.SETTINGS)
         currentTab = tab
-        if (landingOnCalmTab && !adManager.recentlyShowedAd()) {
+        // Not in a session that showed an ad-free trial card: both come due on the third day.
+        if (landingOnCalmTab && !adManager.recentlyShowedAd() && !metronomeVm.adFreeTrial.cardShownThisSession) {
             activity?.let { reviewManager.maybeRequestReview(it) }
         }
     }
@@ -244,7 +249,7 @@ fun MetroGnomeApp(
     // now also the notification ask above).
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         metronomeVm.reconcilePurchases()
-        metronomeVm.refreshReward()
+        metronomeVm.refreshAdFree()
         metronomeVm.recordUsageDay()
         if (!notificationOptInTracker.hasShownContextualAsk &&
             !notificationPermission.granted &&
@@ -363,6 +368,27 @@ fun MetroGnomeApp(
         }
     }
     TransientBanners(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
+
+    // The ad-free trial's offer and "ads are back" cards, on any tab, at a calm moment:
+    // nothing sounding (metronome, drone, a chord played back), no Practice, Speed Trainer or Rhythm game under way, and the Home
+    // poll card not up. The host adds "no dialog or overlay open" and "no interstitial just
+    // now" itself.
+    val isPracticeActive by metronomeVm.isPracticeActive.collectAsStateWithLifecycle()
+    val trainerState by speedTrainerVm.sessionState.collectAsStateWithLifecycle()
+    val rhythmPhase by rhythmVm.phase.collectAsStateWithLifecycle()
+    val pollOnScreen by metronomeVm.pollOnScreen.collectAsStateWithLifecycle()
+    val removeAdsPrice by metronomeVm.removeAdsPriceText.collectAsStateWithLifecycle()
+    val chordSounding by chordFinderVm.playing.collectAsStateWithLifecycle()
+    val trialCalm = !isPlaying && !isPracticeActive && !chordSounding &&
+        trainerState !is TrainerSessionState.Running && trainerState !is TrainerSessionState.Countdown &&
+        rhythmPhase == GamePhase.IDLE && !droneState.playing && !pollOnScreen && !showNotificationAsk
+    AdFreeTrialHost(
+        trial = metronomeVm.adFreeTrial,
+        calm = trialCalm,
+        quietNow = { !adManager.recentlyShowedAd(windowMs = 10_000L) },
+        removeAdsPrice = removeAdsPrice,
+        onRemoveAds = { activity?.let { metronomeVm.purchaseRemoveAdsFromTrial(it, "end_card") } },
+    )
 
     if (showNotificationAsk) {
         NotificationOptInDialog(

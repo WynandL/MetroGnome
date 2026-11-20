@@ -1,19 +1,20 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Backup and device-transfer rules (Android 12+). Everything is backed up except the files
+   excluded here; backup_rules.xml covers Android 11 and older and must say the same.
+
+   ad_free_anchors.xml: the elapsed-clock anchors of timed ad-free (adfree/AdFreeWindow). They
+   describe this boot of this phone; restored onto another phone they could be read as the
+   same boot and skip the days between backup and restore. Left out, a restored window
+   measures on the wall clock, which is right. Everything else about the trial (taken,
+   declines, time used) is in ad_free_trial.xml and is restored, so a reinstall cannot
+   re-arm it.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="sharedpref" path="ad_free_anchors.xml" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="sharedpref" path="ad_free_anchors.xml" />
     </device-transfer>
-    -->
 </data-extraction-rules>

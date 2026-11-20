@@ -653,6 +653,7 @@ fun MetronomeScreen(
         // every return to the tab, and a card hidden during the 1.8 s thank-you was rebuilt
         // as a fresh question that could be answered a second time.
         LaunchedEffect(pollVisible) {
+            vm.setPollOnScreen(pollVisible)
             if (pollVisible && !vm.pollShowLogged) {
                 vm.pollShowLogged = true
                 pollManager.recordShown(poll.id)
@@ -662,7 +663,10 @@ fun MetronomeScreen(
             }
         }
         DisposableEffect(Unit) {
-            onDispose { if (vm.pollShowLogged) vm.markPollDone() }
+            onDispose {
+                vm.setPollOnScreen(false)
+                if (vm.pollShowLogged) vm.markPollDone()
+            }
         }
         PollBanner(
             visible = pollVisible,

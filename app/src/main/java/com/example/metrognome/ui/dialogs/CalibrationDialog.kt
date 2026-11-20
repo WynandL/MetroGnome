@@ -36,7 +36,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ui.overlays.AppWindowDialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.ui.components.VolumeNudge
 import com.example.metrognome.ui.components.rememberMediaVolumeOk
@@ -74,7 +74,7 @@ fun CalibrationDialog(
         )
     }
 
-    Dialog(
+    AppWindowDialog(
         onDismissRequest = { if (!running) onDismiss() },
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
@@ -343,7 +343,7 @@ fun CalibrationConfirmDialog(
         )
     }
 
-    Dialog(
+    AppWindowDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {

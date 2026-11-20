@@ -85,6 +85,13 @@ class AdManager(private val context: Context) {
      *   Used as the gate for [AdPlacement.minSessionSeconds] AND stored for the depth
      *   multiplier that will stretch the NEXT cooldown for this placement.
      */
+    /**
+     * Read at the last moment before a committed interstitial appears. The app points it at
+     * the combined ad-free state (MainActivity), so an ad committed just before ads were
+     * switched off never shows.
+     */
+    var adFreeNow: () -> Boolean = { false }
+
     fun maybeShow(
         placement: AdPlacement,
         activity: Activity,
@@ -124,6 +131,15 @@ class AdManager(private val context: Context) {
 
         Handler(Looper.getMainLooper()).postDelayed({
             if (activity.isFinishing) { adBreakInFlight = false; preload(); onDone(); return@postDelayed }
+            // Ads may have been switched off in the 3 s since this ad was committed (the
+            // ad-free trial accepted, a purchase landing). Then it does not show: it goes back
+            // to being the loaded ad, for whenever ads are next allowed.
+            if (adFreeNow()) {
+                if (loadedAd == null) loadedAd = ad
+                adBreakInFlight = false
+                onDone()
+                return@postDelayed
+            }
             ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() { adBreakInFlight = false; preload(); onDone() }
                 override fun onAdFailedToShowFullScreenContent(e: AdError) { adBreakInFlight = false; preload(); onDone() }

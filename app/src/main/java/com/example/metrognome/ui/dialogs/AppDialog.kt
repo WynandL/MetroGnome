@@ -22,7 +22,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ui.overlays.AppWindowDialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.ui.components.AppCardDefaults
 import com.example.metrognome.ui.theme.AppColors
@@ -59,7 +59,7 @@ fun AppDialog(
 
     val screenHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
 
-    Dialog(
+    AppWindowDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {

@@ -456,6 +456,48 @@ object AnalyticsTracker {
         }
     }
 
+    // ── Ad-free trial (adfree/) ───────────────────────────────────────────────
+    //
+    // The funnel: offered -> accepted or declined -> ended (expired or purchased), and
+    // ad_free_trial_buy for a Remove Ads purchase started from the trial's own surfaces;
+    // iap_started / iap_result (product remove_ads) carry the rest of that purchase.
+    // offer_number (1 or 2: the re-offer), reason and source need registering in Firebase.
+
+    /** The trial's offer card came on screen. */
+    fun logAdFreeTrialOffered(offerNumber: Int) {
+        Firebase.analytics.logEvent("ad_free_trial_offered") {
+            param("offer_number", offerNumber.toLong())
+        }
+    }
+
+    /** "Try it". */
+    fun logAdFreeTrialAccepted(offerNumber: Int) {
+        Firebase.analytics.logEvent("ad_free_trial_accepted") {
+            param("offer_number", offerNumber.toLong())
+        }
+    }
+
+    /** "Not now" (or Back) on the offer. */
+    fun logAdFreeTrialDeclined(offerNumber: Int) {
+        Firebase.analytics.logEvent("ad_free_trial_declined") {
+            param("offer_number", offerNumber.toLong())
+        }
+    }
+
+    /** The trial ended: [reason] "expired" or "purchased" (Remove Ads bought during it). */
+    fun logAdFreeTrialEnded(reason: String) {
+        Firebase.analytics.logEvent("ad_free_trial_ended") {
+            param("reason", reason)
+        }
+    }
+
+    /** Remove Ads tapped from a trial surface: [source] "end_card" or "settings_trial". */
+    fun logAdFreeTrialBuy(source: String) {
+        Firebase.analytics.logEvent("ad_free_trial_buy") {
+            param("source", source)
+        }
+    }
+
     /** A rewarded ad was watched to completion and Gnotes were granted. */
     fun logRewardedAdWatched(gnotes: Int) {
         Firebase.analytics.logEvent("rewarded_ad_watched") {

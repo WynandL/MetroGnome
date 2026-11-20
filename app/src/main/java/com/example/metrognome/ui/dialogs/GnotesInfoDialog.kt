@@ -28,7 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ui.overlays.AppWindowDialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.points.PointsConfig
 import com.example.metrognome.points.PointsSnapshot
@@ -48,7 +48,7 @@ fun GnotesInfoDialog(
 ) {
     var showWatchAdConfirm by remember { mutableStateOf(false) }
 
-    Dialog(
+    AppWindowDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {

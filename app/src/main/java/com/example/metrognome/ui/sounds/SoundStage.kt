@@ -54,7 +54,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ui.overlays.AppWindowDialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.ui.components.AppCard
 import com.example.metrognome.ui.components.AppFilterChip
@@ -153,7 +153,7 @@ fun SoundStageOverlay(
     initialKey: String? = null,
     onTab: (Int) -> Unit = {},
 ) {
-    Dialog(
+    AppWindowDialog(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {

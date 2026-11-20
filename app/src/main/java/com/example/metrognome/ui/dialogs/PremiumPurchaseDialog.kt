@@ -56,7 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ui.overlays.AppWindowDialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.ui.overlays.drawConfetti
 import com.example.metrognome.ui.components.AppCardDefaults
@@ -107,7 +107,7 @@ fun PremiumPurchaseDialog(
     belowDescription: (@Composable () -> Unit)? = null,
     secondaryButton: (@Composable () -> Unit)? = null,
 ) {
-    Dialog(
+    AppWindowDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {

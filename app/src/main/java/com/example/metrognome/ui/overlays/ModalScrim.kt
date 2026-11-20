@@ -1,6 +1,7 @@
 package com.example.metrognome.ui.overlays
 
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
 
 /**
@@ -13,11 +14,17 @@ import androidx.compose.ui.input.pointer.pointerInput
  * underneath (UI audit U09). The card's own buttons still work: they sit above this layer
  * and handle their touches first. Pair it with a `BackHandler` that calls the same dismiss
  * as the overlay's button, so Back dismisses the overlay instead of leaving the screen.
+ * It also counts the overlay in [ModalPresence] for as long as it is shown.
  */
-fun Modifier.modalScrim(): Modifier = pointerInput(Unit) {
-    awaitPointerEventScope {
-        while (true) {
-            awaitPointerEvent().changes.forEach { it.consume() }
+fun Modifier.modalScrim(): Modifier = composed {
+    // Every full-screen overlay passes through here, so this is where it is counted as a
+    // modal (ModalPresence), for anything that waits for a calm moment.
+    ModalPresence.Register()
+    pointerInput(Unit) {
+        awaitPointerEventScope {
+            while (true) {
+                awaitPointerEvent().changes.forEach { it.consume() }
+            }
         }
     }
 }

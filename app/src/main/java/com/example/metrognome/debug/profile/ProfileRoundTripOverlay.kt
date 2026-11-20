@@ -31,7 +31,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ui.overlays.AppWindowDialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.practice.PracticeSessionManager
 import com.example.metrognome.usage.ActivitySummary
@@ -97,7 +97,7 @@ fun ProfileRoundTripOverlay(onDismiss: () -> Unit) {
         }
     }
 
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    AppWindowDialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(
             modifier = Modifier
                 .fillMaxSize()

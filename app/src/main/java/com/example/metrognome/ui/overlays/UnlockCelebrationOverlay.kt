@@ -14,6 +14,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -121,20 +122,70 @@ internal fun DrawScope.drawConfetti(time: Float) {
 /**
  * Full-screen animated celebration overlay shown when a new cosmetic item unlocks.
  *
- * Handles its own entrance animation (spring-bounced card, fading backdrop) and
- * confetti that runs via InfiniteTransition so there are no per-frame state updates.
- * Each item's actual draw() function is used in the preview canvas so the user
- * sees exactly what they unlocked.
+ * Its look (backdrop, confetti, spring-bounced card) is [CelebrationCard], shared with the
+ * ad-free trial's cards. Each item's actual draw() function is used in the preview canvas so
+ * the user sees exactly what they unlocked.
  */
 @Composable
 fun UnlockCelebrationOverlay(
     entry: MetroItemEntry,
     onDismiss: () -> Unit,
 ) {
+    CelebrationCard(onBack = onDismiss, key = entry) {
+        OverlayEyebrow("✦  NEW ITEM UNLOCKED  ✦", color = AppColors.gold)
+
+        Spacer(Modifier.height(20.dp))
+
+        ItemPreviewCanvas(entry = entry, modifier = Modifier.size(width = 220.dp, height = 170.dp))
+
+        Spacer(Modifier.height(20.dp))
+
+        DialogTitle(entry.item.displayName)
+
+        Spacer(Modifier.height(6.dp))
+
+        Text(
+            text = entry.condition.displayText(),
+            color = AppColors.textMutedBlue,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            fontStyle = FontStyle.Italic,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(Modifier.height(14.dp))
+
+        Text(
+            text = entry.item.earnedMessage,
+            color = AppColors.textSecondary,
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 21.sp,
+        )
+
+        Spacer(Modifier.height(26.dp))
+
+        PrimaryButton("Sweet!", onDismiss, Modifier.fillMaxWidth(0.65f))
+    }
+}
+
+/**
+ * The celebration card: a dimmed backdrop that swallows touches, confetti falling over it,
+ * and a card that springs in from small, holding [content] centred in a scrolling column.
+ * Used by the unlock popup and the ad-free trial's cards, so the app's "something good
+ * happened" moment looks the same everywhere. [onBack] runs on the system Back key; the
+ * content's own buttons do the rest. [key] restarts the entrance when it changes.
+ */
+@Composable
+fun CelebrationCard(
+    onBack: () -> Unit,
+    key: Any? = Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val cardScale = remember { Animatable(0.15f) }
     val overlayAlpha = remember { Animatable(0f) }
 
-    LaunchedEffect(entry) {
+    LaunchedEffect(key) {
         launch { overlayAlpha.animateTo(0.88f, tween(280)) }
         cardScale.animateTo(
             targetValue = 1f,
@@ -153,7 +204,7 @@ fun UnlockCelebrationOverlay(
             label = "confettiTime",
         )
 
-    BackHandler(onBack = onDismiss)
+    BackHandler(onBack = onBack)
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -183,42 +234,8 @@ fun UnlockCelebrationOverlay(
                     .padding(horizontal = 24.dp, vertical = 28.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                OverlayEyebrow("✦  NEW ITEM UNLOCKED  ✦", color = AppColors.gold)
-
-                Spacer(Modifier.height(20.dp))
-
-                ItemPreviewCanvas(entry = entry, modifier = Modifier.size(width = 220.dp, height = 170.dp))
-
-                Spacer(Modifier.height(20.dp))
-
-                DialogTitle(entry.item.displayName)
-
-                Spacer(Modifier.height(6.dp))
-
-                Text(
-                    text = entry.condition.displayText(),
-                    color = AppColors.textMutedBlue,
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
-                    fontStyle = FontStyle.Italic,
-                    textAlign = TextAlign.Center,
-                )
-
-                Spacer(Modifier.height(14.dp))
-
-                Text(
-                    text = entry.item.earnedMessage,
-                    color = AppColors.textSecondary,
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 21.sp,
-                )
-
-                Spacer(Modifier.height(26.dp))
-
-                PrimaryButton("Sweet!", onDismiss, Modifier.fillMaxWidth(0.65f))
-            }
+                content = content,
+            )
         }
     }
 }

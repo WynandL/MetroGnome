@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ui.overlays.AppWindowDialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.dev.DevEasterEgg
 import com.example.metrognome.points.EarnRule
@@ -49,7 +49,7 @@ fun EarnRulesDialog(onDismiss: () -> Unit) {
     // Same gate as every other dev tool: visible in a debug build OR when dev mode is unlocked.
     val context = LocalContext.current
     val isDevMode = remember { DevEasterEgg.isDevModeActive(context) }
-    Dialog(
+    AppWindowDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {

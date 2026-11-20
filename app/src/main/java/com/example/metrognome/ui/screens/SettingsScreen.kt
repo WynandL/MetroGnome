@@ -60,6 +60,7 @@ import com.example.metrognome.ui.components.OwnedBadge
 import com.example.metrognome.ui.dialogs.GrooveCheckRecalibrateDialog
 import com.example.metrognome.notifications.NotificationPermissionState
 import com.example.metrognome.ui.components.GoldButton
+import com.example.metrognome.ui.components.AdFreeTimeLeft
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.viewmodel.MetronomeViewModel
 import kotlin.math.roundToInt
@@ -107,6 +108,10 @@ fun SettingsScreen(
     }
 
     val isAdFree by vm.isAdFree.collectAsStateWithLifecycle()
+    // Why ads are off, for the Remove Ads card: only a purchase is "You're ad-free".
+    val isAdFreePurchased by vm.isAdFreePurchased.collectAsStateWithLifecycle()
+    val trialEndsAt by vm.adFreeTrial.endsAtWallMs.collectAsStateWithLifecycle()
+    val gnotesAdFreeEndsAt by vm.rewardAdFreeEndsAt.collectAsStateWithLifecycle()
     val removeAdsPriceText by vm.removeAdsPriceText.collectAsStateWithLifecycle()
     val isBillingAvailable by vm.isBillingAvailable.collectAsStateWithLifecycle()
     val isPurchasing by vm.isPurchasing.collectAsStateWithLifecycle()
@@ -258,12 +263,19 @@ fun SettingsScreen(
             SettingsCard("Remove Ads") {
 
                 RemoveAdsSection(
-                    isAdFree = isAdFree,
+                    purchased = isAdFreePurchased,
+                    trialEndsAt = trialEndsAt,
+                    gnotesAdFreeEndsAt = gnotesAdFreeEndsAt,
                     priceText = removeAdsPriceText,
                     isBillingAvailable = isBillingAvailable,
                     isPurchasing = isPurchasing,
                     isBillingConnecting = isBillingConnecting,
-                    onPurchase = { activity?.let { vm.purchaseRemoveAds(it) } },
+                    onPurchase = {
+                        activity?.let {
+                            if (trialEndsAt != null) vm.purchaseRemoveAdsFromTrial(it, "settings_trial")
+                            else vm.purchaseRemoveAds(it)
+                        }
+                    },
                     onRestore  = { vm.restorePurchases() },
                 )
             }
@@ -480,9 +492,16 @@ private fun PurchasableItemDialog(
     )
 }
 
+/**
+ * Remove Ads. Says why ads are off, never just that they are: a purchase is "You're ad-free";
+ * the ad-free trial and the daily-Gnotes ad-free days each show their own live countdown and
+ * when ads return, above the purchase, which stays on offer (buying ends the trial at once).
+ */
 @Composable
 private fun RemoveAdsSection(
-    isAdFree: Boolean,
+    purchased: Boolean,
+    trialEndsAt: Long?,
+    gnotesAdFreeEndsAt: Long?,
     priceText: String?,
     isBillingAvailable: Boolean,
     isPurchasing: Boolean,
@@ -495,15 +514,43 @@ private fun RemoveAdsSection(
             // CTA before purchase; a settled confirmation after it, so owners are not shown the
             // same "Go ad-free" pitch they already paid for. Styling stays identical to the other
             // owned surfaces (e.g. Glissie) for consistency: only the words change.
-            text = if (isAdFree) "You're ad-free" else "Go ad-free",
+            text = when {
+                purchased -> "You're ad-free"
+                trialEndsAt != null -> "Keep it ad-free"
+                else -> "Go ad-free"
+            },
             color = AppColors.textPrimary,
             modifier = Modifier.padding(bottom = 4.dp),
         )
 
-        if (isAdFree) {
+        if (purchased) {
             OwnedBadge("You have the ad-free version. Metro plays without interruptions.")
             return
         }
+
+        if (trialEndsAt != null) {
+            AdFreeTimeLeft(
+                title = "Ad-free trial",
+                endsAtWallMs = trialEndsAt,
+                modifier = Modifier.padding(top = 6.dp, bottom = 8.dp),
+            )
+            Text(
+                text = "No ads at all until then, and Metro has the full stage. The time runs " +
+                    "whether the app is open or closed; when it ends, ads come back and you'll be told.",
+                color = AppColors.textMuted,
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+        }
+        if (gnotesAdFreeEndsAt != null) {
+            AdFreeTimeLeft(
+                title = "Ad-free for your daily Gnotes goal",
+                endsAtWallMs = gnotesAdFreeEndsAt,
+                modifier = Modifier.padding(top = 6.dp, bottom = 12.dp),
+            )
+        }
+
         Text(
             text = "Remove all ads, banner and full-screen, and Metro gets more room to dance. " +
                     "A bigger canvas, no interruptions. One-time purchase, forever.",

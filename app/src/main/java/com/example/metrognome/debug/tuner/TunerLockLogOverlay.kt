@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ui.overlays.AppWindowDialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.metrognome.audio.tuner.AmbientTuning
@@ -54,7 +54,7 @@ private val dropColor    = Color(0xFFE53935)
 fun TunerLockLogOverlay(onDismiss: () -> Unit) {
     val sessions by TunerLockLog.sessions.collectAsStateWithLifecycle()
 
-    Dialog(
+    AppWindowDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {

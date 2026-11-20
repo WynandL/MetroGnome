@@ -2,6 +2,10 @@ package com.example.metrognome.points.rewards
 
 import android.content.Context
 import androidx.core.content.edit
+import com.example.metrognome.adfree.AdFreeWindow
+import com.example.metrognome.adfree.SystemTime
+import com.example.metrognome.adfree.TimeReading
+import com.example.metrognome.adfree.WindowPrefs
 import com.example.metrognome.analytics.AnalyticsTracker
 import com.example.metrognome.points.DailyActivityLog
 import com.example.metrognome.points.PointsBannerQueue
@@ -27,22 +31,37 @@ import java.util.Locale
  * once per calendar day so back-to-back triggering cannot stack the reward.
  *
  * Listens to [PointsBannerQueue] — any points-earning activity triggers a check.
- * The caller is also responsible for calling [refresh] on app resume so that
- * an expired reward is revoked without requiring a new activity event.
+ * The ad-free time runs on [AdFreeWindow] (2026-11-20), the clock the ad-free trial uses:
+ * the ViewModel calls [refresh] every 20 s and on every return to the foreground, so the
+ * days end on time whether or not the app is open, and moving the date does not stretch
+ * them. Before this they ended only on the next resume, so ads stayed off for anyone who
+ * kept the app open past the end. A grant stored the old way (an end time only) is read
+ * once as a window and carries on.
  *
  * Reward state is stored in its own SharedPreferences ("points_rewards") and is
  * entirely independent of billing. [isAdFreeActive] should be OR-combined with
  * [com.example.metrognome.billing.BillingManager.isAdFree] in the ViewModel.
  */
-class RewardManager(context: Context, scope: CoroutineScope) {
+class RewardManager(
+    context: Context,
+    scope: CoroutineScope,
+    private val time: () -> TimeReading = SystemTime(context)::read,
+) {
 
+    private val appContext = context.applicationContext
     private val prefs    = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val tracker  = MetroItemTracker(context)
     private val dailyLog = DailyActivityLog(context)
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
+    private var window: AdFreeWindow? = loadWindow()
+
     private val _isAdFreeActive = MutableStateFlow(isAdFreeNow())
     val isAdFreeActive: StateFlow<Boolean> = _isAdFreeActive.asStateFlow()
+
+    private val _endsAtWallMs = MutableStateFlow(endsAt())
+    /** When the ad-free days end, on the wall clock; null when none are running. Display only. */
+    val endsAtWallMs: StateFlow<Long?> = _endsAtWallMs.asStateFlow()
 
     /**
      * Emits the expiry timestamp (ms since epoch) each time a reward is freshly granted.
@@ -57,21 +76,33 @@ class RewardManager(context: Context, scope: CoroutineScope) {
         }
     }
 
-    /** The ms timestamp until which the earned ad-free reward is active (0 if none). */
-    fun adFreeUntilMs(): Long = prefs.getLong(KEY_AD_FREE_UNTIL_MS, 0L)
-
-    /**
-     * Re-evaluate whether the stored reward has expired.
-     * Call on every app resume so a reward that expired overnight is revoked promptly.
-     */
+    /** Re-evaluates the ad-free days against the clock. Cheap; called every 20 s and on resume. */
     fun refresh() {
         _isAdFreeActive.value = isAdFreeNow()
+        _endsAtWallMs.value = endsAt()
     }
 
-    private fun isAdFreeNow() = System.currentTimeMillis() < adFreeUntilMs()
+    /** Brings the window up to date (saving the ratchet) and says whether it is still running. */
+    private fun isAdFreeNow(): Boolean {
+        val w = window ?: return false
+        if (w.expired) return false
+        val next = w.advance(time())
+        if (next != w) { window = next; saveWindow(next) }
+        return !next.expired
+    }
+
+    private fun endsAt(): Long? = window?.takeIf { !it.expired }?.endsAtWallMs(time())
+
+    private fun loadWindow(): AdFreeWindow? =
+        WindowPrefs.load(appContext, prefs, WINDOW)
+            ?: prefs.getLong(KEY_AD_FREE_UNTIL_MS, 0L).takeIf { it > 0L }
+                ?.let { AdFreeWindow.fromLegacyEnd(it, RewardConfig.AD_FREE_DAYS * 86_400_000L) }
+
+    /** The 20-second ratchet: `apply`, off the main thread. */
+    private fun saveWindow(w: AdFreeWindow?) = WindowPrefs.save(appContext, prefs, WINDOW, w, durable = false)
 
     private fun checkAndGrant() {
-        _isAdFreeActive.value = isAdFreeNow()
+        refresh()
 
         // Only grant once per calendar day — prevents a single sustained session
         // from repeatedly triggering the grant after the threshold is crossed.
@@ -81,19 +112,24 @@ class RewardManager(context: Context, scope: CoroutineScope) {
         val todayBeats = PointsCalculator.todayBeats(dailyLog.todayActivity(tracker))
         if (todayBeats < RewardConfig.MAX_DAILY_BEATS) return
 
-        val until = System.currentTimeMillis() + RewardConfig.AD_FREE_DAYS * 86_400_000L
-        prefs.edit {
-            putLong(KEY_AD_FREE_UNTIL_MS, until)
+        val now = time()
+        val granted = AdFreeWindow.start(now, RewardConfig.AD_FREE_DAYS * 86_400_000L)
+        window = granted
+        prefs.edit(commit = true) {
+            WindowPrefs.save(appContext, this, WINDOW, granted, durable = true)
+            remove(KEY_AD_FREE_UNTIL_MS)
             putString(KEY_GRANTED_DATE, today)
         }
-        _isAdFreeActive.value = true
-        _rewardGranted.tryEmit(until)
+        refresh()
+        _rewardGranted.tryEmit(granted.endsAtWallMs(now))
         AnalyticsTracker.logRewardGranted("ad_free", RewardConfig.AD_FREE_DAYS)
     }
 
     companion object {
         private const val PREFS_NAME           = "points_rewards"
+        /** The pre-2026-11-20 storage (an end time only); read once, then replaced by [WINDOW]. */
         private const val KEY_AD_FREE_UNTIL_MS = "ad_free_until_ms"
+        private const val WINDOW               = "ad_free"
         private const val KEY_GRANTED_DATE     = "reward_granted_date"
     }
 }

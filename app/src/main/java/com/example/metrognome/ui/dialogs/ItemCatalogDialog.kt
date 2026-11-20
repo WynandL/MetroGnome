@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import com.example.metrognome.ui.overlays.AppWindowDialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.metrognome.points.pointsEquivalent
 import com.example.metrognome.ui.components.ItemProgressBar
@@ -93,7 +93,7 @@ fun ItemCatalogDialog(
     val unlockedCount = sorted.count { it.item.id in activeItemIds }
     val totalCount    = sorted.size
 
-    Dialog(
+    AppWindowDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {

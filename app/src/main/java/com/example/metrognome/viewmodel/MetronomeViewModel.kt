@@ -66,6 +66,9 @@ data class PracticeResult(
     val grooveRead: String = "",
 )
 
+/** How often timed ad-free (the trial, the daily-Gnotes days) is checked against the clock. */
+private const val AD_FREE_TICK_MS = 20_000L
+
 class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val prefs = app.getSharedPreferences("metrognome_prefs", Context.MODE_PRIVATE)
@@ -78,11 +81,36 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val practiceManager  = PracticeSessionManager(app)
     private val rewardManager    = com.example.metrognome.points.rewards.RewardManager(app, viewModelScope)
 
-    val isAdFree: StateFlow<Boolean> = combine(billingManager.isAdFree, rewardManager.isAdFreeActive) { billing, reward -> billing || reward }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, billingManager.isAdFree.value || rewardManager.isAdFreeActive.value)
+    private val usageDayTracker  = com.example.metrognome.points.UsageDayTracker(app)
+
+    /**
+     * The ad-free trial (adfree/). Built before [isAdFree] so a cold start mid-trial is
+     * ad-free from the first frame, and never flashes a banner ad.
+     */
+    val adFreeTrial = com.example.metrognome.adfree.AdFreeTrialManager(
+        context         = app,
+        purchased       = { billingManager.isAdFree.value },
+        otherwiseAdFree = { rewardManager.isAdFreeActive.value },
+        usageDays       = { usageDayTracker.distinctDaysCount() },
+        today           = { com.example.metrognome.practice.PracticeSessionManager.currentEpochDay() },
+    )
+
+    /**
+     * Ads are off, for any reason: bought, the daily-Gnotes ad-free days, or the trial. Every
+     * ad decision reads this. Screens that must say *why* (Settings) read [isAdFreePurchased],
+     * [adFreeTrial] and [rewardAdFreeEndsAt] instead: only a purchase is "You're ad-free".
+     */
+    val isAdFree: StateFlow<Boolean> = combine(
+        billingManager.isAdFree, rewardManager.isAdFreeActive, adFreeTrial.active,
+    ) { billing, reward, trial -> billing || reward || trial }
+        .stateIn(
+            viewModelScope, SharingStarted.Eagerly,
+            billingManager.isAdFree.value || rewardManager.isAdFreeActive.value || adFreeTrial.active.value,
+        )
+    val isAdFreePurchased: StateFlow<Boolean> = billingManager.isAdFree
+    val rewardAdFreeEndsAt: StateFlow<Long?> = rewardManager.endsAtWallMs
     val rewardGranted: SharedFlow<Long> = rewardManager.rewardGranted
 
-    private val usageDayTracker  = com.example.metrognome.points.UsageDayTracker(app)
     val rewardedAdManager = com.example.metrognome.ads.RewardedAdManager(app).also { it.preload() }
     private val pointsManager    = com.example.metrognome.points.PointsManager(app, rewardedAdManager)
     private val activityLogger   = com.example.metrognome.usage.ActivitySummaryLogger(app)
@@ -232,7 +260,29 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         billingManager.launchItemPurchaseFlow(activity, productId)
     fun restorePurchases() = billingManager.restorePurchases()
     fun reconcilePurchases() { viewModelScope.launch { billingManager.reconcileInBackground() } }
-    fun refreshReward()      { rewardManager.refresh() }
+    /**
+     * Brings every timed ad-free state up to the clock: the daily-Gnotes days, then the trial
+     * (which reads the days, so it goes second). Run every 20 s by [init] and on every
+     * return to the foreground by MainActivity.
+     */
+    fun refreshAdFree() {
+        rewardManager.refresh()
+        adFreeTrial.tick()
+    }
+
+    private val _pollOnScreen = MutableStateFlow(false)
+    /**
+     * The Home poll card is on screen. The ad-free trial's cards wait for it rather than
+     * cover it: both want the same calm moment, and a covered poll would be spent unseen.
+     */
+    val pollOnScreen: StateFlow<Boolean> = _pollOnScreen.asStateFlow()
+    fun setPollOnScreen(onScreen: Boolean) { _pollOnScreen.value = onScreen }
+
+    /** Remove Ads tapped on a trial surface: tagged, then the normal Play purchase. */
+    fun purchaseRemoveAdsFromTrial(activity: Activity, source: String) {
+        AnalyticsTracker.logAdFreeTrialBuy(source)
+        purchaseRemoveAds(activity)
+    }
     fun recordUsageDay() {
         usageDayTracker.recordDay()
         _gnoteCount.value = pointsManager.getSnapshot().total
@@ -689,6 +739,19 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     private val tapTimes = ArrayDeque<Long>(8)
 
     init {
+        // Timed ad-free is checked against the clock, not on events: every 20 s while the
+        // process lives (the check reads stored times, so a missed tick in deep sleep loses
+        // nothing) and whenever Remove Ads ownership changes, which ends a running trial.
+        viewModelScope.launch {
+            while (true) {
+                refreshAdFree()
+                kotlinx.coroutines.delay(AD_FREE_TICK_MS)
+            }
+        }
+        viewModelScope.launch {
+            billingManager.isAdFree.collect { adFreeTrial.tick() }
+        }
+
         val savedType = _soundType.value
         val requiredProduct = PREMIUM_SOUND_REGISTRY.find { it.soundTypeIndex == savedType }?.productId
         if (requiredProduct != null && requiredProduct !in billingManager.purchasedSoundIds.value) {

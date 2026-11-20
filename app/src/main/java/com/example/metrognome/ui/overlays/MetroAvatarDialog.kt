@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.example.metrognome.ui.components.MetroAvatar
 import com.example.metrognome.ui.components.AppCardDefaults
 import com.example.metrognome.ui.components.PrimaryButton
@@ -28,7 +27,7 @@ import com.example.metrognome.ui.theme.AppColors
  */
 @Composable
 fun MetroAvatarDialog(onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
+    AppWindowDialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.padding(horizontal = 22.dp),
             shape = AppCardDefaults.DialogShape,
