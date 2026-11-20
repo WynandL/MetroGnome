@@ -60,6 +60,7 @@ fun AdFreeTrialHost(
     quietNow: () -> Boolean,
     removeAdsPrice: String?,
     onRemoveAds: () -> Unit,
+    onPreviewRemoveAds: () -> Unit,
 ) {
     val due by trial.card.collectAsStateWithLifecycle()
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
@@ -79,7 +80,9 @@ fun AdFreeTrialHost(
         trial.onCardShown(card)
     }
 
-    // A dev preview (Settings dev tools) shows over everything at once and changes nothing.
+    // A dev preview (Settings dev tools) shows over everything at once and changes no trial
+    // state. Its Remove Ads button still runs the real, untagged purchase, so the store path
+    // can be tried from it: Play's sheet on a phone, the store-error toast on an emulator.
     val preview by trial.preview.collectAsStateWithLifecycle()
     when (preview) {
         TrialCard.OFFER -> AdFreeTrialOfferCard(
@@ -90,7 +93,7 @@ fun AdFreeTrialHost(
         TrialCard.ENDED -> AdFreeTrialEndedCard(
             removeAdsPrice = removeAdsPrice,
             onOk = trial::closePreview,
-            onRemoveAds = trial::closePreview,
+            onRemoveAds = { trial.closePreview(); onPreviewRemoveAds() },
         )
         null -> Unit
     }

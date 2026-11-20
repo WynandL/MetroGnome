@@ -388,6 +388,7 @@ fun MetroGnomeApp(
         quietNow = { !adManager.recentlyShowedAd(windowMs = 10_000L) },
         removeAdsPrice = removeAdsPrice,
         onRemoveAds = { activity?.let { metronomeVm.purchaseRemoveAdsFromTrial(it, "end_card") } },
+        onPreviewRemoveAds = { activity?.let { metronomeVm.purchaseRemoveAds(it) } },
     )
 
     if (showNotificationAsk) {
