@@ -14,14 +14,16 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.example.metrognome"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) { minorApiLevel = 1 }
+    }
 
     defaultConfig {
         applicationId = "com.wynandl.metrognome"
         minSdk = 24
         targetSdk = 37
-        versionCode = 98
-        versionName = "7.1"
+        versionCode = 99
+        versionName = "7.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

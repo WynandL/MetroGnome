@@ -207,9 +207,33 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     // While a mic-measured session (Practice / Speed Trainer) is live, the engine plays the
     // classic click regardless of the user's chosen sound, so the spectral clap detector gets
     // the click profile it is tuned for. The saved sound (_soundType) is never mutated and is
-    // restored when the session stops. See setMicSoundOverride / effectiveSoundType.
+    // restored when the session ends. A pause inside a session (the Home play key) keeps it:
+    // the session is still on, and resuming used to come back on the saved voice. See
+    // setMicSoundOverride / effectiveSoundType / micSessionLive.
     private var forceClassicForMic = false
-        set(value) { field = value; _soundPreviewBlocked.value = value }
+        set(value) { field = value; _soundPreviewBlocked.value = value; _classicForSession.value = value }
+
+    /** True while a Practice or Speed Trainer session holds the Classic click for Groove Check.
+     *  Drives the Home sound pill ("Classic") and its one-time hint. */
+    private val _classicForSession = MutableStateFlow(false)
+    val classicForSession: StateFlow<Boolean> = _classicForSession.asStateFlow()
+
+    // The Speed Trainer's session state lives in SpeedTrainerViewModel; the screen pushes it here
+    // (setTrainerSessionActive) so a pause and resume inside a trainer session keeps Classic.
+    private var trainerSessionActive = false
+
+    /** A mic-scorable session is open, playing or paused. */
+    private fun micSessionLive(): Boolean = _isPracticeActive.value || trainerSessionActive
+
+    /** Re-derive the Classic override from whether a session is open (and Groove Check usable). */
+    private fun refreshMicSoundOverride() = setMicSoundOverride(micSessionLive())
+
+    /** Called by the screen as the Speed Trainer's session opens (Countdown/Running) and closes. */
+    fun setTrainerSessionActive(active: Boolean) {
+        if (trainerSessionActive == active) return
+        trainerSessionActive = active
+        refreshMicSoundOverride()
+    }
 
     // A preview borrows the live beat while the metronome plays (MetronomeEngine.playPreview),
     // so during a mic-scored session it would hand the clap detector a voice it is not tuned
@@ -374,6 +398,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         stopPracticeMic()
         _isPracticeActive.value = false
         _practiceSecondsRemaining.value = 0
+        refreshMicSoundOverride()
     }
 
     // ── Practice mic helpers ────────────────────────────────────────────────────
@@ -882,6 +907,9 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             stopPlayback()
         } else {
             if (!requestAudioFocus()) return
+            // Resuming a paused Practice or Speed Trainer session: back on Classic, not the saved
+            // voice. A plain start (no session open) lifts nothing, since nothing is forced.
+            refreshMicSoundOverride()
             syncEngineSettings()
             engine.start()
             sessionStartMs = System.currentTimeMillis()
@@ -904,8 +932,10 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         stopPlayTimer()
         engine.stop()
         // Every stop path (practice/trainer complete or cancel, manual stop) funnels through
-        // here, so this is the single point that lifts the mic classic-click override.
-        forceClassicForMic = false
+        // here. A pause inside an open session is also a stop, and must NOT lift the override,
+        // or the resume plays the saved voice to a clap detector tuned for Classic. The
+        // session's own end (cancelPractice, setTrainerSessionActive(false)) lifts it then.
+        if (!micSessionLive()) forceClassicForMic = false
         _isPlaying.value = false
         AnalyticsTracker.logMetronomeStopped()
         _currentBeat.value = 0

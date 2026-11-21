@@ -336,7 +336,7 @@ metrognome.co.za is a static site under `landing/` that exists **only on `master
 
 ### Dependencies
 
-Versions managed via `gradle/libs.versions.toml`. Key: Compose BOM 2026.09.00, AGP 9.5.1, Kotlin 2.4.21, coroutines 1.11.0, Google Play Ads 25.5.0, Firebase BOM 35.2.0, Google Services 4.6.0, Gradle 9.9.0. Material's icon library is not a dependency (removed in v7.0; icons are `AppIcons`). Note: `implementation(platform(bom))` and `androidTestImplementation(platform(bom))` are both required (BOMs pin per configuration) — the IDE's duplicate-dependency warning on this is a false positive.
+Versions managed via `gradle/libs.versions.toml`. Key: Compose BOM 2026.11.01 (Material3 1.5, which needs compileSdk 37.1, set via `compileSdk { version = release(37) { minorApiLevel = 1 } }`; it also dropped the value-based `Slider` with custom thumb/track, so `GoldSlider` drives a `SliderState` the way the library's own value overload does), AGP 9.5.2, Kotlin 2.4.21, coroutines 1.11.0, Google Play Ads 25.5.0, Firebase BOM 35.2.0, Google Services 4.6.0, Gradle 9.9.1. Material's icon library is not a dependency (removed in v7.0; icons are `AppIcons`). Note: `implementation(platform(bom))` and `androidTestImplementation(platform(bom))` are both required (BOMs pin per configuration) — the IDE's duplicate-dependency warning on this is a false positive.
 
 ### Release Signing
 

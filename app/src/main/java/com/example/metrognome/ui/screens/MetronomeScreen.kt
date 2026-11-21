@@ -153,6 +153,7 @@ fun MetronomeScreen(
     var showGnotesInfo by remember { mutableStateOf(false) }
     var showSoundStage by remember { mutableStateOf(false) }
     val soundType by vm.soundType.collectAsStateWithLifecycle()
+    val classicForSession by vm.classicForSession.collectAsStateWithLifecycle()
 
     var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
@@ -204,6 +205,30 @@ fun MetronomeScreen(
     LaunchedEffect(trainerVm) {
         vm.beatEvents.collect { event ->
             trainerVm.onBeat(event.beat, event.presentedMs)
+        }
+    }
+
+    // The trainer's session is open from its countdown until it completes or is cancelled, paused
+    // or not; the metronome keeps Classic for Groove Check across a pause for that whole span.
+    val trainerSessionOpen = trainerState is TrainerSessionState.Running ||
+        trainerState is TrainerSessionState.Countdown
+    LaunchedEffect(trainerSessionOpen) { vm.setTrainerSessionActive(trainerSessionOpen) }
+
+    // Once per session, a short note under the sound pill says why it now reads Classic; the
+    // sound stage's footnote says the same, but only to someone who opens it. A pause and
+    // resume inside the session does not bring it back.
+    var showClassicHint by remember { mutableStateOf(false) }
+    var classicHintShown by remember { mutableStateOf(false) }
+    val anySessionOpen = isPracticeActive || trainerSessionOpen
+    LaunchedEffect(anySessionOpen) {
+        if (!anySessionOpen) { classicHintShown = false; showClassicHint = false }
+    }
+    LaunchedEffect(classicForSession) {
+        if (classicForSession && !classicHintShown) {
+            classicHintShown = true
+            showClassicHint = true
+            kotlinx.coroutines.delay(CLASSIC_HINT_MS)
+            showClassicHint = false
         }
     }
 
@@ -321,17 +346,28 @@ fun MetronomeScreen(
             // twin on the right, so it costs Metro no height. Naming the current voice is the
             // invitation ("Classic" says there are others); the sounds used to be reachable
             // only from a Settings card, and 92% of users never changed sound.
-            val sound = com.example.metrognome.billing.clickSoundFor(soundType)
-            com.example.metrognome.ui.components.GoldPill(
-                text        = sound.displayName,
-                leadingIcon = com.example.metrognome.ui.sounds.soundGlyphFor(sound.slug),
-                onClick     = { showSoundStage = true },
-                modifier    = Modifier
+            // During a Groove Check session the pill names the click actually sounding
+            // (Classic), not the saved voice, which returns when the session ends.
+            val sound = com.example.metrognome.billing.clickSoundFor(if (classicForSession) 0 else soundType)
+            Column(
+                modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(end = 12.dp, top = 12.dp)
-                    .widthIn(max = pillMaxWidth)
-                    .semantics { contentDescription = "Click sound: ${sound.displayName}. Browse sounds" },
-            )
+                    .widthIn(max = pillMaxWidth),
+                horizontalAlignment = Alignment.End,
+            ) {
+                com.example.metrognome.ui.components.GoldPill(
+                    text        = sound.displayName,
+                    leadingIcon = com.example.metrognome.ui.sounds.soundGlyphFor(sound.slug),
+                    onClick     = { showSoundStage = true },
+                    modifier    = Modifier
+                        .semantics { contentDescription = "Click sound: ${sound.displayName}. Browse sounds" },
+                )
+                SessionClassicHint(
+                    visible = showClassicHint,
+                    onClick = { showClassicHint = false; showSoundStage = true },
+                )
+            }
         }
 
         BpmStepperRow(
@@ -1368,3 +1404,46 @@ private fun SecondaryControlsRowPreview() {
     )
 }
 
+private const val CLASSIC_HINT_MS = 6_000L
+
+/**
+ * The one-time note under the Home sound pill as a Groove Check session takes the click over:
+ * the pill has just changed to "Classic" by itself, and this says why. Tapping it opens the
+ * sound stage, whose footnote carries the full sentence.
+ */
+@Composable
+private fun SessionClassicHint(visible: Boolean, onClick: () -> Unit) {
+    androidx.compose.animation.AnimatedVisibility(
+        visible = visible,
+        enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
+        exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
+    ) {
+        com.example.metrognome.ui.components.AppInset(
+            highlighted = true,
+            onClick = onClick,
+            shape = AppRadius.Chip,
+            modifier = Modifier
+                .padding(top = 6.dp)
+                .semantics { contentDescription = "Classic click while Groove Check listens. Learn more" },
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                AppIcon(
+                    AppIcons.Mic, contentDescription = null,
+                    tint = AppColors.goldSoft, modifier = Modifier.size(11.dp),
+                )
+                Text(
+                    text = "For Groove Check",
+                    color = AppColors.textSecondary,
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}

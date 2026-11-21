@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -69,13 +70,15 @@ fun GoldSlider(
         )
     }
 
+    // Material3 1.5 dropped the value-based Slider that took a custom thumb and track; only the
+    // SliderState one takes them now. This is what the library's own value overload does.
+    val sliderState = remember(steps, valueRange) { SliderState(value, steps, valueRange) }
+    sliderState.value = value
     Slider(
-        value = value,
+        state = sliderState,
         onValueChange = onValueChange,
-        valueRange = valueRange,
-        steps = steps,
         modifier = modifier,
-        thumb = {
+        thumb = { _ ->
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(24.dp),
