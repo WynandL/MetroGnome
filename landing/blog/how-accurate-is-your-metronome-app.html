@@ -25,7 +25,7 @@
     "headline": "How Accurate Is Your Metronome App?",
     "description": "Is Google's metronome accurate enough for practice? It depends on who controls the timing. Here is why audio-clock-anchored engines click differently from timer-based ones.",
     "datePublished": "2026-06-17",
-    "dateModified": "2026-06-17",
+    "dateModified": "2026-11-21",
     "author": { "@type": "Organization", "name": "Access Comms", "email": "accesscommsa@gmail.com" },
     "publisher": {
       "@type": "Organization",
@@ -119,7 +119,7 @@
 
       <h2>Pre-Generated Click Sounds</h2>
 
-      <p>Click synthesis happens once, at app startup, not on each beat. At initialisation, the engine generates eight different click buffers covering all sound types: a standard click at 1,100Hz lasting 38ms, an accent click at 1,800Hz lasting 50ms, hi-hat variants at 9,000Hz, woodblock variants at 600Hz and 800Hz, and a warm click at 350Hz lasting 130ms. The warm click includes three early reflections at delays of 28ms, 52ms, and 80ms at decreasing amplitudes, simulating room reverb without a convolution reverb unit.</p>
+      <p>Click synthesis happens once, at app startup, not on each beat. At initialisation, the engine generates a click and an accent buffer for every sound type: a standard click at 1,100Hz lasting 38ms with an accent at 1,800Hz lasting 50ms, a hi-hat tick at 9,000Hz with its accent at 7,000Hz, woodblock variants at 600Hz and 800Hz, and a warm click at 350Hz lasting 130ms, plus the optional sounds, among them a drum-machine hi-hat built from six square-wave oscillators and filtered noise. The warm click includes three early reflections at delays of 28ms, 52ms, and 80ms at decreasing amplitudes, simulating room reverb without a convolution reverb unit.</p>
 
       <p>Pre-generating these buffers means the audio thread has zero CPU work on the beat itself. At the start of each beat loop iteration, it selects the appropriate pre-built buffer and copies it into the output. No floating-point synthesis, no memory allocation, no garbage collector pressure during the write. The thread does exactly one thing on the critical path: write data the hardware is waiting for.</p>
 

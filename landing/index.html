@@ -54,7 +54,8 @@
     ],
     "description": "Free metronome, chromatic tuner, tuning drone, chord finder, rhythm game, speed trainer, and practice timer for Android with smart ambient noise detection, plus Gnotes earned by practising that unlock collectible items for Metro the gnome.",
     "featureList": [
-      "Precision metronome with tap tempo and BPM presets",
+      "Precision metronome with tap tempo, BPM presets and ten click sounds",
+      "Any time signature up to 16 beats, with accents you set beat by beat",
       "Chromatic tuner with ambient noise detection",
       "Tuning drone for intonation practice, any note C2 to B5, sharing the tuner's reference pitch",
       "Chord finder that names any chord you play or tap, on guitar or piano",
@@ -92,6 +93,14 @@
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "Tap the TAP button and Metro Gnome calculates your BPM from the interval between taps (at least 2 taps within 2.5 seconds). You can save any BPM as a named preset. The metronome uses raw AudioTrack for sample-accurate timing that does not drift over long sessions."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What click sounds and time signatures does the metronome have?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ten click sounds. Classic, Hi-Hat, Wood and Warm are free; Bell, Crystal Bowl, Kalimba, Cowbell, Metal Kick and Studio Hi-Hat are optional one-time extras you can preview before buying. Every sound has its own accent, so the start of the bar is easy to hear. Tap the beats above Metro to open the time signature stage: nine everyday meters from 2/4 to 7/8 are a swipe away, you can build your own up to 16 beats, and you can accent any beat to set your own grouping, such as 2+2+3 or 3+2+2 in 7/8."
         }
       },
       {
@@ -973,8 +982,8 @@ html{-webkit-tap-highlight-color:transparent}
           <ul>
             <li>Tap tempo - just tap the beat</li>
             <li>BPM presets - save your favourite tempos</li>
-            <li>Custom accent beat and time signature</li>
-            <li>Multiple sounds: click, hi-hat, woodblock, warm, bell</li>
+            <li>Any time signature, with the accents you choose</li>
+            <li>Ten click sounds: four free, six optional extras</li>
             <li>Background play</li>
           </ul>
         </article>
@@ -1493,6 +1502,19 @@ html{-webkit-tap-highlight-color:transparent}
             (requires at least 2 taps within 2.5 seconds). You can also save any BPM as a named preset and
             switch between songs instantly. The metronome uses raw AudioTrack on the Android audio stack for
             sample-accurate timing that doesn't drift over long sessions.
+          </div>
+        </details>
+
+        <details>
+          <summary>What click sounds and time signatures does the metronome have?</summary>
+          <div class="faq-answer">
+            Ten click sounds. Classic, Hi-Hat, Wood and Warm are free; Bell, Crystal Bowl, Kalimba, Cowbell,
+            Metal Kick and Studio Hi-Hat are optional one-time extras you can preview before buying. Every sound
+            has its own accent, so the start of the bar is easy to hear. Tap the beats above Metro to open the
+            time signature stage: nine everyday meters from 2/4 to 7/8 are a swipe away, you can build your own
+            up to 16 beats, and you can accent any beat to set your own grouping, such as 2+2+3 or 3+2+2 in 7/8.
+            Try odd meters in the <a href="/tools/odd-meter-practice-tool.html">browser version</a>, or read
+            <a href="/blog/time-signatures-explained.html">time signatures explained</a>.
           </div>
         </details>
 
