@@ -269,20 +269,24 @@ private fun StartCheckCta(modifier: Modifier, onStartCheck: () -> Unit) {
             tint = AppColors.gold,
             modifier = Modifier.size(15.dp),
         )
-        Text(
-            "Score your timing",
-            color = AppColors.textSecondary,
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            "· run a quick Groove Check",
-            color = AppColors.textMuted,
-            fontSize = 10.sp,
-            lineHeight = 14.sp,
-            modifier = Modifier.weight(1f),
-        )
+        // Title over subtitle, as in PermissionNeededReminder: side by side, the subtitle
+        // wrapped into a ragged second column at 1.3x fonts.
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "Score your timing",
+                color = AppColors.textSecondary,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                "Run a quick Groove Check",
+                color = AppColors.textMuted,
+                fontSize = 10.sp,
+                lineHeight = 14.sp,
+                modifier = Modifier.padding(top = 1.dp),
+            )
+        }
         AppIcon(
             glyph = AppIcons.ChevronRight,
             contentDescription = null,

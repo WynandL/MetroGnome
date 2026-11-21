@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontFamily
 import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.input.pointer.changedToUp
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -131,7 +133,7 @@ fun MetronomeScreen(
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
     val timeSigDenom by vm.timeSigDenom.collectAsStateWithLifecycle()
     val accentBeats by vm.accentBeats.collectAsStateWithLifecycle()
-    val meterStageSeen by vm.meterStageSeen.collectAsStateWithLifecycle()
+    val meterHintDone by vm.meterHintDone.collectAsStateWithLifecycle()
     var showMeterStage by remember { mutableStateOf(false) }
     val activeItemIds by vm.activeItemIds.collectAsStateWithLifecycle()
     val activeItems = androidx.compose.runtime.remember(activeItemIds) {
@@ -269,7 +271,50 @@ fun MetronomeScreen(
     }
 
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    // The time signature's invitation. Home is "idle" when nothing is going on and the player
+    // has not touched the screen for METER_IDLE_MS: metronome stopped, no session, no dialog,
+    // overlay or poll card up, the app in front. Only then does the strip glow, and (once per
+    // launch, until acknowledged) the hint card hang from it. Any touch ends the idle spell.
+    val pollOnScreen by vm.pollOnScreen.collectAsStateWithLifecycle()
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    val resumed by lifecycle.currentStateFlow.collectAsStateWithLifecycle()
+    val calm = !isPlaying && !anySessionOpen && !pollOnScreen && !showMeterStage &&
+        !com.example.metrognome.ui.overlays.ModalPresence.anyOpen &&
+        resumed.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
+    var touchSerial by remember { mutableIntStateOf(0) }
+    var homeIdle by remember { mutableStateOf(false) }
+    LaunchedEffect(calm, touchSerial) {
+        homeIdle = false
+        if (calm) {
+            kotlinx.coroutines.delay(METER_IDLE_MS)
+            homeIdle = true
+        }
+    }
+    val meterInvite = homeIdle && !meterHintDone
+    var meterHintCard by remember { mutableStateOf(false) }
+    LaunchedEffect(meterInvite) {
+        if (meterInvite && !vm.meterHintCardShown) {
+            vm.meterHintCardShown = true
+            meterHintCard = true
+        } else if (!meterInvite) {
+            meterHintCard = false
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            // Watches every finger lift on Home without consuming it (Final pass, after the
+            // tapped control has had it), so a tap on the hint's own buttons lands first.
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Final)
+                        if (e.changes.any { it.changedToUp() }) touchSerial++
+                    }
+                }
+            }
+    ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -283,7 +328,7 @@ fun MetronomeScreen(
             isPlaying = isPlaying,
             bpm = bpm,
             beats = vm.beatEvents,
-            showHint = !meterStageSeen,
+            invite = meterInvite,
             onClick = { showMeterStage = true },
         )
 
@@ -508,6 +553,17 @@ fun MetronomeScreen(
             AdBannerView(modifier = Modifier.fillMaxWidth())
         }
     }
+
+    // Hangs from the strip's row of gems, its notch under their centre.
+    com.example.metrognome.ui.meter.MeterHintCard(
+        visible = meterHintCard,
+        onOpen = { meterHintCard = false; showMeterStage = true },
+        onGotIt = { meterHintCard = false; vm.acknowledgeMeterHint() },
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .padding(top = com.example.metrognome.ui.meter.METER_ROW_BOTTOM - 4.dp, start = 16.dp, end = 16.dp)
+            .offset(x = com.example.metrognome.ui.meter.METER_GEMS_OFFSET),
+    )
 
     tappedItem?.let { item ->
         AppDialog(onDismiss = { tappedItem = null }) {
@@ -1337,6 +1393,9 @@ private fun SecondaryControlsRowPreview() {
 }
 
 private const val CLASSIC_HINT_MS = 6_000L
+
+/** How long Home must sit untouched on a stopped metronome before the time signature invites a tap. */
+private const val METER_IDLE_MS = 4_000L
 
 /**
  * The one-time note under the Home sound pill as a Groove Check session takes the click over:

@@ -67,7 +67,7 @@ fun rememberStageClock(): StageClock {
 }
 
 /** How far ahead of its vsync a frame reaches the display. */
-private class PresentationLead(fallbackNs: Long) {
+internal class PresentationLead(fallbackNs: Long) {
     @Volatile var ns: Long = fallbackNs
     @Volatile var active = true
 

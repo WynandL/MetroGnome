@@ -1017,16 +1017,23 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // Until the meter stage has been opened once, the Home strip runs its "these beats open
-    // something" light along the resting bar (MeterStrip). Persisted: once found, never again.
-    private val _meterStageSeen = MutableStateFlow(prefs.getBoolean("meter_stage_seen", false))
-    val meterStageSeen: StateFlow<Boolean> = _meterStageSeen.asStateFlow()
+    // The Home strip's "tap the beats" hint (MeterStrip). It ends for good once acknowledged:
+    // "Got it" on its card, or opening the meter stage at all. Persisted with commit, since it
+    // is a user's answer.
+    private val _meterHintDone = MutableStateFlow(prefs.getBoolean("meter_hint_done", false))
+    val meterHintDone: StateFlow<Boolean> = _meterHintDone.asStateFlow()
 
-    fun markMeterStageSeen() {
-        if (_meterStageSeen.value) return
-        _meterStageSeen.value = true
-        prefs.edit { putBoolean("meter_stage_seen", true) }
+    fun acknowledgeMeterHint() {
+        if (_meterHintDone.value) return
+        _meterHintDone.value = true
+        prefs.edit(commit = true) { putBoolean("meter_hint_done", true) }
     }
+
+    // Until acknowledged, the card shows at most once per launch: anything the player does on
+    // Home puts it away, and it does not come back the next time they pause. The glow on the
+    // strip itself still returns at every idle moment. Held here, not in the screen, so a tab
+    // switch does not re-arm it.
+    var meterHintCardShown = false
 
     /** Flip the accent on a single 0-based pulse, leaving the rest of the pattern intact. */
     fun toggleAccent(beatIndex: Int) {

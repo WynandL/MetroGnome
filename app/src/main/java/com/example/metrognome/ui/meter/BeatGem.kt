@@ -1,5 +1,6 @@
 package com.example.metrognome.ui.meter
 
+import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -16,7 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import com.example.metrognome.ui.game.PresentationLead
 import com.example.metrognome.ui.components.drawSpark
 import com.example.metrognome.ui.theme.AppColors
 import com.example.metrognome.ui.theme.ItemPalette
@@ -46,19 +49,29 @@ private const val RING_S = 0.45f
 private const val GLINT_S = 0.38f
 private const val NEVER = Long.MIN_VALUE
 
+/** A presentation time further ahead than this is not believed (a bad timestamp). */
+private const val MAX_LEAD_NS = 1_000_000_000L
+
 /**
  * When each beat last sounded, and a frame clock to animate from. One per surface.
  * Read [frameNs] inside a draw block to redraw (not recompose) every frame while it runs.
+ *
+ * **A gem lights when its click is heard, not when the engine queues it.** The beat callback
+ * fires a whole output buffer early (about a quarter of a second on the dev's S926B), so each
+ * beat is held in [pending] until its `presentedMs` (when the click leaves the speaker, the
+ * clock the mic features score against) and [frameNs] is the time the frame being drawn
+ * reaches the glass, not its vsync. The two meet on the beat.
  */
 @Stable
 class BeatPulse internal constructor() {
     private val hitNs = LongArray(MeterLayout.MAX_BEATS) { NEVER }
     private var lastStampNs = NEVER
+    private val pending = ArrayDeque<Pair<Int, Long>>()
     internal var celebrateNs = NEVER
         private set
     internal var beatSec = 0.5f
 
-    /** The frame clock, System.nanoTime based. Read it in a draw block before anything else. */
+    /** On-glass time of the frame being drawn, System.nanoTime based. Read it in a draw block first. */
     var frameNs by mutableLongStateOf(System.nanoTime())
         internal set
 
@@ -68,7 +81,7 @@ class BeatPulse internal constructor() {
 
     /** Light the whole bar in a cascade (the stage's "chosen" moment). */
     fun celebrate() {
-        celebrateNs = System.nanoTime()
+        celebrateNs = frameNs.coerceAtLeast(System.nanoTime())
         if (!running) wake++
     }
 
@@ -76,11 +89,23 @@ class BeatPulse internal constructor() {
     var lastBeat = -1
         private set
 
-    internal fun stamp(beat: Int) {
+    /** Beat [beat] will be heard at [atNs] (System.nanoTime base). */
+    internal fun schedule(beat: Int, atNs: Long) {
         val now = System.nanoTime()
-        if (beat in hitNs.indices) hitNs[beat] = now
-        lastBeat = beat
-        lastStampNs = now
+        pending.addLast(beat to atNs.coerceIn(now - MAX_LEAD_NS, now + MAX_LEAD_NS))
+    }
+
+    /** Beats that will never be heard (the metronome stopped). */
+    internal fun dropPending() = pending.clear()
+
+    /** Moves every beat heard by [frameNs] from [pending] to the bar. */
+    internal fun advance() {
+        while (pending.isNotEmpty() && pending.first().second <= frameNs) {
+            val (beat, at) = pending.removeFirst()
+            if (beat in hitNs.indices) hitNs[beat] = at
+            lastBeat = beat
+            lastStampNs = at
+        }
     }
 
     /** Seconds since beat [i] sounded, or null if it has not (or long ago). */
@@ -88,7 +113,7 @@ class BeatPulse internal constructor() {
         val t = hitNs.getOrNull(i) ?: return null
         if (t == NEVER) return null
         val a = (frameNs - t) / 1e9f
-        return if (a > 4f) null else a.coerceAtLeast(0f)
+        return if (a > 4f || a < 0f) null else a
     }
 
     /** 1 at the beat, fading over roughly a beat. */
@@ -109,13 +134,13 @@ class BeatPulse internal constructor() {
         if (lastBeat < 0 || lastStampNs == NEVER) return null
         val since = (frameNs - lastStampNs) / 1e9f
         if (since > beatSec * 1.5f) return null
-        return lastBeat + (since / beatSec).coerceAtMost(1f)
+        return lastBeat + (since / beatSec).coerceIn(0f, 1f)
     }
 
     internal fun idle(): Boolean {
-        val now = System.nanoTime()
-        val quiet = lastStampNs == NEVER || now - lastStampNs > 2_000_000_000L
-        val calm = celebrateNs == NEVER || now - celebrateNs > 3_000_000_000L
+        if (pending.isNotEmpty()) return false
+        val quiet = lastStampNs == NEVER || frameNs - lastStampNs > 2_000_000_000L
+        val calm = celebrateNs == NEVER || frameNs - celebrateNs > 3_000_000_000L
         return quiet && calm
     }
 }
@@ -129,20 +154,31 @@ fun rememberBeatPulse(beats: Flow<BeatEvent>?, playing: Boolean, bpm: Int, keepA
     val pulse = remember { BeatPulse() }
     pulse.beatSec = 60f / bpm.coerceIn(20, 300)
     val awake by rememberUpdatedState(playing || keepAwake)
+    val view = LocalView.current
     LaunchedEffect(beats) {
         beats?.collect { e ->
-            pulse.stamp(e.beat)
+            // presentedMs is on the boot clock; frames are on System.nanoTime.
+            val bootOffsetNs = SystemClock.elapsedRealtimeNanos() - System.nanoTime()
+            pulse.schedule(e.beat, e.presentedMs * 1_000_000L - bootOffsetNs)
             if (!pulse.running) pulse.wake++
         }
     }
+    LaunchedEffect(playing) { if (!playing) pulse.dropPending() }
     LaunchedEffect(playing, keepAwake, pulse.wake) {
+        val refresh = view.display?.refreshRate?.takeIf { it >= 30f } ?: 60f
+        // The rhythm stage's estimate of how far ahead of its vsync a frame reaches the glass.
+        val lead = PresentationLead(fallbackNs = (2e9 / refresh).toLong())
         pulse.running = true
         try {
             while (true) {
-                withFrameNanos { pulse.frameNs = System.nanoTime() }
+                withFrameNanos { t ->
+                    pulse.frameNs = t + lead.ns
+                    pulse.advance()
+                }
                 if (!awake && pulse.idle()) break
             }
         } finally {
+            lead.stop()
             pulse.running = false
         }
     }

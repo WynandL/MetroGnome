@@ -189,7 +189,7 @@ fun MeterStage(
         pulse.celebrate()
         val r = Random(System.nanoTime())
         burst = List(22) { Particle.random(r, finale = false) }
-        burstNs = System.nanoTime()
+        burstNs = pulse.celebrateNs // the pulse's clock (on-glass time), so sparks and shockwaves start together
         haptics.fire(HapticPattern.TICK)
     }
 

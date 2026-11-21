@@ -19,6 +19,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
+import android.os.SystemClock
+import kotlinx.coroutines.delay
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -120,31 +123,49 @@ fun GnomeCanvas(
         if (!isPlaying) pendulumAngle.animateTo(0f, tween(300, easing = LinearEasing))
     }
 
+    val playingNow by rememberUpdatedState(isPlaying)
+    val refreshHz = LocalView.current.display?.refreshRate?.takeIf { it >= 30f } ?: 60f
     LaunchedEffect(beatEvents) {
         var goingRight = true
+        // A frame drawn now reaches the glass about two refresh periods later.
+        val frameLeadMs = (2_000f / refreshHz).toLong()
         beatEvents.collect { event ->
-            // Pendulum: alternate direction on every beat, driven by actual beat timing.
-            // Each animateTo takes exactly one beat duration so the baton arrives at
-            // the opposite extreme precisely when the next beat fires.
-            val beatMs = (60_000f / currentBpm).toInt().coerceAtLeast(100)
-            val target = if (goingRight) 1f else -1f
-            goingRight = !goingRight
-            launch { pendulumAngle.animateTo(target, tween(beatMs, easing = LinearEasing)) }
+            // Metro moves when the click is HEARD, not when the engine queues it: the beat
+            // event arrives a whole output buffer early (~250 ms on the dev's S926B), so each
+            // beat waits until its presentedMs, less the frame's own trip to the glass (the
+            // meter strip's gems do the same, so Metro and the strip agree).
+            //
+            // Purely the visual side. The collector never suspends (each beat gets its own
+            // coroutine), so the beat flow never backs up, and the engine's audio thread never
+            // waits on any of this: it only stamps the time and hands the beat on.
+            val waitMs = (event.presentedMs - SystemClock.elapsedRealtime() - frameLeadMs).coerceIn(0L, 1_000L)
+            launch {
+                if (waitMs > 0) delay(waitMs)
+                // A beat still waiting when the metronome stopped was cut off and never sounds.
+                if (!playingNow) return@launch
 
-            launch {
-                bounce.snapTo(1f)
-                bounce.animateTo(0f, tween(250))
-            }
-            if (flashOnBeat) {
+                // Pendulum: alternate direction on every beat. Each animateTo takes exactly one
+                // beat, so the baton arrives at the opposite extreme as the next click is heard.
+                val beatMs = (60_000f / currentBpm).toInt().coerceAtLeast(100)
+                val target = if (goingRight) 1f else -1f
+                goingRight = !goingRight
+                launch { pendulumAngle.animateTo(target, tween(beatMs, easing = LinearEasing)) }
+
                 launch {
-                    val maxFlash = if (event.beat in accentBeats) 0.7f else 0.35f
-                    flash.snapTo(maxFlash)
-                    flash.animateTo(0f, tween(350))
+                    bounce.snapTo(1f)
+                    bounce.animateTo(0f, tween(250))
                 }
-            }
-            launch {
-                twinkle.snapTo(1f)
-                twinkle.animateTo(0f, tween(300))
+                if (flashOnBeat) {
+                    launch {
+                        val maxFlash = if (event.beat in accentBeats) 0.7f else 0.35f
+                        flash.snapTo(maxFlash)
+                        flash.animateTo(0f, tween(350))
+                    }
+                }
+                launch {
+                    twinkle.snapTo(1f)
+                    twinkle.animateTo(0f, tween(300))
+                }
             }
         }
     }

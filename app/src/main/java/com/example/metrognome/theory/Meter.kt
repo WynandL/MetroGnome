@@ -4,7 +4,7 @@ package com.example.metrognome.theory
  * Single source of truth for time-signature music theory.
  *
  * Pure Kotlin (no Android dependencies) so it can be unit-tested directly and shared by
- * the metronome engine, the ViewModel, and the Settings UI without duplicating rules.
+ * the metronome engine, the ViewModel, and the meter stage without duplicating rules.
  *
  * Design notes:
  *  - Classification (simple / compound / irregular) depends only on the top number. That
@@ -15,7 +15,7 @@ package com.example.metrognome.theory
  *    matches the engine's existing behaviour. defaultAccents says which of those pulses
  *    are accented, and that set is derived from beatGrouping so the same grouping that
  *    names the meter also drives the sound.
- *  - Irregular groupings are a sensible default, not gospel. The Settings UI lets the user
+ *  - Irregular groupings are a sensible default, not gospel. The meter stage lets the user
  *    override accents per beat, which is exactly why we do not try to pick the "one true"
  *    grouping for odd meters (a contested topic with no global consensus).
  */

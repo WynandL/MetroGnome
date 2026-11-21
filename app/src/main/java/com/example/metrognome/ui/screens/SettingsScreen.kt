@@ -145,7 +145,7 @@ fun SettingsScreen(
         ) {
             Spacer(Modifier.height(16.dp))
 
-            SettingsCard("Tempo & Rhythm") {
+            SettingsCard("Tempo") {
 
                 // BPM slider
                 SettingsSliderRow(
@@ -155,8 +155,6 @@ fun SettingsScreen(
                     range = 20f..300f,
                     onValueChange = { vm.setBpm(it.roundToInt()) }
                 )
-                // The time signature and its accents live on the meter stage (the beats above
-                // Metro on Home), the one place to change them, so nothing here can drift.
             }
             Spacer(Modifier.height(CardGap))
             SettingsCard("Sound") {

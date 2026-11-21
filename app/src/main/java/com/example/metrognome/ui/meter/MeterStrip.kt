@@ -15,58 +15,68 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.example.metrognome.ui.theme.AppColors
-import com.example.metrognome.ui.theme.AppRadius
 import com.example.metrognome.viewmodel.BeatEvent
 import kotlinx.coroutines.flow.Flow
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.min
 
-/** The strip's whole height on Home: exactly the old beat row's (48 + 20 + 4), so Metro keeps his. */
-val METER_STRIP_HEIGHT = 72.dp
+/**
+ * The strip's whole height on Home. 16 dp taller than the old beat row's 72 dp (the dev asked
+ * for more room round the beats), all of it in the row, so the gems stay centred in it.
+ */
+val METER_STRIP_HEIGHT = 88.dp
 
 private val ROW_TOP = 44.dp
-private val ROW_HEIGHT = 28.dp
+private val ROW_HEIGHT = 44.dp
 private val MAX_PITCH = 22.dp
 private val LABEL_WIDTH = 14.dp
 private val LABEL_GAP = 9.dp
 private val SIDE_PAD = 8.dp
 
-/** Every 6.5 s while the hint is on, a light runs along the bar once. */
-private const val HINT_PERIOD_S = 6.5f
-private const val HINT_SWEEP_S = 1.2f
+/** How far right of the strip's centre the gems' centre sits (the fraction is on their left). */
+val METER_GEMS_OFFSET = (LABEL_WIDTH + LABEL_GAP) / 2
+
+/** Where the row of gems ends, from the strip's top: the hint card hangs from here. */
+val METER_ROW_BOTTOM = ROW_TOP + ROW_HEIGHT
+
+/** While inviting, a light runs along the bar every few seconds. */
+private const val SWEEP_PERIOD_S = 3.4f
+private const val SWEEP_S = 1.2f
+/** The glow behind the bar breathes over this period. */
+private const val BREATH_S = 2.4f
 
 /**
  * The time signature above Metro: the bar's beats as gems, grouped by its accents, with the
  * meter itself as a small stacked fraction at the left (7/8 and 7/4 have the same seven
  * beats; the fraction is what tells them apart). Tapping it opens the meter stage.
  *
- * There is no pill: the fraction is what says "this is the time signature", and until the
- * stage has been opened once ([showHint]) a soft light runs along the resting bar every few
- * seconds while the metronome is stopped, lighting each beat in turn, the same motion the
- * bar makes when it plays. It stops for good once the player has found the stage.
+ * There is no pill. While [invite] is on (Home decides: the player is idle on a stopped
+ * metronome and has not yet acknowledged the hint, see [MeterHintCard]) the bar asks to be
+ * touched: a soft gold glow breathes behind it and a light runs along the beats every few
+ * seconds, the same motion the bar makes when it plays. Never while the metronome plays.
  *
- * Timing: lights on the beat callback ([beats]), the same moment Metro's baton swings, so the
- * strip and Metro never disagree. Draws in the draw phase off [BeatPulse.frameNs], so Home is
- * not recomposed every frame.
+ * Timing: each gem lights when its click is heard ([BeatPulse]), not on the early beat
+ * callback. Draws in the draw phase off [BeatPulse.frameNs], so Home is not recomposed every
+ * frame.
  */
 @Composable
 fun MeterStrip(
@@ -76,27 +86,14 @@ fun MeterStrip(
     isPlaying: Boolean,
     bpm: Int,
     beats: Flow<BeatEvent>,
-    showHint: Boolean,
+    invite: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val hintOn = showHint && !isPlaying
-    // The frame loop wakes only for each sweep, so the pause between them costs nothing.
-    var sweepStartNs by remember { mutableLongStateOf(0L) }
-    var sweeping by remember { mutableStateOf(false) }
-    LaunchedEffect(hintOn) {
-        sweeping = false
-        if (!hintOn) return@LaunchedEffect
-        delay(1_500)
-        while (true) {
-            sweepStartNs = System.nanoTime()
-            sweeping = true
-            delay((HINT_SWEEP_S * 1.4f * 1000).toLong())
-            sweeping = false
-            delay(((HINT_PERIOD_S - HINT_SWEEP_S * 1.4f) * 1000).toLong())
-        }
-    }
-    val pulse = rememberBeatPulse(beats, isPlaying, bpm, keepAwake = hintOn && sweeping)
+    val inviting = invite && !isPlaying
+    var inviteStartNs by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(inviting) { if (inviting) inviteStartNs = System.nanoTime() }
+    val pulse = rememberBeatPulse(beats, isPlaying, bpm, keepAwake = inviting)
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
     val numeralStyle = remember(density) {
@@ -152,8 +149,16 @@ fun MeterStrip(
                 val cy = size.height / 2f
                 val base = min(6f * dp, line.pitch * 0.30f)
 
-                // The hint: a soft light running along the resting bar.
-                val sweep = if (hintOn && sweeping) (now - sweepStartNs) / 1e9f / HINT_SWEEP_S else -1f
+                // The invitation: a breathing glow behind the bar, and a light running along it.
+                var sweep = -1f
+                if (inviting) {
+                    val t = ((now - inviteStartNs) / 1e9f).coerceAtLeast(0f)
+                    val fadeIn = (t / 0.8f).coerceAtMost(1f)
+                    val breath = 0.5f - 0.5f * cos(2f * PI.toFloat() * t / BREATH_S)
+                    drawInviteGlow(cy, (0.14f + 0.22f * breath) * fadeIn)
+                    val cycle = (t - 0.6f).mod(SWEEP_PERIOD_S)
+                    if (t > 0.6f && cycle < SWEEP_S * 1.4f) sweep = cycle / SWEEP_S
+                }
 
                 for (i in 0 until n) {
                     val accent = i in accents
@@ -172,5 +177,24 @@ fun MeterStrip(
                 }
             }
         }
+    }
+}
+
+/** A soft gold glow along the whole row of gems, wider than tall, fading out at its ends. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawInviteGlow(cy: Float, alpha: Float) {
+    val dp = 1.dp.toPx()
+    val halfW = size.width / 2f + 14f * dp
+    val halfH = 15f * dp
+    val c = Offset(size.width / 2f, cy)
+    scale(scaleX = halfW / halfH, scaleY = 1f, pivot = c) {
+        drawCircle(
+            androidx.compose.ui.graphics.Brush.radialGradient(
+                0f to AppColors.gold.copy(alpha = alpha),
+                0.55f to AppColors.gold.copy(alpha = alpha * 0.45f),
+                1f to androidx.compose.ui.graphics.Color.Transparent,
+                center = c, radius = halfH,
+            ),
+            halfH, c,
+        )
     }
 }

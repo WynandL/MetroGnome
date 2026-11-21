@@ -9,8 +9,7 @@ import com.example.metrognome.viewmodel.MetronomeViewModel
 
 /**
  * The meter stage bound to the metronome: the one place that maps [MetronomeViewModel] onto
- * [MeterStageOverlay], and the only way to change the time signature (it used to live in a
- * Settings card).
+ * [MeterStageOverlay], and the only way to change the time signature.
  *
  * [sessionOpen] is true while a Practice or Speed Trainer session is open, playing or paused:
  * the Speed Trainer counts bars from the meter it started with, so the meter is held until
@@ -30,7 +29,8 @@ fun MetronomeMeterStage(
     val playing by vm.isPlaying.collectAsStateWithLifecycle()
     val bpm by vm.bpm.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) { vm.markMeterStageSeen() }
+    // Finding the stage is the hint's purpose: once here, the Home hint has done its job.
+    LaunchedEffect(Unit) { vm.acknowledgeMeterHint() }
 
     val inUse = Meter(top, bottom)
     MeterStageOverlay(
