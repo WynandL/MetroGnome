@@ -56,6 +56,10 @@ class MetronomeEngine {
     // Premium (index 8): metal kick, a deep sustained doof with a beater on top
     private val kickClick  = generateMetalKick(startHz = 160.0, endHz = 58.0, durationMs = 480, volume = 0.88f)
     private val kickAccent = generateMetalKick(startHz = 190.0, endHz = 62.0, durationMs = 520, volume = 0.98f)
+    // Hi-Hat (index 1), the noise voice: closed on the beat, open on the accent (HiHatVoice).
+    // Played instead of the sine pair above only while [noiseHiHat] is on.
+    private val hatClosed = HiHatVoice.closed(sampleRate)
+    private val hatOpen = HiHatVoice.open(sampleRate)
 
     // Mutable settings — read from audio thread, written from main thread (volatile)
     @Volatile
@@ -69,6 +73,9 @@ class MetronomeEngine {
     var accentBeats: Set<Int> = setOf(0)
     @Volatile
     var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock, 3=warm, 4=bell, 5=bowl, 6=kalimba, 7=cowbell, 8=metal kick (4-8 premium)
+    /** Hi-Hat plays [HiHatVoice] (true) or the old 9 kHz sine pair. [HiHatVoice.LIVE] is the shipped choice. */
+    @Volatile
+    var noiseHiHat: Boolean = HiHatVoice.LIVE
     @Volatile
     var volume: Float = 1.0f
     @Volatile
@@ -307,7 +314,8 @@ class MetronomeEngine {
     private fun buildBeatBuffer(samplesPerBeat: Int, isAccent: Boolean, voice: Int): ShortArray {
         if (muted) return ShortArray(samplesPerBeat)
         val click = when (voice) {
-            1 -> if (isAccent) hihatAccent else hihatClick
+            1 -> if (noiseHiHat) (if (isAccent) hatOpen else hatClosed)
+                 else (if (isAccent) hihatAccent else hihatClick)
             2 -> if (isAccent) woodAccent else woodClick
             3 -> if (isAccent) deepAccent else deepClick
             4 -> if (isAccent) bellAccent else bellClick
@@ -336,7 +344,7 @@ class MetronomeEngine {
         val samplesPerBeat = (sampleRate * 60.0 / bpm).toInt()
         val result = ShortArray(samplesPerBeat * numBeats)
         val click = when (soundTypeIndex) {
-            1 -> hihatClick
+            1 -> if (noiseHiHat) hatClosed else hihatClick
             2 -> woodClick
             3 -> deepClick
             4 -> bellClick

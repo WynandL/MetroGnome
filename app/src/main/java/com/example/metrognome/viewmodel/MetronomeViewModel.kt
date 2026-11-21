@@ -678,6 +678,16 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         _activeItemIds.value = itemTracker.unlockedIds(METRO_ITEM_REGISTRY)
     }
 
+    // Dev tools only: A/B the noise Hi-Hat (HiHatVoice) against the old sine pair while it plays.
+    // Not persisted: a restart returns to the shipped HiHatVoice.LIVE.
+    private val _noiseHiHat = MutableStateFlow(engine.noiseHiHat)
+    val noiseHiHat: StateFlow<Boolean> = _noiseHiHat.asStateFlow()
+
+    fun toggleNoiseHiHat() {
+        engine.noiseHiHat = !engine.noiseHiHat
+        _noiseHiHat.value = engine.noiseHiHat
+    }
+
     private var playTimerJob: Job? = null
 
     private val audioManager = app.getSystemService(Context.AUDIO_SERVICE) as AudioManager
