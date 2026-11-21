@@ -36,7 +36,9 @@ data class ClickSound(
  *      test of the MetalKickTest shape with its own bars
  *   3. Add an entry here (next index, a new slug), and its instruments in InstrumentAffinity
  *   4. Add its glyph in ui/sounds/SoundGlyphs.kt (the build fails until you do)
- *   5. Create the product in Play Console
+ *   5. Create the product in Play Console, with [ClickSound.description] as its description
+ *   6. On master, update the website's sound counts and lists (CLAUDE.md, Website: the
+ *      homepage card, featureList and FAQ, and the drummers and accuracy posts)
  */
 val CLICK_SOUNDS: List<ClickSound> = listOf(
     ClickSound(
