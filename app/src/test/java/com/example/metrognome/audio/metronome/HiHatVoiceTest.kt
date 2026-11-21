@@ -11,13 +11,13 @@ import kotlin.math.log10
 import kotlin.math.sqrt
 
 /**
- * The noise Hi-Hat ([HiHatVoice]), proven on its own before the engine plays it.
+ * The Studio Hi-Hat ([HiHatVoice], premium soundType 9), proven on its own, plus how the engine
+ * plays it and the free Hi-Hat (soundType 1) beside it.
  *
- * The bug it fixes: the old sine pair's accent was only louder, and a phone limiting at
- * high volume levels peaks. So the central bar compares closed and open **normalised to
- * the same peak** (a limiter's worst case) and demands they still differ by how long they
- * ring. [theOldSinePairFailsTheSameBar] shows that bar catches the old voice; delete it
- * with the old pair once [HiHatVoice.LIVE] ships.
+ * The central bar compares closed and open **normalised to the same peak** (a phone's
+ * limiter's worst case) and demands they still differ by how long they ring.
+ * [theFreeHiHatsAccentIsALowerNote] covers the free voice, whose accent was only louder
+ * until 2026-11-21 and now also sits a note lower.
  */
 class HiHatVoiceTest {
 
@@ -150,36 +150,58 @@ class HiHatVoiceTest {
         assertArrayEquals(HiHatVoice.open(sr), HiHatVoice.open(sr))
     }
 
-    /** The same equal-peak bar, on the old sine pair still in the engine: it must fail it. */
-    @Test
-    fun theOldSinePairFailsTheSameBar() {
-        fun engineBuffer(name: String): FloatArray {
-            val f = MetronomeEngine::class.java.getDeclaredField(name).apply { isAccessible = true }
-            return toFloat(f.get(MetronomeEngine()) as ShortArray)
-        }
-        val c = peakNormalised(engineBuffer("hihatClick"))
-        val o = peakNormalised(engineBuffer("hihatAccent"))
-        val ratio = ringMs(o) / ringMs(c)
-        println("old pair ring ratio at equal peak: ${"%.2f".format(ratio)}")
-        assertTrue("the old accent is not distinct by length, ratio $ratio", ratio < 2.0)
-        assertTrue("the old voice is a tone", spectrum(c).max() > 0.1)
+    private fun engineBuffer(name: String): FloatArray {
+        val f = MetronomeEngine::class.java.getDeclaredField(name).apply { isAccessible = true }
+        return toFloat(f.get(MetronomeEngine()) as ShortArray)
     }
 
-    /** The switch: the engine plays this voice only when told to, on both beat kinds. */
+    private fun peakHz(x: FloatArray): Double {
+        val s = spectrum(x)
+        return s.indices.maxBy { s[it] } * sr / 4096.0
+    }
+
+    /**
+     * The free Hi-Hat keeps its 9 kHz tick, and its accent is now a lower note (7 kHz) as well
+     * as longer and louder, so a phone's limiter cannot make the two sound alike.
+     */
     @Test
-    fun theEngineSwitchSelectsTheVoice() {
-        val engine = MetronomeEngine()
+    fun theFreeHiHatsAccentIsALowerNote() {
+        val beat = peakHz(engineBuffer("hihatClick"))
+        val accent = peakHz(engineBuffer("hihatAccent"))
+        println("free Hi-Hat: beat ${"%.0f".format(beat)} Hz, accent ${"%.0f".format(accent)} Hz")
+        assertEquals(9000.0, beat, 50.0)
+        assertEquals(7000.0, accent, 50.0)
+        // About four semitones; at these heights the ear needs a clear step, not a cent or two.
+        assertTrue(accent / beat < 0.85)
+    }
+
+    private val engine = MetronomeEngine()
+
+    private fun beatBuffer(voice: Int, accent: Boolean): ShortArray {
         val build = MetronomeEngine::class.java.getDeclaredMethod(
             "buildBeatBuffer", Int::class.java, Boolean::class.java, Int::class.java,
         ).apply { isAccessible = true }
-        val beat = sr // a 60 BPM beat, long enough for either hit
-        fun play(accent: Boolean) = (build.invoke(engine, beat, accent, 1) as ShortArray).copyOf(
-            if (accent) HiHatVoice.open(sr).size else HiHatVoice.closed(sr).size,
-        )
-        engine.noiseHiHat = true
-        assertArrayEquals(HiHatVoice.closed(sr), play(false))
-        assertArrayEquals(HiHatVoice.open(sr), play(true))
-        engine.noiseHiHat = false
-        assertTrue(!HiHatVoice.closed(sr).contentEquals(play(false)))
+        return build.invoke(engine, sr, accent, voice) as ShortArray // a 60 BPM beat
+    }
+
+    /** soundType 9 plays this voice on both beat kinds; the free Hi-Hat (1) does not. */
+    @Test
+    fun theEnginePlaysTheStudioHiHatAsVoiceNine() {
+        assertArrayEquals(HiHatVoice.closed(sr), beatBuffer(9, false).copyOf(HiHatVoice.closed(sr).size))
+        assertArrayEquals(HiHatVoice.open(sr), beatBuffer(9, true).copyOf(HiHatVoice.open(sr).size))
+        assertTrue(!HiHatVoice.closed(sr).contentEquals(beatBuffer(1, false).copyOf(HiHatVoice.closed(sr).size)))
+    }
+
+    /** The stopped preview is a bar with its accent first, so the open hat is heard before buying. */
+    @Test
+    fun thePreviewIsABarWithTheAccentFirst() {
+        val build = MetronomeEngine::class.java.getDeclaredMethod("buildPreviewBuffer", Int::class.java)
+            .apply { isAccessible = true }
+        val preview = build.invoke(engine, 9) as ShortArray
+        val beat = preview.size / 4
+        val open = HiHatVoice.open(sr)
+        val closed = HiHatVoice.closed(sr)
+        assertArrayEquals(open, preview.copyOfRange(0, open.size))
+        for (b in 1..3) assertArrayEquals(closed, preview.copyOfRange(b * beat, b * beat + closed.size))
     }
 }

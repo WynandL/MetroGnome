@@ -191,6 +191,16 @@ object AppIcons {
     )
 
     /**
+     * Studio Hi-Hat: the Hi-Hat glyph opened, the top cymbal lifted clear of the bottom one
+     * (the accent of this voice is an open hat), with a faint sizzle at either edge. Paths:
+     * top cymbal, bottom cymbal, rod, feet, two sizzle marks (faint).
+     */
+    val SoundStudioHiHat = AppGlyph(
+        listOf("M3.5 5.6Q12 1.8 20.5 5.6Q12 6.8 3.5 5.6Z", "M3.5 10.4Q12 9.2 20.5 10.4Q12 14.2 3.5 10.4Z", "M12 3.5V20.5", "M8.5 20.5 12 17.5l3.5 3", "M21.2 7.4 22.8 8.4", "M2.8 7.4 1.2 8.4"),
+        filledPaths = setOf(), faintPaths = setOf(4, 5),
+    )
+
+    /**
      * Pure: one clean sine wave, the plainest tone. Path: wave.
      */
     val DronePure = AppGlyph(

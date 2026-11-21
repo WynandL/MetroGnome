@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.ui.theme.AppColors
@@ -45,6 +46,8 @@ private val NOTCH_H = 7.dp
 @Composable
 fun MeterHintCard(
     visible: Boolean,
+    /** The room between Home's two pills; the card never grows past it. */
+    maxWidth: androidx.compose.ui.unit.Dp,
     onOpen: () -> Unit,
     onGotIt: () -> Unit,
     modifier: Modifier = Modifier,
@@ -72,38 +75,61 @@ fun MeterHintCard(
                 shape = AppRadius.Inset,
                 border = BorderStroke(1.dp, AppColors.goldBorderStrong),
                 modifier = Modifier
-                    .widthIn(max = 236.dp)
+                    .widthIn(max = maxWidth.coerceAtMost(236.dp))
                     .semantics { contentDescription = "Tap the beats to change the time signature" },
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.padding(start = 14.dp, end = 4.dp),
-                ) {
-                    Text(
-                        text = "Tap to change the time signature",
-                        color = AppColors.textPrimary,
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        modifier = Modifier.weight(1f, fill = false).padding(vertical = 9.dp),
-                    )
-                    Surface(
-                        onClick = onGotIt,
-                        color = androidx.compose.ui.graphics.Color.Transparent,
-                        shape = AppRadius.Small,
-                        modifier = Modifier.heightIn(min = 40.dp),
+                // Side by side when there is room (a wide phone); on a narrow one the words sit
+                // over "Got it", so the card stays between the pills instead of covering one.
+                if (maxWidth >= SIDE_BY_SIDE_MIN) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(start = 14.dp, end = 4.dp),
                     ) {
-                        Text(
-                            text = "Got it",
-                            color = AppColors.gold,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp),
-                        )
+                        HintText(Modifier.weight(1f, fill = false).padding(vertical = 9.dp), TextAlign.Start)
+                        GotIt(onGotIt)
+                    }
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        HintText(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp), TextAlign.Center)
+                        GotIt(onGotIt)
                     }
                 }
             }
         }
+    }
+}
+
+/** Below this the card stacks its words over "Got it". */
+private val SIDE_BY_SIDE_MIN = 220.dp
+
+@Composable
+private fun HintText(modifier: Modifier, align: TextAlign) {
+    Text(
+        text = "Tap to change the time signature",
+        color = AppColors.textPrimary,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        textAlign = align,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun GotIt(onGotIt: () -> Unit) {
+    Surface(
+        onClick = onGotIt,
+        color = androidx.compose.ui.graphics.Color.Transparent,
+        shape = AppRadius.Small,
+        modifier = Modifier.heightIn(min = 40.dp),
+    ) {
+        Text(
+            text = "Got it",
+            color = AppColors.gold,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp),
+        )
     }
 }

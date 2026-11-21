@@ -8,16 +8,16 @@ import kotlin.math.exp
 import kotlin.random.Random
 
 /**
- * The Hi-Hat voice (soundType 1), synthesised as a real hat: a short **closed** hat on every
- * beat and a longer **open** hat on the accent, which is how a drummer accents on the hats.
+ * The Studio Hi-Hat (soundType 9, premium), synthesised as a real hat: a short **closed** hat
+ * on every beat and a longer **open** hat on the accent, which is how a drummer accents on
+ * the hats.
  *
- * Why it exists: the first Hi-Hat was a 9 kHz sine for both hits, the accent only ~4 dB
- * louder and 10 ms longer. It was the one voice whose accent did not change pitch, so the
- * accent rested on loudness alone, and a phone's speaker limiting at high volume flattens
- * a 2.8 dB peak difference. The dev heard the meter's accents "all sound very similar"
- * (2026-11-21). Here the accent differs by *length*: at the same peak the open hat still
- * rings for many times longer, which no limiter can take away (`HiHatVoiceTest` asserts
- * exactly that, at equal peaks).
+ * Built (2026-11-21) as a replacement for the free Hi-Hat, a 9 kHz sine whose accent was
+ * only ~4 dB louder and 10 ms longer, which the dev heard as accents that "all sound very
+ * similar". The dev liked it enough to make it a paid voice instead; the free Hi-Hat stays
+ * and got a lower accent note. Here the accent differs by *length*: at the same peak the
+ * open hat still rings for many times longer, which no speaker limiting can take away
+ * (`HiHatVoiceTest` asserts exactly that, at equal peaks).
  *
  * Synthesis, the TR-808's recipe: six square waves at inharmonic "metal" frequencies plus
  * white noise, high-passed so only their upper partials remain (the metallic shimmer),
@@ -31,14 +31,8 @@ import kotlin.random.Random
  * in every test. Broadband noise is what `ClapDetector` accepts as a clap, so this voice
  * must never sound during mic scoring; that holds because mic sessions force Classic
  * (`MetronomeViewModel.effectiveSoundType`).
- *
- * The engine plays it only while [LIVE] (or the debug toggle) says so; flipping [LIVE] to
- * true is the whole switch, after which the old sine pair in [MetronomeEngine] can go.
  */
 object HiHatVoice {
-
-    /** The shipped switch. False: the engine plays the old sine pair. */
-    const val LIVE = false
 
     const val CLOSED_MS = 70
     const val OPEN_MS = 300

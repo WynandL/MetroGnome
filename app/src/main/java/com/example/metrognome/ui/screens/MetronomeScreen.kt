@@ -288,10 +288,19 @@ fun MetronomeScreen(
         if (calm) {
             kotlinx.coroutines.delay(METER_IDLE_MS)
             homeIdle = true
+            // The glow animates every frame, so it rests after a while: a phone left on Home
+            // (screen kept on) must not draw at 60 fps for hours. The next touch re-arms it.
+            kotlinx.coroutines.delay(METER_INVITE_MS)
+            homeIdle = false
         }
     }
     val meterInvite = homeIdle && !meterHintDone
     var meterHintCard by remember { mutableStateOf(false) }
+    // The hint card hangs between the two pills and must never cover either, whatever the
+    // phone's width, the font scale or the sound's name: measured, not guessed.
+    var homeWidthPx by remember { mutableIntStateOf(0) }
+    var gnotePillPx by remember { mutableIntStateOf(0) }
+    var soundPillPx by remember { mutableIntStateOf(0) }
     LaunchedEffect(meterInvite) {
         if (meterInvite && !vm.meterHintCardShown) {
             vm.meterHintCardShown = true
@@ -304,6 +313,7 @@ fun MetronomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .onSizeChanged { homeWidthPx = it.width }
             // Watches every finger lift on Home without consuming it (Final pass, after the
             // tapped control has had it), so a tap on the hint's own buttons lands first.
             .pointerInput(Unit) {
@@ -386,6 +396,7 @@ fun MetronomeScreen(
                         onClick     = { showGnotesInfo = true },
                         modifier    = Modifier
                             .widthIn(max = pillMaxWidth)
+                            .onSizeChanged { gnotePillPx = it.width }
                             .semantics { contentDescription = "$gnoteCount ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME}" },
                     )
                 }
@@ -410,6 +421,7 @@ fun MetronomeScreen(
                     leadingIcon = com.example.metrognome.ui.sounds.soundGlyphFor(sound.slug),
                     onClick     = { showSoundStage = true },
                     modifier    = Modifier
+                        .onSizeChanged { soundPillPx = it.width }
                         .semantics { contentDescription = "Click sound: ${sound.displayName}. Browse sounds" },
                 )
                 SessionClassicHint(
@@ -554,15 +566,20 @@ fun MetronomeScreen(
         }
     }
 
-    // Hangs from the strip's row of gems, its notch under their centre.
+    // Hangs from the strip's row of gems, centred between the two pills (12 dp from each edge,
+    // the wider one counted on both sides so the card stays centred) with 6 dp to spare.
+    val hintMaxWidth = with(androidx.compose.ui.platform.LocalDensity.current) {
+        val widestPill = maxOf(gnotePillPx, soundPillPx).toDp()
+        (homeWidthPx.toDp() - (12.dp + widestPill + 6.dp) * 2).coerceAtLeast(150.dp)
+    }
     com.example.metrognome.ui.meter.MeterHintCard(
         visible = meterHintCard,
+        maxWidth = hintMaxWidth,
         onOpen = { meterHintCard = false; showMeterStage = true },
         onGotIt = { meterHintCard = false; vm.acknowledgeMeterHint() },
         modifier = Modifier
             .align(Alignment.TopCenter)
-            .padding(top = com.example.metrognome.ui.meter.METER_ROW_BOTTOM - 4.dp, start = 16.dp, end = 16.dp)
-            .offset(x = com.example.metrognome.ui.meter.METER_GEMS_OFFSET),
+            .padding(top = com.example.metrognome.ui.meter.METER_ROW_BOTTOM - 4.dp),
     )
 
     tappedItem?.let { item ->
@@ -1396,6 +1413,9 @@ private const val CLASSIC_HINT_MS = 6_000L
 
 /** How long Home must sit untouched on a stopped metronome before the time signature invites a tap. */
 private const val METER_IDLE_MS = 4_000L
+
+/** How long one idle spell's invitation lasts before the strip rests until the next touch. */
+private const val METER_INVITE_MS = 24_000L
 
 /**
  * The one-time note under the Home sound pill as a Groove Check session takes the click over:

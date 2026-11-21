@@ -19,8 +19,9 @@ import com.example.metrognome.audio.drone.DroneTimbre
  *   4. Add an entry below
  *   5. Create the product in Play Console
  *
- * The [description] is the dialog's sales copy and has room to explain what the voice is
- * for. It is not the chip caption: that lives on the enum, is much shorter, and follows the
+ * The [description] is not shown in the app (the purchase dialog that showed it was replaced
+ * by the drone's sound stage); it is the record of the Play Console product's description.
+ * It is not the chip caption: that lives on the enum, is much shorter, and follows the
  * no-synthesis-vocabulary rule documented on `DroneTimbre.caption`.
  */
 data class PremiumDroneDef(

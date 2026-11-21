@@ -37,7 +37,9 @@ class MetronomeEngine {
     private val accentClick = generateClick(frequency = 1800.0, durationMs = 50, volume = 0.92f)
     private val hihatClick = generateClick(frequency = 9000.0, durationMs = 20, volume = 0.65f)
     private val woodClick = generateClick(frequency = 600.0, durationMs = 45, volume = 0.80f)
-    private val hihatAccent = generateClick(frequency = 9000.0, durationMs = 30, volume = 0.90f)
+    // The accent sits lower (7 kHz against the beat's 9 kHz, about four semitones) so the bar's
+    // first beat is heard by pitch as well as by length and level, as on every other free voice.
+    private val hihatAccent = generateClick(frequency = 7000.0, durationMs = 30, volume = 0.90f)
     private val woodAccent = generateClick(frequency = 800.0, durationMs = 55, volume = 0.95f)
     private val deepClick = generateDeepClick(frequency = 350.0, durationMs = 130)
     private val deepAccent = generateDeepClick(frequency = 440.0, durationMs = 150)
@@ -56,8 +58,7 @@ class MetronomeEngine {
     // Premium (index 8): metal kick, a deep sustained doof with a beater on top
     private val kickClick  = generateMetalKick(startHz = 160.0, endHz = 58.0, durationMs = 480, volume = 0.88f)
     private val kickAccent = generateMetalKick(startHz = 190.0, endHz = 62.0, durationMs = 520, volume = 0.98f)
-    // Hi-Hat (index 1), the noise voice: closed on the beat, open on the accent (HiHatVoice).
-    // Played instead of the sine pair above only while [noiseHiHat] is on.
+    // Premium (index 9): Studio Hi-Hat, the noise voice: closed on the beat, open on the accent
     private val hatClosed = HiHatVoice.closed(sampleRate)
     private val hatOpen = HiHatVoice.open(sampleRate)
 
@@ -72,10 +73,7 @@ class MetronomeEngine {
     @Volatile
     var accentBeats: Set<Int> = setOf(0)
     @Volatile
-    var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock, 3=warm, 4=bell, 5=bowl, 6=kalimba, 7=cowbell, 8=metal kick (4-8 premium)
-    /** Hi-Hat plays [HiHatVoice] (true) or the old 9 kHz sine pair. [HiHatVoice.LIVE] is the shipped choice. */
-    @Volatile
-    var noiseHiHat: Boolean = HiHatVoice.LIVE
+    var soundType: Int = 0      // 0=click, 1=hihat, 2=woodblock, 3=warm, 4=bell, 5=bowl, 6=kalimba, 7=cowbell, 8=metal kick, 9=studio hi-hat (4-9 premium)
     @Volatile
     var volume: Float = 1.0f
     @Volatile
@@ -310,21 +308,28 @@ class MetronomeEngine {
 
     // ── Private helpers ────────────────────────────────────────────────────────
 
+    /**
+     * The one voice table: the buffer [voice] plays on a plain beat or an accent. The live
+     * beat and both previews read it, so a voice cannot sound one way playing and another
+     * when previewed. An unknown index plays Classic.
+     */
+    private fun voiceFor(voice: Int, isAccent: Boolean): ShortArray = when (voice) {
+        1 -> if (isAccent) hihatAccent else hihatClick
+        2 -> if (isAccent) woodAccent else woodClick
+        3 -> if (isAccent) deepAccent else deepClick
+        4 -> if (isAccent) bellAccent else bellClick
+        5 -> if (isAccent) bowlAccent else bowlClick
+        6 -> if (isAccent) kalimbaAccent else kalimbaClick
+        7 -> if (isAccent) cowbellAccent else cowbellClick
+        8 -> if (isAccent) kickAccent else kickClick
+        9 -> if (isAccent) hatOpen else hatClosed
+        else -> if (isAccent) accentClick else normalClick
+    }
+
     /** Fill buffer: click samples at index 0, silence for the rest */
     private fun buildBeatBuffer(samplesPerBeat: Int, isAccent: Boolean, voice: Int): ShortArray {
         if (muted) return ShortArray(samplesPerBeat)
-        val click = when (voice) {
-            1 -> if (noiseHiHat) (if (isAccent) hatOpen else hatClosed)
-                 else (if (isAccent) hihatAccent else hihatClick)
-            2 -> if (isAccent) woodAccent else woodClick
-            3 -> if (isAccent) deepAccent else deepClick
-            4 -> if (isAccent) bellAccent else bellClick
-            5 -> if (isAccent) bowlAccent else bowlClick
-            6 -> if (isAccent) kalimbaAccent else kalimbaClick
-            7 -> if (isAccent) cowbellAccent else cowbellClick
-            8 -> if (isAccent) kickAccent else kickClick
-            else -> if (isAccent) accentClick else normalClick
-        }
+        val click = voiceFor(voice, isAccent)
         val buf = ShortArray(samplesPerBeat)
         val len = minOf(click.size, samplesPerBeat)
         val vol = volume.coerceIn(0f, 1f)
@@ -338,24 +343,19 @@ class MetronomeEngine {
         return buf
     }
 
+    /**
+     * The one-shot preview (metronome stopped): one bar of four at 100 BPM, accent first, so
+     * a voice is heard with its accent as it will play (the Studio Hi-Hat's open hat, the
+     * other voices' accent note). A preview over a running metronome uses the live accents.
+     */
     private fun buildPreviewBuffer(soundTypeIndex: Int): ShortArray {
         val numBeats = 4
         val bpm = 100
         val samplesPerBeat = (sampleRate * 60.0 / bpm).toInt()
         val result = ShortArray(samplesPerBeat * numBeats)
-        val click = when (soundTypeIndex) {
-            1 -> if (noiseHiHat) hatClosed else hihatClick
-            2 -> woodClick
-            3 -> deepClick
-            4 -> bellClick
-            5 -> bowlClick
-            6 -> kalimbaClick
-            7 -> cowbellClick
-            8 -> kickClick
-            else -> normalClick
-        }
         val vol = volume.coerceIn(0f, 1f)
         for (beat in 0 until numBeats) {
+            val click = voiceFor(soundTypeIndex, isAccent = beat == 0)
             val offset = beat * samplesPerBeat
             val len = minOf(click.size, samplesPerBeat)
             for (i in 0 until len) {

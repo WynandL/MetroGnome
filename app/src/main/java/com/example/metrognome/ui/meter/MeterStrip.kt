@@ -52,9 +52,6 @@ private val LABEL_WIDTH = 14.dp
 private val LABEL_GAP = 9.dp
 private val SIDE_PAD = 8.dp
 
-/** How far right of the strip's centre the gems' centre sits (the fraction is on their left). */
-val METER_GEMS_OFFSET = (LABEL_WIDTH + LABEL_GAP) / 2
-
 /** Where the row of gems ends, from the strip's top: the hint card hangs from here. */
 val METER_ROW_BOTTOM = ROW_TOP + ROW_HEIGHT
 

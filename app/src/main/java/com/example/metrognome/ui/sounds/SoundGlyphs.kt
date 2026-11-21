@@ -19,6 +19,7 @@ val CLICK_SOUND_GLYPHS: Map<String, AppGlyph> = mapOf(
     "kalimba"      to AppIcons.SoundKalimba,
     "cowbell"      to AppIcons.SoundCowbell,
     "metal_kick"   to AppIcons.SoundMetalKick,
+    "studio_hihat" to AppIcons.SoundStudioHiHat,
 )
 
 /** The voice's mark; the music note for a slug with none (the test keeps that from shipping). */

@@ -8,9 +8,11 @@ package com.example.metrognome.billing
  * number it used to send read as "(not set)" in reports) and the key the UI looks a glyph
  * up by. Never rename a slug: reports group by it across versions.
  *
- * [tagline] is one short line for places that show several sounds at once (the sound
- * stage); [description] is the paywall's longer copy. Neither may sell a premium voice by
- * calling a free one weak.
+ * [tagline] is the line the sound stage shows. [description] is not shown in the app (the
+ * paywall dialog that showed it was replaced by the stage); for a paid voice it is the
+ * record of the Play Console product's description, word for word, which Play may show at
+ * purchase, so the two must not drift. Keep it under 200 characters. Neither may sell a
+ * premium voice by calling a free one weak.
  */
 data class ClickSound(
     val index: Int,
@@ -98,6 +100,13 @@ val CLICK_SOUNDS: List<ClickSound> = listOf(
                 "and a hint of room, voiced to thump even through a phone speaker. " +
                 "The pulse that drives a wall of guitars.",
         productId = BillingManager.PRODUCT_SOUND_METAL_KICK,
+    ),
+    ClickSound(
+        index = 9, slug = "studio_hihat", displayName = "Studio Hi-Hat",
+        tagline = "Closed on the beat, open on the accent.",
+        description = "A drum-machine hi-hat with real sizzle: a crisp closed hat on every beat " +
+                "that opens and rings on the accent, so you always hear where the bar begins.",
+        productId = BillingManager.PRODUCT_SOUND_STUDIO_HIHAT,
     ),
 )
 

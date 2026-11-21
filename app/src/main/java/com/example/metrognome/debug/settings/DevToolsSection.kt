@@ -99,7 +99,6 @@ fun DevToolsSection(
     ) { micPermRefresh++ }
 
     val cheatModeEnabled by vm.cheatModeEnabled.collectAsStateWithLifecycle()
-    val noiseHiHat by vm.noiseHiHat.collectAsStateWithLifecycle()
     val purchasedSoundIds by vm.purchasedSoundIds.collectAsStateWithLifecycle()
     val purchasedItemProductIds by vm.purchasedItemProductIds.collectAsStateWithLifecycle()
     val practiceStreak by vm.practiceStreak.collectAsStateWithLifecycle()
@@ -132,17 +131,6 @@ fun DevToolsSection(
             { vm.toggleCheatMode() },
             modifier = Modifier.fillMaxWidth(),
             kind = if (cheatModeEnabled) DevButtonKind.HIGHLIGHT else DevButtonKind.NEUTRAL,
-        )
-
-        Spacer(Modifier.height(6.dp))
-
-        // A/B the noise Hi-Hat against the old sine pair; judge it with the metronome running
-        // (the stopped one-shot preview plays no accents).
-        DevButton(
-            if (noiseHiHat) "Hi-Hat: New Noise" else "Hi-Hat: Old Sine",
-            { vm.toggleNoiseHiHat() },
-            modifier = Modifier.fillMaxWidth(),
-            kind = if (noiseHiHat) DevButtonKind.HIGHLIGHT else DevButtonKind.NEUTRAL,
         )
 
         Spacer(Modifier.height(6.dp))
