@@ -129,8 +129,10 @@ fun MetronomeScreen(
     val isPlaying by vm.isPlaying.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
     val timeSig by vm.timeSig.collectAsStateWithLifecycle()
-    val currentBeat by vm.currentBeat.collectAsStateWithLifecycle()
+    val timeSigDenom by vm.timeSigDenom.collectAsStateWithLifecycle()
     val accentBeats by vm.accentBeats.collectAsStateWithLifecycle()
+    val meterStageSeen by vm.meterStageSeen.collectAsStateWithLifecycle()
+    var showMeterStage by remember { mutableStateOf(false) }
     val activeItemIds by vm.activeItemIds.collectAsStateWithLifecycle()
     val activeItems = androidx.compose.runtime.remember(activeItemIds) {
         METRO_ITEM_REGISTRY.filter { it.item.id in activeItemIds }.map { it.item }
@@ -273,14 +275,16 @@ fun MetronomeScreen(
             .fillMaxSize()
             .background(AppColors.background)
     ) {
-        BeatIndicatorRow(
-            timeSig = timeSig,
-            currentBeat = currentBeat,
+        // The time signature: the bar's beats as gems, and the way into the meter stage.
+        com.example.metrognome.ui.meter.MeterStrip(
+            top = timeSig,
+            bottom = timeSigDenom,
+            accents = accentBeats,
             isPlaying = isPlaying,
-            accentBeats = accentBeats,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 48.dp, bottom = 4.dp)
+            bpm = bpm,
+            beats = vm.beatEvents,
+            showHint = !meterStageSeen,
+            onClick = { showMeterStage = true },
         )
 
         // The two pills share the strip either side of the BPM, never reaching under it: on a
@@ -656,6 +660,19 @@ fun MetronomeScreen(
             vm = vm,
             source = "home",
             onClose = { showSoundStage = false },
+        )
+    }
+
+    if (showMeterStage) {
+        com.example.metrognome.ui.meter.MetronomeMeterStage(
+            vm = vm,
+            sessionOpen = anySessionOpen,
+            // Exactly the Home play key's toggle, so a stop from the stage fires the same hook.
+            onTogglePlay = {
+                if (vm.isPlaying.value) onBeforeManualStop()
+                vm.togglePlay()
+            },
+            onClose = { showMeterStage = false },
         )
     }
 
@@ -1173,85 +1190,6 @@ private fun PracticeDurationDialog(
 private fun formatPracticeTime(seconds: Int): String =
     "%d:%02d".format(seconds / 60, seconds % 60)
 
-// ── Beat indicator ────────────────────────────────────────────────────────────
-
-@Composable
-private fun BeatIndicatorRow(
-    timeSig: Int,
-    currentBeat: Int,
-    isPlaying: Boolean,
-    accentBeats: Set<Int>,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        for (i in 0 until timeSig) {
-            val isActive = isPlaying && i == currentBeat
-            val isAccent = i in accentBeats
-
-            val dotSize by animateDpAsState(
-                targetValue   = if (isActive) 16.dp else 12.dp,
-                animationSpec = tween(120),
-                label         = "dotSize$i",
-            )
-            val glowAlpha by animateFloatAsState(
-                targetValue   = if (isActive) 1f else 0f,
-                animationSpec = tween(150),
-                label         = "glow$i",
-            )
-            val flatColor by animateColorAsState(
-                targetValue   = if (isAccent) Color(0x66FFD700) else Color(0x33FFFFFF),
-                animationSpec = tween(80),
-                label         = "flat$i",
-            )
-
-            val glowColor      = if (isAccent) AppColors.gold else AppColors.textAccent
-            val gradientColors = if (isAccent)
-                listOf(AppColors.amberLight, AppColors.gold)
-            else
-                listOf(Color(0xFFE0C8F8), AppColors.textAccent)
-
-            Box(
-                modifier = Modifier
-                    .size(20.dp)
-                    .drawBehind {
-                        if (glowAlpha > 0f) {
-                            val c = Offset(size.width / 2f, size.height / 2f)
-                            val r = 8.dp.toPx() * 1.4f
-                            drawCircle(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(glowColor.copy(alpha = 0.35f * glowAlpha), Color.Transparent),
-                                    center = c,
-                                    radius = r,
-                                ),
-                                radius = r,
-                                center = c,
-                            )
-                        }
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Box(
-                    modifier = if (isActive)
-                        Modifier
-                            .size(dotSize)
-                            .background(Brush.radialGradient(gradientColors), CircleShape)
-                    else
-                        Modifier
-                            .size(dotSize)
-                            .clip(CircleShape)
-                            .background(flatColor),
-                )
-            }
-
-            if (i < timeSig - 1) Spacer(modifier = Modifier.width(2.dp))
-        }
-    }
-}
-
 internal fun tempoLabel(bpm: Int): String = when {
     bpm < 40  -> "Grave"
     bpm < 60  -> "Largo"
@@ -1364,12 +1302,6 @@ private fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
 @Composable
 private fun BpmDisplayPreview() {
     BpmDisplay(bpm = 120)
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF1A1040)
-@Composable
-private fun BeatIndicatorRowPreview() {
-    BeatIndicatorRow(timeSig = 4, currentBeat = 1, isPlaying = true, accentBeats = setOf(0))
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF1A1040)

@@ -1017,6 +1017,17 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // Until the meter stage has been opened once, the Home strip runs its "these beats open
+    // something" light along the resting bar (MeterStrip). Persisted: once found, never again.
+    private val _meterStageSeen = MutableStateFlow(prefs.getBoolean("meter_stage_seen", false))
+    val meterStageSeen: StateFlow<Boolean> = _meterStageSeen.asStateFlow()
+
+    fun markMeterStageSeen() {
+        if (_meterStageSeen.value) return
+        _meterStageSeen.value = true
+        prefs.edit { putBoolean("meter_stage_seen", true) }
+    }
+
     /** Flip the accent on a single 0-based pulse, leaving the rest of the pattern intact. */
     fun toggleAccent(beatIndex: Int) {
         val next = _accentBeats.value.toMutableSet()

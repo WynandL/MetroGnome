@@ -21,9 +21,6 @@ import com.example.metrognome.ui.components.CardGap
 import com.example.metrognome.ui.components.CardHeader
 import com.example.metrognome.ui.components.GoldSlider
 import com.example.metrognome.ui.components.tapDelight
-import com.example.metrognome.ui.components.TimeSignaturePicker
-import com.example.metrognome.theory.Meter
-import com.example.metrognome.theory.MeterTheory
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -80,9 +77,6 @@ fun SettingsScreen(
     val context = LocalContext.current
     val activity = LocalActivity.current
     val bpm by vm.bpm.collectAsStateWithLifecycle()
-    val timeSig by vm.timeSig.collectAsStateWithLifecycle()
-    val timeSigDenom by vm.timeSigDenom.collectAsStateWithLifecycle()
-    val accentBeats by vm.accentBeats.collectAsStateWithLifecycle()
     val volume by vm.volume.collectAsStateWithLifecycle()
     val flashOnBeat by vm.flashOnBeat.collectAsStateWithLifecycle()
     var isDevMode by remember { mutableStateOf(DevEasterEgg.isDevModeActive(context)) }
@@ -161,28 +155,8 @@ fun SettingsScreen(
                     range = 20f..300f,
                     onValueChange = { vm.setBpm(it.roundToInt()) }
                 )
-
-                // Time signature: presets + custom stepper + accent editor. The live classification
-                // (e.g. "Compound triple") rides next to the heading as a quiet annotation.
-                SettingsRow(
-                    label = "Time Signature",
-                    trailing = {
-                        Text(
-                            MeterTheory.label(Meter(timeSig, timeSigDenom)),
-                            color = AppColors.textMuted,
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp,
-                        )
-                    },
-                ) {
-                    TimeSignaturePicker(
-                        top = timeSig,
-                        bottom = timeSigDenom,
-                        accentBeats = accentBeats,
-                        onMeterChange = { top, bottom -> vm.setMeter(top, bottom) },
-                        onToggleAccent = { vm.toggleAccent(it) },
-                    )
-                }
+                // The time signature and its accents live on the meter stage (the beats above
+                // Metro on Home), the one place to change them, so nothing here can drift.
             }
             Spacer(Modifier.height(CardGap))
             SettingsCard("Sound") {

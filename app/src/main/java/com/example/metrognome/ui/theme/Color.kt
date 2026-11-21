@@ -138,6 +138,9 @@ object AppColors {
     val amberLight      = Color(0xFFFDE68A)
     val amberDark       = Color(0xFF92400E)   // a glyph on an amber fill
 
+    // Beat gems (ui/meter/BeatGem.kt): the lit heart of a plain beat (an accent's is amberLight).
+    val beatLavender    = Color(0xFFE0C8F8)
+
     // Speed Trainer tempo ramp (the dialog's preview graph)
     val trainerBlue     = Color(0xFF5B78C8)
     val trainerBlueDot  = Color(0xFF8AA4EC)

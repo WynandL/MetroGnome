@@ -71,7 +71,10 @@ import com.example.metrognome.ui.components.instruments.InstrumentAffinityBadges
 import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.overlays.OverlayEyebrow
 import com.example.metrognome.ui.scene.drawNightSky
+import com.example.metrognome.ui.scene.StagePageDots
 import com.example.metrognome.ui.scene.drawPineForest
+import com.example.metrognome.ui.scene.drawStageDisc
+import com.example.metrognome.ui.scene.drawStageSpotlight
 import com.example.metrognome.ui.scene.starField
 import com.example.metrognome.ui.theme.AppColors
 import kotlinx.coroutines.flow.Flow
@@ -321,40 +324,11 @@ private fun SoundCarousel(
         // sound is swiped into the middle is the one in the light. Drawn past the box's top
         // edge on purpose (the canvas is not clipped) so the beam falls from the sky.
         Canvas(Modifier.matchParentSize()) {
-            val c = Offset(size.width / 2f, size.height / 2f)
-            val r = MEDALLION.toPx() / 2f * 0.74f
-            val top = -size.height * 1.1f
-            val floorY = c.y + r * 1.05f
-            val floor = androidx.compose.ui.geometry.Rect(
-                c.x - r * 1.3f, floorY - r * 0.22f, c.x + r * 1.3f, floorY + r * 0.22f,
-            )
-            // The beam takes in the whole floor oval, so the pool of light is one shade; ending
-            // it at the oval's middle lit only the back half.
-            val beam = androidx.compose.ui.graphics.Path().apply {
-                moveTo(c.x - r * 0.22f, top)
-                lineTo(c.x + r * 0.22f, top)
-                lineTo(c.x + r * 1.25f, floorY)
-                lineTo(c.x - r * 1.25f, floorY)
-                close()
-            }.let { trapezoid ->
-                androidx.compose.ui.graphics.Path().apply {
-                    op(trapezoid, androidx.compose.ui.graphics.Path().apply { addOval(floor) }, androidx.compose.ui.graphics.PathOperation.Union)
-                }
-            }
-            drawPath(
-                beam,
-                Brush.verticalGradient(
-                    listOf(Color.Transparent, AppColors.gold.copy(alpha = 0.07f + 0.05f * glow)),
-                    startY = top, endY = c.y + r,
-                ),
-            )
-            drawOval(
-                Brush.radialGradient(
-                    listOf(AppColors.gold.copy(alpha = 0.22f + 0.10f * glow), Color.Transparent),
-                    Offset(c.x, floorY), r * 1.3f,
-                ),
-                topLeft = Offset(c.x - r * 1.3f, floorY - r * 0.22f),
-                size = androidx.compose.ui.geometry.Size(r * 2.6f, r * 0.44f),
+            drawStageSpotlight(
+                c = Offset(size.width / 2f, size.height / 2f),
+                r = MEDALLION.toPx() / 2f * 0.74f,
+                top = -size.height * 1.1f,
+                glow = glow,
             )
         }
         HorizontalPager(
@@ -452,13 +426,7 @@ fun SoundMedallion(
         }
 
         // The disc: lit from the upper left, like every raised face in the app.
-        drawCircle(
-            Brush.radialGradient(
-                listOf(AppColors.surfaceActive, AppColors.card),
-                Offset(c.x - r * 0.35f, c.y - r * 0.45f), r * 1.5f,
-            ),
-            r, c,
-        )
+        drawStageDisc(c, r)
         val (rim, rimWidth) = when {
             inUse -> AppColors.gold to 2f
             owned -> AppColors.goldBorderStrong to 1.5f
@@ -492,17 +460,8 @@ fun SoundMedallion(
 }
 
 @Composable
-private fun PageDots(sounds: List<StageSound>, current: Int) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        sounds.forEachIndexed { i, s ->
-            val on = i == current
-            Canvas(Modifier.size(if (on) 8.dp else 6.dp)) {
-                val base = if (s.premium) AppColors.gold else AppColors.textPrimary
-                drawCircle(base.copy(alpha = if (on) 1f else 0.30f))
-            }
-        }
-    }
-}
+private fun PageDots(sounds: List<StageSound>, current: Int) =
+    StagePageDots(sounds.size, current) { sounds[it].premium }
 
 // ── The focused sound's card ──────────────────────────────────────────────────
 
