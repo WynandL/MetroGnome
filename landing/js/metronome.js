@@ -90,10 +90,16 @@
     '.mm-bpm-u{font-size:.72rem;font-weight:700;letter-spacing:.14em;color:var(--mm-muted);text-transform:uppercase;margin-top:.2rem}',
     '.mm-mark{color:var(--mm-gold);font-weight:700;font-size:.95rem;margin-top:.15rem;min-height:1.4em}',
     '.mm-slider{width:100%;margin:1rem 0 .4rem;accent-color:var(--mm-gold);height:28px}',
-    '.mm-beats{display:flex;justify-content:center;flex-wrap:wrap;gap:.45rem;margin:.9rem 0 .2rem;min-height:44px}',
+    '.mm-bhead{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:.35rem .6rem;margin-top:.9rem}',
+    '.mm-tsjump{display:inline-flex;align-items:center;gap:.45rem;min-height:34px;border:1px solid var(--mm-up);background:var(--mm-deep);color:var(--mm-text);border-radius:999px;padding:0 .75rem;font:inherit;font-weight:800;font-size:.9rem;font-variant-numeric:tabular-nums;cursor:pointer;touch-action:manipulation}',
+    '.mm-tsjump small{font-size:.72rem;font-weight:700;color:var(--mm-plight)}',
+    '.mm-tsjump:hover{border-color:var(--mm-purple)}',
+    '.mm-bhint{font-size:.78rem;color:var(--mm-muted)}',
+    '.mm-beats{display:flex;justify-content:center;flex-wrap:wrap;gap:.45rem;margin:.55rem 0 .2rem;min-height:44px}',
     '.mm-group{display:flex;gap:.35rem}',
     '.mm-group+.mm-group{margin-left:.55rem}',
     '.mm-beat{width:34px;height:34px;border-radius:50%;border:1px solid var(--mm-up);background:var(--mm-deep);color:var(--mm-muted);font-weight:800;font-size:.8rem;cursor:pointer;transition:transform .08s,background .08s;padding:0}',
+    '.mm-beat:hover{border-color:var(--mm-purple);color:var(--mm-text)}',
     '.mm-beat.acc{border-color:rgba(255,215,0,.55);color:var(--mm-gold)}',
     '.mm-beat.on{background:var(--mm-plight);color:#1a0a2e;transform:scale(1.15)}',
     '.mm-beat.acc.on{background:var(--mm-gold);color:#1a0a2e;transform:scale(1.22);box-shadow:0 0 18px rgba(255,215,0,.55)}',
@@ -116,6 +122,8 @@
     '.mm-ts-n{font-weight:800;font-size:1.25rem;min-width:3.2rem;text-align:center;font-variant-numeric:tabular-nums}',
     '.mm-vol{width:100%;accent-color:var(--mm-gold)}',
     '.mm-meter{font-size:.8rem;color:var(--mm-muted);margin-top:.3rem}',
+    '.mm-opt{border-radius:12px;transition:box-shadow .3s,background .3s}',
+    '.mm-opt.mm-flash{background:rgba(123,77,176,.16);box-shadow:0 0 0 6px rgba(123,77,176,.16)}',
     '.mm button:focus-visible,.mm input:focus-visible{outline:2px solid var(--mm-gold);outline-offset:2px}',
     '.mm-compact .mm-adv{display:none}',
     '@media (max-width:420px){.mm-bpm-n{font-size:3rem}.mm-beat{width:30px;height:30px}}',
@@ -210,6 +218,15 @@
     slider.setAttribute('aria-label', 'Tempo in beats per minute');
     box.appendChild(slider);
 
+    /* The beats are the bar: say so, and put the time signature beside them as
+       a button that leads to where it changes. */
+    var beatHead = el('div', 'mm-bhead');
+    var tsJump = el('button', 'mm-tsjump'); tsJump.type = 'button';
+    var tsJumpN = el('span', '');
+    tsJump.appendChild(tsJumpN); tsJump.appendChild(el('small', '', 'Change'));
+    beatHead.appendChild(tsJump);
+    beatHead.appendChild(el('span', 'mm-bhint', 'Tap a beat to accent it'));
+    box.appendChild(beatHead);
     var beats = el('div', 'mm-beats');
     box.appendChild(beats);
     var meterLine = el('div', 'mm-meter');
@@ -283,7 +300,15 @@
     opts.appendChild(sndOpt);
 
     box.appendChild(opts);
-    var hint = el('p', 'mm-hint mm-adv', 'Tap a beat to accent it or take the accent off. Keys: Space starts and stops; with the metronome focused, arrows change the tempo and T taps.');
+    var flashTimer = null;
+    tsJump.addEventListener('click', function () {
+      tsOpt.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      try { tsPlus.focus({ preventScroll: true }); } catch (e) { tsPlus.focus(); }
+      tsOpt.classList.add('mm-flash');
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(function () { tsOpt.classList.remove('mm-flash'); }, 1100);
+    });
+    var hint = el('p', 'mm-hint mm-adv', 'Keys: Space starts and stops; with the metronome focused, arrows change the tempo and T taps.');
     box.appendChild(hint);
     root.appendChild(box);
 
@@ -338,7 +363,9 @@
       mark.textContent = tempoLabel(st.bpm);
       slider.value = String(st.bpm);
       tsN.textContent = st.top + '/' + st.bottom;
-      meterLine.textContent = st.top + '/' + st.bottom + ': ' + feelLine();
+      tsJumpN.textContent = st.top + '/' + st.bottom;
+      tsJump.setAttribute('aria-label', 'Time signature ' + st.top + '/' + st.bottom + ', change it');
+      meterLine.textContent = feelLine();
       denomBtns.forEach(function (b, i) { b.classList.toggle('sel', DENOMS[i] === st.bottom); });
       preBtns.forEach(function (b, i) { b.classList.toggle('sel', PRESETS[i][0] === st.top && PRESETS[i][1] === st.bottom); });
       subBtns.forEach(function (b, i) { b.classList.toggle('sel', SUBS[i][0] === st.sub); });
