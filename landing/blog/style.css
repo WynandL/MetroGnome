@@ -1541,3 +1541,10 @@ html{-webkit-tap-highlight-color:transparent}
 .author-box .ab-name { color: var(--text); font-weight: 700; margin-bottom: 0.35rem; }
 
 .post-card .pc-updated { font-size: 0.78rem; color: var(--gold); opacity: 0.85; }
+
+/* the time signature chart: fits a phone without sideways scrolling */
+table.data-table.ts-chart { min-width: 0; }
+@media (max-width: 560px) {
+  .ts-chart th:nth-child(3), .ts-chart td:nth-child(3) { display: none; }
+  .ts-chart th, .ts-chart td { padding: 0.5rem 0.45rem; }
+}

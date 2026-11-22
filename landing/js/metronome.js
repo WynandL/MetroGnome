@@ -283,7 +283,7 @@
     opts.appendChild(sndOpt);
 
     box.appendChild(opts);
-    var hint = el('p', 'mm-hint mm-adv', 'Tap a beat to accent it or take the accent off. Keys: Space starts and stops, arrows change the tempo, T taps.');
+    var hint = el('p', 'mm-hint mm-adv', 'Tap a beat to accent it or take the accent off. Keys: Space starts and stops; with the metronome focused, arrows change the tempo and T taps.');
     box.appendChild(hint);
     root.appendChild(box);
 
@@ -293,7 +293,7 @@
       beats.innerHTML = '';
       beatEls = [];
       var idx = 0;
-      beatGrouping(st.top).forEach(function (g) {
+      groupsInUse().forEach(function (g) {
         var grp = el('div', 'mm-group');
         for (var i = 0; i < g; i++) {
           (function (n) {
@@ -314,12 +314,31 @@
       });
     }
 
+    /* groups from the accents actually in use: a new group starts at beat 1 and at every accent */
+    function groupsInUse() {
+      var starts = [0];
+      for (var i = 1; i < st.top; i++) if (st.accents[i]) starts.push(i);
+      var g = [];
+      for (var k = 0; k < starts.length; k++) g.push((k + 1 < starts.length ? starts[k + 1] : st.top) - starts[k]);
+      return g;
+    }
+    function feelLine() {
+      var g = groupsInUse(), def = beatGrouping(st.top);
+      var same = g.length === def.length && g.every(function (x, i) { return x === def[i]; });
+      if (same || g.length === 1) return meterLabel(st.top) + ', ' + meterDescription(st.top);
+      if (!st.accents[0]) {
+        var on = Object.keys(st.accents).map(function (k) { return Number(k) + 1; }).sort(function (a, b) { return a - b; });
+        return meterLabel(st.top) + ', accents on ' + (on.length ? 'beats ' + on.join(', ') : 'no beats');
+      }
+      return meterLabel(st.top) + ', grouped ' + g.join('+');
+    }
+
     function refresh() {
       bpmN.textContent = String(st.bpm);
       mark.textContent = tempoLabel(st.bpm);
       slider.value = String(st.bpm);
       tsN.textContent = st.top + '/' + st.bottom;
-      meterLine.textContent = st.top + '/' + st.bottom + ': ' + meterLabel(st.top) + ', ' + meterDescription(st.top);
+      meterLine.textContent = st.top + '/' + st.bottom + ': ' + feelLine();
       denomBtns.forEach(function (b, i) { b.classList.toggle('sel', DENOMS[i] === st.bottom); });
       preBtns.forEach(function (b, i) { b.classList.toggle('sel', PRESETS[i][0] === st.top && PRESETS[i][1] === st.bottom); });
       subBtns.forEach(function (b, i) { b.classList.toggle('sel', SUBS[i][0] === st.sub); });
@@ -482,8 +501,8 @@
       document.addEventListener('keydown', function (e) {
         var t = e.target;
         if (box.contains(t)) return;
-        if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(t.tagName))) return;
-        handleKey(e);
+        if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON|A|SUMMARY|DETAILS)$/.test(t.tagName))) return;
+        if (e.key === ' ' || e.key === 'Spacebar') handleKey(e);
       });
     }
     function handleKey(e) {
