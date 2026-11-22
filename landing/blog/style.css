@@ -1629,7 +1629,11 @@ html{-webkit-tap-highlight-color:transparent}
   background: var(--surface-deep);
 }
 .author-box p { font-size: 0.92rem; color: var(--text-muted); line-height: 1.6; margin: 0; }
-.author-box .ab-name { color: var(--text); font-weight: 700; margin-bottom: 0.35rem; }
+.author-box .ab-name { margin-bottom: 0.35rem; }
+/* The author's name is there for the record, not to be advertised: it reads as the
+   text around it, and only a hover shows it is a link. */
+a.name-link, .post-meta a.name-link, .author-box a.name-link { color: inherit; font-weight: inherit; text-decoration: none; }
+a.name-link:hover, .post-meta a.name-link:hover, .author-box a.name-link:hover { color: var(--gold-light); text-decoration: underline; text-underline-offset: 2px; }
 
 /* Last-updated date: bookkeeping, not news. One quiet line at the end of the page. */
 .page-updated { margin: -1.5rem 0 2.5rem; font-size: 0.78rem; line-height: 1.4; color: var(--text-muted); opacity: 0.75; }
