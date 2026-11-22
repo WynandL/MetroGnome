@@ -150,12 +150,13 @@
     .meter-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.2rem; align-items: center; }
     .meter-chips .lbl { font-size: 0.8rem; color: var(--text-muted); margin-right: 0.3rem; }
 
-    /* recently updated */
-    .recent { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0.2rem 2rem; }
-    .recent li { display: flex; gap: 0.9rem; align-items: baseline; padding: 0.55rem 0; border-bottom: 1px solid var(--surface-up); }
-    .recent time { flex: none; width: 6.2rem; font-size: 0.8rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-    .recent a { color: var(--text); font-weight: 600; }
-    .recent a:hover { color: var(--gold); }
+    /* latest guides: the three newest by datePublished */
+    .latest { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .latest a { display: flex; flex-direction: column; gap: 0.45rem; height: 100%; padding: 1rem 1.1rem; border-radius: 14px; background: var(--surface); border: 1px solid var(--surface-up); color: var(--text); transition: border-color 0.15s; }
+    .latest a:hover { border-color: var(--purple); color: var(--text); }
+    .lg-meta { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
+    .lg-title { font-weight: 700; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    @media (max-width: 760px) { .latest { grid-template-columns: 1fr; gap: 0.6rem; } }
 
     /* how it is made + app: two plain panels */
     .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; }
@@ -175,7 +176,6 @@
       .band-head { margin-bottom: 0.9rem; }
       .topic li span { display: none; }
       .topic ul { gap: 0.5rem; }
-      .recent li:nth-child(n+5) { display: none; }
       .panel { padding: 1.15rem; }
       .hero .small { display: none; }
       .tlist li:not(.hot) .tt > span { display: none; }
@@ -320,19 +320,18 @@
       </div>
     </section>
 
-    <section class="band" id="recent" aria-labelledby="recent-h">
+    <section class="band" id="latest" aria-labelledby="latest-h">
       <div class="band-head">
         <div>
-          <h2 id="recent-h">New and recently updated</h2>
+          <h2 id="latest-h">Latest guides</h2>
         </div>
+        <a href="/blog/">All guides &rarr;</a>
       </div>
-      <ul class="recent">
-        <li><time datetime="2026-11-22">22 Nov 2026</time><a href="/tools/online-metronome.html">Online Metronome (new)</a></li>
-        <li><time datetime="2026-11-22">22 Nov 2026</time><a href="/blog/time-signatures-explained.html">Time Signatures Explained, now with a chart of 12 meters</a></li>
-        <li><time datetime="2026-11-22">22 Nov 2026</time><a href="/blog/best-free-chromatic-tuner-android.html">A Five-Minute Test for Any Tuner App</a></li>
-        <li><time datetime="2026-11-22">22 Nov 2026</time><a href="/blog/how-accurate-is-your-metronome-app.html">How Accurate Is Your Metronome App?</a></li>
-        <li><time datetime="2026-11-10">10 Nov 2026</time><a href="/tools/rushing-or-dragging-test.html">Rushing or Dragging Test</a></li>
-        <li><time datetime="2026-11-02">2 Nov 2026</time><a href="/tools/polyrhythm-test.html">Polyrhythm Test</a></li>
+      <!-- The three newest guides by datePublished: keep in step with the top of blog/index.html. -->
+      <ul class="latest">
+        <li><a href="/blog/free-metro-gnome-colouring-page.html"><span class="lg-meta">Story <span aria-hidden="true">&middot;</span> <time datetime="2026-11-10">10 November 2026</time></span><span class="lg-title">Free Metro Gnome Colouring Page</span></a></li>
+        <li><a href="/blog/how-small-a-pitch-difference-can-you-hear.html"><span class="lg-meta">Ear training <span aria-hidden="true">&middot;</span> <time datetime="2026-10-24">24 October 2026</time></span><span class="lg-title">How Small a Pitch Difference Can You Hear? (And Why Low Notes Are Harder)</span></a></li>
+        <li><a href="/blog/what-is-a-chord-how-chords-work.html"><span class="lg-meta">Theory <span aria-hidden="true">&middot;</span> <time datetime="2026-09-15">15 September 2026</time></span><span class="lg-title">What Is a Chord? How Chords Work, Why They Matter, and How to Name Any Chord You Play</span></a></li>
       </ul>
     </section>
 
