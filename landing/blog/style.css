@@ -1630,6 +1630,10 @@ html{-webkit-tap-highlight-color:transparent}
 }
 .author-box p { font-size: 0.92rem; color: var(--text-muted); line-height: 1.6; margin: 0; }
 .author-box .ab-name { margin-bottom: 0.35rem; }
+
+/* A single picture in a post: centred, portrait-friendly, never full-bleed tall. */
+.post-figure { margin: 0 auto 2rem; max-width: 340px; }
+.post-figure img { width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--surface-up); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45); }
 /* The author's name is there for the record, not to be advertised: it reads as the
    text around it, and only a hover shows it is a link. */
 a.name-link, .post-meta a.name-link, .author-box a.name-link { color: inherit; font-weight: inherit; text-decoration: none; }
