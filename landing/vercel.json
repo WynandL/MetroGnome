@@ -212,6 +212,16 @@
       "permanent": true
     },
     {
+      "source": "/tools/:slug([a-z0-9-]+)/",
+      "destination": "/tools/:slug.html",
+      "permanent": true
+    },
+    {
+      "source": "/tools/:slug([a-z0-9-]+)",
+      "destination": "/tools/:slug.html",
+      "permanent": true
+    },
+    {
       "source": "/:slug(about|contact|privacy)",
       "destination": "/:slug.html",
       "permanent": true
