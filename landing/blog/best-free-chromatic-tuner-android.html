@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Free Chromatic Tuner App: What to Look For (and Avoid) - Metro Gnome</title>
+  <title>Free Chromatic Tuner Apps: What to Look For and a 5-Minute Test</title>
   <meta name="description" content="Not all free tuner apps stay free. Here's what separates a genuinely free chromatic tuner from a freemium trap, and what technical qualities actually matter.">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" type="image/webp" href="/favicon.webp">
@@ -21,7 +21,7 @@
     "headline": "Free Chromatic Tuner App: What to Look For (and Avoid)",
     "description": "Not all free tuner apps stay free. Here's what separates a genuinely free chromatic tuner from a freemium trap, and what technical qualities actually matter.",
     "datePublished": "2026-05-26",
-    "dateModified": "2026-09-18",
+    "dateModified": "2026-11-22",
     "author": { "@type": "Person", "name": "Wynand Lambrechts", "jobTitle": "Electronic engineer", "url": "https://metrognome.co.za/about.html#author" },
     "publisher": {
       "@type": "Organization",
@@ -63,7 +63,7 @@
       <div class="post-meta">
         <span class="post-category">Tuning</span>
         <span>26 May 2026</span>
-        <span class="updated">Updated <time datetime="2026-09-18">18 September 2026</time></span>
+        <span class="updated">Updated <time datetime="2026-11-22">22 November 2026</time></span>
         <span class="byline">By <a href="/about.html#author">Wynand Lambrechts</a></span>
         <span>5 min read</span>
       </div>
@@ -118,13 +118,19 @@
         <li><strong>Test it in your actual environment.</strong> A tuner that works perfectly in a quiet room may be unusable in the room where you actually play. Five minutes of real-world testing in your practice space is worth more than any review.</li>
       </ul>
 
-      <h2>How Metro Gnome Approaches This</h2>
+      <h2 id="test">A Five-Minute Test for Any Tuner App</h2>
 
-      <p>The chromatic tuner in <a href="/">Metro Gnome</a> is fully free with no paywall on any tuner feature. That's a deliberate choice, not a promotional period.</p>
+      <p>Reviews tell you about paywalls; only a test tells you about accuracy. You need the tuner, your instrument and a known reference.</p>
 
-      <p>On the technical side, the tuner uses a pitch detection algorithm that analyses the repeating pattern of the waveform rather than the loudest frequency peak, which keeps it stable on the low strings of a guitar and on instruments with complex overtone profiles. An ambient detection layer profiles the room before locking on, so background noise from a rehearsal space doesn't trigger false readings. The "in tune" indicator is calibrated with a tolerance wide enough to hold steady on a note that's slightly decaying or has a little vibrato, without being so wide that you can't trust it. The result is a needle that locks on quickly and stays locked until you actually go out of tune, rather than one that chases every fluctuation and never settles.</p>
+      <ol>
+        <li><strong>Check it against a known pitch.</strong> Play a steady reference note, for example A3 from the free <a href="/tools/tuning-drone.html">online tuning drone</a> on a computer or second phone, with the reference set to 440 Hz. A good tuner settles on A within a cent or two and stays there.</li>
+        <li><strong>Check the octave on your lowest string.</strong> Pluck the low E of a guitar or the lowest string of your instrument. The tuner should name E2, not E3; a tuner that jumps an octave on low strings is reading a harmonic. (<a href="guitar-tuner-showing-wrong-note.html">Why that happens</a>.)</li>
+        <li><strong>Check a decaying note.</strong> Pluck once and let it ring. The needle should hold steady as the note fades, not drift sharp or flicker.</li>
+        <li><strong>Check your real room.</strong> Tune with the fridge, the fan or the band warming up. Some tuners stay locked; others start reading the room.</li>
+        <li><strong>Check offline.</strong> Switch on flight mode. A tuner has no reason to need the internet.</li>
+      </ol>
 
-      <p>The app also includes a metronome, rhythm game, and practice tools, all free with no subscription. There are optional cosmetic items and a one-time ad-removal purchase for users who want them, but the tuner is not, and will not be, part of a paywall.</p>
+      <p>Any tuner that passes all five is good enough for daily tuning, whatever it costs. For transparency, this site is made by the developer of <a href="/">Metro Gnome</a>, an Android app whose chromatic tuner is free with no locked tuner features; put it through the same five checks as any other.</p>
 
       <div class="callout">
         <strong>For noisy rooms:</strong> even the best microphone-based tuner will struggle if the background noise is genuinely competing with your instrument. Playing closer to the mic, muting strings you're not tuning, and giving the ambient detection a second to profile the room before you pluck all help significantly. <a href="tuning-guitar-noisy-room.html">More on tuning in loud environments here.</a>

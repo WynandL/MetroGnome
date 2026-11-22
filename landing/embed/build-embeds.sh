@@ -30,7 +30,7 @@ OUT="landing/embed"
 # reason these widgets are free.
 extract_panel() {
   awk -v credit="$2" '
-    /<section class="tool-panel"/{f=1}
+    /<section class="tool-panel[" ]/{f=1}
     f && /<\/section>/ && !done { print credit; done=1 }
     f{print}
     f && done {exit}
@@ -60,6 +60,7 @@ emit() {
        attribution links below flowing equity back to the full tool. -->
   <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="${canonical}">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" type="image/webp" href="/favicon.webp">
   <link rel="stylesheet" href="/blog/style.css">
   <link rel="stylesheet" href="/embed/style.css">
@@ -85,6 +86,8 @@ HEAD
     fi
 
     extract_script "$src"
+    # Tools built on a shared widget script load it instead of an inline block.
+    if grep -q 'data-metronome' "$src"; then echo '  <script src="/js/metronome.js" defer></script>'; fi
 
     cat <<'TAIL'
 
@@ -142,3 +145,5 @@ emit "$TOOLS/speed-trainer.html" "$OUT/speed-trainer.html" \
   "Speed Trainer - Metro Gnome" \
   "https://metrognome.co.za/tools/speed-trainer.html" \
   "Speed trainer" ""
+
+emit "$TOOLS/online-metronome.html" "$OUT/metronome.html"   "Online Metronome - Metro Gnome"   "https://metrognome.co.za/tools/online-metronome.html"   "Online metronome" ""

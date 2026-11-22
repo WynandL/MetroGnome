@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tap Tempo & Metronome BPM Finder - Metro Gnome</title>
-  <meta name="description" content="Free online tap tempo metronome and BPM finder. Tap along to any song to find its exact BPM, match it to a tempo marking like Andante or Allegro, and hear it played back on a drift-free click. No download, no sign up.">
+  <title>Tap Tempo Metronome: Tap Along to Find Any Song's BPM</title>
+  <meta name="description" content="Tap along to any song to find its BPM. Free online tap tempo metronome: get the exact tempo and its Italian marking, then hear it back on a steady click. No download.">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" type="image/webp" href="/favicon.webp">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   <link rel="canonical" href="https://metrognome.co.za/tools/tap-tempo-bpm-finder.html">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Tap Tempo & Metronome BPM Finder - Metro Gnome">
+  <meta property="og:title" content="Tap Tempo Metronome: Tap Along to Find Any Song's BPM">
   <meta property="og:description" content="Free online tap tempo metronome and BPM finder. Tap along to any song to find its exact BPM, match it to a tempo marking, and hear it played back on a drift-free click.">
   <meta property="og:url" content="https://metrognome.co.za/tools/tap-tempo-bpm-finder.html">
   <meta property="og:image" content="https://metrognome.co.za/metro.png">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Tap Tempo & Metronome BPM Finder - Metro Gnome">
+  <meta name="twitter:title" content="Tap Tempo Metronome: Tap Along to Find Any Song's BPM">
   <meta name="twitter:description" content="Free online tap tempo metronome and BPM finder. Tap along to any song to find its exact BPM and matching tempo marking.">
   <meta name="twitter:image" content="https://metrognome.co.za/metro.png">
 
@@ -150,18 +150,18 @@
 
     <article class="prose">
       <h2>How to find the BPM of a song by tapping</h2>
-      <p>Every tap is timestamped the moment you make it. Once you have tapped at least twice within 2.5 seconds of each other, the tool averages the gaps between your last few taps and converts that into beats per minute, the same tap tempo rule Metro Gnome's own metronome app uses for its BPM counter.</p>
+      <p>Every tap is timestamped the moment you make it. Once you have tapped at least twice within 2.5 seconds of each other, the tool averages the gaps between your last few taps and converts that into beats per minute. A pause longer than 2.5 seconds starts a fresh count, so you can re-tap a new song without pressing Reset.</p>
       <p>This works for any song, any instrument part, or any rhythm you can tap along to: a drum groove, a bassline, a click you heard in rehearsal, or a tempo a teacher called out. Keep tapping and the BPM reading refines itself with every beat.</p>
 
       <h2>Hear your tempo played back, without the drift</h2>
-      <p>Press <strong>"Hear this tempo"</strong> and the tool plays your BPM back as a click. That playback is scheduled against the Web Audio API's own audio clock rather than a regular JavaScript timer, which is what stops a click track from gradually drifting out of time the longer it plays. It is the same underlying discipline behind Metro Gnome's own drift-free metronome, just running in a browser tab instead of on Android audio hardware.</p>
+      <p>Press <strong>"Hear this tempo"</strong> and the tool plays your BPM back as a click. That playback is scheduled against the Web Audio API's own audio clock rather than a regular JavaScript timer, which is what stops a click track from gradually drifting out of time the longer it plays. It is the way music software schedules a click, and the reason the playback stays steady even when the page is busy.</p>
 
       <div class="callout">
         <strong>Why some online metronomes drift and this one does not:</strong> a naive web metronome fires each click from a plain timer, which only guarantees "at least" that many milliseconds between clicks, so timing slips under any load. This tool instead schedules every click's exact start time on the audio clock a fraction of a second ahead, so the click itself never slips, even if the visual bounce lags for a frame.
       </div>
 
       <h2>Tempo marking chart: BPM to Grave, Andante, Allegro and beyond</h2>
-      <p>Classical tempo markings are just named BPM ranges. Once you have found a tempo above, see exactly where it lands using the same tempo names Metro Gnome shows next to your BPM in the app:</p>
+      <p>Classical tempo markings are just named BPM ranges. Once you have found a tempo above, see exactly where it lands:</p>
 
       <div class="data-table-wrap">
         <table class="data-table">
@@ -185,7 +185,7 @@
       </div>
 
       <h2>Turn a BPM into a practice routine</h2>
-      <p>Finding a number is the easy part. Once you know the tempo, the useful next step is a metronome for guitar practice, a metronome app for drummers, or a tempo trainer app that ramps you up to it in structured steps. Metro Gnome saves any tempo you find here as a named BPM preset, so you can jump straight back to it, and its Speed Trainer builds up to a target tempo automatically instead of leaving you to guess the next step.</p>
+      <p>Finding a number is the easy part. Once you know the tempo, practise at it with the <a href="/tools/online-metronome.html">online metronome</a>, or, if the song is still too fast for you, let the <a href="/tools/speed-trainer.html">speed trainer</a> climb to it from a tempo you can already play cleanly, a few BPM every few bars.</p>
 
       <div class="ad-slot" data-ad="tool-mid"></div>
 

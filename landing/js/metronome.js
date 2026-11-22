@@ -171,6 +171,15 @@
       }
     })();
     st.accents = Array.isArray(saved.accents) && saved.top === st.top ? arrToSet(saved.accents) : defaultAccents(st.top);
+    (function readAccents() {
+      /* ?acc=1,4 : accented beats, counted from 1, so a link can carry a grouping (3+2 in 5/4) */
+      var q; try { q = new URLSearchParams(window.location.search); } catch (e) { return; }
+      var raw = q.get('acc');
+      if (!raw) return;
+      var set = {}, any = false;
+      raw.split(',').forEach(function (x) { var n = parseInt(x, 10); if (n >= 1 && n <= st.top) { set[n - 1] = true; any = true; } });
+      if (any) st.accents = set;
+    })();
 
     function clampBpm(b) { return Math.max(BPM_MIN, Math.min(BPM_MAX, Math.round(b))); }
     function arrToSet(a) { var s = {}; a.forEach(function (i) { if (i >= 0 && i < 16) s[i] = true; }); return s; }

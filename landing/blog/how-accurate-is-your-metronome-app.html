@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How Accurate Is Your Metronome App? - Metro Gnome</title>
-  <meta name="description" content="Is Google's metronome accurate enough for practice? It depends on who controls the timing. Here is why audio-clock-anchored engines click differently from timer-based ones.">
+  <title>How Accurate Is Your Metronome App? Timer vs Audio Clock, Explained</title>
+  <meta name="description" content="Is your metronome app, or Google's, accurate enough for practice? It depends on whether the click is timed by a software timer or by the audio clock. How each works, and how to test yours.">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" type="image/webp" href="/favicon.webp">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -12,12 +12,12 @@
   <link rel="canonical" href="https://metrognome.co.za/blog/how-accurate-is-your-metronome-app.html">
   <meta property="og:type" content="article">
   <meta property="og:title" content="How Accurate Is Your Metronome App?">
-  <meta property="og:description" content="Is Google's metronome accurate enough for practice? It depends on who controls the timing. Here is why audio-clock-anchored engines click differently from timer-based ones.">
+  <meta property="og:description" content="Is your metronome app, or Google's, accurate enough for practice? It depends on whether the click is timed by a software timer or by the audio clock. How each works, and how to test yours.">
   <meta property="og:url" content="https://metrognome.co.za/blog/how-accurate-is-your-metronome-app.html">
   <meta property="og:image" content="https://metrognome.co.za/metro.png">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="How Accurate Is Your Metronome App?">
-  <meta name="twitter:description" content="Is Google's metronome accurate enough for practice? It depends on who controls the timing. Here is why audio-clock-anchored engines click differently from timer-based ones.">
+  <meta name="twitter:description" content="Is your metronome app, or Google's, accurate enough for practice? It depends on whether the click is timed by a software timer or by the audio clock. How each works, and how to test yours.">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -25,7 +25,7 @@
     "headline": "How Accurate Is Your Metronome App?",
     "description": "Is Google's metronome accurate enough for practice? It depends on who controls the timing. Here is why audio-clock-anchored engines click differently from timer-based ones.",
     "datePublished": "2026-06-17",
-    "dateModified": "2026-11-21",
+    "dateModified": "2026-11-22",
     "author": { "@type": "Person", "name": "Wynand Lambrechts", "jobTitle": "Electronic engineer", "url": "https://metrognome.co.za/about.html#author" },
     "publisher": {
       "@type": "Organization",
@@ -67,7 +67,7 @@
       <div class="post-meta">
         <span class="post-category">Timing</span>
         <span>17 June 2026</span>
-        <span class="updated">Updated <time datetime="2026-11-21">21 November 2026</time></span>
+        <span class="updated">Updated <time datetime="2026-11-22">22 November 2026</time></span>
         <span class="byline">By <a href="/about.html#author">Wynand Lambrechts</a></span>
         <span>8 min read</span>
       </div>
@@ -101,39 +101,41 @@
 
       <div class="ad-slot" data-ad="blog-mid"></div>
 
-      <h2>AudioTrack STREAM Mode: Letting the Hardware Drive</h2>
+      <h2>Letting the Audio Clock Drive</h2>
 
-      <p>Metro Gnome's metronome engine takes a different approach. Instead of scheduling timer callbacks, it uses Android's AudioTrack API in STREAM mode and runs a blocking write loop.</p>
+      <p>The alternative is to let the audio hardware keep time. On Android this means using the AudioTrack API in STREAM mode with a blocking write loop; it is how the Metro Gnome metronome, built by the author of this article, works, and the same principle applies on any platform.</p>
 
       <p>The loop works like this: build an audio buffer containing exactly one beat's worth of samples (the click transient followed by silence), hand that buffer to AudioTrack.write(), and wait. The write() call is blocking in STREAM mode. It does not return until the hardware audio ring buffer has accepted the entire buffer. That acceptance is gated by the audio hardware clock, not the OS scheduler. The hardware plays audio at exactly 44,100 samples per second, driven by a crystal oscillator. Nothing on the OS side can change that rate.</p>
 
-      <p>At 44,100Hz and 120BPM, one beat is exactly 22,050 samples. The engine computes this as the integer value of (44100 times 60.0 divided by bpm). Those 22,050 samples take exactly 500.000ms to play. Not approximately. Not on average. Exactly, because the crystal running the audio DAC is the reference, and it does not yield to the OS scheduler. When write() returns and the loop begins building the next beat's buffer, it does so with that guarantee already satisfied by the hardware.</p>
+      <p>At 44,100Hz and 120BPM, one beat is exactly 22,050 samples. Those 22,050 samples take exactly 500.000ms to play. Not approximately. Not on average. Exactly, because the crystal running the audio DAC is the reference, and it does not yield to the OS scheduler. When write() returns and the loop begins building the next beat's buffer, it does so with that guarantee already satisfied by the hardware.</p>
 
-      <p>The result is that timing jitter is reduced to the order of the audio hardware latency, which is fixed and typically under 30ms on modern Android devices. More importantly, it does not accumulate and does not vary randomly. The click you hear at beat 100 is spaced just as precisely from beat 99 as beat 2 was from beat 1.</p>
+      <p>One detail matters at tempos that do not divide evenly. At 137 BPM a beat is 19,313.87 samples, and simply dropping the fraction on every beat would make the metronome run about 160 ms fast per hour. A careful engine carries the leftover fraction into the next beat, so the rounding never adds up.</p>
 
-      <h2>The onBeat Timing Decision</h2>
+      <p>There is still a delay between writing audio and hearing it, from a few tens of milliseconds to a few hundred depending on the phone and whether you use Bluetooth. But it is the same on every beat, so it shifts the whole click track without making it uneven. The click you hear at beat 100 is spaced just as precisely from beat 99 as beat 2 was from beat 1.</p>
 
-      <p>There is a subtle engineering point built into how the visual animations stay in sync with the click you hear. AudioTrack.write() in STREAM mode blocks for approximately one full beat of wall-clock time while the hardware consumes the previous buffer. If the code called onBeat() after write(), the UI animation would fire almost one full beat too late relative to the sound.</p>
+      <h2>Keeping the Picture in Time With the Sound</h2>
 
-      <p>The solution is to call onBeat() before write(). The visual callback fires at the moment the buffer is queued, which is the same moment the previous beat's audio begins being consumed from the hardware ring buffer. The audio hardware introduces a fixed latency of around 23ms between queueing audio and it arriving at the speaker. A Compose animation frame takes around 16ms to render. Those two figures are close enough that the bouncing gnome and the click you hear land within one display frame of each other. The 23ms hardware latency is the same on every beat; it does not introduce jitter.</p>
+      <p>A metronome usually also shows the beat: a flashing light, a swinging arm, a bouncing character. The obvious way to trigger that animation is from the loop that writes the audio, and it is wrong, because the code writes each beat well before you hear it.</p>
+
+      <p>How far ahead is easy to underestimate. Measured with a microphone on one recent Android phone, each click reached the speaker about a quarter of a second after the code that queued it ran. An animation fired at that moment visibly leads the sound. The fix is to ask the audio system when each beat will actually be played (Android reports this through AudioTrack.getTimestamp; browsers through the Web Audio clock and its output latency) and hold the animation until then. Metro Gnome moved its visuals to this method in version 7.2, and the browser metronome on this site does the same.</p>
 
       <h2>Pre-Generated Click Sounds</h2>
 
-      <p>Click synthesis happens once, at app startup, not on each beat. At initialisation, the engine generates a click and an accent buffer for every sound type: a standard click at 1,100Hz lasting 38ms with an accent at 1,800Hz lasting 50ms, a hi-hat tick at 9,000Hz with its accent at 7,000Hz, woodblock variants at 600Hz and 800Hz, and a warm click at 350Hz lasting 130ms, plus the optional sounds, among them a drum-machine hi-hat built from six square-wave oscillators and filtered noise. The warm click includes three early reflections at delays of 28ms, 52ms, and 80ms at decreasing amplitudes, simulating room reverb without a convolution reverb unit.</p>
+      <p>In a well-built engine, click synthesis happens once, at startup, not on each beat. Metro Gnome's, for example, generates a click and an accent buffer for every sound type: a standard click at 1,100Hz lasting 38ms with an accent at 1,800Hz lasting 50ms, a hi-hat tick at 9,000Hz with its accent at 7,000Hz, woodblock variants at 600Hz and 800Hz, and a warm click at 350Hz lasting 130ms, plus the optional sounds, among them a drum-machine hi-hat built from six square-wave oscillators and filtered noise. The warm click includes three early reflections at delays of 28ms, 52ms, and 80ms at decreasing amplitudes, simulating room reverb without a convolution reverb unit.</p>
 
       <p>Pre-generating these buffers means the audio thread has zero CPU work on the beat itself. At the start of each beat loop iteration, it selects the appropriate pre-built buffer and copies it into the output. No floating-point synthesis, no memory allocation, no garbage collector pressure during the write. The thread does exactly one thing on the critical path: write data the hardware is waiting for.</p>
 
       <h2>Thread Isolation</h2>
 
-      <p>The entire write loop runs on a Kotlin coroutine backed by Dispatchers.Default, a worker thread pool that is separate from the UI thread. The UI thread handles touch events, screen rendering, and animations. A slow frame caused by a complex layout or a garbage collection pause cannot delay the audio write loop, because they run on different threads. The audio thread does not draw anything and the UI thread does not write audio. The isolation is total.</p>
+      <p>The entire write loop runs on a Kotlin coroutine backed by Dispatchers.Default, a worker thread pool that is separate from the UI thread. The UI thread handles touch events, screen rendering, and animations. A slow frame caused by a complex layout or a garbage collection pause cannot delay the audio write loop, because they run on different threads. The audio thread does not draw anything and the UI thread does not write audio.</p>
 
-      <p>This matters at fast tempos and during heavy UI activity. Scrolling through settings, opening dialogs, triggering animations: none of these compete with the audio thread for CPU time in any way that could introduce a missed beat.</p>
+      <p>This matters at fast tempos and during heavy UI activity. Scrolling through settings, opening dialogs, triggering animations: none of these sit on the audio thread's critical path, so they cannot delay a beat the way they can delay a timer callback.</p>
 
       <h2>Is Google's Metronome Accurate Enough?</h2>
 
-      <p>Google's built-in metronome, accessible by searching "metronome" in Google Search or Chrome, is a well-made tool for its purpose. Its timing is driven by the browser's Web Audio API scheduler, which is better than a raw JavaScript timer but is still subject to the OS scheduling constraints described above. For keeping a rehearsal from speeding up, counting bars, or having a reference click in the background while you record on another device, it works perfectly well.</p>
+      <p>Google's built-in metronome, accessible by searching "metronome" in Google Search or Chrome, is a well-made tool for its purpose. Like any browser metronome, how steady it is depends on how it is built: a page that books each click ahead on the Web Audio clock keeps time the way an audio-clock app does, while one that plays a sound every time a JavaScript timer fires inherits the timer's jitter. From the outside you cannot tell which, so test it. For keeping a rehearsal from speeding up or counting bars, a well-made browser metronome works perfectly well; the <a href="/tools/online-metronome.html">online metronome on this site</a> schedules on the audio clock.</p>
 
-      <p>For precision practice at fast tempos, for training a tight internal pulse, or for work where 10ms of jitter is perceptible, an audio-clock-anchored engine makes a measurable difference. <a href="why-your-metronome-app-might-be-lying-to-you.html">Not every metronome app makes this distinction clear</a>, and some that appear to use audio hardware still introduce jitter through their architecture. The test is simple: at 200BPM, does the click feel like a machine or does it feel elastic?</p>
+      <p>For precision practice at fast tempos, for training a tight internal pulse, or for work where 10ms of jitter is perceptible, an audio-clock-anchored engine makes a measurable difference. <a href="why-your-metronome-app-might-be-lying-to-you.html">Not every metronome app makes this distinction clear</a>, and some that appear to use audio hardware still introduce jitter through their architecture. A quick check: at 200 BPM, does the click feel like a machine or does it feel elastic? For a proper test, record the click and measure the gaps, as described in <a href="/blog/why-your-metronome-app-might-be-lying-to-you.html#test">how to test your metronome</a>.</p>
 
       <p>The engineering described here is not a feature you will find in a settings menu. It is the foundation underneath everything else. A precise click is not just nicer to practise with. It is the only kind that gives your internal sense of time something true to lock onto.</p>
 

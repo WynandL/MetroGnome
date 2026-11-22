@@ -27,7 +27,7 @@
     "headline": "What Is a Chord? How Chords Work",
     "description": "What a chord actually is, why a major third sounds bright and a minor one sounds dark, how sevenths and slash chords get their names, what an arpeggio is, and why naming the chords you play makes you a better guitarist, pianist, bassist, singer, songwriter, or even drummer.",
     "datePublished": "2026-09-15",
-    "dateModified": "2026-09-15",
+    "dateModified": "2026-11-22",
     "author": { "@type": "Person", "name": "Wynand Lambrechts", "jobTitle": "Electronic engineer", "url": "https://metrognome.co.za/about.html#author" },
     "publisher": {
       "@type": "Organization",
@@ -127,6 +127,7 @@
       <div class="post-meta">
         <span class="post-category">Theory</span>
         <span>15 September 2026</span>
+        <span class="updated">Updated <time datetime="2026-11-22">22 November 2026</time></span>
         <span class="byline">By <a href="/about.html#author">Wynand Lambrechts</a></span>
         <span>13 min read</span>
       </div>
@@ -166,7 +167,7 @@
 
       <h2>The Chord Families, Briefly</h2>
 
-      <p>Every chord name is a root plus a description of what is stacked on it. Here are the families you will actually meet, from the ground up. The dictionary behind Metro Gnome's Chord Finder has thirty-eight of these; you do not need all of them tonight, but it helps to see the shape of the whole map.</p>
+      <p>Every chord name is a root plus a description of what is stacked on it. Here are the families you will actually meet, from the ground up. You do not need all of them tonight, but it helps to see the shape of the whole map.</p>
 
       <div class="data-table-wrap">
         <table class="data-table">
@@ -191,7 +192,7 @@
 
       <p>Take the four notes C, E, G and A. If C is the lowest note you are playing C6, a major chord with a sixth added. If A is the lowest note you are playing Am7, a minor seventh chord. Same four notes, two correct names, and any musician would agree on which is which just by hearing what is on the bottom. The lowest note anchors the ear; it tells you what everything else is measured from.</p>
 
-      <p>This is why a chord finder that only takes letter names cannot give you a straight answer, and why Metro Gnome's works with real notes in real octaves. It is also why <strong>slash chords</strong> exist. C/E means "C major, with E as the lowest note". That is a C chord in <strong>first inversion</strong> (its third in the bass); C/G is <strong>second inversion</strong> (its fifth in the bass). And a chord can sit over a note that is not in it at all: F/G, an F major chord over a G bass, is a gospel and pop staple precisely because the bass says "dominant" while the chord above says something softer.</p>
+      <p>This is why a chord finder that only takes letter names cannot give you a straight answer, and why a good one works with real notes in real octaves. It is also why <strong>slash chords</strong> exist. C/E means "C major, with E as the lowest note". That is a C chord in <strong>first inversion</strong> (its third in the bass); C/G is <strong>second inversion</strong> (its fifth in the bass). And a chord can sit over a note that is not in it at all: F/G, an F major chord over a G bass, is a gospel and pop staple precisely because the bass says "dominant" while the chord above says something softer.</p>
 
       <p>For bass players this is the whole job description. The note you choose under a guitarist's chord is not decoration; it can rename the chord. For pianists it is what the left hand is for. For guitarists it is the difference between the open C shape and the same shape with the G on the low E string added, which is C/G and sounds bigger for a reason.</p>
 
@@ -201,7 +202,7 @@
 
       <p>A chord tone's letter comes from its degree: a third is two letters above the root, a fifth is four, a seventh is six. The root is C&#9839;, so the third is some kind of E, and the pitch it needs to land on is the one usually called F, so in this chord it is written E&#9839;. Write it as F and the chord reads C&#9839;, F, G&#9839; on paper: a root, a fourth and a fifth, the spelling of a sus4 chord with no third in it, attached to a sound that plainly has one. No arranger, copyist or theory teacher would accept it, and it stops making sense the moment you try to read it on a stave. The same logic gives the seventh of B&#9837;7 as A&#9837; (not G&#9839;) and the seventh of D&#9837;7 as C&#9837; (not B).</p>
 
-      <p>A small engineering aside, because it is the kind of thing this blog exists for. When we built the Chord Finder in the Metro Gnome app, the chord dictionary was written in <strong>degrees</strong> ("1 &#9837;3 5 &#9837;7"), not in semitone offsets ("0 3 7 10"). The semitone version is simpler to code and every hobby chord namer uses it, and it cannot spell. It knows that a note three semitones above C&#9839; exists; it does not know that it is an E. The degree version derives the letter from the root and the accidental from the gap, so E&#9837; major spells itself E&#9837;, G, B&#9837; and Bdim7 spells its doubly-flattened seventh as A&#9837;. It even gets the octave number right when the letter crosses an octave line: the C&#9837; in a D&#9837;7 chord played at the pitch B3 is written C&#9837;4, because scientific pitch notation numbers the letter, not the piano key. That was a real bug in an early build, invisible until a chord that spells C&#9837; came up, and the test suite now checks for it.</p>
+      <p>A small engineering aside, because it is the kind of thing this blog exists for. When the chord finder on this site was built, its chord dictionary was written in <strong>degrees</strong> ("1 &#9837;3 5 &#9837;7"), not in semitone offsets ("0 3 7 10"). The semitone version is simpler to code and every hobby chord namer uses it, and it cannot spell. It knows that a note three semitones above C&#9839; exists; it does not know that it is an E. The degree version derives the letter from the root and the accidental from the gap, so E&#9837; major spells itself E&#9837;, G, B&#9837; and Bdim7 spells its doubly-flattened seventh as A&#9837;. It even gets the octave number right when the letter crosses an octave line: the C&#9837; in a D&#9837;7 chord played at the pitch B3 is written C&#9837;4, because scientific pitch notation numbers the letter, not the piano key. That was a real bug in an early build, invisible until a chord that spells C&#9837; came up, and the test suite now checks for it.</p>
 
       <h2>What an Arpeggio Is, and Why It Matters More Than It Sounds</h2>
 
@@ -209,7 +210,7 @@
 
       <p>Once you start looking, arpeggios are everywhere. A fingerpicking pattern is an arpeggio. A walking bass line is a chain of arpeggios with passing notes between them. A bebop solo is arpeggios with the corners rounded off. The left hand of most piano accompaniment is arpeggios, and so is the intro of nearly every ballad you have ever slow-danced to. If chord shapes are the nouns of music, arpeggios are the verbs: they are how you <em>move through</em> a chord rather than sit on it.</p>
 
-      <p>They are also the honest way for a machine to hear a chord, which is why the Chord Finder in the Metro Gnome app listens for them. A tuner's pitch detector (ours uses the McLeod pitch method, the same algorithm behind the <a href="/blog/how-accurate-is-your-tuner-app.html">tuner's accuracy</a>) works by finding the one period that a waveform repeats at. A single note has one. A strummed chord has three or four at once, superimposed, and there is no single period to find; anything that claims to name a strummed chord from a phone microphone is either guessing from a fuzzy spectral template or being generous with the truth. Play the chord as an arpeggio instead, and each note arrives alone, settles, gets captured exactly, and the chord is named from what was actually heard. It is slower than a strum by about a second, and it is right.</p>
+      <p>They are also the honest way for a machine to hear a chord, which is why a chord finder built on a tuner listens for them. A tuner's pitch detector (such as the McLeod pitch method, the same algorithm behind the <a href="/blog/how-accurate-is-your-tuner-app.html">tuner's accuracy</a>) works by finding the one period that a waveform repeats at. A single note has one. A strummed chord has three or four at once, superimposed, and there is no single period to find; naming a strummed chord is a different and much harder problem, solved with spectral templates or machine learning rather than a pitch detector, and with more room for error. Play the chord as an arpeggio instead, and each note arrives alone, settles, gets captured exactly, and the chord is named from what was actually heard. It is slower than a strum by about a second, and it is right.</p>
 
       <h2>Why This Matters to You, Whatever You Play</h2>
 
@@ -255,17 +256,13 @@
 
       <p><strong>Hear the chord tones against the root.</strong> Set a tuning drone to the root of a chord and play each chord tone against it. The fifth will lock, the major third will lock with a shimmer, the minor third will sit a little darker, and the seventh will pull. Now you know what those degrees sound like, not just what they are called.</p>
 
-      <p><strong>Get to twenty-five.</strong> The twelve major triads and the twelve minor triads make twenty-four. Naming twenty-five distinct chords is a real milestone, and in the Metro Gnome app it is the one that earns Metro his acoustic guitar. It was chosen because it is roughly the point at which the names stop being something you look up and start being something you know.</p>
+      <p><strong>Get to twenty-five.</strong> The twelve major triads and the twelve minor triads make twenty-four. Naming twenty-five distinct chords is a real milestone: it is roughly the point at which the names stop being something you look up and start being something you know.</p>
 
-      <h2>How Metro Gnome's Chord Finder Fits In</h2>
+      <h2>Putting Chord Names to Work</h2>
 
-      <p>Metro Gnome is a metronome first, with a chromatic tuner, a tuning drone and a rhythm game beside it, and as of version 6.0 a <strong>Chords</strong> tab. The Chord Finder there is the same engine as the <a href="/tools/chord-finder.html">one on this site</a>, with one thing the browser cannot do: it listens. Turn on the microphone, play the chord as an arpeggio, and each note is captured as it settles and added to the set; play a note lower than the current bass once you have a chord and it starts a new one, because the page has just taught you that the lowest note is the bass. Tap notes in on the drawn guitar or piano instead, or mix the two. Every note is spelled from the chord it is in, the alternatives are a tap away, and the description under the name tells you what the chord is for.</p>
+      <p>Naming a chord is the start, not the end. Three habits turn names into playing. <strong>Tune first</strong>: a chord finder on an out-of-tune guitar names the chord you meant, not the one you played. <strong>Practise the changes in time</strong>: once you can name a progression, play it against a <a href="/tools/online-metronome.html">metronome</a>, slowly, and raise the tempo only when the changes land on the beat (a <a href="/tools/speed-trainer.html">speed trainer</a> does this for you). <strong>Hear each chord tone</strong> against its root on a <a href="/tools/tuning-drone.html">tuning drone</a>, so a third or a seventh becomes a sound you recognise rather than a letter.</p>
 
-      <p>It earns its place by working with the rest of the app rather than instead of it. <strong>The tuner comes first</strong>, because a chord finder on an out-of-tune guitar names the chord you meant, not the one you played, and the tuner's reference pitch and calibration are what the Chord Finder listens with. <strong>The metronome is where chords become music</strong>: name the progression on the Chords tab, then practise changing between them in time on the Gnome tab, and use the Speed Trainer to bring the changes up to tempo without rushing. <strong>The drone is how you learn what each chord tone sounds like</strong>, held against its root; its Fifth blend is tuned as a pure 3:2, the ratio this whole article has been about. And naming chords earns Gnotes like every other kind of practice in the app, with the acoustic guitar waiting at twenty-five.</p>
-
-      <div class="callout">
-        <strong>What it will not do, and why.</strong> It will not name a strummed chord from the microphone. A tuner-grade pitch detector finds one note at a time, exactly, and a strum has no single note to find. We would rather give you an exact answer a second later than a guessed one now.
-      </div>
+      <p>The <a href="/tools/chord-finder.html">online chord finder</a> takes tapped notes. If you would rather play the notes in, the Chords tab of the Metro Gnome Android app uses the same naming rules and listens through the microphone, one note at a time, for the reason explained above.</p>
 
       <h3>Common Questions</h3>
       <div class="faq-list">

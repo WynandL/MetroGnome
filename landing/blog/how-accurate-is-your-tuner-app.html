@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How Accurate Is Your Phone Tuner? - Metro Gnome</title>
-  <meta name="description" content="Phone hardware is not what separates a good tuner from a bad one. The algorithm is. Here is what Metro Gnome's tuner does differently, in plain engineering terms.">
+  <title>Are Phone Tuners Accurate? What Decides It, and How to Check Yours</title>
+  <meta name="description" content="Are phone tuners accurate? The microphone is rarely the limit; the algorithm is. How tuners find pitch, why some jump octaves or read the room, and how to check yours.">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" type="image/webp" href="/favicon.webp">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -12,12 +12,12 @@
   <link rel="canonical" href="https://metrognome.co.za/blog/how-accurate-is-your-tuner-app.html">
   <meta property="og:type" content="article">
   <meta property="og:title" content="How Accurate Is Your Phone Tuner?">
-  <meta property="og:description" content="Phone hardware is not what separates a good tuner from a bad one. The algorithm is. Here is what Metro Gnome's tuner does differently, in plain engineering terms.">
+  <meta property="og:description" content="Are phone tuners accurate? The microphone is rarely the limit; the algorithm is. How tuners find pitch, why some jump octaves or read the room, and how to check yours.">
   <meta property="og:url" content="https://metrognome.co.za/blog/how-accurate-is-your-tuner-app.html">
   <meta property="og:image" content="https://metrognome.co.za/metro.png">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="How Accurate Is Your Phone Tuner?">
-  <meta name="twitter:description" content="Phone hardware is not what separates a good tuner from a bad one. The algorithm is. Here is what Metro Gnome's tuner does differently, in plain engineering terms.">
+  <meta name="twitter:description" content="Are phone tuners accurate? The microphone is rarely the limit; the algorithm is. How tuners find pitch, why some jump octaves or read the room, and how to check yours.">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -25,7 +25,7 @@
     "headline": "How Accurate Is Your Phone Tuner?",
     "description": "Phone hardware is not what separates a good tuner from a bad one. The algorithm is. Here is what Metro Gnome's tuner does differently, in plain engineering terms.",
     "datePublished": "2026-06-17",
-    "dateModified": "2026-09-22",
+    "dateModified": "2026-11-22",
     "author": { "@type": "Person", "name": "Wynand Lambrechts", "jobTitle": "Electronic engineer", "url": "https://metrognome.co.za/about.html#author" },
     "publisher": {
       "@type": "Organization",
@@ -67,7 +67,7 @@
       <div class="post-meta">
         <span class="post-category">Tuning</span>
         <span>17 June 2026</span>
-        <span class="updated">Updated <time datetime="2026-09-22">22 September 2026</time></span>
+        <span class="updated">Updated <time datetime="2026-11-22">22 November 2026</time></span>
         <span class="byline">By <a href="/about.html#author">Wynand Lambrechts</a></span>
         <span>8 min read</span>
       </div>
@@ -93,7 +93,7 @@
 
       <h2>MPM: Picking the Right Peak</h2>
 
-      <p>Metro Gnome's tuner runs the McLeod Pitch Method (MPM). The key difference from basic autocorrelation is the Normalised Square Difference Function (NSDF): instead of raw correlation values, MPM computes a normalised figure bounded between -1 and 1, where a score near 1 means the signal is genuinely periodic at that lag. From that NSDF, MPM then applies a specific selection rule: it looks for the first key maximum that clears 90% of the global peak.</p>
+      <p>A better approach is the McLeod Pitch Method (MPM), which is what the Metro Gnome tuner, built by the author of this article, runs. The key difference from basic autocorrelation is the Normalised Square Difference Function (NSDF): instead of raw correlation values, MPM computes a normalised figure bounded between -1 and 1, where a score near 1 means the signal is genuinely periodic at that lag. From that NSDF, MPM then applies a specific selection rule: it looks for the first key maximum that clears 90% of the global peak.</p>
 
       <p>That "first key maximum" rule is precisely what resolves the octave problem. The fundamental period produces the first sufficiently large peak in the NSDF. The double-period (one octave lower) would be the second or third. By choosing the first qualified peak rather than the tallest, the algorithm locks on the fundamental before it can reach the longer-period overtone. In Metro Gnome's code, that threshold is set to 0.9 (90%). Below 0.5, the detection is considered too uncertain to trust, and no reading is shown.</p>
 
@@ -105,7 +105,7 @@
 
       <h2>Stabilising the Display</h2>
 
-      <p>Raw pitch detections at 11 readings per second (the 4096-sample hop gives 50% overlap) are still noisy frame to frame. Metro Gnome runs each new reading through two smoothing layers before the needle moves.</p>
+      <p>Raw pitch detections at 11 readings per second (the 4096-sample hop gives 50% overlap) are still noisy frame to frame. A well-built tuner runs each new reading through smoothing before the needle moves; two layers work well.</p>
 
       <p>First, a 5-tap running median. Any single frame where a stray overtone hijacks the detection, causing an octave jump, is voted out by the surrounding frames. The median is more robust than an average here because averages are pulled far by outliers; the median simply ignores them.</p>
 
@@ -127,11 +127,11 @@
 
       <p>Android provides a system component called NoiseSuppressor, designed for voice calls. It targets stationary noise, fans, air conditioning, background hum, and cleans it out so voices sound clearer on calls. Applied to a musical instrument, it does exactly the wrong thing. A sustained note looks like stationary noise to a voice-call filter. The NoiseSuppressor attacks it.</p>
 
-      <p>Metro Gnome's tuner opens the microphone as a raw MIC source with no automatic voice processing applied. The ambient noise detection and spectral subtraction are done by the tuner's own code, written for instrument signals rather than voices. The noise reduction is adaptive (it learns your room), frequency-aware (it can target a specific hum without blanket attenuation), and operates on a spectral floor of 10% (it never attenuates any bin below 10% of its original energy, preventing "musical noise" artefacts).</p>
+      <p>The fix is to open the microphone as a raw source with no automatic voice processing applied. Noise handling then belongs in the tuner's own code, written for instrument signals rather than voices. The noise reduction is adaptive (it learns your room), frequency-aware (it can target a specific hum without blanket attenuation), and operates on a spectral floor of 10% (it never attenuates any bin below 10% of its original energy, preventing "musical noise" artefacts).</p>
 
       <h2>Reference Pitch and the In-Tune Window</h2>
 
-      <p>Standard concert pitch is A4 = 440Hz, but the app's reference is adjustable from 415Hz to 466Hz. Early music ensembles commonly use 415Hz, roughly a semitone below modern concert pitch, because that matches historical instruments. Some orchestras tune to 442Hz or 443Hz. The in-tune window is set to plus or minus 3 cents. A value of 1.5 cents proved too tight in practice: a real note with slight vibrato and natural decay could not hold the green indicator, even when the player was genuinely in tune. Three cents is musically meaningful (a well-trained ear can hear 5-cent deviations) while still registering achievable precision.</p>
+      <p>Standard concert pitch is A4 = 440Hz, and a good tuner lets you move the reference, typically from 415Hz to 466Hz. Early music ensembles commonly use 415Hz, roughly a semitone below modern concert pitch, because that matches historical instruments. Some orchestras tune to 442Hz or 443Hz. The in-tune window is set to plus or minus 3 cents. A value of 1.5 cents proved too tight in practice: a real note with slight vibrato and natural decay could not hold the green indicator, even when the player was genuinely in tune. Three cents is musically meaningful (a well-trained ear can hear 5-cent deviations) while still registering achievable precision.</p>
 
       <h2>What "Accurate Enough" Actually Means</h2>
 
@@ -150,6 +150,8 @@
       <div class="callout">
         <strong>The short version:</strong> for tuning a guitar, violin, wind instrument or voice to standard pitch, a well-built, calibrated phone app can match a clip-on tuner's numeric precision. The honest gap is noise rejection, not resolution. For piano, a dedicated piano tuner is solving a different problem, stretch tuning for inharmonicity, that no generic chromatic tuner attempts.
       </div>
+
+      <p><strong>To check your own tuner</strong>, you do not need to know which algorithm it runs: the <a href="best-free-chromatic-tuner-android.html#test">five-minute tuner test</a> (a known reference note, your lowest string, a decaying note, your real room, flight mode) shows how it behaves where it matters.</p>
 
       <p>The engineering described here is not here to impress. It is here because the alternative, a simpler algorithm in a noisier room on a richer instrument, is where tuners visibly fail. And <a href="guitar-tuner-showing-wrong-note.html">when a tuner shows the wrong note</a>, the most common cause is exactly the harmonic problem that MPM was designed to solve.</p>
 
