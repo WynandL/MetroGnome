@@ -1548,3 +1548,6 @@ table.data-table.ts-chart { min-width: 0; }
   .ts-chart th:nth-child(3), .ts-chart td:nth-child(3) { display: none; }
   .ts-chart th, .ts-chart td { padding: 0.5rem 0.45rem; }
 }
+
+/* anchor targets land below the sticky nav, not under it */
+[id] { scroll-margin-top: 84px; }
