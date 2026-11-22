@@ -1519,3 +1519,9 @@ details[open] summary::after { transform: rotate(45deg); }
 
 /* no square tap highlight on phones; focus outlines follow each element's rounded corners */
 html{-webkit-tap-highlight-color:transparent}
+
+/* ── Online metronome: the widget (js/metronome.js) draws its own card ── */
+.tool-panel.tool-panel-metronome { background: none; border: 0; padding: 0; overflow: visible; }
+.tool-panel.tool-panel-metronome::before { display: none; }
+.tools-guide { max-width: 760px; margin: 3rem auto 2.5rem; }
+.tools-guide h3 { margin-top: 1.6rem; }

@@ -69,6 +69,7 @@
      crop of the 640px square capture (tools/img), chosen per tool so the
      band shows the interesting part: the chart, the fretboard, the keys. */
   var HOUSE = [
+    { href: '/tools/online-metronome.html', img: 'metronome', pos: '30%', tag: 'Metronome', label: 'Online Metronome', line: 'Tap tempo, any time signature, accents where you want them.', cta: 'Start the click' },
     { href: '/tools/rhythm-timing-test.html', img: 'rhythm-test', pos: '94%', tag: 'Timing', label: 'Rhythm Test', line: 'How good is your timing? Find out in 20 seconds.', cta: 'Take the test' },
     { href: '/tools/pitch-ear-test.html', img: 'pitch-test', pos: '88%', tag: 'Ear', label: 'Pitch Test', line: 'How fine is your ear? Find the smallest gap you can hear.', cta: 'Take the test' },
     { href: '/tools/rushing-or-dragging-test.html', img: 'rushing-dragging', pos: '72%', tag: 'Ear', label: 'Rushing or Dragging Test', line: 'Can you hear a tempo slip? Find the smallest change you can catch.', cta: 'Take the test' },

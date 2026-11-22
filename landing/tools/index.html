@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tools - Metro Gnome: Free Music Practice Tools</title>
-  <meta name="description" content="Free browser tools for musicians: a chord finder, a rhythm and timing test, an online tuning drone, a shruti box for Sa practice, an odd meter metronome with a guide for every time signature, and a tap tempo BPM finder. No download, no account.">
+  <meta name="description" content="Free browser tools for musicians: an online metronome, a rhythm and timing test, a chord finder, an online tuning drone, a shruti box for Sa practice, an odd meter metronome with a guide for every time signature, and a tap tempo BPM finder. No download, no account.">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" type="image/webp" href="/favicon.webp">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -12,7 +12,7 @@
   <link rel="canonical" href="https://metrognome.co.za/tools/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Tools - Metro Gnome: Free Music Practice Tools">
-  <meta property="og:description" content="Free browser tools for musicians: a chord finder, a rhythm and timing test, an online tuning drone, a shruti box for Sa practice, an odd meter metronome with a guide for every time signature, and a tap tempo BPM finder. No download, no account.">
+  <meta property="og:description" content="Free browser tools for musicians: an online metronome, a rhythm and timing test, a chord finder, an online tuning drone, a shruti box for Sa practice, an odd meter metronome with a guide for every time signature, and a tap tempo BPM finder. No download, no account.">
   <meta property="og:url" content="https://metrognome.co.za/tools/">
   <link rel="stylesheet" href="../blog/style.css">
 </head>
@@ -25,11 +25,10 @@
         <span>Metro Gnome</span>
       </a>
       <div class="nav-links">
-        <a href="/">Home</a>
-        <a href="/#features">Features</a>
-        <a href="/blog/" class="blog-nav">Blog</a>
+        <a href="/tools/online-metronome.html">Metronome</a>
         <a href="/tools/" class="tools-nav">Tools</a>
-        <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Download</a>
+        <a href="/blog/" class="blog-nav">Guides</a>
+        <a href="/about.html">About</a>
       </div>
     </div>
   </nav>
@@ -38,12 +37,26 @@
     <div class="container tools-wide">
       <p class="post-category">Tools</p>
       <h1 style="margin-top:0.5rem;">Free Music Practice Tools</h1>
-      <p>Quick browser tools for musicians. No download, no account, no cost. Just open one and use it.</p>
+      <p>Twelve browser tools for musicians: a metronome, timing and ear tests, a speed trainer, drones and a chord finder. No download, no account, no cost.</p>
     </div>
   </section>
 
   <div class="container tools-wide">
     <div class="tool-grid">
+      <article class="tool-card">
+        <a class="tc-shot" href="online-metronome.html" tabindex="-1">
+          <img src="img/metronome.webp" alt="The online metronome at 96 BPM in 4/4, with the first beat lit" width="640" height="640" loading="lazy">
+        </a>
+        <div class="tc-body">
+          <p class="tc-label">Metronome</p>
+          <h2><a href="online-metronome.html">Online Metronome</a></h2>
+          <p>20 to 300 BPM, tap tempo, any time signature up to 16 beats with the accents you choose, subdivisions and three click sounds.</p>
+          <a class="tc-open" href="online-metronome.html">Open the metronome
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 5 20 12 13 19"/></svg>
+        </a>
+        </div>
+      </article>
+
       <article class="tool-card">
         <a class="tc-shot" href="rhythm-timing-test.html" tabindex="-1">
           <img src="img/rhythm-test.webp" alt="The rhythm test showing a timing score, the beat dots and a chart of every tap" width="640" height="640" loading="lazy">
@@ -223,13 +236,33 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 5 20 12 13 19"/></svg>
         </a>
     </section>
+
+    <section class="prose tools-guide" aria-labelledby="whichHeading">
+      <h2 id="whichHeading">Which tool for which goal?</h2>
+      <p>Each tool measures or trains one thing. If you are not sure where to start, pick the goal closest to yours.</p>
+      <h3>"My timing is off, but I am not sure how"</h3>
+      <p>Start with the <a href="rhythm-timing-test.html">rhythm test</a>. It tells you two separate things: your average offset (whether you sit ahead of the click or behind it) and your spread (how much your taps scatter). They need different fixes. A consistent offset is a habit you can correct by listening; a wide spread means the beat itself is not yet steady, which slow practice with subdivisions fixes. Then try the <a href="steady-tempo-test.html">steady tempo test</a>, which takes the click away and shows whether you speed up or slow down on your own.</p>
+      <h3>"I can play it slowly but not up to speed"</h3>
+      <p>Use the <a href="speed-trainer.html">speed trainer</a>. Set the tempo you can play cleanly as the start and the performance tempo as the target, and let it climb a few BPM every few bars. If it falls apart at a step, the step was too big. The reasoning is in <a href="/blog/how-to-practice-increasing-bpm.html">how to practise increasing BPM</a>.</p>
+      <h3>"I need a click for practice"</h3>
+      <p>The <a href="online-metronome.html">online metronome</a> covers everyday practice, with tap tempo and accents. For a meter like 7/8 or 11/8, the <a href="odd-meter-practice-tool.html">odd meter metronome</a> shows the count group by group, and the <a href="time-signatures/">time signature guides</a> take one meter at a time. To find the tempo of a recording, use <a href="tap-tempo-bpm-finder.html">tap tempo</a>.</p>
+      <h3>"I want to play more in tune"</h3>
+      <p>Hold a note on the <a href="tuning-drone.html">tuning drone</a> and play scales or long tones against it: when you are out of tune you hear a slow wobble (beating) that stops when you land on the pitch. Singers in Hindustani and Carnatic music can use the <a href="shruti-box-online.html">shruti box</a> preset to their Sa. The <a href="pitch-ear-test.html">pitch test</a> shows how small a pitch difference you can hear, which is the limit of what you can correct by ear.</p>
+      <h3>"I want to understand the music I play"</h3>
+      <p>The <a href="chord-finder.html">chord finder</a> names any chord you tap on a guitar or piano and spells its notes, which helps when a chart lists a chord you do not know or a shape you found has no name. The <a href="/blog/what-is-a-chord-how-chords-work.html">guide to how chords work</a> explains the naming.</p>
+      <h3>"I play with both hands, or on a kit"</h3>
+      <p>The <a href="polyrhythm-test.html">polyrhythm test</a> scores 3 against 2, 4 against 3 and 5 against 4, and shows which hand drifts.</p>
+      <h3>"I teach"</h3>
+      <p>All of these work in a lesson on a laptop or a phone, and most can be <a href="/embed/">embedded</a> on a school or studio page. The tests give students a number they can try to beat next week, and the rhythm test result is a useful starting point for a conversation about rushing and dragging.</p>
+    </section>
   </div>
 
   <footer>
     <div class="container">
       <div class="footer-links">
         <a href="/">Metro Gnome</a>
-        <a href="/blog/">Blog</a>
+        <a href="/tools/online-metronome.html">Metronome</a>
+        <a href="/blog/">Guides</a>
         <a href="/tools/">Tools</a>
         <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome">Play Store</a>
         <a href="/about.html">About</a>
