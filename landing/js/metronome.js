@@ -105,7 +105,7 @@
     '.mm-tap{width:84px;height:56px;border-radius:16px;border:1px solid var(--mm-up);background:var(--mm-deep);color:var(--mm-text);font-weight:800;letter-spacing:.08em;cursor:pointer;touch-action:manipulation}',
     '.mm-tap:active,.mm-tap.hit{border-color:var(--mm-gold);color:var(--mm-gold)}',
     '.mm-opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem 1.2rem;margin-top:1.2rem;padding-top:1.1rem;border-top:1px solid var(--mm-up);text-align:left}',
-    '@media (max-width:420px){.mm-opts{grid-template-columns:1fr}}',
+    '@media (max-width:420px){.mm-opts{grid-template-columns:1fr}.mm-compact .mm-pre{display:none}}',
     '.mm-opt label,.mm-optl{display:block;font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mm-muted);margin-bottom:.35rem}',
     '.mm-seg{display:flex;flex-wrap:wrap;gap:.3rem}',
     '.mm-chip{border:1px solid var(--mm-up);background:var(--mm-deep);color:var(--mm-muted);border-radius:999px;padding:.3rem .65rem;font-size:.82rem;font-weight:700;cursor:pointer;line-height:1.3}',
@@ -232,7 +232,7 @@
     tsOpt.appendChild(denomSeg);
     opts.appendChild(tsOpt);
 
-    var preOpt = el('div', 'mm-opt');
+    var preOpt = el('div', 'mm-opt mm-pre');
     preOpt.appendChild(el('span', 'mm-optl', 'Common meters'));
     var preSeg = el('div', 'mm-seg');
     var preBtns = PRESETS.map(function (p) {

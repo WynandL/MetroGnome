@@ -23,11 +23,18 @@
     "url": "https://metrognome.co.za/about.html",
     "mainEntity": {
       "@type": "Organization",
-      "name": "Access Comms",
+      "name": "Metro Gnome",
       "url": "https://metrognome.co.za/",
       "logo": "https://metrognome.co.za/metro.png",
       "email": "accesscommsa@gmail.com",
-      "publishingPrinciples": "https://metrognome.co.za/about.html"
+      "publishingPrinciples": "https://metrognome.co.za/about.html",
+      "founder": {
+        "@type": "Person",
+        "@id": "https://metrognome.co.za/about.html#author",
+        "name": "Wynand Lambrechts",
+        "jobTitle": "Electronic engineer",
+        "url": "https://metrognome.co.za/about.html#author"
+      }
     }
   }
   </script>
@@ -69,9 +76,13 @@
 
     <article class="prose">
 
-      <h2>Who makes it</h2>
+      <h2 id="author">Who makes it</h2>
 
-      <p>Metro Gnome is designed, written and maintained by Access Comms, an independent developer with a background in electronics engineering, signal processing and audio hardware. The blog posts are written by Access Comms too. That background shapes everything on this site. A metronome is a timing problem and a tuner is a pitch detection problem, and both are measurable: a click either lands on the sample it should or it does not, and a tuner either reads a known note correctly or it does not.</p>
+      <p>Metro Gnome is designed, written and maintained by <strong>Wynand Lambrechts</strong>, an electronic engineer. He builds the browser tools and the Android app, and writes the guides on this site.</p>
+
+      <p>The engineering background is what the tools rest on. A metronome is a timing problem and a tuner is a pitch detection problem, and both are measurable: a click either lands on the sample it should or it does not, and a tuner either reads a known note correctly or it does not. Designing for that, from audio clocks and latency to filtering and pitch detection, is ordinary electronics and signal-processing work, and it is what makes the tools accurate rather than approximately right.</p>
+
+      <p>The music is checked by musicians. Wynand consults with professional musicians on the music theory behind the tools and the guides: how chords are named and spelled, how odd meters are counted and felt, and how practice exercises are meant to be used. Where a question is genuinely contested among musicians, such as how to group 7/8, the guides say so rather than pick a side and present it as fact.</p>
 
       <p>The app is in active development, with new versions published on Google Play regularly, and the website grows alongside it: each browser tool is a port of the same code the app runs, so the two give the same answers.</p>
 
