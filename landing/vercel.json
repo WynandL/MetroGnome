@@ -3,49 +3,143 @@
     {
       "source": "/embed/(.*)",
       "headers": [
-        { "key": "Content-Security-Policy", "value": "frame-ancestors *" }
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors *"
+        }
       ]
     }
   ],
   "redirects": [
     {
       "source": "/",
-      "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "metro-gnome-gilt.vercel.app"
+        }
+      ],
       "destination": "https://metrognome.co.za/",
       "permanent": true
     },
     {
       "source": "/blog/",
-      "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "metro-gnome-gilt.vercel.app"
+        }
+      ],
       "destination": "https://metrognome.co.za/blog/",
       "permanent": true
     },
     {
       "source": "/tools/",
-      "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "metro-gnome-gilt.vercel.app"
+        }
+      ],
       "destination": "https://metrognome.co.za/tools/",
       "permanent": true
     },
     {
       "source": "/embed/",
-      "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "metro-gnome-gilt.vercel.app"
+        }
+      ],
       "destination": "https://metrognome.co.za/embed/",
       "permanent": true
     },
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "metro-gnome-gilt.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "metro-gnome-gilt.vercel.app"
+        }
+      ],
       "destination": "https://metrognome.co.za/:path*",
       "permanent": true
     },
-    { "source": "/index.html", "destination": "/", "permanent": true },
-    { "source": "/blog/index.html", "destination": "/blog/", "permanent": true },
-    { "source": "/blog", "destination": "/blog/", "permanent": true },
-    { "source": "/tools/index.html", "destination": "/tools/", "permanent": true },
-    { "source": "/tools", "destination": "/tools/", "permanent": true },
-    { "source": "/tools/time-signatures/index.html", "destination": "/tools/time-signatures/", "permanent": true },
-    { "source": "/tools/time-signatures", "destination": "/tools/time-signatures/", "permanent": true },
-    { "source": "/embed/index.html", "destination": "/embed/", "permanent": true },
-    { "source": "/embed", "destination": "/embed/", "permanent": true }
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/blog/index.html",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/tools/index.html",
+      "destination": "/tools/",
+      "permanent": true
+    },
+    {
+      "source": "/tools",
+      "destination": "/tools/",
+      "permanent": true
+    },
+    {
+      "source": "/tools/time-signatures/index.html",
+      "destination": "/tools/time-signatures/",
+      "permanent": true
+    },
+    {
+      "source": "/tools/time-signatures",
+      "destination": "/tools/time-signatures/",
+      "permanent": true
+    },
+    {
+      "source": "/embed/index.html",
+      "destination": "/embed/",
+      "permanent": true
+    },
+    {
+      "source": "/embed",
+      "destination": "/embed/",
+      "permanent": true
+    },
+    {
+      "source": "/blog/why-you-rush-when-you-play-and-why-it-gets-worse-at-slow-tempos",
+      "destination": "/blog/why-you-rush-when-you-play.html",
+      "permanent": true
+    },
+    {
+      "source": "/blog/:slug([a-z0-9-]+)/",
+      "destination": "/blog/:slug.html",
+      "permanent": true
+    },
+    {
+      "source": "/blog/:slug([a-z0-9-]+)",
+      "destination": "/blog/:slug.html",
+      "permanent": true
+    },
+    {
+      "source": "/tools/time-signatures/:slug([a-z0-9-]+)",
+      "destination": "/tools/time-signatures/:slug.html",
+      "permanent": true
+    },
+    {
+      "source": "/tools/:slug((?!time-signatures$)[a-z0-9-]+)",
+      "destination": "/tools/:slug.html",
+      "permanent": true
+    },
+    {
+      "source": "/:slug(about|contact|privacy)",
+      "destination": "/:slug.html",
+      "permanent": true
+    }
   ]
 }
