@@ -1631,7 +1631,8 @@ html{-webkit-tap-highlight-color:transparent}
 .author-box p { font-size: 0.92rem; color: var(--text-muted); line-height: 1.6; margin: 0; }
 .author-box .ab-name { color: var(--text); font-weight: 700; margin-bottom: 0.35rem; }
 
-.post-card .pc-updated { font-size: 0.78rem; color: var(--gold); opacity: 0.85; }
+/* Last-updated date: bookkeeping, not news. One quiet line at the end of the page. */
+.page-updated { margin: -1.5rem 0 2.5rem; font-size: 0.78rem; line-height: 1.4; color: var(--text-muted); opacity: 0.75; }
 
 /* the time signature chart: fits a phone without sideways scrolling */
 table.data-table.ts-chart { min-width: 0; }
