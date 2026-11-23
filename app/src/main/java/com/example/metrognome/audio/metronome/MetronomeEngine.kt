@@ -5,6 +5,8 @@ import android.media.AudioFormat
 import android.media.AudioTimestamp
 import android.media.AudioTrack
 import android.os.SystemClock
+import com.example.metrognome.audio.metronome.subdivision.SubdivisionGrid
+import com.example.metrognome.audio.metronome.subdivision.SubdivisionLimits
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -78,6 +80,30 @@ class MetronomeEngine {
     var volume: Float = 1.0f
     @Volatile
     var muted: Boolean = false
+
+    /**
+     * Ticks per beat (1 = off). The loop sounds fewer only above the voice's limit
+     * ([subdivisionMaxBpm]), checked every beat, so a tempo change, a new voice or a live
+     * audition each get the right answer without anyone re-setting this. See `subdivision/`.
+     */
+    @Volatile
+    var subdivision: Int = 1
+
+    // The longer of each voice's beat and accent bodies (see SubdivisionLimits), by soundType.
+    private val subdivisionBodyMs = DoubleArray(VOICE_COUNT) { v ->
+        maxOf(
+            SubdivisionLimits.bodyMs(voiceFor(v, isAccent = false), sampleRate),
+            SubdivisionLimits.bodyMs(voiceFor(v, isAccent = true), sampleRate),
+        )
+    }
+
+    /** The fastest BPM at which [voice] can sound [clicks] ticks per beat. */
+    fun subdivisionMaxBpm(voice: Int, clicks: Int): Int =
+        SubdivisionLimits.maxBpm(subdivisionBodyMs[voice.coerceIn(0, VOICE_COUNT - 1)], clicks)
+
+    /** Ticks per beat [voice] actually sounds at [bpm] with [clicks] asked for. */
+    fun soundingClicks(voice: Int, bpm: Int, clicks: Int): Int =
+        if (clicks > 1 && bpm <= subdivisionMaxBpm(voice, clicks)) clicks else 1
 
     var onBeat: ((beat: Int) -> Unit)? = null
 
@@ -160,7 +186,8 @@ class MetronomeEngine {
                     auditionInBeat = false
                     _previewing.value = false
                 }
-                val buffer = buildBeatBuffer(samplesPerBeat, isAccent, voice)
+                val clicks = soundingClicks(voice, currentBpm, subdivision)
+                val buffer = buildBeatBuffer(samplesPerBeat, isAccent, voice, clicks)
 
                 // Notify the UI BEFORE writing audio data.
                 //
@@ -326,21 +353,40 @@ class MetronomeEngine {
         else -> if (isAccent) accentClick else normalClick
     }
 
-    /** Fill buffer: click samples at index 0, silence for the rest */
-    private fun buildBeatBuffer(samplesPerBeat: Int, isAccent: Boolean, voice: Int): ShortArray {
-        if (muted) return ShortArray(samplesPerBeat)
-        val click = voiceFor(voice, isAccent)
+    /**
+     * One beat: the beat's click at frame 0 and, when [clicks] > 1, the sub-ticks at
+     * [SubdivisionGrid.offset]. Each tick owns the window up to the next and is cut at its
+     * end, never summed over the one before: nothing can clip, every envelope still reaches
+     * zero, and the sub-tick replaces a ringing accent the way a closed hat chokes an open
+     * one. A sub-tick is the voice's own plain beat at [SUB_TICK_GAIN].
+     */
+    internal fun buildBeatBuffer(samplesPerBeat: Int, isAccent: Boolean, voice: Int, clicks: Int = 1): ShortArray {
         val buf = ShortArray(samplesPerBeat)
-        val len = minOf(click.size, samplesPerBeat)
+        if (muted) return buf
         val vol = volume.coerceIn(0f, 1f)
-        // A voice longer than the beat (the Metal Kick at a fast tempo) is cut short; fade
+        if (clicks <= 1) {
+            writeTick(buf, voiceFor(voice, isAccent), 0, samplesPerBeat, vol)
+            return buf
+        }
+        for (k in 0 until clicks) {
+            val start = SubdivisionGrid.offset(k, samplesPerBeat, clicks)
+            val end = SubdivisionGrid.offset(k + 1, samplesPerBeat, clicks)
+            val click = voiceFor(voice, isAccent = isAccent && k == 0)
+            writeTick(buf, click, start, end - start, if (k == 0) vol else vol * SUB_TICK_GAIN)
+        }
+        return buf
+    }
+
+    /** Writes [click] at [start], cut to [window] frames. */
+    private fun writeTick(buf: ShortArray, click: ShortArray, start: Int, window: Int, gain: Float) {
+        val len = minOf(click.size, window)
+        // A voice longer than its window (the Metal Kick at a fast tempo) is cut short; fade
         // the cut over 20 ms, or the body ends mid-swing and every beat carries a click.
         val fade = if (len < click.size) (sampleRate * 20 / 1000).coerceAtMost(len) else 0
         for (i in 0 until len) {
             val g = if (fade > 0 && i >= len - fade) (len - i).toFloat() / fade else 1f
-            buf[i] = (click[i] * vol * g).toInt().toShort()
+            buf[start + i] = (click[i] * gain * g).toInt().toShort()
         }
-        return buf
     }
 
     /**
@@ -614,5 +660,13 @@ class MetronomeEngine {
             (wet[i] * scale * Short.MAX_VALUE).toInt()
                 .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
         }
+    }
+
+    companion object {
+        /** soundType indices 0 to 9; [voiceFor] covers each. */
+        const val VOICE_COUNT = 10
+
+        /** A sub-tick's level against the beat (about -6 dB): heard, never mistaken for the beat. */
+        const val SUB_TICK_GAIN = 0.5f
     }
 }

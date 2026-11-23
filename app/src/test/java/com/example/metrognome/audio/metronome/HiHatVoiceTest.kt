@@ -177,12 +177,8 @@ class HiHatVoiceTest {
 
     private val engine = MetronomeEngine()
 
-    private fun beatBuffer(voice: Int, accent: Boolean): ShortArray {
-        val build = MetronomeEngine::class.java.getDeclaredMethod(
-            "buildBeatBuffer", Int::class.java, Boolean::class.java, Int::class.java,
-        ).apply { isAccessible = true }
-        return build.invoke(engine, sr, accent, voice) as ShortArray // a 60 BPM beat
-    }
+    private fun beatBuffer(voice: Int, accent: Boolean): ShortArray =
+        engine.buildBeatBuffer(sr, accent, voice) // a 60 BPM beat
 
     /** soundType 9 plays this voice on both beat kinds; the free Hi-Hat (1) does not. */
     @Test
