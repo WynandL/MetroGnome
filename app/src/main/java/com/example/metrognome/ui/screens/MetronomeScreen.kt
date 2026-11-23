@@ -160,6 +160,23 @@ fun MetronomeScreen(
     val soundType by vm.soundType.collectAsStateWithLifecycle()
     val classicForSession by vm.classicForSession.collectAsStateWithLifecycle()
     val subdivisionStatus by vm.subdivisionStatus.collectAsStateWithLifecycle()
+    // Say it when the tempo (or a change of sound) carries the subdivision past the voice's
+    // limit, and when it comes back: otherwise the sub-ticks just stop and only the key's dots
+    // dim, which reads as broken. A tap on the key already says its own line, so a change of
+    // the subdivision itself stays quiet here.
+    var lastSubdivision by remember { mutableStateOf(subdivisionStatus) }
+    LaunchedEffect(subdivisionStatus) {
+        val before = lastSubdivision
+        val now = subdivisionStatus
+        lastSubdivision = now
+        if (before.chosen != now.chosen || now.chosen == com.example.metrognome.audio.metronome.subdivision.Subdivision.OFF) return@LaunchedEffect
+        val wasPaused = before.hold == com.example.metrognome.viewmodel.SubdivisionHold.TEMPO
+        val isPaused = now.hold == com.example.metrognome.viewmodel.SubdivisionHold.TEMPO
+        when {
+            isPaused && !wasPaused -> AppSnackbar.show("Subdivision ${now.caption().replaceFirstChar { it.lowercase() }}")
+            wasPaused && now.sounding -> AppSnackbar.show("Subdivision back on: ${now.caption().replaceFirstChar { it.lowercase() }}")
+        }
+    }
 
     var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
@@ -460,8 +477,14 @@ fun MetronomeScreen(
             onSubdivision = {
                 val next = subdivisionStatus.chosen.next()
                 vm.setSubdivision(next, source = "home")
-                val msg = if (next == com.example.metrognome.audio.metronome.subdivision.Subdivision.OFF) "Subdivision off"
-                    else vm.subdivisionStatusIf(next).caption()
+                val status = vm.subdivisionStatusIf(next)
+                val msg = when {
+                    next == com.example.metrognome.audio.metronome.subdivision.Subdivision.OFF -> "Subdivision off"
+                    // "Pauses above..." needs its subject on Home (the stage has the row label).
+                    status.hold == com.example.metrognome.viewmodel.SubdivisionHold.TEMPO ->
+                        "${next.clicks} clicks per beat: ${status.caption().replaceFirstChar { it.lowercase() }}"
+                    else -> status.caption()
+                }
                 AppSnackbar.show(msg)
             },
             isMuted = isMuted,

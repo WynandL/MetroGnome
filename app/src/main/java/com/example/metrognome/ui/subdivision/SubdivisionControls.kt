@@ -42,11 +42,12 @@ import com.example.metrognome.viewmodel.SubdivisionStatus
  * Both read SubdivisionStatus (MetronomeViewModel), which mirrors the engine's own rule.
  */
 
-/** One line for what the subdivision is doing; the stage's caption and Home's toast. */
+/** One line for what the subdivision is doing; the stage's caption and Home's snackbar. */
 fun SubdivisionStatus.caption(): String = when {
     chosen == Subdivision.OFF -> "One click per beat"
     hold == SubdivisionHold.SESSION -> "Off during your session, back after"
-    hold == SubdivisionHold.TEMPO -> "Rests above $maxBpm BPM on this sound"
+    hold == SubdivisionHold.TEMPO ->
+        "Pauses above $maxBpm BPM on ${com.example.metrognome.billing.clickSoundFor(voice).displayName}"
     else -> "${chosen.clicks} clicks per beat"
 }
 

@@ -786,7 +786,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             bpm > max -> SubdivisionHold.TEMPO
             else -> SubdivisionHold.NONE
         }
-        return SubdivisionStatus(sub, hold, max)
+        return SubdivisionStatus(sub, hold, max, voice)
     }
 
     init {
@@ -1205,7 +1205,10 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
 
 enum class SubdivisionHold { NONE, SESSION, TEMPO }
 
-/** The subdivision chosen, whether it is sounding, and the tempo limit for the voice in use. */
-data class SubdivisionStatus(val chosen: Subdivision, val hold: SubdivisionHold, val maxBpm: Int) {
+/**
+ * The subdivision chosen, whether it is sounding, and the tempo limit for the voice in use
+ * ([voice], a sound index, so the limit can be explained by the sound's name).
+ */
+data class SubdivisionStatus(val chosen: Subdivision, val hold: SubdivisionHold, val maxBpm: Int, val voice: Int = 0) {
     val sounding: Boolean get() = chosen != Subdivision.OFF && hold == SubdivisionHold.NONE
 }
