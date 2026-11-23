@@ -665,8 +665,8 @@ private fun MeterDetails(
                 !inUse && state.locked -> "Change the meter after your session"
                 sub.chosen != Subdivision.OFF && !sub.sounding ->
                     "Subdivision " + sub.caption().replaceFirstChar { it.lowercase() }
-                !inUse -> "Use it, then tap a beat to accent it"
-                else -> "Tap a beat to accent it"
+                !inUse -> "Use it, then tap a gem for a strong beat"
+                else -> "Tap a gem to make that beat strong"
             }
             Text(
                 hint, color = AppColors.textMuted, fontSize = 12.sp, lineHeight = 16.sp, textAlign = TextAlign.Center,
