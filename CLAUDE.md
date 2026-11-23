@@ -22,7 +22,7 @@ Guidance for Claude Code in this repository. Rules here are the ones that block 
 - **Layers:** Compose UI (screens + Canvas) -> ViewModels (`AndroidViewModel` + `StateFlow`) -> audio engines and game logic (coroutines on `Dispatchers.Default`).
 - **Navigation:** `MainActivity` hosts a `NavigationSuiteScaffold` with 5 tabs (`AppTab`: Gnome, Tuner, Chords, Rhythm, Settings). No `NavController`; `currentTab` is one `rememberSaveable` enum in `MetroGnomeApp`. Five is the bottom bar's maximum, so labels stay one word. **All tab switching, deep links included, goes through `switchTab(tab)` in `MetroGnomeApp`**; any tab-switch side effect (stopping the rhythm game, stopping the drone on Chords, review-prompt triggers) belongs there.
 - **FCM deep links:** an `openTab` data key (an `AppTab` name, case-insensitive) opens that tab via `MainActivity.EXTRA_OPEN_TAB`. `MainActivity` is `singleTop` so a tap reuses the instance via `onNewIntent` instead of killing running sessions. `MetroGnomeApp(openTab, onOpenTabConsumed)` consumes it so a repeat tap re-triggers.
-- **Keep screen on is one app-wide setting:** `MetronomeViewModel.keepScreenOn` (prefs `keep_screen_on`), toggled only on Home, applied by one `DisposableEffect` in `MetroGnomeApp`. Never add the flag or the button to a screen.
+- **Keep screen on is one app-wide setting:** `MetronomeViewModel.keepScreenOn` (prefs `keep_screen_on`), toggled only on Home (behind the dots key, `ui/screens/HomeMoreMenu.kt`, with Sound), applied by one `DisposableEffect` in `MetroGnomeApp`. Never add the flag or the button to a screen.
 
 ## Audio engines (`audio/`)
 
@@ -215,6 +215,7 @@ Four files, one job each: `DroneVoice.kt` (pure data: `DroneTimbre`, `DroneBlend
 - **Dialogs:** `AppDialog` or `AppCardDefaults.DialogShape` + `Border`; `DialogTitle`; `PrimaryButton` for one action, `GhostButton` + `GoldButton` (`DangerButton` for destructive) for a pair (`ActionButtons.kt`); `OverlayEyebrow`; `CelebrationCard` for any "something good happened" card. Never a Material `AlertDialog`/`Button` or a hand-rolled button.
 - **Chips:** `CHIP_HEIGHT` (34 dp), wrapped rows set `CHIP_ROW_GAP` (8 dp) themselves.
 - **Text field:** `ui/components/AppTextField.kt` is the only one.
+- **Passing messages:** `AppSnackbar.show(text, long, mainWindow)` (`ui/components/AppSnackbar.kt`) replaced every `Toast`; never add a Toast. One host in `MetroGnomeApp` sits above the tab's banner ad (never over it, measured via `AdBannerView`) or the nav bar. A dialog that posts messages adds its own `AppSnackbarHost(avoidBars = false)`; the newest host takes them, and `mainWindow = true` skips a dialog that is closing.
 - **Progress:** `ItemProgressBar` is the only progress bar. `StarGlyph`, `SparkleGlyph`, `StarRating` instead of typed star/sparkle characters.
 - **Seal** (`ui/components/Seal.kt`): the "earned and verified" mark. New uses adapt a `SealStyle`, never redraw the silhouette; only the rosette rotates.
 - **`TapDelight.kt`** (`Modifier.tapDelight(shape)`): observes touches only; its draw block must read the frame-clock state before any early return. On the About card, with `DevTapTarget` inside it on the Build line only.

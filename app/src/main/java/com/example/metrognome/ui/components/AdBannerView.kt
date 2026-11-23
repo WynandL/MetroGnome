@@ -23,7 +23,8 @@ fun AdBannerView(modifier: Modifier = Modifier) {
                 loadAd(AdRequest.Builder().build())
             }
         },
-        modifier = modifier
+        // The app's snackbars sit above the banner, never over it.
+        modifier = modifier.snackbarBannerBounds()
     )
 }
 

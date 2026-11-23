@@ -2,7 +2,6 @@ package com.example.metrognome.debug.chords
 
 import android.content.Context
 import com.example.metrognome.ui.theme.AppRadius
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -37,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metrognome.ui.overlays.AppWindowDialog
+import com.example.metrognome.ui.components.AppSnackbar
+import com.example.metrognome.ui.components.AppSnackbarHost
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -95,11 +97,10 @@ fun ChordLoopDiagnosticOverlay(onDismiss: () -> Unit) {
                     json.length
                 }
             }
-            Toast.makeText(
-                context,
+            AppSnackbar.show(
                 result.fold({ "Log saved (${it / 1024} KB)" }, { "Save failed: ${it.message}" }),
-                Toast.LENGTH_LONG,
-            ).show()
+                long = true,
+            )
         }
     }
 
@@ -154,7 +155,7 @@ fun ChordLoopDiagnosticOverlay(onDismiss: () -> Unit) {
                                                     } else {
                                                         val ref = context.getSharedPreferences("tuner_prefs", Context.MODE_PRIVATE).getFloat("reference_hz", 440f)
                                                         ChordLoopDiagnostic.start(vm, store, ref, mode, context.filesDir)
-                                                        Toast.makeText(context, "Go to the Chords tab: the loop starts when its mic opens", Toast.LENGTH_LONG).show()
+                                                        AppSnackbar.show("Go to the Chords tab: the loop starts when its mic opens", long = true, mainWindow = true)
                                                         onDismiss()
                                                     }
                                                 },
@@ -166,7 +167,7 @@ fun ChordLoopDiagnosticOverlay(onDismiss: () -> Unit) {
                         "Reset timings",
                         {
                                                     store.clear()
-                                                    Toast.makeText(context, "Timings reset to defaults", Toast.LENGTH_SHORT).show()
+                                                    AppSnackbar.show("Timings reset to defaults")
                                                 },
                         modifier = Modifier.weight(1f),
                         kind = DevButtonKind.DESTRUCTIVE,
@@ -231,6 +232,8 @@ fun ChordLoopDiagnosticOverlay(onDismiss: () -> Unit) {
                     Spacer(Modifier.height(24.dp))
                 }
             }
+            // Its own host: the main window's would sit under this dialog.
+            AppSnackbarHost(modifier = Modifier.navigationBarsPadding(), avoidBars = false)
         }
     }
 }

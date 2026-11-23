@@ -1,6 +1,5 @@
 package com.example.metrognome.ui.components
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -13,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.metrognome.ui.theme.AppColors
 
@@ -30,7 +28,6 @@ import com.example.metrognome.ui.theme.AppColors
  */
 @Composable
 fun RoomNoiseIndicator(visible: Boolean, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(),
@@ -43,11 +40,7 @@ fun RoomNoiseIndicator(visible: Boolean, modifier: Modifier = Modifier) {
                 .clip(CircleShape)
                 .background(AppColors.warning.copy(alpha = 0.12f))
                 .clickable {
-                    Toast.makeText(
-                        context,
-                        "Room sounds loud - your timing may read less accurately",
-                        Toast.LENGTH_SHORT,
-                    ).show()
+                    AppSnackbar.show("Room sounds loud - your timing may read less accurately")
                 },
             contentAlignment = Alignment.Center,
         ) {

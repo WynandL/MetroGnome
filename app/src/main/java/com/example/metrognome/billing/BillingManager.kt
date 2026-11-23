@@ -93,7 +93,7 @@ class BillingManager(application: Application) {
     /**
      * Set whenever a purchase attempt fails for a reason the user can act on (network,
      * store unavailable, etc). USER_CANCELED is not an error - the user did that on purpose.
-     * The UI shows this once (e.g. a Toast) then calls [clearPurchaseError].
+     * The UI shows this once (a snackbar) then calls [clearPurchaseError].
      */
     private val _purchaseError = MutableStateFlow<String?>(null)
     val purchaseError: StateFlow<String?> = _purchaseError.asStateFlow()

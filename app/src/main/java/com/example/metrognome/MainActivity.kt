@@ -40,6 +40,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.metrognome.ui.components.AppSnackbar
+import com.example.metrognome.ui.components.AppSnackbarHost
+import com.example.metrognome.ui.components.snackbarContentBounds
 import com.example.metrognome.ui.components.ChordGridIcon
 import com.example.metrognome.ui.components.TransientBanners
 import com.example.metrognome.ui.components.RhythmPulseIcon
@@ -50,7 +53,6 @@ import com.example.metrognome.ui.screens.MetronomeScreen
 import com.example.metrognome.ui.screens.RhythmGameScreen
 import com.example.metrognome.ui.screens.SettingsScreen
 import android.view.WindowManager
-import android.widget.Toast
 import com.example.metrognome.billing.PurchaseStore
 import com.example.metrognome.ui.screens.TunerScreen
 import com.example.metrognome.ui.theme.MetroGnomeTheme
@@ -176,7 +178,7 @@ fun MetroGnomeApp(
     val purchaseError by metronomeVm.purchaseError.collectAsStateWithLifecycle()
     LaunchedEffect(purchaseError) {
         val message = purchaseError ?: return@LaunchedEffect
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        AppSnackbar.show(message)
         metronomeVm.clearPurchaseError()
     }
 
@@ -268,11 +270,10 @@ fun MetroGnomeApp(
     // Notify the user when they earn the daily-maximum Beats reward.
     LaunchedEffect(metronomeVm) {
         metronomeVm.rewardGranted.collect {
-            android.widget.Toast.makeText(
-                context,
+            AppSnackbar.show(
                 "🎉 ${com.example.metrognome.points.PointsConfig.CURRENCY_NAME} maxed! Ad-free for ${com.example.metrognome.points.rewards.RewardConfig.AD_FREE_DAYS} days - you've earned it.",
-                android.widget.Toast.LENGTH_LONG,
-            ).show()
+                long = true,
+            )
         }
     }
 
@@ -303,6 +304,8 @@ fun MetroGnomeApp(
             }
         }
     ) {
+        // Measured so the app's snackbars sit just above the navigation bar.
+        Box(Modifier.fillMaxSize().snackbarContentBounds()) {
         when (currentTab) {
             AppTab.GNOME -> MetronomeScreen(
                 vm = metronomeVm,
@@ -366,8 +369,11 @@ fun MetroGnomeApp(
                 notificationPermission = notificationPermission,
             )
         }
+        }
     }
     TransientBanners(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
+    // Every passing message in the app (it replaced Toasts), above the tab's banner ad.
+    AppSnackbarHost()
 
     // The ad-free trial's offer and "ads are back" cards, on any tab, at a calm moment:
     // nothing sounding (metronome, drone, a chord played back), no Practice, Speed Trainer or Rhythm game under way, and the Home

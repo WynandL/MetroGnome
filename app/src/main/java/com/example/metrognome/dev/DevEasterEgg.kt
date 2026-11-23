@@ -1,7 +1,6 @@
 package com.example.metrognome.dev
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
@@ -84,9 +83,9 @@ object DevEasterEgg {
  *
  * @param tapCount       Number of taps needed once armed (default 10).
  * @param armWindowMs    Time after the buzz in which the taps must land (default 4 000 ms).
- * @param toastEnabled   Show a short Toast on toggle (default true).
- * @param enabledMessage Toast text when dev mode is turned ON.
- * @param disabledMessage Toast text when dev mode is turned OFF.
+ * @param toastEnabled   Show a short snackbar on toggle (default true).
+ * @param enabledMessage Snackbar text when dev mode is turned ON.
+ * @param disabledMessage Snackbar text when dev mode is turned OFF.
  * @param onToggled      Called with the new [DevEasterEgg.isDevModeActive] value.
  */
 @Composable
@@ -126,11 +125,9 @@ fun DevTapTarget(
                             armedUntil.longValue = 0L
                             val enabled = DevEasterEgg.toggle(context)
                             if (toastEnabled) {
-                                Toast.makeText(
-                                    context,
+                                com.example.metrognome.ui.components.AppSnackbar.show(
                                     if (enabled) enabledMessage else disabledMessage,
-                                    Toast.LENGTH_SHORT,
-                                ).show()
+                                )
                             }
                             onToggled(DevEasterEgg.isDevModeActive(context))
                         }

@@ -1,7 +1,7 @@
 package com.example.metrognome.ui.screens
 
 import com.example.metrognome.ui.subdivision.caption
-import android.widget.Toast
+import com.example.metrognome.ui.components.AppSnackbar
 import com.example.metrognome.ui.theme.AppRadius
 import com.example.metrognome.ui.components.AppGlyph
 import com.example.metrognome.ui.components.AppIcons
@@ -83,7 +83,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.Color
-import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -175,7 +174,6 @@ fun MetronomeScreen(
     // Bumped when a check resolves so the open setup dialog's nudge re-reads its state in place.
     var micCheckRefresh by remember { mutableIntStateOf(0) }
 
-    val activity = LocalActivity.current
     val context = LocalContext.current
 
     // ── Speed Trainer ──────────────────────────────────────────────────────────
@@ -444,7 +442,7 @@ fun MetronomeScreen(
             onTapTempo = {
                 if (!tapHintShown) {
                     tapHintShown = true
-                    Toast.makeText(activity, "Tap again to set the tempo", Toast.LENGTH_SHORT).show()
+                    AppSnackbar.show("Tap again to set the tempo")
                 }
                 vm.tapTempo()
             },
@@ -461,7 +459,7 @@ fun MetronomeScreen(
                 vm.setSubdivision(next, source = "home")
                 val msg = if (next == com.example.metrognome.audio.metronome.subdivision.Subdivision.OFF) "Subdivision off"
                     else vm.subdivisionStatusIf(next).caption()
-                Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
+                AppSnackbar.show(msg)
             },
             isMuted = isMuted,
             keepScreenOn = keepScreenOn,
@@ -472,19 +470,19 @@ fun MetronomeScreen(
             onToggleMute = {
                 vm.toggleMute()
                 val msg = if (isMuted) "Sound on" else "Muted"
-                Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
+                AppSnackbar.show(msg)
             },
             onToggleScreenOn = {
                 val enabling = !keepScreenOn
                 vm.setKeepScreenOn(enabling)
                 val msg = if (enabling) "Screen will stay on" else "Screen timeout on"
-                Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
+                AppSnackbar.show(msg)
             },
             onPractice = {
                 val trainerBusy = trainerState is TrainerSessionState.Running ||
                                   trainerState is TrainerSessionState.Countdown
                 if (!isPracticeActive) {
-                    if (trainerBusy) Toast.makeText(activity, "Stop the Speed Trainer first", Toast.LENGTH_SHORT).show()
+                    if (trainerBusy) AppSnackbar.show("Stop the Speed Trainer first")
                     else showPracticeDialog = true
                 }
             },
@@ -492,7 +490,7 @@ fun MetronomeScreen(
                 val trainerIdle = trainerState !is TrainerSessionState.Running &&
                                   trainerState !is TrainerSessionState.Countdown
                 if (trainerIdle) {
-                    if (isPracticeActive) Toast.makeText(activity, "Stop the Practice session first", Toast.LENGTH_SHORT).show()
+                    if (isPracticeActive) AppSnackbar.show("Stop the Practice session first")
                     else showTrainerDialog = true
                 }
             },
@@ -888,20 +886,6 @@ private fun SecondaryControlsRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        CompactIconChip(
-            icon = if (isMuted) AppIcons.VolumeOff else AppIcons.VolumeUp,
-            contentDescription = if (isMuted) "Unmute" else "Mute",
-            active = isMuted,
-            onClick = onToggleMute,
-            modifier = Modifier.weight(1f).height(44.dp)
-        )
-        CompactIconChip(
-            icon = if (keepScreenOn) AppIcons.Sun else AppIcons.Moon,
-            contentDescription = "Keep screen on",
-            active = keepScreenOn,
-            onClick = onToggleScreenOn,
-            modifier = Modifier.weight(1f).height(44.dp)
-        )
         // Placeholder home for the subdivision key (2026-11-23): beside the other playing
         // switches until the dev settles where it lives. The meter stage has the full row.
         com.example.metrognome.ui.subdivision.SubdivisionKey(
@@ -933,11 +917,37 @@ private fun SecondaryControlsRow(
             onClick = onTrainer,
             modifier = Modifier.weight(1f).height(44.dp)
         )
+        // Sound and Screen are set once and left, so they live behind the dots key and the
+        // row keeps the four reached for mid-practice.
+        HomeMoreMenu(
+            items = listOf(
+                HomeMoreItem(
+                    label = "Screen",
+                    caption = if (keepScreenOn) "Stays on" else "Sleeps as usual",
+                    allCaptions = listOf("Stays on", "Sleeps as usual"),
+                    icon = if (keepScreenOn) AppIcons.Sun else AppIcons.Moon,
+                    active = keepScreenOn,
+                    contentDescription = "Keep screen on",
+                    onClick = onToggleScreenOn,
+                ),
+                HomeMoreItem(
+                    label = "Sound",
+                    caption = if (isMuted) "Muted" else "On",
+                    allCaptions = listOf("Muted", "On"),
+                    icon = if (isMuted) AppIcons.VolumeOff else AppIcons.VolumeUp,
+                    active = isMuted,
+                    contentDescription = if (isMuted) "Unmute" else "Mute",
+                    onClick = onToggleMute,
+                ),
+            ),
+            badge = isMuted,
+            modifier = Modifier.weight(0.6f).height(44.dp)
+        )
     }
 }
 
 @Composable
-private fun CompactIconChip(
+internal fun CompactIconChip(
     icon: AppGlyph,
     contentDescription: String,
     active: Boolean,

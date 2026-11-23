@@ -44,6 +44,8 @@ object AppIcons {
     val MicOff = AppGlyph(listOf("M2 2L22 22", "M18.89 13.23A7.12 7.12 0 0 0 19 12v-2", "M5 10v2a7 7 0 0 0 12 5", "M15 9.34V5a3 3 0 0 0-5.68-1.33", "M9 9v3a3 3 0 0 0 5.12 2.12", "M12 19L12 22"))
     /** lucide "moon" (was Material ModeNight). */
     val Moon = AppGlyph(listOf("M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"))
+    /** lucide "ellipsis-vertical" (was Material MoreVert). */
+    val MoreVert = AppGlyph(listOf("M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0Z", "M11 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0Z", "M11 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0Z"))
     /** lucide "music-2" (was Material MusicNote). */
     val MusicNote = AppGlyph(listOf("M4 18a4 4 0 1 0 8 0a4 4 0 1 0 -8 0Z", "M12 18V2l7 4"))
     /** lucide "pause" (was Material Pause). */

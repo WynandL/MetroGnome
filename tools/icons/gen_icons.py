@@ -31,6 +31,7 @@ ICONS = [
     ('Mic', 'mic', False, 'Mic'),
     ('MicOff', 'mic-off', False, 'MicOff'),
     ('Moon', 'moon', False, 'ModeNight'),
+    ('MoreVert', 'ellipsis-vertical', False, 'MoreVert'),
     ('MusicNote', 'music-2', False, 'MusicNote'),
     ('Pause', 'pause', True, 'Pause'),
     ('Play', 'play', True, 'PlayArrow'),
