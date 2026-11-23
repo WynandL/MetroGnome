@@ -25,6 +25,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.PagerState
@@ -272,33 +276,64 @@ fun SoundStage(
                     if (p != null && p != state.sounds[pager.currentPage.coerceIn(state.sounds.indices)].key) onStopPreview()
                 }
 
-                Spacer(Modifier.weight(1f))
+                val carousel: @Composable () -> Unit = {
+                    SoundCarousel(
+                        state = state,
+                        pager = pager,
+                        glow = glow.value,
+                        ripple = ripple,
+                        onTapFocused = { key ->
+                            if (state.previewingKey == key) onStopPreview()
+                            else if (!state.previewBlocked) onPreview(key)
+                        },
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    PageDots(state.sounds, pager.currentPage)
+                }
+                val details: @Composable (Modifier) -> Unit = { m ->
+                    SoundDetails(
+                        sound = focused,
+                        state = state,
+                        onPreview = onPreview,
+                        onStopPreview = onStopPreview,
+                        onChoose = onChoose,
+                        onBuy = onBuy,
+                        onRestore = onRestore,
+                        modifier = m,
+                    )
+                }
 
-                SoundCarousel(
-                    state = state,
-                    pager = pager,
-                    glow = glow.value,
-                    ripple = ripple,
-                    onTapFocused = { key ->
-                        if (state.previewingKey == key) onStopPreview()
-                        else if (!state.previewBlocked) onPreview(key)
-                    },
-                )
-                Spacer(Modifier.height(10.dp))
-                PageDots(state.sounds, pager.currentPage)
-
-                Spacer(Modifier.weight(1f))
-
-                SoundDetails(
-                    sound = focused,
-                    state = state,
-                    onPreview = onPreview,
-                    onStopPreview = onStopPreview,
-                    onChoose = onChoose,
-                    onBuy = onBuy,
-                    onRestore = onRestore,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                    if (maxWidth > maxHeight * 1.3f) {
+                        // A phone on its side: stacked, the card got a third of the height it
+                        // needs and squashed. Side by side, each gets the full height; the
+                        // card scrolls if even that is short (large fonts).
+                        val tall = maxHeight
+                        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                carousel()
+                            }
+                            Column(
+                                Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState()),
+                            ) {
+                                Box(
+                                    Modifier.fillMaxWidth().heightIn(min = tall).padding(end = 16.dp, top = 8.dp, bottom = 8.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) { details(Modifier) }
+                            }
+                        }
+                    } else {
+                        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Spacer(Modifier.weight(1f))
+                            carousel()
+                            Spacer(Modifier.weight(1f))
+                            details(Modifier.padding(horizontal = 16.dp))
+                        }
+                    }
+                }
             }
             Spacer(Modifier.height(16.dp))
         }
@@ -331,8 +366,10 @@ private fun SoundCarousel(
                 glow = glow,
             )
         }
+        com.example.metrognome.ui.scene.StageDetents(pager, quiet = state.previewBlocked)
         HorizontalPager(
             state = pager,
+            flingBehavior = com.example.metrognome.ui.scene.stageFlingBehavior(pager),
             pageSize = PageSize.Fixed(MEDALLION),
             contentPadding = PaddingValues(horizontal = side),
             pageSpacing = 4.dp,

@@ -27,6 +27,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.PagerState
@@ -82,11 +85,9 @@ import com.example.metrognome.ui.components.Particle
 import com.example.metrognome.ui.components.PinnedLines
 import com.example.metrognome.ui.components.PinnedSlot
 import com.example.metrognome.audio.metronome.subdivision.Subdivision
-import com.example.metrognome.ui.subdivision.SubdivisionRow
 import com.example.metrognome.viewmodel.SubdivisionStatus
 import com.example.metrognome.ui.components.PlayStopKey
 import com.example.metrognome.ui.components.PrimaryButton
-import com.example.metrognome.ui.components.RaisedControl
 import com.example.metrognome.ui.components.drawParticles
 import com.example.metrognome.ui.dialogs.DialogCloseButton
 import com.example.metrognome.ui.overlays.AppWindowDialog
@@ -98,6 +99,12 @@ import com.example.metrognome.ui.scene.drawStageDisc
 import com.example.metrognome.ui.scene.drawStageSpotlight
 import com.example.metrognome.ui.scene.starField
 import com.example.metrognome.ui.theme.AppColors
+import com.example.metrognome.ui.subdivision.caption
+import androidx.compose.ui.draw.clip
+import com.example.metrognome.ui.theme.AppRadius
+import com.example.metrognome.ui.components.raisedFace
+import com.example.metrognome.ui.components.CHIP_HEIGHT
+import com.example.metrognome.ui.components.SectionLabel
 import com.example.metrognome.viewmodel.BeatEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -248,11 +255,11 @@ fun MeterStage(
                 DialogCloseButton(onClick = onClose)
             }
 
-            // The wheel and its dots, centred in whatever height the card leaves: full size
-            // on most phones, smaller on a short one with large fonts, so the card never runs
-            // out of room (it had none to spare at 360 x 640 dp and 1.3x fonts).
-            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                val medallion = (maxHeight - UNDER_CAROUSEL - 24.dp).coerceIn(MEDALLION_MIN, MEDALLION)
+            // The wheel and its dots, centred in whatever height is left: full size on most
+            // phones, smaller on a short one with large fonts, so the card never runs out of
+            // room (it had none to spare at 360 x 640 dp and 1.3x fonts).
+            val carousel: @Composable (Dp) -> Unit = { room ->
+                val medallion = (room - UNDER_CAROUSEL - 24.dp).coerceIn(MEDALLION_MIN, MEDALLION)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(contentAlignment = Alignment.Center) {
                         MeterCarousel(
@@ -278,32 +285,58 @@ fun MeterStage(
                     StagePageDots(presets.size + 1, pager.currentPage) { meterAt(it) == state.inUse }
                 }
             }
+            val details: @Composable (Modifier) -> Unit = { m ->
+                MeterDetails(
+                    meter = focused,
+                    isCustomPage = pager.currentPage == customPage,
+                    state = state,
+                    pulse = pulse,
+                    onStep = { next ->
+                        val idx = presets.indexOf(next)
+                        scope.launch {
+                            if (idx >= 0) pager.animateScrollToPage(idx)
+                            else {
+                                custom = next
+                                pager.animateScrollToPage(customPage)
+                            }
+                        }
+                    },
+                    onUse = { choose(focused) },
+                    onPlay = {
+                        if (!state.playing && focused != state.inUse) choose(focused)
+                        onPlayToggle()
+                    },
+                    onToggleAccent = onToggleAccent,
+                    onResetAccents = onResetAccents,
+                    onSubdivision = onSubdivision,
+                    modifier = m,
+                )
+            }
 
-            MeterDetails(
-                meter = focused,
-                isCustomPage = pager.currentPage == customPage,
-                state = state,
-                pulse = pulse,
-                onStep = { next ->
-                    val idx = presets.indexOf(next)
-                    scope.launch {
-                        if (idx >= 0) pager.animateScrollToPage(idx)
-                        else {
-                            custom = next
-                            pager.animateScrollToPage(customPage)
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                if (maxWidth > maxHeight * 1.3f) {
+                    // A phone on its side: stacked, the card took the whole height and the
+                    // wheels vanished. Side by side, the wheels keep the left and the card
+                    // scrolls on the right if even the full height is short.
+                    val tall = maxHeight
+                    Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { carousel(tall) }
+                        Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
+                            Box(
+                                Modifier.fillMaxWidth().heightIn(min = tall).padding(end = 16.dp, top = 8.dp, bottom = 8.dp),
+                                contentAlignment = Alignment.Center,
+                            ) { details(Modifier) }
                         }
                     }
-                },
-                onUse = { choose(focused) },
-                onPlay = {
-                    if (!state.playing && focused != state.inUse) choose(focused)
-                    onPlayToggle()
-                },
-                onToggleAccent = onToggleAccent,
-                onResetAccents = onResetAccents,
-                onSubdivision = onSubdivision,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
+                } else {
+                    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            carousel(maxHeight)
+                        }
+                        details(Modifier.padding(horizontal = 16.dp))
+                    }
+                }
+            }
             Spacer(Modifier.height(16.dp))
         }
     }
@@ -334,8 +367,10 @@ private fun MeterCarousel(
                 glow = glow,
             )
         }
+        com.example.metrognome.ui.scene.StageDetents(pager, quiet = state.locked)
         HorizontalPager(
             state = pager,
+            flingBehavior = com.example.metrognome.ui.scene.stageFlingBehavior(pager),
             pageSize = PageSize.Fixed(medallion),
             contentPadding = PaddingValues(horizontal = side),
             pageSpacing = 4.dp,
@@ -510,6 +545,19 @@ fun MeterMedallion(
 
 // ── The focused meter's card ──────────────────────────────────────────────────
 
+/*
+ * The card under the wheels (redesigned 2026-11-23 to one grammar, after the dev found it
+ * crowded): a title line (the meter's name and feel, its status at the right), then sections
+ * that all read the same way, a caps label at the left and its control at the right on one
+ * chip-high line, then the play and use keys and one hint line. Three text sizes: title, body
+ * and the caps labels. The fraction is not repeated in words (the wheel and the BAR steppers
+ * show it), and the subdivision says nothing while it simply sounds; the hint line speaks only
+ * about what matters now (a pause, a held meter, how to accent).
+ */
+
+private val ROW = CHIP_HEIGHT
+private val SECTION_GAP = 12.dp
+
 @Composable
 private fun MeterDetails(
     meter: Meter,
@@ -529,33 +577,46 @@ private fun MeterDetails(
     val customAccents = inUse && state.accents != MeterTheory.defaultAccents(meter)
 
     AppCard(modifier = modifier.fillMaxWidth()) {
-        PinnedSlot(lineHeight = 30.sp, alignment = Alignment.Center) {
-            Text(
-                MeterTheory.label(meter), color = AppColors.textPrimary, fontSize = 22.sp, lineHeight = 30.sp,
-                fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, style = PinnedLines,
-            )
-        }
-        PinnedSlot(lineHeight = 16.sp, alignment = Alignment.Center) {
-            val (status, color) = when {
-                inUse && isCustomPage -> "IN USE · YOUR OWN" to AppColors.gold
-                inUse -> "IN USE · ${meter.display}" to AppColors.gold
-                isCustomPage -> "YOUR OWN · ${meter.display}" to AppColors.goldSoft
-                else -> meter.display to AppColors.textDim
+        // Title: name and feel at the left, status at the right.
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) {
+                PinnedSlot(lineHeight = 26.sp) {
+                    Text(
+                        MeterTheory.label(meter), color = AppColors.textPrimary, fontSize = 20.sp, lineHeight = 26.sp,
+                        fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, style = PinnedLines,
+                    )
+                }
+                PinnedSlot(lineHeight = 18.sp) {
+                    Text(
+                        MeterTheory.description(meter), color = AppColors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, style = PinnedLines,
+                    )
+                }
             }
-            Text(
-                status, color = color, fontSize = 12.sp, lineHeight = 16.sp,
-                fontWeight = FontWeight.Bold, letterSpacing = 1.sp, style = PinnedLines,
-            )
+            val (status, color) = when {
+                inUse -> "IN USE" to AppColors.gold
+                isCustomPage -> "YOUR OWN" to AppColors.goldSoft
+                else -> "" to AppColors.textDim
+            }
+            // On the title's line: the label's 14 sp line centred in the title's 26 sp one.
+            Box(Modifier.height(with(LocalDensity.current) { 26.sp.toDp() }), contentAlignment = Alignment.CenterEnd) {
+                SectionLabel(status, color = color, maxLines = 1)
+            }
         }
-        Spacer(Modifier.height(4.dp))
-        PinnedSlot(lineHeight = 18.sp, alignment = Alignment.Center) {
-            Text(
-                MeterTheory.description(meter), color = AppColors.textSecondary, fontSize = 13.sp, lineHeight = 18.sp,
-                textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis, style = PinnedLines,
-            )
-        }
-        Spacer(Modifier.height(10.dp))
 
+        Spacer(Modifier.height(SECTION_GAP))
+        SectionHeader("ACCENTS") {
+            if (customAccents) {
+                Text(
+                    "Reset", color = AppColors.goldSoft, fontSize = 12.sp, lineHeight = 16.sp,
+                    fontWeight = FontWeight.Bold, maxLines = 1,
+                    modifier = Modifier
+                        .clickable(role = Role.Button, onClick = onResetAccents)
+                        .padding(horizontal = 4.dp, vertical = 8.dp)
+                        .semantics { contentDescription = "Reset accents to the natural grouping" },
+                )
+            }
+        }
         AccentEditor(
             beats = meter.top,
             accents = accents,
@@ -565,12 +626,14 @@ private fun MeterDetails(
             onToggle = onToggleAccent,
         )
 
-        Spacer(Modifier.height(10.dp))
-        FractionSteppers(meter = meter, onStep = onStep)
+        Spacer(Modifier.height(SECTION_GAP))
+        SectionHeader("BAR") { FractionSteppers(meter = meter, onStep = onStep) }
         Spacer(Modifier.height(8.dp))
-        SubdivisionRow(status = state.subdivision, onChoose = onSubdivision)
-        Spacer(Modifier.height(6.dp))
+        SectionHeader("SUBDIVISION") {
+            com.example.metrognome.ui.subdivision.SubdivisionChips(status = state.subdivision, onChoose = onSubdivision)
+        }
 
+        Spacer(Modifier.height(SECTION_GAP + 4.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             PlayStopKey(
                 playing = state.playing,
@@ -594,42 +657,47 @@ private fun MeterDetails(
             )
         }
 
-        PinnedSlot(lineHeight = 30.sp, alignment = Alignment.Center) {
-            val style = Modifier
-            when {
-                !inUse && state.locked -> FootLine("Change the meter after your session")
-                !inUse -> FootLine("Use it, then tap a beat to accent it")
-                customAccents -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    FootLine("Your own accents · ")
-                    Text(
-                        "Reset", color = AppColors.goldSoft, fontSize = 12.sp, lineHeight = 16.sp,
-                        fontWeight = FontWeight.Bold, style = PinnedLines,
-                        modifier = style
-                            .clickable(role = Role.Button, onClick = onResetAccents)
-                            .padding(horizontal = 6.dp, vertical = 6.dp)
-                            .semantics { contentDescription = "Reset accents to ${meter.display}'s natural grouping" },
-                    )
-                }
-                else -> FootLine("Tap a beat to accent it")
+        // One hint, the one that matters now.
+        Spacer(Modifier.height(8.dp))
+        PinnedSlot(lineHeight = 16.sp, alignment = Alignment.Center) {
+            val sub = state.subdivision
+            val hint = when {
+                !inUse && state.locked -> "Change the meter after your session"
+                sub.chosen != Subdivision.OFF && !sub.sounding ->
+                    "Subdivision " + sub.caption().replaceFirstChar { it.lowercase() }
+                !inUse -> "Use it, then tap a beat to accent it"
+                else -> "Tap a beat to accent it"
             }
+            Text(
+                hint, color = AppColors.textMuted, fontSize = 12.sp, lineHeight = 16.sp, textAlign = TextAlign.Center,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, style = PinnedLines,
+            )
         }
     }
 }
 
+/** A caps label at the left and its control (or value) at the right, on one [ROW]-high line. */
 @Composable
-private fun FootLine(text: String) = Text(
-    text, color = AppColors.textMuted, fontSize = 12.sp, lineHeight = 16.sp, style = PinnedLines,
-)
+private fun SectionHeader(label: String, end: @Composable () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = ROW),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SectionLabel(label, maxLines = 1, modifier = Modifier.weight(1f).padding(end = 8.dp))
+        end()
+    }
+}
 
 private val CELL_MIN = 30.dp
 private val CELL_MAX = 36.dp
-private val EDITOR_HEIGHT = 48.dp
+private val EDITOR_HEIGHT = 36.dp
 
 /**
- * The bar as a row of beat gems, one checkbox each, grouped like the wheel. Tapping a gem
- * accents it or takes the accent away. A long bar that cannot keep a 30 dp target per beat
- * scrolls instead of shrinking, so every beat stays tappable. Dimmed and inert for a meter
- * that is not in use (it shows that meter's natural accents).
+ * The bar as a row of beat gems, one checkbox each, grouped like the wheel (the gaps say
+ * where the groups fall, so the beats carry no numbers). Tapping a gem accents it or takes
+ * the accent away. A long bar that cannot keep a 30 dp target per beat scrolls instead of
+ * shrinking, so every beat stays tappable. Dimmed and inert for a meter that is not in use
+ * (it shows that meter's natural accents).
  */
 @Composable
 private fun AccentEditor(
@@ -670,23 +738,16 @@ private fun AccentEditor(
                             )
                             .semantics { contentDescription = "Accent beat ${i + 1}" },
                     ) {
-                        Canvas(Modifier.fillMaxWidth().height(28.dp).align(Alignment.TopCenter)) {
+                        Canvas(Modifier.fillMaxSize()) {
                             if (live) pulse.frameNs
                             val r = 7.5f.dp.toPx() * (1f + 0.14f * swell) * (1f + 0.18f * (if (live) pulse.pop(i) else 0f))
                             drawBeatGem(
-                                Offset(size.width / 2f, size.height / 2f + 2.dp.toPx()), r, accent,
+                                Offset(size.width / 2f, size.height / 2f), r, accent,
                                 lit = if (live) pulse.lit(i) else 0f,
                                 ring = if (live) pulse.ring(i) else -1f,
                                 glint = if (live) pulse.glint(i) else -1f,
                             )
                         }
-                        Text(
-                            "${i + 1}",
-                            color = if (accent) AppColors.goldSoft else AppColors.textDim,
-                            fontSize = 10.sp, lineHeight = 14.sp, fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center, style = PinnedLines,
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp).clearAndSetSemantics {},
-                        )
                     }
                 }
             }
@@ -702,59 +763,90 @@ private fun AccentEditor(
 }
 
 /**
- * The fraction as two steppers, top over bottom read left to right ("− 7 +  /  − 8 +"). A
- * step that lands on an everyday meter goes to its page; anything else becomes the player's
- * own meter on the last page.
+ * The fraction as two compact steppers, top over bottom read left to right ("- 7 + / - 8 +"),
+ * each one pill at chip height. A step that lands on an everyday meter goes to its page;
+ * anything else becomes the player's own meter on the last page.
  */
 @Composable
 private fun FractionSteppers(meter: Meter, onStep: (Meter) -> Unit) {
     val dens = MeterTheory.SENSIBLE_DENOMINATORS
     val di = dens.indexOf(meter.bottom).let { if (it < 0) dens.indexOf(4) else it }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        StepperPill(
+            value = meter.top,
+            canDown = meter.top > MeterTheory.TOP_RANGE.first,
+            canUp = meter.top < MeterTheory.TOP_RANGE.last,
+            downDescription = "Fewer beats per bar",
+            upDescription = "More beats per bar",
+            onDown = { onStep(meter.copy(top = meter.top - 1)) },
+            onUp = { onStep(meter.copy(top = meter.top + 1)) },
+        )
+        Text(
+            "/", color = AppColors.textDim, fontSize = 16.sp, lineHeight = 20.sp,
+            modifier = Modifier.padding(horizontal = 6.dp).clearAndSetSemantics {},
+        )
+        StepperPill(
+            value = meter.bottom,
+            canDown = di > 0,
+            canUp = di < dens.lastIndex,
+            downDescription = "Smaller beat value number",
+            upDescription = "Larger beat value number",
+            onDown = { onStep(meter.copy(bottom = dens[di - 1])) },
+            onUp = { onStep(meter.copy(bottom = dens[di + 1])) },
+        )
+    }
+}
+
+private val STEP_ZONE = 32.dp
+// Wide enough for "16" at 1.3x fonts.
+private val STEP_VALUE = 30.dp
+
+/**
+ * One number with its minus and plus on a single raised pill at chip height: the keys are
+ * zones of the pill, not separate buttons (as buttons they took the platform's 48 dp minimum
+ * and dwarfed the beat gems).
+ */
+@Composable
+private fun StepperPill(
+    value: Int,
+    canDown: Boolean,
+    canUp: Boolean,
+    downDescription: String,
+    upDescription: String,
+    onDown: () -> Unit,
+    onUp: () -> Unit,
+) {
     Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
+        Modifier
+            .height(ROW)
+            .clip(AppRadius.Pill)
+            .raisedFace(AppRadius.Pill, AppColors.surfaceVariant),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StepKey("−", "Fewer beats per bar", meter.top > MeterTheory.TOP_RANGE.first) {
-            onStep(meter.copy(top = meter.top - 1))
-        }
-        StepValue(meter.top)
-        StepKey("+", "More beats per bar", meter.top < MeterTheory.TOP_RANGE.last) {
-            onStep(meter.copy(top = meter.top + 1))
-        }
+        StepZone("−", downDescription, canDown, onDown)
         Text(
-            "/", color = AppColors.textDim, fontSize = 22.sp, lineHeight = 26.sp,
-            modifier = Modifier.padding(horizontal = 12.dp).clearAndSetSemantics {},
+            "$value", color = AppColors.textPrimary, fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center, maxLines = 1, softWrap = false,
+            modifier = Modifier.width(STEP_VALUE).clearAndSetSemantics {},
         )
-        StepKey("−", "Smaller beat value number", di > 0) { onStep(meter.copy(bottom = dens[di - 1])) }
-        StepValue(meter.bottom)
-        StepKey("+", "Larger beat value number", di < dens.lastIndex) { onStep(meter.copy(bottom = dens[di + 1])) }
+        StepZone("+", upDescription, canUp, onUp)
     }
 }
 
 @Composable
-private fun StepValue(value: Int) = Text(
-    "$value", color = AppColors.gold, fontSize = 20.sp, lineHeight = 26.sp, fontWeight = FontWeight.Bold,
-    // Wide enough for "16" at 1.3x fonts: 34 dp let the + key cover the second digit.
-    textAlign = TextAlign.Center, maxLines = 1, softWrap = false,
-    modifier = Modifier.width(46.dp).clearAndSetSemantics {},
-)
-
-@Composable
-private fun StepKey(symbol: String, description: String, enabled: Boolean, onClick: () -> Unit) {
-    RaisedControl(
-        onClick = onClick,
-        enabled = enabled,
-        shape = CircleShape,
-        tint = AppColors.surfaceVariant,
-        modifier = Modifier
-            .size(34.dp)
-            .graphicsLayer { alpha = if (enabled) 1f else 0.35f }
+private fun StepZone(symbol: String, description: String, enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .width(STEP_ZONE)
+            .fillMaxHeight()
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
     ) {
         Text(
-            symbol, color = AppColors.textPrimary, fontSize = 18.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.Center).clearAndSetSemantics {},
+            symbol, color = if (enabled) AppColors.textPrimary else AppColors.textDim,
+            fontSize = 16.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.clearAndSetSemantics {},
         )
     }
 }

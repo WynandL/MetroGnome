@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -279,31 +280,8 @@ fun MetroGnomeApp(
 
     CompositionLocalProvider(LocalHaptics provides hapticEngine) {
     Box(modifier = Modifier.fillMaxSize()) {
-    // layoutType is passed explicitly so the scaffold's default, currentWindowAdaptiveInfo(), never runs:
-    // androidx.window 1.5.x calls WindowMetrics.getDensity() (API 34) on some devices whose framework lacks it,
-    // which crashed at launch with NoSuchMethodError. Configuration needs no such call.
-    NavigationSuiteScaffold(
-        layoutType = if (LocalConfiguration.current.screenWidthDp >= 600) NavigationSuiteType.NavigationRail
-                     else NavigationSuiteType.NavigationBar,
-        navigationSuiteItems = {
-            visibleTabs.forEach { tab ->
-                item(
-                    icon = {
-                        when (tab) {
-                            AppTab.GNOME    -> AppIcon(AppIcons.MusicNote, contentDescription = null)
-                            AppTab.TUNER    -> TunerNeedleIcon()
-                            AppTab.CHORDS   -> ChordGridIcon()
-                            AppTab.RHYTHM   -> RhythmPulseIcon()
-                            AppTab.SETTINGS -> AppIcon(AppIcons.Settings, contentDescription = null)
-                        }
-                    },
-                    label = { Text(tab.label) },
-                    selected = tab == currentTab,
-                    onClick = { switchTab(tab) }
-                )
-            }
-        }
-    ) {
+    // The tab's screen, shared by both navigation layouts below.
+    val tabContent: @Composable () -> Unit = {
         // Measured so the app's snackbars sit just above the navigation bar.
         Box(Modifier.fillMaxSize().snackbarContentBounds()) {
         when (currentTab) {
@@ -371,6 +349,52 @@ fun MetroGnomeApp(
         }
         }
     }
+    @Composable
+    fun TabIcon(tab: AppTab) = when (tab) {
+        AppTab.GNOME    -> AppIcon(AppIcons.MusicNote, contentDescription = null)
+        AppTab.TUNER    -> TunerNeedleIcon()
+        AppTab.CHORDS   -> ChordGridIcon()
+        AppTab.RHYTHM   -> RhythmPulseIcon()
+        AppTab.SETTINGS -> AppIcon(AppIcons.Settings, contentDescription = null)
+    }
+    // The navigation type is passed explicitly so the scaffold's default, currentWindowAdaptiveInfo(), never runs:
+    // androidx.window 1.5.x calls WindowMetrics.getDensity() (API 34) on some devices whose framework lacks it,
+    // which crashed at launch with NoSuchMethodError. Configuration needs no such call.
+    if (LocalConfiguration.current.screenWidthDp >= 600) {
+        // Wide screens (a phone on its side, tablets): a side rail with the tabs centred
+        // top to bottom, so the space above and below them is equal. Only this form of the
+        // scaffold can centre them; rotating recreates the activity, so switching forms
+        // loses no screen state.
+        NavigationSuiteScaffold(
+            navigationItems = {
+                visibleTabs.forEach { tab ->
+                    NavigationSuiteItem(
+                        selected = tab == currentTab,
+                        onClick = { switchTab(tab) },
+                        icon = { TabIcon(tab) },
+                        label = { Text(tab.label) },
+                        navigationSuiteType = NavigationSuiteType.NavigationRail,
+                    )
+                }
+            },
+            navigationSuiteType = NavigationSuiteType.NavigationRail,
+            navigationItemVerticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+            content = tabContent,
+        )
+    } else NavigationSuiteScaffold(
+        layoutType = NavigationSuiteType.NavigationBar,
+        navigationSuiteItems = {
+            visibleTabs.forEach { tab ->
+                item(
+                    icon = { TabIcon(tab) },
+                    label = { Text(tab.label) },
+                    selected = tab == currentTab,
+                    onClick = { switchTab(tab) }
+                )
+            }
+        },
+        content = tabContent,
+    )
     TransientBanners(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding())
     // Every passing message in the app (it replaced Toasts), above the tab's banner ad.
     AppSnackbarHost()

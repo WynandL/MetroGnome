@@ -34,11 +34,11 @@ import com.example.metrognome.viewmodel.SubdivisionStatus
 
 /*
  * The two ways to set the subdivision, from one file so they say the same thing:
- * - SubdivisionKey: Home's key (beside mute, screen-on, preset, practice, trainer); a tap
+ * - SubdivisionKey: Home's key (beside preset, practice, trainer and the more key); a tap
  *   steps Off, 2, 3, 4, Off. Its mark is the beat split into dots, a large one for the beat
  *   and a small one per sub-tick, so it needs no word and no note character.
- * - SubdivisionRow: the meter stage's row, the four choices as chips with a line that says
- *   what is sounding, or why it is resting.
+ * - SubdivisionChips: the four choices as chips (the meter stage's SUBDIVISION line, whose
+ *   hint line says why it pauses); SubdivisionRow wraps them with a label and a caption.
  * Both read SubdivisionStatus (MetronomeViewModel), which mirrors the engine's own rule.
  */
 
@@ -97,6 +97,24 @@ private fun SubdivisionMark(clicks: Int, color: Color, modifier: Modifier = Modi
     }
 }
 
+/** The four choices as chips, Off, 2, 3, 4, with nothing around them (the meter stage's line). */
+@Composable
+fun SubdivisionChips(status: SubdivisionStatus, onChoose: (Subdivision) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        for (s in Subdivision.entries) {
+            AppFilterChip(
+                selected = s == status.chosen,
+                onClick = { onChoose(s) },
+                label = if (s == Subdivision.OFF) "Off" else "${s.clicks}",
+                endPadding = if (s == Subdivision.FOUR) 0.dp else 6.dp,
+                modifier = Modifier.semantics {
+                    contentDescription = if (s == Subdivision.OFF) "No subdivision" else "${s.clicks} clicks per beat"
+                },
+            )
+        }
+    }
+}
+
 @Composable
 fun SubdivisionRow(
     status: SubdivisionStatus,
@@ -111,17 +129,7 @@ fun SubdivisionRow(
         ) {
             SectionLabel("SUBDIVISION", maxLines = 1)
             Spacer(Modifier.width(10.dp))
-            for (s in Subdivision.entries) {
-                AppFilterChip(
-                    selected = s == status.chosen,
-                    onClick = { onChoose(s) },
-                    label = if (s == Subdivision.OFF) "Off" else "${s.clicks}",
-                    endPadding = if (s == Subdivision.FOUR) 0.dp else 6.dp,
-                    modifier = Modifier.semantics {
-                        contentDescription = if (s == Subdivision.OFF) "No subdivision" else "${s.clicks} clicks per beat"
-                    },
-                )
-            }
+            SubdivisionChips(status, onChoose)
         }
         PinnedSlot(lineHeight = 16.sp, alignment = Alignment.Center) {
             androidx.compose.material3.Text(

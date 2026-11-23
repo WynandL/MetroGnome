@@ -967,7 +967,10 @@ private fun SecondaryControlsRow(
                 ),
             ),
             badge = isMuted,
-            modifier = Modifier.weight(0.6f).height(44.dp)
+            // A fixed 48 dp, the platform's minimum touch size: as a share of the row it came
+            // to ~42 dp on a 360 dp phone, the key still drew at 48 dp and spilled past its
+            // slot, so the gap to its left shrank and it overhung the row's right edge.
+            modifier = Modifier.width(48.dp).height(44.dp)
         )
     }
 }
