@@ -28,13 +28,14 @@ fun MetronomeMeterStage(
     val accents by vm.accentBeats.collectAsStateWithLifecycle()
     val playing by vm.isPlaying.collectAsStateWithLifecycle()
     val bpm by vm.bpm.collectAsStateWithLifecycle()
+    val subdivision by vm.subdivisionStatus.collectAsStateWithLifecycle()
 
     // Finding the stage is the hint's purpose: once here, the Home hint has done its job.
     LaunchedEffect(Unit) { vm.acknowledgeMeterHint() }
 
     val inUse = Meter(top, bottom)
     MeterStageOverlay(
-        state = MeterStageState(inUse = inUse, accents = accents, playing = playing, bpm = bpm, locked = sessionOpen),
+        state = MeterStageState(inUse = inUse, accents = accents, playing = playing, bpm = bpm, locked = sessionOpen, subdivision = subdivision),
         beats = vm.beatEvents,
         // setMeter on the meter in use resets its accents, so choosing it again is refused here
         // as well as in the stage: only Reset may do that.
@@ -43,5 +44,6 @@ fun MetronomeMeterStage(
         onResetAccents = { vm.setMeter(top, bottom) },
         onPlayToggle = onTogglePlay,
         onClose = onClose,
+        onSubdivision = { vm.setSubdivision(it, source = "stage") },
     )
 }

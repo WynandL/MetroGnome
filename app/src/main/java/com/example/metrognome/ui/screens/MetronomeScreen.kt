@@ -1,5 +1,6 @@
 package com.example.metrognome.ui.screens
 
+import com.example.metrognome.ui.subdivision.caption
 import android.widget.Toast
 import com.example.metrognome.ui.theme.AppRadius
 import com.example.metrognome.ui.components.AppGlyph
@@ -158,6 +159,7 @@ fun MetronomeScreen(
     var showSoundStage by remember { mutableStateOf(false) }
     val soundType by vm.soundType.collectAsStateWithLifecycle()
     val classicForSession by vm.classicForSession.collectAsStateWithLifecycle()
+    val subdivisionStatus by vm.subdivisionStatus.collectAsStateWithLifecycle()
 
     var tappedItem by remember { mutableStateOf<MetroItem?>(null) }
     val unlockQueue by vm.unlockQueue.collectAsStateWithLifecycle()
@@ -453,6 +455,14 @@ fun MetronomeScreen(
         )
 
         SecondaryControlsRow(
+            subdivision = subdivisionStatus,
+            onSubdivision = {
+                val next = subdivisionStatus.chosen.next()
+                vm.setSubdivision(next, source = "home")
+                val msg = if (next == com.example.metrognome.audio.metronome.subdivision.Subdivision.OFF) "Subdivision off"
+                    else vm.subdivisionStatusIf(next).caption()
+                Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
+            },
             isMuted = isMuted,
             keepScreenOn = keepScreenOn,
             isOnSavedPreset = presets.any { it.bpm == bpm },
@@ -859,6 +869,8 @@ private fun BpmStepperRow(
 
 @Composable
 private fun SecondaryControlsRow(
+    subdivision: com.example.metrognome.viewmodel.SubdivisionStatus,
+    onSubdivision: () -> Unit,
     isMuted: Boolean,
     keepScreenOn: Boolean,
     isOnSavedPreset: Boolean,
@@ -888,6 +900,13 @@ private fun SecondaryControlsRow(
             contentDescription = "Keep screen on",
             active = keepScreenOn,
             onClick = onToggleScreenOn,
+            modifier = Modifier.weight(1f).height(44.dp)
+        )
+        // Placeholder home for the subdivision key (2026-11-23): beside the other playing
+        // switches until the dev settles where it lives. The meter stage has the full row.
+        com.example.metrognome.ui.subdivision.SubdivisionKey(
+            status = subdivision,
+            onClick = onSubdivision,
             modifier = Modifier.weight(1f).height(44.dp)
         )
         CompactIconChip(
@@ -1396,6 +1415,11 @@ private fun BpmStepperRowPreview() {
 @Composable
 private fun SecondaryControlsRowPreview() {
     SecondaryControlsRow(
+        subdivision = com.example.metrognome.viewmodel.SubdivisionStatus(
+            com.example.metrognome.audio.metronome.subdivision.Subdivision.TWO,
+            com.example.metrognome.viewmodel.SubdivisionHold.NONE, 300,
+        ),
+        onSubdivision = {},
         isMuted = false,
         keepScreenOn = true,
         isOnSavedPreset = false,

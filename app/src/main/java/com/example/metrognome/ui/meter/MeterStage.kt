@@ -81,6 +81,9 @@ import com.example.metrognome.ui.components.FadingHorizontalScrollbar
 import com.example.metrognome.ui.components.Particle
 import com.example.metrognome.ui.components.PinnedLines
 import com.example.metrognome.ui.components.PinnedSlot
+import com.example.metrognome.audio.metronome.subdivision.Subdivision
+import com.example.metrognome.ui.subdivision.SubdivisionRow
+import com.example.metrognome.viewmodel.SubdivisionStatus
 import com.example.metrognome.ui.components.PlayStopKey
 import com.example.metrognome.ui.components.PrimaryButton
 import com.example.metrognome.ui.components.RaisedControl
@@ -131,6 +134,8 @@ data class MeterStageState(
     val bpm: Int,
     /** A Practice or Speed Trainer session is open: the meter cannot change until it ends. */
     val locked: Boolean,
+    /** The metronome's subdivision. Global, not the focused meter's: it is never dimmed by paging. */
+    val subdivision: SubdivisionStatus,
 )
 
 @Composable
@@ -142,16 +147,21 @@ fun MeterStageOverlay(
     onResetAccents: () -> Unit,
     onPlayToggle: () -> Unit,
     onClose: () -> Unit,
+    onSubdivision: (Subdivision) -> Unit,
 ) {
     AppWindowDialog(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        MeterStage(state, beats, onUse, onToggleAccent, onResetAccents, onPlayToggle, onClose)
+        MeterStage(state, beats, onUse, onToggleAccent, onResetAccents, onPlayToggle, onClose, onSubdivision)
     }
 }
 
 private val MEDALLION = 176.dp
+// On a short phone with large fonts the card needs the height: the wheel gives way down to this.
+private val MEDALLION_MIN = 100.dp
+// Below the wheel: the 10 dp gap and the 8 dp page dots.
+private val UNDER_CAROUSEL = 18.dp
 private const val PRESET_DEFAULT_CUSTOM_TOP = 5
 private const val PRESET_DEFAULT_CUSTOM_BOTTOM = 8
 
@@ -164,6 +174,7 @@ fun MeterStage(
     onResetAccents: () -> Unit,
     onPlayToggle: () -> Unit,
     onClose: () -> Unit,
+    onSubdivision: (Subdivision) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val presets = MeterTheory.COMMON_METERS
@@ -237,31 +248,36 @@ fun MeterStage(
                 DialogCloseButton(onClick = onClose)
             }
 
-            Spacer(Modifier.weight(1f))
-
-            Box(contentAlignment = Alignment.Center) {
-                MeterCarousel(
-                    pager = pager,
-                    meterAt = ::meterAt,
-                    customPage = customPage,
-                    state = state,
-                    pulse = pulse,
-                    onTapFocused = { m ->
-                        if (m == state.inUse) onPlayToggle() else choose(m)
-                    },
-                )
-                // The chosen moment's sparks, over the carousel.
-                Canvas(Modifier.matchParentSize()) {
-                    val now = pulse.frameNs
-                    if (burst.isEmpty() || burstNs == Long.MIN_VALUE) return@Canvas
-                    val s = (now - burstNs) / 1e9f
-                    if (s in 0f..1.6f) drawParticles(burst, Offset(size.width / 2f, size.height / 2f), s)
+            // The wheel and its dots, centred in whatever height the card leaves: full size
+            // on most phones, smaller on a short one with large fonts, so the card never runs
+            // out of room (it had none to spare at 360 x 640 dp and 1.3x fonts).
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                val medallion = (maxHeight - UNDER_CAROUSEL - 24.dp).coerceIn(MEDALLION_MIN, MEDALLION)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(contentAlignment = Alignment.Center) {
+                        MeterCarousel(
+                            pager = pager,
+                            meterAt = ::meterAt,
+                            customPage = customPage,
+                            state = state,
+                            pulse = pulse,
+                            medallion = medallion,
+                            onTapFocused = { m ->
+                                if (m == state.inUse) onPlayToggle() else choose(m)
+                            },
+                        )
+                        // The chosen moment's sparks, over the carousel.
+                        Canvas(Modifier.matchParentSize()) {
+                            val now = pulse.frameNs
+                            if (burst.isEmpty() || burstNs == Long.MIN_VALUE) return@Canvas
+                            val s = (now - burstNs) / 1e9f
+                            if (s in 0f..1.6f) drawParticles(burst, Offset(size.width / 2f, size.height / 2f), s)
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    StagePageDots(presets.size + 1, pager.currentPage) { meterAt(it) == state.inUse }
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            StagePageDots(presets.size + 1, pager.currentPage) { meterAt(it) == state.inUse }
-
-            Spacer(Modifier.weight(1f))
 
             MeterDetails(
                 meter = focused,
@@ -285,6 +301,7 @@ fun MeterStage(
                 },
                 onToggleAccent = onToggleAccent,
                 onResetAccents = onResetAccents,
+                onSubdivision = onSubdivision,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
             Spacer(Modifier.height(16.dp))
@@ -301,27 +318,28 @@ private fun MeterCarousel(
     customPage: Int,
     state: MeterStageState,
     pulse: BeatPulse,
+    medallion: Dp,
     onTapFocused: (Meter) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val side = ((maxWidth - MEDALLION) / 2).coerceAtLeast(0.dp)
+        val side = ((maxWidth - medallion) / 2).coerceAtLeast(0.dp)
         Canvas(Modifier.matchParentSize()) {
             pulse.frameNs
             val glow = if (state.playing && pulse.lastBeat >= 0) pulse.lit(pulse.lastBeat) else 0f
             drawStageSpotlight(
                 c = Offset(size.width / 2f, size.height / 2f),
-                r = MEDALLION.toPx() / 2f * 0.80f,
+                r = medallion.toPx() / 2f * 0.80f,
                 top = -size.height * 1.1f,
                 glow = glow,
             )
         }
         HorizontalPager(
             state = pager,
-            pageSize = PageSize.Fixed(MEDALLION),
+            pageSize = PageSize.Fixed(medallion),
             contentPadding = PaddingValues(horizontal = side),
             pageSpacing = 4.dp,
-            modifier = Modifier.fillMaxWidth().height(MEDALLION + 24.dp),
+            modifier = Modifier.fillMaxWidth().height(medallion + 24.dp),
         ) { page ->
             val meter = meterAt(page)
             val inUse = meter == state.inUse
@@ -357,7 +375,7 @@ private fun MeterCarousel(
                     custom = page == customPage,
                     pulse = pulse,
                     live = inUse && state.playing,
-                    size = MEDALLION,
+                    size = medallion,
                 )
             }
         }
@@ -503,6 +521,7 @@ private fun MeterDetails(
     onPlay: () -> Unit,
     onToggleAccent: (Int) -> Unit,
     onResetAccents: () -> Unit,
+    onSubdivision: (Subdivision) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val inUse = meter == state.inUse
@@ -548,7 +567,9 @@ private fun MeterDetails(
 
         Spacer(Modifier.height(10.dp))
         FractionSteppers(meter = meter, onStep = onStep)
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
+        SubdivisionRow(status = state.subdivision, onChoose = onSubdivision)
+        Spacer(Modifier.height(6.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             PlayStopKey(
