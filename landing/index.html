@@ -107,20 +107,17 @@
     .hero h1 em { font-style: normal; color: var(--gold); }
     .hero .lede { color: var(--text-muted); font-size: 1.08rem; line-height: 1.65; margin-bottom: 1.4rem; max-width: 34rem; }
     .quick { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.2rem; }
-    .quick a { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 0.95rem; border-radius: 999px; border: 1px solid var(--surface-up); background: var(--surface-deep); color: var(--text); font-weight: 700; font-size: 0.92rem; }
-    .quick a:hover { border-color: var(--purple); color: var(--text); background: var(--surface); }
-    /* Links, not choices: all alike, an arrow says they go somewhere; gold is kept for a current selection. */
-    .quick a::after { content: "→"; color: var(--text-muted); font-weight: 700; transition: transform 0.15s, color 0.15s; }
-    .quick a:hover::after { color: var(--gold); transform: translateX(2px); }
+    /* Links, not choices: link chips (style.css), an arrow says they go somewhere; gold is kept for a current selection. */
+    .quick .chip-link { padding: 0.6rem 1rem; font-size: 0.94rem; }
     .hero .small { font-size: 0.85rem; color: var(--text-muted); }
     .hero-tool h2 { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 0.6rem; font-weight: 700; }
-    .hero-tool .more { display: block; text-align: center; margin-top: 0.6rem; font-size: 0.88rem; }
+    .hero-tool .more { display: flex; width: fit-content; margin: 0.9rem auto 0; }
 
     section.band { padding: 2.6rem 0; border-top: 1px solid var(--surface-up); }
-    .band-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.3rem; }
+    .band-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.3rem; }
     .band-head h2 { font-size: clamp(1.4rem, 2.6vw, 1.8rem); font-weight: 800; letter-spacing: -0.01em; }
     .band-head p { color: var(--text-muted); max-width: 44rem; margin-top: 0.3rem; }
-    .band-head a { font-weight: 700; white-space: nowrap; }
+    .band-head .btn-secondary { flex: none; }
 
     /* compact tool list: icon, name, one line */
     .tlist-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem 2rem; }
@@ -137,6 +134,11 @@
     .tt b { font-size: 1rem; line-height: 1.3; }
     .tt b em { font-style: normal; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--purple-light); background: rgba(171, 125, 224, 0.14); border-radius: 999px; padding: 0.1rem 0.45rem; margin-left: 0.35rem; vertical-align: 2px; white-space: nowrap; }
     .tt > span { font-size: 0.88rem; color: var(--text-muted); line-height: 1.45; }
+    /* each row is a link: a quiet arrow at the end that wakes up on hover */
+    .tt { flex: 1; }
+    .tlist a::after, .topic li a::after { content: ""; flex: none; width: 16px; height: 16px; background: rgba(171, 125, 224, 0.45); -webkit-mask: var(--arrow-mask) center / contain no-repeat; mask: var(--arrow-mask) center / contain no-repeat; transition: transform 0.15s, background 0.15s; }
+    .tlist a:hover::after, .topic li a:hover::after { background: var(--gold); transform: translateX(2px); }
+    .tlist a:hover .tt b { color: var(--gold-light); }
     @media (max-width: 760px) { .tlist-cols { grid-template-columns: 1fr; gap: 1.2rem; } }
 
     /* guides by topic */
@@ -144,7 +146,8 @@
     .topic { background: var(--surface-deep); border: 1px solid var(--surface-up); border-radius: 16px; padding: 1.1rem 1.15rem 1.2rem; }
     .topic h3 { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.7rem; }
     .topic ul { list-style: none; display: flex; flex-direction: column; gap: 0.7rem; }
-    .topic li a { color: var(--text); font-weight: 700; line-height: 1.35; display: block; }
+    .topic li a { color: var(--text); font-weight: 700; line-height: 1.35; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.6rem; }
+    .topic li a::after { margin-top: 0.2rem; }
     .topic li a:hover { color: var(--gold); }
     .topic li span { display: block; font-size: 0.84rem; color: var(--text-muted); line-height: 1.45; margin-top: 0.15rem; }
     .meter-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.2rem; align-items: center; }
@@ -152,19 +155,25 @@
 
     /* latest guides: the three newest by datePublished */
     .latest { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-    .latest a { display: flex; flex-direction: column; gap: 0.45rem; height: 100%; padding: 1rem 1.1rem; border-radius: 14px; background: var(--surface); border: 1px solid var(--surface-up); color: var(--text); transition: border-color 0.15s; }
-    .latest a:hover { border-color: var(--purple); color: var(--text); }
+    .latest a { display: flex; flex-direction: column; gap: 0.45rem; height: 100%; padding: 1rem 1.1rem; border-radius: 14px; background: var(--surface); border: 1px solid var(--surface-up); color: var(--text); transition: border-color 0.2s, transform 0.2s; }
+    .latest a:hover { border-color: var(--purple); color: var(--text); transform: translateY(-3px); }
+    .latest .go-arrow { margin-top: auto; align-self: flex-end; }
     .lg-meta { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
     .lg-title { font-weight: 700; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-    @media (max-width: 760px) { .latest { grid-template-columns: 1fr; gap: 0.6rem; } }
+    @media (max-width: 760px) {
+      .latest { grid-template-columns: 1fr; gap: 0.6rem; }
+      .latest a { position: relative; padding-right: 3.8rem; }
+      .latest .go-arrow { position: absolute; right: 1rem; top: 50%; margin-top: -16px; }
+    }
 
     /* how it is made + app: two plain panels */
     .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; }
-    .panel { background: var(--surface); border: 1px solid var(--surface-up); border-radius: 18px; padding: 1.4rem 1.4rem 1.5rem; }
+    .panel { background: var(--surface); border: 1px solid var(--surface-up); border-radius: 18px; padding: 1.4rem 1.4rem 1.5rem; display: flex; flex-direction: column; }
     .panel h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.6rem; }
     .panel p, .panel li { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; }
     .panel ul { margin: 0.6rem 0 0.9rem 1.1rem; display: flex; flex-direction: column; gap: 0.35rem; }
-    .panel .row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-top: 0.9rem; }
+    .panel .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-top: auto; padding-top: 1.1rem; }
+    .panel .tiles { display: grid; gap: 0.7rem; margin-top: auto; padding-top: 0.6rem; }
     .panel .app-shots { display: flex; gap: 0.6rem; margin: 0.8rem 0 0.4rem; }
     .panel .app-shots img { width: 31%; border-radius: 12px; border: 1px solid var(--surface-up); height: auto; }
 
@@ -214,18 +223,18 @@
         <h1>Free practice tools for musicians, <em>right in your browser.</em></h1>
         <p class="lede">A metronome, timing and ear tests that measure you in milliseconds and cents, a tuning drone, a chord finder and plain-English guides to timing, tuning and harmony. Nothing to install and nothing to sign up for.</p>
         <div class="quick" aria-label="Popular tools">
-          <a href="/tools/rhythm-timing-test.html">Rhythm test</a>
-          <a href="/tools/tuning-drone.html">Tuning drone</a>
-          <a href="/tools/chord-finder.html">Chord finder</a>
-          <a href="/tools/odd-meter-practice-tool.html">Odd meters</a>
-          <a href="/tools/speed-trainer.html">Speed trainer</a>
+          <a class="chip-link" href="/tools/rhythm-timing-test.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg>Rhythm test</a>
+          <a class="chip-link" href="/tools/tuning-drone.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12c2.5-6 5-6 7.5 0s5 6 7.5 0 3.5-4 5-2"/></svg>Tuning drone</a>
+          <a class="chip-link" href="/tools/chord-finder.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4v16M10 4v16M14 4v16M18 4v16M6 4h12M6 9h12M6 14h12"/><circle cx="10" cy="11.5" r="1.6" fill="currentColor"/><circle cx="14" cy="16.5" r="1.6" fill="currentColor"/></svg>Chord finder</a>
+          <a class="chip-link" href="/tools/odd-meter-practice-tool.html"><span class="ci-text" aria-hidden="true">7/8</span>Odd meters</a>
+          <a class="chip-link" href="/tools/speed-trainer.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h5v-5h5v-5h5V5h3"/></svg>Speed trainer</a>
         </div>
         <p class="small">Every tool is free, works on a computer or a phone, and those that also exist in the Metro Gnome Android app follow the same rules, so both give the same answers.</p>
       </div>
       <div class="hero-tool">
         <h2>Online metronome</h2>
         <div data-metronome data-compact></div>
-        <a class="more" href="/tools/online-metronome.html">Subdivisions, sounds and tips on the full metronome page</a>
+        <a class="btn-secondary btn-sm more" href="/tools/online-metronome.html">Full metronome: subdivisions and sounds</a>
       </div>
     </section>
 
@@ -235,7 +244,7 @@
           <h2 id="tools-h">Twelve free tools</h2>
           <p>Each one measures or trains a single thing. Most of the tests take under a minute.</p>
         </div>
-        <a href="/tools/">See them all, with screenshots &rarr;</a>
+        <a class="btn-secondary btn-sm" href="/tools/">See all twelve, with screenshots</a>
       </div>
       <div class="tlist-cols">
         <div>
@@ -268,7 +277,7 @@
           <h2 id="guides-h">Guides</h2>
           <p>The questions behind the tools, answered properly: why players rush, how to build speed, why a tuner shows the wrong note, how chords get their names.</p>
         </div>
-        <a href="/blog/">All guides &rarr;</a>
+        <a class="btn-secondary btn-sm" href="/blog/">All guides</a>
       </div>
       <div class="topics">
         <div class="topic">
@@ -325,13 +334,13 @@
         <div>
           <h2 id="latest-h">Latest guides</h2>
         </div>
-        <a href="/blog/">All guides &rarr;</a>
+        <a class="btn-secondary btn-sm" href="/blog/">All guides</a>
       </div>
       <!-- The three newest guides by datePublished: keep in step with the top of blog/index.html. -->
       <ul class="latest">
-        <li><a href="/blog/free-metro-gnome-colouring-page.html"><span class="lg-meta">Story <span aria-hidden="true">&middot;</span> <time datetime="2026-11-10">10 November 2026</time></span><span class="lg-title">Free Metro Gnome Colouring Page</span></a></li>
-        <li><a href="/blog/how-small-a-pitch-difference-can-you-hear.html"><span class="lg-meta">Ear training <span aria-hidden="true">&middot;</span> <time datetime="2026-10-24">24 October 2026</time></span><span class="lg-title">How Small a Pitch Difference Can You Hear? (And Why Low Notes Are Harder)</span></a></li>
-        <li><a href="/blog/what-is-a-chord-how-chords-work.html"><span class="lg-meta">Theory <span aria-hidden="true">&middot;</span> <time datetime="2026-09-15">15 September 2026</time></span><span class="lg-title">What Is a Chord? How Chords Work, Why They Matter, and How to Name Any Chord You Play</span></a></li>
+        <li><a href="/blog/free-metro-gnome-colouring-page.html"><span class="lg-meta">Story <span aria-hidden="true">&middot;</span> <time datetime="2026-11-10">10 November 2026</time></span><span class="lg-title">Free Metro Gnome Colouring Page</span><span class="go-arrow" aria-hidden="true"></span></a></li>
+        <li><a href="/blog/how-small-a-pitch-difference-can-you-hear.html"><span class="lg-meta">Ear training <span aria-hidden="true">&middot;</span> <time datetime="2026-10-24">24 October 2026</time></span><span class="lg-title">How Small a Pitch Difference Can You Hear? (And Why Low Notes Are Harder)</span><span class="go-arrow" aria-hidden="true"></span></a></li>
+        <li><a href="/blog/what-is-a-chord-how-chords-work.html"><span class="lg-meta">Theory <span aria-hidden="true">&middot;</span> <time datetime="2026-09-15">15 September 2026</time></span><span class="lg-title">What Is a Chord? How Chords Work, Why They Matter, and How to Name Any Chord You Play</span><span class="go-arrow" aria-hidden="true"></span></a></li>
       </ul>
     </section>
 
@@ -346,9 +355,17 @@
             <li>Scored tests are run against simulated players of known ability before release.</li>
             <li>Chord names and theory are checked with professional musicians and against references, with over two hundred test cases behind the chord finder.</li>
           </ul>
-          <div class="row">
-            <a href="/about.html">More about Metro Gnome &rarr;</a>
-            <a href="/embed/">Embed a tool on your site &rarr;</a>
+          <div class="tiles">
+            <a class="link-tile" href="/about.html">
+              <span class="lt-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5"/></svg></span>
+              <span class="lt-text"><b>More about Metro Gnome</b><span>Who builds it and how every tool is checked.</span></span>
+              <span class="go-arrow" aria-hidden="true"></span>
+            </a>
+            <a class="link-tile" href="/embed/">
+              <span class="lt-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 5l-3 14"/></svg></span>
+              <span class="lt-text"><b>Embed a tool on your site</b><span>Free for teachers and studios. One line of HTML.</span></span>
+              <span class="go-arrow" aria-hidden="true"></span>
+            </a>
           </div>
         </div>
         <div class="panel" id="app">
@@ -361,7 +378,7 @@
           </div>
           <div class="row">
             <a href="https://play.google.com/store/apps/details?id=com.wynandl.metrognome" class="btn-play">Get it on Google Play</a>
-            <a href="/blog/meet-metro-the-gnome-behind-the-metronome.html">Meet Metro &rarr;</a>
+            <a class="btn-secondary" href="/blog/meet-metro-the-gnome-behind-the-metronome.html">Meet Metro</a>
           </div>
         </div>
       </div>

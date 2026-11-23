@@ -1651,3 +1651,200 @@ table.data-table.ts-chart { min-width: 0; }
 
 /* anchor targets land below the sticky nav, not under it */
 [id] { scroll-margin-top: 84px; }
+
+/* ══ Calls to action: one design language for every link that asks for a click ══
+   1. Primary button   .btn-play               gold fill. The one main action in a block.
+   2. Secondary button .btn-secondary          gold outline pill with an arrow; fills gold on
+                       (.tc-open, .ad-house-cta) hover. "Open the tool", "All guides", "Meet Metro".
+   3. Link chip        .chip-link, a.preset-chip  neutral pill, purple arrow that turns gold.
+                                               Quick jumps to a tool or a time signature.
+                                               (A <button class="preset-chip"> is a choice, not a
+                                               link, and keeps the plain chip look.)
+   4. Card link        .post-card, .related-card, .link-tile, home .latest
+                                               the whole card is the target; it lifts, the border
+                                               turns purple and its pill or arrow fills gold.
+   5. Prose link       a link inside running text: gold and underlined.
+   A bare "Something →" line of text is never used for a call to action. */
+:root {
+  --arrow-gold: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFD700' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E");
+  --arrow-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230D0B1E' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E");
+  --arrow-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E");
+}
+
+/* 1. Primary */
+.btn-play { box-shadow: 0 6px 18px rgba(255, 215, 0, 0.18); }
+.btn-play:hover { box-shadow: 0 10px 24px rgba(255, 215, 0, 0.28); }
+.btn-play:focus-visible, .btn-secondary:focus-visible, .chip-link:focus-visible, a.preset-chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+/* 2. Secondary */
+.btn-secondary, .tc-open, .ad-house-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  color: var(--gold);
+  padding: 0.66rem 1.3rem;
+  border: 1.5px solid var(--gold);
+  border-radius: 50px;
+  background: rgba(255, 215, 0, 0.06);
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+.btn-secondary:hover, .tc-open:hover { background: var(--gold); color: var(--bg); transform: translateY(-2px); }
+.btn-sm, .tc-open, .ad-house-cta { font-size: 0.85rem; padding: 0.45rem 0.95rem; }
+.btn-secondary::after {
+  content: "";
+  flex: none;
+  width: 15px;
+  height: 15px;
+  background: currentColor;
+  -webkit-mask: var(--arrow-mask) center / contain no-repeat;
+  mask: var(--arrow-mask) center / contain no-repeat;
+  transition: transform 0.2s;
+}
+.btn-secondary:hover::after, .tc-open:hover svg { transform: translateX(3px); }
+.tc-open svg { transition: transform 0.2s; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+
+/* 3. Link chips */
+.chip-link, a.preset-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid var(--surface-up);
+  background: var(--surface-deep);
+  color: var(--text);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s, color 0.15s;
+}
+.chip-link::after, a.preset-chip::after {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: var(--purple-light);
+  -webkit-mask: var(--arrow-mask) center / contain no-repeat;
+  mask: var(--arrow-mask) center / contain no-repeat;
+  transition: transform 0.15s, background 0.15s;
+}
+.chip-link:hover, a.preset-chip:hover { border-color: var(--purple); background: var(--surface); color: var(--text); transform: translateY(-2px); }
+.chip-link:hover::after, a.preset-chip:hover::after { background: var(--gold); transform: translateX(2px); }
+.chip-link svg { width: 18px; height: 18px; flex: none; color: var(--purple-light); fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.chip-link .ci-text { font-size: 0.72rem; font-weight: 800; color: var(--purple-light); }
+
+/* 4. Card links */
+.post-card { position: relative; transition: border-color 0.2s, transform 0.2s; }
+.post-card:hover { transform: translateY(-3px); }
+.post-card h2 a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.post-card .read-more { position: relative; z-index: 1; }
+.read-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gold);
+  padding: 0.42rem 0.95rem;
+  border: 1.5px solid var(--gold);
+  border-radius: 50px;
+  background: rgba(255, 215, 0, 0.06);
+  transition: background 0.2s, color 0.2s;
+}
+.read-more::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask: var(--arrow-mask) center / contain no-repeat;
+  mask: var(--arrow-mask) center / contain no-repeat;
+  transition: transform 0.2s;
+}
+.post-card:hover .read-more, .read-more:hover, .ad-house:hover .ad-house-cta { background: var(--gold); color: var(--bg); }
+.post-card:hover .read-more::after { transform: translateX(3px); }
+
+/* the round arrow a compact card carries in its corner */
+.go-arrow {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  background: var(--arrow-gold) center / 15px no-repeat, rgba(255, 215, 0, 0.06);
+  transition: background 0.2s, transform 0.2s;
+}
+.related-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-right: 3.6rem;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.related-card::after {
+  content: "";
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  margin-top: -16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  background: var(--arrow-gold) center / 15px no-repeat, rgba(255, 215, 0, 0.06);
+  transition: background 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+.related-card a::before { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.related-card:hover { border-color: var(--purple); transform: translateY(-2px); }
+.related-card:hover a { color: var(--text); }
+.related-card:hover::after, a:hover > .go-arrow, .link-tile:hover .go-arrow { background: var(--arrow-ink) center / 15px no-repeat, var(--gold); transform: translateX(2px); }
+
+.link-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 14px;
+  border: 1px solid var(--surface-up);
+  background: var(--surface-deep);
+  color: var(--text);
+  transition: border-color 0.2s, transform 0.2s, background 0.2s;
+}
+.link-tile:hover { border-color: var(--purple); color: var(--text); transform: translateY(-2px); }
+.link-tile .lt-icon { flex: none; width: 42px; height: 42px; border-radius: 12px; background: var(--surface); border: 1px solid var(--surface-up); color: var(--purple-light); display: grid; place-items: center; }
+.link-tile .lt-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.link-tile .lt-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.link-tile .lt-text b { font-size: 0.98rem; line-height: 1.3; }
+.link-tile .lt-text span { font-size: 0.84rem; color: var(--text-muted); line-height: 1.4; }
+
+/* 5. Prose links: gold and underlined, so a link in a sentence never hides */
+:is(.prose p, .prose li, .prose td, .prose blockquote, .callout, .faq-answer, .panel p, .article-intro, .sh-lede, .tc-body p, .gs-copy p, .embed-strip p, .cta-box p, .tool-hint, .author-box p) a:not([class]) {
+  color: var(--gold);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 215, 0, 0.35);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s, color 0.15s;
+}
+:is(.prose p, .prose li, .prose td, .prose blockquote, .callout, .faq-answer, .panel p, .article-intro, .sh-lede, .tc-body p, .gs-copy p, .embed-strip p, .cta-box p, .tool-hint, .author-box p) a:not([class]):hover {
+  color: var(--gold-light);
+  text-decoration-color: currentColor;
+}
+
+/* Facts in a hero are not links: no pill border, so they never pass for chips. */
+.section-hero .sh-facts li { border-color: transparent; background: rgba(255, 255, 255, 0.04); }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-secondary, .tc-open, .chip-link, a.preset-chip, .post-card, .related-card, .link-tile, .go-arrow, .related-card::after { transition: none; }
+  .btn-secondary:hover, .tc-open:hover, .chip-link:hover, a.preset-chip:hover, .post-card:hover, .related-card:hover, .link-tile:hover { transform: none; }
+  .btn-secondary::after, .chip-link::after, a.preset-chip::after, .read-more::after, .tc-open svg { transition: none; }
+}
