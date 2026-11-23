@@ -16,6 +16,7 @@ import com.example.metrognome.audio.rhythm.RhythmDetector
 import com.example.metrognome.audio.selftest.MicCalibration
 import androidx.lifecycle.viewModelScope
 import com.example.metrognome.audio.metronome.MetronomeEngine
+import com.example.metrognome.audio.metronome.subdivision.Subdivision
 import com.example.metrognome.billing.PREMIUM_SOUND_REGISTRY
 import com.example.metrognome.billing.clickSoundFor
 import com.example.metrognome.billing.BillingManager
@@ -211,7 +212,12 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     // the session is still on, and resuming used to come back on the saved voice. See
     // setMicSoundOverride / effectiveSoundType / micSessionLive.
     private var forceClassicForMic = false
-        set(value) { field = value; _soundPreviewBlocked.value = value; _classicForSession.value = value }
+        set(value) {
+            field = value
+            _soundPreviewBlocked.value = value
+            _classicForSession.value = value
+            pushSubdivision()
+        }
 
     /** True while a Practice or Speed Trainer session holds the Classic click for Groove Check.
      *  Drives the Home sound pill ("Classic") and its one-time hint. */
@@ -374,7 +380,10 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             engine.start()
             sessionStartMs = System.currentTimeMillis()
             _isPlaying.value = true
-            AnalyticsTracker.logMetronomeStarted(_bpm.value, clickSoundFor(_soundType.value).slug, _timeSig.value)
+            AnalyticsTracker.logMetronomeStarted(
+                _bpm.value, clickSoundFor(_soundType.value).slug, _timeSig.value,
+                _subdivision.value.slug, soundingSubdivision(),
+            )
             startPlayTimer()
         } else {
             // Metronome already running — swap the live click to classic for the mic session.
@@ -753,6 +762,72 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
     val isMuted: StateFlow<Boolean> = _isMuted.asStateFlow()
     val keepScreenOn: StateFlow<Boolean> = _keepScreenOn.asStateFlow()
 
+    // ── Subdivision ────────────────────────────────────────────────────────────
+    // The setting is the player's and is never changed by a hold. Two things hold it (the
+    // beat plays alone): a Groove Check session (the clap detector is tuned to the plain
+    // click; forceClassicForMic), and a tempo above the voice's limit, which the engine
+    // checks itself every beat (MetronomeEngine.soundingClicks). The status repeats the
+    // engine's rule so Home and the meter stage can say why it is quiet.
+
+    private val _subdivision = MutableStateFlow(Subdivision.fromClicks(prefs.getInt("subdivision", 1)))
+    val subdivision: StateFlow<Subdivision> = _subdivision.asStateFlow()
+
+    val subdivisionStatus: StateFlow<SubdivisionStatus> =
+        combine(_subdivision, _bpm, _soundType, _classicForSession) { sub, bpm, sound, classic ->
+            subdivisionStatusFor(sub, bpm, if (classic) 0 else sound, classic)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly,
+            subdivisionStatusFor(_subdivision.value, _bpm.value, _soundType.value, false))
+
+    private fun subdivisionStatusFor(sub: Subdivision, bpm: Int, voice: Int, session: Boolean): SubdivisionStatus {
+        val max = engine.subdivisionMaxBpm(voice, sub.clicks)
+        val hold = when {
+            sub == Subdivision.OFF -> SubdivisionHold.NONE
+            session -> SubdivisionHold.SESSION
+            bpm > max -> SubdivisionHold.TEMPO
+            else -> SubdivisionHold.NONE
+        }
+        return SubdivisionStatus(sub, hold, max)
+    }
+
+    init {
+        // subdivision_capped: once each time a playing metronome's subdivision falls silent
+        // because the tempo passed the voice's limit (tells us whether the limits bite).
+        viewModelScope.launch {
+            combine(subdivisionStatus, _isPlaying) { st, playing -> if (playing && st.hold == SubdivisionHold.TEMPO) st else null }
+                .distinctUntilChanged { a, b -> (a == null) == (b == null) }
+                .collect { st ->
+                    if (st != null) AnalyticsTracker.logSubdivisionCapped(
+                        st.chosen.slug, _bpm.value, clickSoundFor(effectiveSoundType()).slug, st.maxBpm,
+                    )
+                }
+        }
+    }
+
+    /** What [sub] would do right now: Home's toast says it at the tap, before the flow catches up. */
+    fun subdivisionStatusIf(sub: Subdivision): SubdivisionStatus =
+        subdivisionStatusFor(sub, _bpm.value, effectiveSoundType(), forceClassicForMic)
+
+    /** [source]: "home" (the key on Home) or "stage" (the meter stage). */
+    fun setSubdivision(next: Subdivision, source: String) {
+        val previous = _subdivision.value
+        if (next == previous) return
+        _subdivision.value = next
+        pushSubdivision()
+        prefs.edit { putInt("subdivision", next.clicks) }
+        AnalyticsTracker.logSubdivisionChanged(
+            next.slug, previous.slug, source, _bpm.value, clickSoundFor(_soundType.value).slug, _isPlaying.value,
+        )
+    }
+
+    /** The engine gets the setting, or none while a Groove Check session holds the click. */
+    private fun pushSubdivision() {
+        engine.subdivision = if (forceClassicForMic) 1 else _subdivision.value.clicks
+    }
+
+    /** What the started metronome sounds per beat, for metronome_started. */
+    private fun soundingSubdivision(): Int =
+        engine.soundingClicks(effectiveSoundType(), _bpm.value, engine.subdivision)
+
     private val _beatEvents = MutableSharedFlow<BeatEvent>(extraBufferCapacity = 4)
     val beatEvents: SharedFlow<BeatEvent> = _beatEvents.asSharedFlow()
 
@@ -914,7 +989,10 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
             engine.start()
             sessionStartMs = System.currentTimeMillis()
             _isPlaying.value = true
-            AnalyticsTracker.logMetronomeStarted(_bpm.value, clickSoundFor(_soundType.value).slug, _timeSig.value)
+            AnalyticsTracker.logMetronomeStarted(
+                _bpm.value, clickSoundFor(_soundType.value).slug, _timeSig.value,
+                _subdivision.value.slug, soundingSubdivision(),
+            )
             startPlayTimer()
         }
     }
@@ -1113,6 +1191,7 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         engine.soundType = effectiveSoundType()
         engine.volume = _volume.value
         engine.muted = _isMuted.value
+        pushSubdivision()
     }
 
     override fun onCleared() {
@@ -1122,4 +1201,11 @@ class MetronomeViewModel(app: Application) : AndroidViewModel(app) {
         abandonAudioFocus()
         billingManager.release()
     }
+}
+
+enum class SubdivisionHold { NONE, SESSION, TEMPO }
+
+/** The subdivision chosen, whether it is sounding, and the tempo limit for the voice in use. */
+data class SubdivisionStatus(val chosen: Subdivision, val hold: SubdivisionHold, val maxBpm: Int) {
+    val sounding: Boolean get() = chosen != Subdivision.OFF && hold == SubdivisionHold.NONE
 }

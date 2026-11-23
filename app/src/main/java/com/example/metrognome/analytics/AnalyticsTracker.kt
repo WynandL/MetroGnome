@@ -24,12 +24,41 @@ object AnalyticsTracker {
     // ── Metronome ─────────────────────────────────────────────────────────────
 
     /** [soundSlug] is the chosen voice's [com.example.metrognome.billing.ClickSound.slug]. */
-    fun logMetronomeStarted(bpm: Int, soundSlug: String, timeSig: Int) {
+    /**
+     * [subdivision] is the setting's slug ("off", "2", "3", "4"); [subdivisionSounding] the
+     * ticks per beat actually heard at start (1 when off, held by a Groove Check session, or
+     * above the voice's tempo limit).
+     */
+    fun logMetronomeStarted(bpm: Int, soundSlug: String, timeSig: Int, subdivision: String, subdivisionSounding: Int) {
         metronomeSessionStartMs = System.currentTimeMillis()
         Firebase.analytics.logEvent("metronome_started") {
             param("bpm",        bpm.toLong())
             param("sound_type", soundSlug)
             param("time_sig",   timeSig.toLong())
+            param("subdivision", subdivision)
+            param("subdivision_sounding", subdivisionSounding.toLong())
+        }
+    }
+
+    /** The player changed the subdivision. [source]: "home" or "stage". */
+    fun logSubdivisionChanged(subdivision: String, previous: String, source: String, bpm: Int, soundSlug: String, playing: Boolean) {
+        Firebase.analytics.logEvent("subdivision_changed") {
+            param("subdivision", subdivision)
+            param("previous",    previous)
+            param("source",      source)
+            param("bpm",         bpm.toLong())
+            param("sound_type",  soundSlug)
+            param("playing",     if (playing) "yes" else "no")
+        }
+    }
+
+    /** A playing subdivision fell silent: the tempo passed [maxBpm], the voice's limit. */
+    fun logSubdivisionCapped(subdivision: String, bpm: Int, soundSlug: String, maxBpm: Int) {
+        Firebase.analytics.logEvent("subdivision_capped") {
+            param("subdivision", subdivision)
+            param("bpm",         bpm.toLong())
+            param("sound_type",  soundSlug)
+            param("max_bpm",     maxBpm.toLong())
         }
     }
 
