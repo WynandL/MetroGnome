@@ -2,6 +2,7 @@ package com.example.metrognome.ui.screens
 
 import com.example.metrognome.ui.subdivision.caption
 import com.example.metrognome.ui.components.AppSnackbar
+import com.example.metrognome.ui.components.snackbarFloor
 import com.example.metrognome.ui.theme.AppRadius
 import com.example.metrognome.ui.components.AppGlyph
 import com.example.metrognome.ui.components.AppIcons
@@ -356,6 +357,8 @@ fun MetronomeScreen(
                 .weight(1f)
                 .fillMaxWidth()
                 .onSizeChanged { sceneWidthPx = it.width }
+                // Messages rest at Metro's feet, never over the keys below.
+                .snackbarFloor()
         ) {
             GnomeCanvas(
                 bpm = bpm,

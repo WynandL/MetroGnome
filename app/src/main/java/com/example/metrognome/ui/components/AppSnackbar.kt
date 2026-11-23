@@ -62,6 +62,13 @@ object AppSnackbar {
     /** Window y of the top of the pinned banner ad on the current tab, or NaN if none is up. */
     internal var bannerTopPx by mutableFloatStateOf(Float.NaN)
 
+    /**
+     * Window y a screen asks the card to rest on, or NaN. Home sets the bottom of Metro's
+     * scene, so a message never covers its control rows (a subdivision tap's caption used to
+     * sit on the very key you tap next, when no banner ad lifted it).
+     */
+    internal var screenFloorPx by mutableFloatStateOf(Float.NaN)
+
     /** Window y of the bottom of the tab content (the top of the navigation bar). */
     internal var contentBottomPx by mutableFloatStateOf(Float.NaN)
 
@@ -85,6 +92,13 @@ fun Modifier.snackbarContentBounds(): Modifier = onGloballyPositioned {
 internal fun Modifier.snackbarBannerBounds(): Modifier {
     DisposableEffect(Unit) { onDispose { AppSnackbar.bannerTopPx = Float.NaN } }
     return onGloballyPositioned { AppSnackbar.bannerTopPx = it.positionInWindow().y }
+}
+
+/** Rests the app's snackbars on this element's bottom edge while it is composed. */
+@Composable
+fun Modifier.snackbarFloor(): Modifier {
+    DisposableEffect(Unit) { onDispose { AppSnackbar.screenFloorPx = Float.NaN } }
+    return onGloballyPositioned { AppSnackbar.screenFloorPx = it.positionInWindow().y + it.size.height }
 }
 
 /**
@@ -115,7 +129,8 @@ fun AppSnackbarHost(modifier: Modifier = Modifier, avoidBars: Boolean = true) {
 
     var hostBottomPx by remember { mutableStateOf(Float.NaN) }
     val liftPx = if (!avoidBars || hostBottomPx.isNaN()) 0f else {
-        val floor = listOf(AppSnackbar.bannerTopPx, AppSnackbar.contentBottomPx)
+        // The highest of: the screen's own floor, the banner ad, the navigation bar.
+        val floor = listOf(AppSnackbar.bannerTopPx, AppSnackbar.contentBottomPx, AppSnackbar.screenFloorPx)
             .filter { !it.isNaN() }
             .minOrNull() ?: hostBottomPx
         (hostBottomPx - floor).coerceAtLeast(0f)
